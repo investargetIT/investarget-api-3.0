@@ -1,6 +1,5 @@
 #coding=utf-8
 
-from _mysql_exceptions import MySQLError
 import traceback
 from django.contrib import auth
 from django.contrib.auth.models import Group
