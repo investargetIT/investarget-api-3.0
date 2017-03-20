@@ -2,7 +2,7 @@
 # encoding=utf-8
 import time, random, json,  sys, os
 
-from MyUserSys.myauth import JSONResponse
+from utils.util import JSONResponse
 
 sys.path.insert(0, os.path.dirname(sys.path[0]))
 reload(sys)
@@ -102,9 +102,7 @@ def jpush_v3(app_key, payload):
     return https_request(app_key, body, "https://api.jpush.cn/v3/push", 'application/json', version=1)
 
 
-def pushnotification(request):
-    data_str = request.body
-    data_dict = json.loads(data_str)
+def pushnotification(data_dict):
     receiver_alias = data_dict.get('receiver_alias')
     content = data_dict.get('content')
     platform = data_dict.get('platform')   #"ios,android,winphone"

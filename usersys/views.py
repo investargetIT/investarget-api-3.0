@@ -1,70 +1,26 @@
 #coding=utf-8
-import json
-import traceback
 
 from _mysql_exceptions import MySQLError
 from django.contrib import auth
 from django.contrib.auth.models import Group
+from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction
-from django.shortcuts import render
-
-# Create your views here.
-from requests import post
 from rest_framework import filters
 from rest_framework import mixins
 from rest_framework import status
 from rest_framework import viewsets
 
 from rest_framework.decorators import api_view, detail_route
-
-# @api_view(['GET','POST'])
-# def userlist(request):
-#     if request.method == 'GET':
-#         header = request.META
-#         # if not (request.user.is_authenticated() and request.user.has_perm('usersys.add_myuser')):
-#         #     return HttpResponse("没有权限",status=status.HTTP_403_FORBIDDEN)
-#         userid = request.GET.get('userid')
-#         projid = request.GET.get('projid')
-#         typeid = request.GET.get('typeid')
-#         tasks = favorite.objects.all()
-#         if userid:
-#             tasks = tasks.filter(user_id=userid)
-#         if projid:
-#             tasks = tasks.filter(proj_id=projid)
-#         if typeid:
-#             tasks = tasks.filter(favoritetype_id=typeid)
-#         try:
-#             # tasks = Paginator(tasks,2)   #page_size  每页多少条数据
-#             # tasks = tasks.page(1)       #page_index 第几页
-#             serializer = FavoriteSerializer(tasks, many=True)
-#             return JSONResponse({'result': serializer.data,'success':True,'error':None}, content_type='application/json; charset=utf-8')
-#         except Exception as msg:
-#             catchexcption(request)
-#             return JSONResponse({'result': None, 'success': False, 'error': repr(msg)},
-#                                     status=status.HTTP_400_BAD_REQUEST)
-#
-#
-# def userdetail(request):
-#     return None
-#
-#
-# def login(request):
-#     return None
-from rest_framework.generics import ListCreateAPIView
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, SAFE_METHODS, AllowAny
-from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 
-from MyUserSys.models import MyUser, MyToken, UserRelation
-from MyUserSys.myauth import JSONResponse, catchexcption, loginTokenIsAvailable
-from MyUserSys.serializer import UserSerializer, UserListSerializer, GroupSerializer, UserRelationSerializer
-from MyUserSys.utils import write_to_cache, read_from_cache
+from usersys.models import MyUser, MyToken, UserRelation
+from usersys.serializer import UserSerializer, UserListSerializer,UserRelationSerializer
+from utils.util import read_from_cache, write_to_cache, JSONResponse, catchexcption, loginTokenIsAvailable
 
 
 class UserView(viewsets.ModelViewSet):
     filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
     # permission_classes = (IsAuthenticated,)
-    # queryset = MyUser.objects.order_by('id')
     # queryset = MyUser.objects.filter(is_active=True).order_by('-id')
     filter_fields = ('phone','email','name','id','groups','trader','usertype')
     search_fields = ('phone','email','name','id','org__id','trader')
@@ -85,6 +41,24 @@ class UserView(viewsets.ModelViewSet):
             return readusers
         # user = self.request.user
         # return MyUser.objects.filter(trader_id=user)
+
+
+    def list(self, request, *args, **kwargs):
+        page_size = request.GET.get('page_size')    #每页10条数据
+        page_index = request.GET.get('page_index')  #从第一页开始
+        if not page_size:
+            page_size = 10
+        if not page_index:
+            page_index = 1
+        queryset = self.filter_queryset(self.get_queryset())
+        try:
+            queryset = Paginator(queryset, page_size)
+        except EmptyPage:
+            return JSONResponse({'success':True,'result':None,'count':0})
+        queryset = queryset.page(page_index)
+        serializer = self.get_serializer(queryset, many=True)
+        return JSONResponse({'success':True,'result':serializer.data,'count':len(serializer.data)})
+
 
 
     @transaction.atomic()

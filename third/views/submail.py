@@ -4,7 +4,7 @@ from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.app_configs import MAI
 from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.mail_xsend import MAILXsend
 
 
-def sendEmail(request):
+def sendEmail(destination,content,title):
 
 
     '''

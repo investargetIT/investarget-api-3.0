@@ -25,7 +25,7 @@ def http_result(r):
         }
         if r.request.body:
             error_log["payload"] = r.request.body
-        print json.dumps(error_log)
+        # print json.dumps(error_log)
 
     if r.status_code == requests.codes.ok:
         return True, r.json()

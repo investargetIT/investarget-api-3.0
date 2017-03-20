@@ -50,6 +50,14 @@ def catchexcption(request):
     f.writelines(now.strftime('%H:%M:%S')+'  user_agent:'+request.META['HTTP_USER_AGENT']+ '  请求发起用户id:'+str(request.user.id)+'  path: '+request.path+ '\n'+ traceback.format_exc()+'\n\n')
     f.close()
 
+#记录error
+def logexcption():
+    now = datetime.datetime.now()
+    filepath = excptionlogpath + '/' + now.strftime('%Y-%m-%d')
+    f = open(filepath, 'a')
+    f.writelines(now.strftime('%H:%M:%S')+'\n'+ traceback.format_exc()+'\n\n')
+    f.close()
+
 
 class JSONResponse(HttpResponse):
     def __init__(self,data, **kwargs):
