@@ -1,5 +1,4 @@
 #coding=utf-8
-
 import traceback
 from django.contrib import auth
 from django.contrib.auth.models import Group
