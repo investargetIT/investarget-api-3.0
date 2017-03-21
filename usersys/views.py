@@ -90,12 +90,14 @@ class UserView(viewsets.ModelViewSet):
                 user.groups.add(group)
                 user.save()
                 response = {
+                    'success':True,
                     'result': UserSerializer(user).data,
                     'error': None,
                 }
                 return JSONResponse(response)
             else:
                 response = {
+                    'success':False,
                     'result': None,
                     'error': 'user with this phone already exists.',
                 }
@@ -103,6 +105,7 @@ class UserView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             response = {
+                'success': False,
                 'result': None,
                 'error': traceback.format_exc().split('\n')[-2],
             }
@@ -116,6 +119,7 @@ class UserView(viewsets.ModelViewSet):
             instance = self.get_object()
             serializer = self.get_serializer(instance)
             response = {
+                'success': True,
                 'result': serializer.data,
                 'error': None,
             }
@@ -123,6 +127,7 @@ class UserView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             response = {
+                'success': False,
                 'result': None,
                 'error': traceback.format_exc().split('\n')[-2],
             }
@@ -132,23 +137,17 @@ class UserView(viewsets.ModelViewSet):
     #put
     @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
-        try:
-            token = MyToken.objects.get(key=request.META.get('HTTP_TOKEN'))
-            user = token.user
-            if user == self.get_object() or user.is_superuser or user.has_perm('usersys.change_myuser'):
-                pass
-            else:
-                response = {
-                    'result': None,
-                    'error': '没有权限',
-                }
-                return JSONResponse(response,status=status.HTTP_403_FORBIDDEN)
-        except MyToken.DoesNotExist:
+        user = request.user
+        if user == self.get_object() or user.is_superuser or user.has_perm('usersys.change_myuser'):
+            pass
+        else:
             response = {
+                'success': False,
                 'result': None,
                 'error': '没有权限',
             }
             return JSONResponse(response, status=status.HTTP_403_FORBIDDEN)
+
 
         try:
             user = self.get_object()
@@ -156,8 +155,6 @@ class UserView(viewsets.ModelViewSet):
             keylist = data.keys()
             for key in keylist:
                 if hasattr(user, key):
-                    # if key == 'userstatu':
-                    #     setattr(user,'userstatu_id' , data[key])
                     if key == 'org':
                         setattr(user, 'org_id', data[key])
                     elif key == 'trader':
@@ -174,9 +171,15 @@ class UserView(viewsets.ModelViewSet):
             user.save(update_fields=keylist)
             newuser = self.get_object()
             serializer = UserSerializer(newuser)
-            return JSONResponse(serializer.data)
+            response = {
+                'success': True,
+                'result': serializer.data,
+                'error': None,
+            }
+            return JSONResponse(response)
         except MyUser.DoesNotExist:
             response = {
+                'success': False,
                 'result': None,
                 'error': 'user is not found.',
             }
@@ -184,6 +187,7 @@ class UserView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             response = {
+                'success': False,
                 'result': None,
                 'error': traceback.format_exc().split('\n')[-2],
             }

@@ -25,10 +25,20 @@ def read_from_cache(key):
 #写
 def write_to_cache(key ,value):
     cache.set(key, value, REDIS_TIMEOUT)
-def clearALL():
+
+
+#删除
+def cache_clearALL():
     cache.clear()
-def delete_key(key):
+#删除
+def cache_delete_key(key):
     cache.delete(key)
+
+
+
+
+
+
 
 
 def custom_exception_handler(exc, context):
