@@ -6,7 +6,7 @@ from django.db import models
 # Create your models here.
 from usersys.models import MyUser
 
-
+#站内信
 class message(models.Model):
     content = models.TextField(verbose_name='站内信详细内容')
     type = models.IntegerField(choices=((1,'系统消息'),(2,'项目消息'),(3,'用户消息'),(4,'待定1'),(5,'待定2')),default=1)

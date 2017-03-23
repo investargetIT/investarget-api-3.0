@@ -3,25 +3,24 @@ from __future__ import unicode_literals
 
 import binascii
 import os
+from time import timezone
 
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
-from django.contrib.auth.models import Group
-# Create your models here.
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from rest_framework.authtoken.models import Token
-
 from invest import settings
 from org.models import organization
 
 
 class MyUserBackend(ModelBackend):
-    def authenticate(self, phone=None, pwd=None):
+    def authenticate(self, phone=None, pwd=None, email=None):
+
         try:
-            user = MyUser.objects.get(phone=phone)
+            if phone:
+                user = MyUser.objects.get(phone=phone)
+            else:
+                user = MyUser.objects.get(email=email)
         except MyUser.DoesNotExist:
             pass
         else:
@@ -69,14 +68,15 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     groups : 作为权限组
     """
     id = models.AutoField(primary_key=True)
-    userstatu = models.IntegerField(verbose_name='作者',choices=((1,'未审核'),(2,'审核通过'),(3,'审核退回')),default=1)
+    userstatu = models.PositiveSmallIntegerField(verbose_name='作者',choices=((1,'未审核'),(2,'审核通过'),(3,'审核退回')),default=1)
     org = models.ManyToManyField(organization,verbose_name='所属机构',blank=True,null=True,related_name='user_org',related_query_name='org_users')
-    name = models.CharField(verbose_name='姓名',max_length=100,db_index=True)
-    phone = models.CharField(verbose_name='手机',max_length=20,unique=True,db_index=True)
-    say = models.CharField(verbose_name='简介',max_length=255,blank=True,null=True)
-    email = models.EmailField(verbose_name='邮箱', max_length=254,db_index=True)
+    name = models.CharField(verbose_name='姓名',max_length=128,db_index=True)
+    phone = models.CharField(verbose_name='手机',max_length=32,unique=True,db_index=True)
+    say = models.CharField(verbose_name='简介',max_length=256,blank=True,default='')
+    email = models.EmailField(verbose_name='邮箱', max_length=256,db_index=True)
+    remark = models.TextField(verbose_name='简介',blank=True,null=True)
     trader = models.ForeignKey('self',verbose_name='交易师',blank=True,null=True,default=None)
-    usertype = models.IntegerField(verbose_name='用户类型',choices=((1,'投资人'),(2,'交易师'),(3,'项目方'),(4,'管理员')))
+    usertype = models.PositiveSmallIntegerField(verbose_name='用户类型',choices=((1,'投资人'),(2,'交易师'),(3,'项目方'),(4,'管理员')))
     is_staff = models.BooleanField(verbose_name='登录admin', default=False)
     is_active = models.BooleanField(verbose_name='是否活跃', default=True)
     USERNAME_FIELD = 'phone'
@@ -101,7 +101,7 @@ class MyToken(models.Model):
     )
 
     created = models.DateTimeField(("Created"), auto_now_add=True)
-    clienttype = models.IntegerField(choices=((1,'ios'),(2,'android'),(3,'pc'),(4,'mobweb')))
+    clienttype = models.SmallIntegerField(choices=((1,'ios'),(2,'android'),(3,'pc'),(4,'mobweb')))
     class Meta:
         verbose_name = ("MyToken")
         verbose_name_plural = ("MyTokens")
@@ -125,13 +125,22 @@ class UserRelation(models.Model):
             '作为交易师'
         ),)
     relationtype = models.BooleanField('强弱关系',help_text=('强关系True，弱关系False'),)
+    score = models.SmallIntegerField('交易师评分',default=0,blank=True)
     def save(self, *args, **kwargs):
+        try:
+            strong = UserRelation.objects.get(investoruser=self.investoruser, relationtype=True)
+        except UserRelation.DoesNotExist:
+            strongrelate = None
+        else:
+            strongrelate = strong
         if self.investoruser.id == self.traderuser.id:
             raise ValueError('1投资人和交易师不能是同一个人')
-        elif UserRelation.objects.filter(investoruser=self.investoruser,traderuser=self.traderuser):
+        elif UserRelation.objects.get(investoruser=self.investoruser,traderuser=self.traderuser):
             raise ValueError('2已经存在一条这两名用户的记录了')
-        elif UserRelation.objects.filter(investoruser=self.investoruser,relationtype=True) and kwargs.get('add') and self.relationtype == True:
-            raise ValueError('3强关系只能有一个')
+        # elif strongrelate and kwargs.get('add') and self.relationtype == True:
+        #     raise ValueError('3强关系只能有一个')
+        elif strongrelate and self.id != strongrelate.id and self.relationtype == True:
+            raise ValueError('6强关系只能有一个')
         elif self.traderuser.usertype == 1:
             raise ValueError('4投资人不能作为交易师与其他用户建立关系')
         elif self.investoruser.usertype == 2:
@@ -140,3 +149,12 @@ class UserRelation(models.Model):
             super(UserRelation, self).save(*args, **kwargs)
 
 
+class MobileAuthCode(models.Model):
+    mobile = models.CharField(verbose_name='手机号',unique=True,max_length=32)
+    token = models.CharField(verbose_name='验证码发送token',max_length=128)
+    code = models.CharField(verbose_name='验证码',max_length=32)
+    created = models.DateTimeField(auto_now_add=True)
+    def isexpired(self):
+        return timezone.now() - self.created >= 600
+    def __str__(self):
+        return self.code + self.mobile

@@ -12,9 +12,10 @@ from rest_framework import viewsets
 from rest_framework.decorators import api_view, detail_route
 from rest_framework.viewsets import GenericViewSet
 
-from usersys.models import MyUser, MyToken, UserRelation
-from usersys.serializer import UserSerializer, UserListSerializer,UserRelationSerializer
+from usersys.models import MyUser, MyToken, UserRelation, MobileAuthCode
+from usersys.serializer import UserSerializer, UserListSerializer,UserRelationSerializer, UserCommenSerializer
 from utils.util import read_from_cache, write_to_cache, JSONResponse, catchexcption, loginTokenIsAvailable
+
 
 
 class UserView(viewsets.ModelViewSet):
@@ -24,22 +25,33 @@ class UserView(viewsets.ModelViewSet):
     filter_fields = ('phone','email','name','id','groups','trader','usertype')
     search_fields = ('phone','email','name','id','org__id','trader')
     serializer_class = UserListSerializer
+    redis_key = 'users'
+    Model = MyUser
+
+    def get_object(self):
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        assert lookup_url_kwarg in self.kwargs, (
+            'Expected view %s to be called with a URL keyword argument '
+            'named "%s". Fix your URL conf, or set the `.lookup_field` '
+            'attribute on the view correctly.' %
+            (self.__class__.__name__, lookup_url_kwarg)
+        )
+        obj = read_from_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg])
+        if not obj:
+            obj = self.Model.objects.get(id=self.kwargs[lookup_url_kwarg])
+            write_to_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg], obj)
+        self.check_object_permissions(self.request, obj)
+        return obj
 
     def get_queryset(self):
-        """
-        This view should return a list of all the purchases
-        for the currently authenticated user.
-        """
-        users = read_from_cache('users')
+        users = read_from_cache(self.redis_key)
         if users:
             return users
         else:
-            users = MyUser.objects.order_by('id')
-            write_to_cache('users', users)
-            readusers = read_from_cache('users')
+            users = self.Model.objects.all().order_by('id')
+            write_to_cache(self.redis_key, users)
+            readusers = read_from_cache(self.redis_key)
             return readusers
-        # user = self.request.user
-        # return MyUser.objects.filter(trader_id=user)
 
 
     def list(self, request, *args, **kwargs):
@@ -135,6 +147,7 @@ class UserView(viewsets.ModelViewSet):
 
 
     #put
+    @transaction.atomic()
     @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
         user = request.user
@@ -170,6 +183,9 @@ class UserView(viewsets.ModelViewSet):
                     keylist.remove(key)
             user.save(update_fields=keylist)
             newuser = self.get_object()
+            if 'trader' in keylist:
+                relate = UserRelation.objects.get(investoruser=newuser,relationtype=True)
+                add_or_change_strongrelate(user.id,data['trader'])
             serializer = UserSerializer(newuser)
             response = {
                 'success': True,
@@ -199,6 +215,7 @@ class UserView(viewsets.ModelViewSet):
         return self.update(request, *args, **kwargs)
 
     #delete     'is_active' == false
+    @transaction.atomic()
     def destroy(self, request, *args, **kwargs):
         try:
             user = self.get_object()
@@ -215,6 +232,25 @@ class UserView(viewsets.ModelViewSet):
                 'error': None,
             }
             return JSONResponse(response,status=status.HTTP_204_NO_CONTENT)
+    @loginTokenIsAvailable()
+    def userBasicInfo(self,request,):
+        try:
+            instance = self.get_object()
+            serializer = UserCommenSerializer(instance)
+            response = {
+                'success': True,
+                'result': serializer.data,
+                'error': None,
+            }
+            return JSONResponse(response)
+        except Exception:
+            catchexcption(request)
+            response = {
+                'success': False,
+                'result': None,
+                'error': traceback.format_exc().split('\n')[-2],
+            }
+            return JSONResponse(response)
 
 
 
@@ -225,11 +261,54 @@ class UserRelationView(mixins.CreateModelMixin,
                        GenericViewSet):
     filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
     # permission_classes = (AllowAny,)
-    queryset = UserRelation.objects.order_by('id')
     filter_fields = ('investoruser', 'traderuser', 'relationtype')
     search_fields = ('investoruser', 'traderuser', 'relationtype')
     serializer_class = UserRelationSerializer
+    redis_key = 'UserRelation'
+    Model = UserRelation
 
+    def get_object(self):
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        assert lookup_url_kwarg in self.kwargs, (
+            'Expected view %s to be called with a URL keyword argument '
+            'named "%s". Fix your URL conf, or set the `.lookup_field` '
+            'attribute on the view correctly.' %
+            (self.__class__.__name__, lookup_url_kwarg)
+        )
+        obj = read_from_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg])
+        if not obj:
+            obj = self.Model.objects.get(id=self.kwargs[lookup_url_kwarg])
+            write_to_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg], obj)
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    def get_queryset(self):
+        users = read_from_cache(self.redis_key)
+        if users:
+            return users
+        else:
+            users = self.Model.objects.all().order_by('id')
+            write_to_cache(self.redis_key, users)
+            readusers = read_from_cache(self.redis_key)
+            return readusers
+
+    def list(self, request, *args, **kwargs):
+        page_size = request.GET.get('page_size')
+        page_index = request.GET.get('page_index')  #从第一页开始
+        if not page_size:
+            page_size = 10
+        if not page_index:
+            page_index = 1
+        queryset = self.filter_queryset(self.get_queryset())
+        try:
+            queryset = Paginator(queryset, page_size)
+        except EmptyPage:
+            return JSONResponse({'success':True,'result':None,'count':0})
+        queryset = queryset.page(page_index)
+        serializer = self.get_serializer(queryset, many=True)
+        return JSONResponse({'success':True,'result':serializer.data,'count':len(serializer.data)})
+
+    @transaction.atomic()
     def create(self, request, *args, **kwargs):
         # token = MyToken.objects.get(key=request.META.get('HTTP_TOKEN'))
         # if token.user == self.get_object() or token.user.is_superuser or token.user.has_perm('usersys.change_myuser'):
@@ -262,6 +341,7 @@ class UserRelationView(mixins.CreateModelMixin,
             }
             return JSONResponse(response)
 
+    @transaction.atomic()
     def update(self, request, *args, **kwargs):
         # token = MyToken.objects.get(key=request.META.get('HTTP_TOKEN'))
         # if token.user == self.get_object() or token.user.is_superuser or token.user.has_perm('usersys.change_myuser'):
@@ -275,17 +355,19 @@ class UserRelationView(mixins.CreateModelMixin,
         try:
             investoruser = request.data['investoruser']
             traderuser = request.data['traderuser']
-            relationtype = request.data['relationtype']
-
-            newinvestoruser = request.data['newinvestoruser']
             newtraderuser = request.data['newtraderuser']
             newrelationtype = request.data['newrelationtype']
 
-            newrelation = self.get_queryset().get(investoruser=investoruser,traderuser=traderuser,relationtype=relationtype)
-            newrelation.investoruser_id = newinvestoruser
+            if not newrelationtype:
+                pass
+            else:
+                investoruser.trader_id = newtraderuser
+                investoruser.save(update_fields=['trader'])
+            newrelation = UserRelation.objects.get(investoruser=investoruser,traderuser=traderuser)
             newrelation.traderuser_id = newtraderuser
             newrelation.relationtype = newrelationtype
             newrelation.save(update_fields=['investoruser','traderuser','relationtype'])
+
             response = {
                 'result':'修改成功',
                 'error':None
@@ -300,6 +382,7 @@ class UserRelationView(mixins.CreateModelMixin,
             }
             return JSONResponse(response)
 
+    @transaction.atomic()
     def destroy(self, request, *args, **kwargs):
         # token = MyToken.objects.get(key=request.META.get('HTTP_TOKEN'))
         # if token.user == self.get_object() or token.user.is_superuser or token.user.has_perm('usersys.change_myuser'):
@@ -335,15 +418,20 @@ class UserRelationView(mixins.CreateModelMixin,
 
 
 
-
+#登录
 @api_view(['POST'])
 def login(request):
     receive = request.data
     if request.method == 'POST':
-        username = receive['phone']
+        try:
+            username = receive['phone']
+            email = None
+        except:
+            email = receive['email']
+            username = None
         password = receive['password']
         clienttype = request.META.get('HTTP_CLIENTTYPE')
-        user = auth.authenticate(phone=username, password=password)
+        user = auth.authenticate(phone=username, password=password,email=email)
         if user is not None and user.is_active and clienttype:
             # update the token
             response = maketoken(user,clienttype)
@@ -367,9 +455,7 @@ def login(request):
                 "cause":cause,
                 })
 
-
-
-
+#生成token
 def maketoken(user,clienttype):
     try:
         token = MyToken.objects.get(user=user, clienttype=clienttype)
@@ -385,4 +471,82 @@ def maketoken(user,clienttype):
         "user_info": response,  # response contain user_info and token
     }
 
+#找回密码
+@api_view(['POST'])
+def lookbackpassword(request):
+    receive = request.data
+    if request.method == 'POST':
+        mobile = receive['mobile']
+        token = receive['token']
+        code = receive['code']
+        password = receive['password']
+        user = MyUser.objects.get(phone=mobile)
+        if user:
+            try:
+                mobcode = MobileAuthCode.objects.get(mobile=mobile,token=token,code=code)
+            except MobileAuthCode.DoesNotExist:
+                return JSONResponse({
+                "result": 0,
+                "cause": '验证码有误',
+            })
+            else:
+                if mobcode.isexpired:
+                    return JSONResponse({
+                        "result": 0,
+                        "cause": '超过10分钟，验证码已过期',
+                    })
+                else:
+                    user.set_password(password)
+                    user.save()
+                    userser = UserSerializer(user)
+                    return JSONResponse({
+                        "result": 1,
+                        "user_info": userser,
+                    })
+        else:
+            return JSONResponse({
+                "result": 0,
+                "cause": '该用户不存在',
+            })
 
+#修改投资人和交易师的评分
+def change_relation_score(pk,score):
+    relation = UserRelation.objects.get(pk=pk)
+    if relation.score > score:
+        pass
+    else:
+        relation.score = score
+        relation.save()
+    return relation.score
+
+#新增或修改强关系交易师
+def add_or_change_strongrelate(investor,trader):
+    try:
+        relate = UserRelation.objects.get(investoruser__id=investor,relationtype=True)
+        relate.traderuser__id = trader
+    except UserRelation.DoesNotExist:
+        relate = UserRelation()
+        relate.investoruser_id = investor
+        relate.traderuser_id = trader
+        relate.relationtype = True
+    relate.save()
+#检查手机号或者邮箱是否存在
+def checkMobileOrEmailExist(request):
+    data = request.data
+    email = data['account']
+    try:
+        email_name, domain_part = email.strip().rsplit('@', 1)
+    except ValueError:
+        email = None
+    else:
+        email = '@'.join([email_name, domain_part.lower()])
+    if email:
+        filter_field = {'email':email}
+    else:
+        filter_field = {'phone':email}
+    try:
+        MyUser.objects.get(**filter_field)
+    except MyUser.DoesNotExist:
+        return JSONResponse({'result':False,})
+    else:
+        return JSONResponse({'result': True,})
