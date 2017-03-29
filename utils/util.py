@@ -75,8 +75,7 @@ class JSONResponse(HttpResponse):
         kwargs['content_type'] = 'application/json; charset=utf-8'
         super(JSONResponse, self).__init__(content , **kwargs)
 
-
-def loginTokenIsAvailable():
+def loginTokenIsAvailable(permissions=None):
     def token_available(func):
         def _token_available(self,request, *args, **kwargs):
             try:
@@ -84,14 +83,25 @@ def loginTokenIsAvailable():
                 if tokenkey:
                     token = MyToken.objects.get(key=tokenkey)
                 else:
-                    return JSONResponse({'result': None, 'success': False, 'error':'token有误'})
-            except Exception as exc:
-                return JSONResponse({'result': None, 'success': False, 'error': repr(exc)})
+                    return JSONResponse({'result': None, 'success': False, 'error':'没有认证token'})
+            except Exception:
+                return JSONResponse({'result': None, 'success': False, 'error': traceback.format_exc().split('\n')[-2]})
             else:
                 if token.created.replace(tzinfo=None) < datetime.datetime.utcnow() - datetime.timedelta(hours=24 * 3):
                     return JSONResponse({'result': None, 'success': False, 'error': 'token过期'})
                 request.user = token.user
+                if not permissions:
+                    user_has_permissions = []
+                    for permission in permissions:
+                        if request.user.has_perm(permission):
+                            user_has_permissions.append(permission)
+                    kwargs['permissions'] = user_has_permissions
                 return func(self,request, *args, **kwargs)
-
         return _token_available
     return token_available
+
+permissiondeniedresponse = {
+                'success':False,
+                'result': None,
+                'error': '没有权限',
+            }

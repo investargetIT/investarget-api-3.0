@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'org',
     'proj',
+    'types',
     'rest_framework_swagger'
 ]
 REST_FRAMEWORK = {

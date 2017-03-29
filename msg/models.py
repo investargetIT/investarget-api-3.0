@@ -4,12 +4,13 @@ from __future__ import unicode_literals
 from django.db import models
 
 # Create your models here.
+from types.models import messageType
 from usersys.models import MyUser
 
 #站内信
 class message(models.Model):
     content = models.TextField(verbose_name='站内信详细内容')
-    type = models.IntegerField(choices=((1,'系统消息'),(2,'项目消息'),(3,'用户消息'),(4,'待定1'),(5,'待定2')),default=1)
+    type = models.IntegerField(messageType,default=1)
     title = models.CharField(max_length=128,verbose_name='消息标题')
     sender = models.ForeignKey(MyUser,blank=True,null=True)
     receiver = models.ForeignKey(MyUser)
@@ -21,3 +22,5 @@ class message(models.Model):
         return super(message, self).save(*args, **kwargs)
     def __str__(self):
         return self.title
+    class Meta:
+        db_table = 'msg'

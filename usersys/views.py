@@ -14,16 +14,17 @@ from rest_framework.viewsets import GenericViewSet
 
 from usersys.models import MyUser, MyToken, UserRelation, MobileAuthCode
 from usersys.serializer import UserSerializer, UserListSerializer,UserRelationSerializer, UserCommenSerializer
-from utils.util import read_from_cache, write_to_cache, JSONResponse, catchexcption, loginTokenIsAvailable
-
+from utils.perimissionfields import userpermfield
+from utils.util import read_from_cache, write_to_cache, JSONResponse, catchexcption, loginTokenIsAvailable, \
+    permissiondeniedresponse
 
 
 class UserView(viewsets.ModelViewSet):
     filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
     # permission_classes = (IsAuthenticated,)
     # queryset = MyUser.objects.filter(is_active=True).order_by('-id')
-    filter_fields = ('phone','email','name','id','groups','trader','usertype')
-    search_fields = ('phone','email','name','id','org__id','trader')
+    filter_fields = ('mobile','email','name','id','groups','trader','usertype')
+    search_fields = ('mobile','email','name','id','org__id','trader')
     serializer_class = UserListSerializer
     redis_key = 'users'
     Model = MyUser
@@ -80,20 +81,20 @@ class UserView(viewsets.ModelViewSet):
             username = data['name']
             password = data['password']
             email = data['email']
-            phone = data['phone']
+            mobile = data['mobile']
             userstatu = data.get('userstatu')
             usertype = data['usertype']
             if not request.user.is_superuser:
                 userstatu = 1
             try:
-                user = self.get_queryset().get(phone=phone)
+                user = self.get_queryset().get(mobile=mobile)
             except MyUser.DoesNotExist:
                 group = Group.objects.get(id=usertype)
                 user = MyUser()
                 user.name = username
                 user.set_password(password)
                 user.email = email
-                user.phone = phone
+                user.mobile = mobile
                 user.usertype = usertype
                 user.userstatu = userstatu
                 if usertype == 1 and data.get('trader'):
@@ -111,7 +112,7 @@ class UserView(viewsets.ModelViewSet):
                 response = {
                     'success':False,
                     'result': None,
-                    'error': 'user with this phone already exists.',
+                    'error': 'user with this mobile already exists.',
                 }
                 return JSONResponse(response)
         except Exception:
@@ -148,39 +149,41 @@ class UserView(viewsets.ModelViewSet):
 
     #put
     @transaction.atomic()
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['MyUserSys.change_myuser', 'MyUserSys.change_otheruser'])
     def update(self, request, *args, **kwargs):
-        user = request.user
-        if user == self.get_object() or user.is_superuser or user.has_perm('usersys.change_myuser'):
-            pass
-        else:
-            response = {
-                'success': False,
-                'result': None,
-                'error': '没有权限',
-            }
-            return JSONResponse(response, status=status.HTTP_403_FORBIDDEN)
-
-
+        permissions = kwargs['permissions']
+        canChangeField = []
+        if not permissions:
+            return JSONResponse(permissiondeniedresponse)
+        if 'usersys.change_myuser' in permissions:
+            canChangeField[0:0] = userpermfield['usersys.change_myuser']
+        if 'usersys.change_otheruser' in permissions:
+            canChangeField[0:0] = userpermfield['usersys.change_otheruser']
+        if request.user == self.get_object():
+            canChangeField[len(canChangeField):len(canChangeField)] = []
         try:
             user = self.get_object()
             data = request.data
             keylist = data.keys()
             for key in keylist:
-                if hasattr(user, key):
-                    if key == 'org':
-                        setattr(user, 'org_id', data[key])
-                    elif key == 'trader':
-                        if user.usertype == 1 and data['usertype'] == 1:
-                            setattr(user, 'trader_id', data[key])
-                        else:
+                if key in canChangeField:
+                    if hasattr(user, key):
+                        if key == 'org':
+                            setattr(user, 'org_id', data[key])
+                        elif key == 'trader':
+                            if user.usertype == 1 and data['usertype'] == 1:
+                                setattr(user, 'trader_id', data[key])
+                            else:
+                                keylist.remove(key)
+                        elif key == 'usertype' or key == 'groups':
                             keylist.remove(key)
-                    elif key == 'usertype' or key == 'groups':
-                        keylist.remove(key)
+                        else:
+                            setattr(user,key,data[key])
                     else:
-                        setattr(user,key,data[key])
+                        keylist.remove(key)
                 else:
-                    keylist.remove(key)
+                    permissiondeniedresponse['error'] = '没有权限修改 %s' % key
+                    return JSONResponse(permissiondeniedresponse)
             user.save(update_fields=keylist)
             newuser = self.get_object()
             if 'trader' in keylist:
@@ -232,7 +235,9 @@ class UserView(viewsets.ModelViewSet):
                 'error': None,
             }
             return JSONResponse(response,status=status.HTTP_204_NO_CONTENT)
+
     @loginTokenIsAvailable()
+    @detail_route()
     def userBasicInfo(self,request,):
         try:
             instance = self.get_object()
@@ -252,7 +257,23 @@ class UserView(viewsets.ModelViewSet):
             }
             return JSONResponse(response)
 
-
+    @loginTokenIsAvailable()
+    @detail_route()
+    def getUserPermissions(self, request, *args, **kwargs):
+        try:
+            user = self.get_object()
+            permissions = {}
+            permissions['user_permissions'] = user.user_permissions.values()
+            permissions['group_permissions'] = user.get_group_permissions()
+            return JSONResponse(permissions)
+        except Exception:
+            catchexcption(request)
+            response = {
+                'success': False,
+                'result': None,
+                'error': traceback.format_exc().split('\n')[-2],
+            }
+            return JSONResponse(response)
 
 class UserRelationView(mixins.CreateModelMixin,
                        mixins.UpdateModelMixin,
@@ -328,6 +349,12 @@ class UserRelationView(mixins.CreateModelMixin,
             newrelation.traderuser_id = traderuser
             newrelation.relationtype = relationtype
             newrelation.save({'add':True})
+            if not newrelation.relationtype:
+                pass
+            else:
+                investor = MyUser.objects.get(id=investoruser)
+                investor.trader_id = traderuser
+                investor.save(update_fields=['trader'])
             response = {
                 'result':'关系建立成功',
                 'error':None
@@ -424,14 +451,14 @@ def login(request):
     receive = request.data
     if request.method == 'POST':
         try:
-            username = receive['phone']
+            username = receive['mobile']
             email = None
         except:
             email = receive['email']
             username = None
         password = receive['password']
         clienttype = request.META.get('HTTP_CLIENTTYPE')
-        user = auth.authenticate(phone=username, password=password,email=email)
+        user = auth.authenticate(mobile=username, password=password,email=email)
         if user is not None and user.is_active and clienttype:
             # update the token
             response = maketoken(user,clienttype)
@@ -445,7 +472,7 @@ def login(request):
                 if clienttype is None:
                     cause = u'登录类型不可用'
                 else:
-                    MyUser.objects.get(phone=username)
+                    MyUser.objects.get(mobile=username)
                     cause = u'密码错误'
             except MyUser.DoesNotExist:
                 cause = u'用户不存在'
@@ -480,7 +507,7 @@ def lookbackpassword(request):
         token = receive['token']
         code = receive['code']
         password = receive['password']
-        user = MyUser.objects.get(phone=mobile)
+        user = MyUser.objects.get(mobile=mobile)
         if user:
             try:
                 mobcode = MobileAuthCode.objects.get(mobile=mobile,token=token,code=code)
@@ -519,6 +546,7 @@ def change_relation_score(pk,score):
         relation.save()
     return relation.score
 
+
 #新增或修改强关系交易师
 def add_or_change_strongrelate(investor,trader):
     try:
@@ -530,6 +558,7 @@ def add_or_change_strongrelate(investor,trader):
         relate.traderuser_id = trader
         relate.relationtype = True
     relate.save()
+
 #检查手机号或者邮箱是否存在
 def checkMobileOrEmailExist(request):
     data = request.data
@@ -541,12 +570,17 @@ def checkMobileOrEmailExist(request):
     else:
         email = '@'.join([email_name, domain_part.lower()])
     if email:
-        filter_field = {'email':email}
+        filter_field = {'email':data['account']}
     else:
-        filter_field = {'phone':email}
+        filter_field = {'mobile':data['account']}
     try:
-        MyUser.objects.get(**filter_field)
+        user = MyUser.objects.get(**filter_field)
+        serializeruser = UserCommenSerializer(user)
+
     except MyUser.DoesNotExist:
-        return JSONResponse({'result':False,})
+        return JSONResponse({'result':False, 'userbasic':None})
     else:
-        return JSONResponse({'result': True,})
+        return JSONResponse({'result':True, 'userbasic':serializeruser})
+
+
+

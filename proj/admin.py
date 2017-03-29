@@ -15,8 +15,6 @@ from .models import project,finance,favorite
 #         if obj_old:
 #             favoritelist = favorite.objects.exclude(obj_old)
 
-
-
 admin.site.register(project)
 admin.site.register(finance)
 admin.site.register(favorite)
