@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 from django.db import models
 
 # Create your models here.
-from types.models import favoriteType, projectStatus,currencyType,tag,country,transactionType,industry
+from types.models import FavoriteType, ProjectStatus,CurrencyType,Tag,Country,TransactionType,Industry
 from usersys.models import MyUser
 import sys
 reload(sys)
@@ -15,12 +15,12 @@ class project(models.Model):
     id = models.AutoField(primary_key=True)
     titleC = models.CharField(max_length=128,db_index=True,default='标题')
     titleE = models.CharField(max_length=256,blank=True,null=True)
-    statu = models.ForeignKey(projectStatus,default=1)
+    statu = models.ForeignKey(ProjectStatus,default=1)
     c_descriptionC = models.TextField(blank=True,default='项目描述')
     c_descriptionE = models.TextField(blank=True, default='project description')
     b_introducteC = models.TextField(blank=True, default='项目介绍')
     b_introducteE = models.TextField(blank=True, default='project introduction')
-    tag = models.ManyToManyField(tag,related_name="proj_set",related_query_name="tag_proj")
+    tag = models.ManyToManyField(Tag,related_name="proj_set",related_query_name="tag_proj")
     supportUser = models.ForeignKey(MyUser,blank=True,null=True,related_name='usersupport_projs',on_delete=models.SET_NULL)
     isHidden = models.BooleanField(blank=True,default=False)
     financeAmount = models.IntegerField(blank=True,null=True)
@@ -32,11 +32,13 @@ class project(models.Model):
     code = models.CharField(max_length=128, blank=True, null=True)
     projFormat = models.OneToOneField(format, null=True, blank=True)
     tags = models.ManyToManyField(tag,through='projectTags',through_fields=('proj','tag'))
-    currency = models.ForeignKey(currencyType,default=1,on_delete=models.SET_NULL,null=True)
+    industries = models.ManyToManyField(Industry, through='projectIndustries', through_fields=('proj','industry'))
+    transactionType = models.ManyToManyField(TransactionType, through='projectTransactionType', through_fields=('proj', 'transactionType'))
+    currency = models.ForeignKey(CurrencyType,default=1,on_delete=models.SET_NULL,null=True)
     contactPerson = models.CharField(max_length=64,blank=True,null=True)
     phoneNumber = models.CharField(max_length=32,blank=True,null=True)
     email = models.EmailField(verbose_name='邮箱', max_length=48, db_index=True,blank=True,null=True)
-    country = models.ForeignKey(country,blank=True,null=True,db_index=True)
+    country = models.ForeignKey(Country,blank=True,null=True,db_index=True)
     isDeleted = models.BooleanField(blank=True, default=False)
     deleteUser = models.ForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='userdelete_projects')
     deleteTime = models.DateTimeField(blank=True, null=True)
@@ -109,8 +111,8 @@ class finance(models.Model):
         db_table = 'projectFinance'
 
 class projectTags(models.Model):
-    proj = models.ForeignKey(project, related_name='project_tags')
-    tag = models.ForeignKey(tag)
+    proj = models.ForeignKey(project,)
+    tag = models.ForeignKey(Tag,related_name='project_tags')
     isdeleted = models.BooleanField(blank=True, default=False)
     deletedUser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_projtags')
     deletedtime = models.DateTimeField(blank=True, null=True)
@@ -120,13 +122,44 @@ class projectTags(models.Model):
     class Meta:
         db_table = "project_tags"
 
+class projectIndustries(models.Model):
+    proj = models.ForeignKey(project, )
+    industry = models.ForeignKey(Industry,related_name='project_industries')
+    isdeleted = models.BooleanField(blank=True, default=False)
+    deletedUser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_projtags')
+    deletedtime = models.DateTimeField(blank=True, null=True)
+    createdtime = models.DateTimeField(auto_created=True)
+    createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_projtag',on_delete=models.SET_NULL)
+
+    class Meta:
+        db_table = "project_industries"
+
+class projectTransactionType(models.Model):
+    proj = models.ForeignKey(project, )
+    transactionType = models.ForeignKey(Industry, related_name='project_TransactionTypes')
+    isdeleted = models.BooleanField(blank=True, default=False)
+    deletedUser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_projtags')
+    deletedtime = models.DateTimeField(blank=True, null=True)
+    createdtime = models.DateTimeField(auto_created=True)
+    createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_projtag',
+                                   on_delete=models.SET_NULL)
+
+    class Meta:
+        db_table = "project_TransactionType"
+
+
+
+
+
+
+
 
 
 #收藏只能 新增/删除/查看/  ，不能修改
 class favorite(models.Model):
     proj = models.ForeignKey(project)
     user = models.ForeignKey(MyUser)
-    favoritetype = models.ForeignKey(favoriteType,verbose_name='收藏类型')
+    favoritetype = models.ForeignKey(FavoriteType,verbose_name='收藏类型')
     def __str__(self):
         return self.favoritetype.__str__() + self.proj.title + self.user.name
     #单指 新增 操作  ，修改会出问题的

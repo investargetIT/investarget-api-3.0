@@ -1,101 +1,101 @@
 from rest_framework import serializers
 
-from types.models import auditStatus, projectStatus, orgType, favoriteType, messageType, clientType, titleType, \
-    continent, country, currencyType, industry, tag, orgArea, school, profession, transactionPhases, transactionType
+from types.models import TransactionType, TransactionPhases, Profession, School, OrgArea, Tag, Industry, CurrencyType, \
+    AuditStatus, ProjectStatus, OrgType, FavoriteType, MessageType, ClientType, TitleType, Continent, Country
 
 
 class AuditStatusSerializer(serializers.ModelSerializer):
     class Meta:
-        model = auditStatus
+        model = AuditStatus
         fields = '__all__'
 
 class projectStatusSerializer(serializers.ModelSerializer):
     class Meta:
-        model = projectStatus
+        model = ProjectStatus
         fields = '__all__'
 
 class orgTypeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = orgType
+        model = OrgType
         fields = '__all__'
 
 class favoriteTypeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = favoriteType
+        model = FavoriteType
         fields = '__all__'
 
 class messageTypeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = messageType
+        model = MessageType
         fields = '__all__'
 
 
 class clientTypeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = clientType
+        model = ClientType
         fields = '__all__'
 
 
 class titleTypeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = titleType
+        model = TitleType
         fields = '__all__'
 
 
 class continentSerializer(serializers.ModelSerializer):
     class Meta:
-        model = continent
+        model = Continent
         fields = '__all__'
 
 
 class countrySerializer(serializers.ModelSerializer):
     class Meta:
-        model = country
+        model = Country
         fields = '__all__'
 
 
 class currencyTypeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = currencyType
+        model = CurrencyType
         fields = '__all__'
 
 
 class industrySerializer(serializers.ModelSerializer):
     class Meta:
-        model = industry
+        model = Industry
         fields = '__all__'
 
 
 class tagSerializer(serializers.ModelSerializer):
     class Meta:
-        model = tag
+        model = Tag
         fields = '__all__'
 
 
 class orgAreaSerializer(serializers.ModelSerializer):
     class Meta:
-        model = orgArea
+        model = OrgArea
         fields = '__all__'
 
 
 class schoolSerializer(serializers.ModelSerializer):
     class Meta:
-        model = school
+        model = School
         fields = '__all__'
 
 
 class professionSerializer(serializers.ModelSerializer):
     class Meta:
-        model = profession
+        model = Profession
         fields = '__all__'
 
 
 class transactionPhasesSerializer(serializers.ModelSerializer):
     class Meta:
-        model = transactionPhases
+        model = TransactionPhases
         fields = '__all__'
 
 class transactionTypeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = transactionType
+        model = TransactionType
         fields = '__all__'

@@ -12,6 +12,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import api_view, detail_route
 from rest_framework.viewsets import GenericViewSet
 
+from types.models import ClientType
 from usersys.models import MyUser, MyToken, UserRelation, MobileAuthCode
 from usersys.serializer import UserSerializer, UserListSerializer,UserRelationSerializer, UserCommenSerializer
 from utils.perimissionfields import userpermfield
@@ -459,7 +460,7 @@ def login(request):
         password = receive['password']
         clienttype = request.META.get('HTTP_CLIENTTYPE')
         user = auth.authenticate(mobile=username, password=password,email=email)
-        if user is not None and user.is_active and clienttype:
+        if user is not None and user.is_active and clienttype not in [1,2,3,4,5]:
             # update the token
             response = maketoken(user,clienttype)
 
@@ -485,12 +486,18 @@ def login(request):
 #生成token
 def maketoken(user,clienttype):
     try:
-        token = MyToken.objects.get(user=user, clienttype=clienttype)
+        tokens = MyToken.objects.filter(user=user, clienttype__id=clienttype, isdeleted=False)
     except MyToken.DoesNotExist:
         pass
     else:
-        token.delete()
-    token = MyToken.objects.create(user=user, clienttype=clienttype)
+        for token in tokens:
+            token.isdeleted = True
+            token.save(update_fields=['isdeleted'])
+            print token.timeout()
+
+    type = ClientType.objects.get(id=clienttype)
+    token = MyToken.objects.create(user=user, clienttype=type)
+
     serializer = UserSerializer(user)
 
     response = serializer.data

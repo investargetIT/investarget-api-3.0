@@ -12,7 +12,7 @@ from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 from org.models import organization
-from types.models import auditStatus, clientType, titleType,school,profession,tag
+from types.models import AuditStatus, ClientType, TitleType,School,Profession,Tag
 
 
 class MyUserBackend(ModelBackend):
@@ -75,7 +75,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     cardBucket = models.CharField(max_length=32,blank=True,null=True)
     cardKey = models.CharField(max_length=64,blank=True,null=True)
     wechat = models.CharField(max_length=64,blank=True,null=True)
-    userstatu = models.ForeignKey(auditStatus,verbose_name='作者',blank=True,default=1)
+    userstatu = models.ForeignKey(AuditStatus,verbose_name='作者',blank=True,default=1)
     org = models.ForeignKey(organization,verbose_name='所属机构',blank=True,null=True,related_name='org_users',on_delete=models.SET_NULL)
     name = models.CharField(verbose_name='姓名',max_length=128,db_index=True)
     nameE = models.CharField(verbose_name='name',max_length=128,db_index=True,blank=True,null=True)
@@ -84,12 +84,12 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     company = models.CharField(max_length=64,blank=True,null=True)
     description = models.TextField(verbose_name='简介',blank=True,default='description')
     email = models.EmailField(verbose_name='邮箱', max_length=48,db_index=True)
-    tag = models.ManyToManyField(tag,through='userTags',through_fields=('user','tag'))
-    title = models.ForeignKey(titleType,blank=True,null=True,related_name='title_users',related_query_name='user_title',on_delete=models.SET_NULL)
+    tag = models.ManyToManyField(Tag,through='userTags',through_fields=('user','tag'))
+    title = models.ForeignKey(TitleType,blank=True,null=True,related_name='title_users',related_query_name='user_title',on_delete=models.SET_NULL)
     gender = models.BooleanField(blank=True,default=0,help_text=('0=男，1=女'))
     remark = models.TextField(verbose_name='简介',blank=True,null=True)
-    school = models.ForeignKey(school,verbose_name='院校',blank=True,null=True,related_name='school_users',on_delete=models.SET_NULL)
-    profes = models.ForeignKey(profession,verbose_name='专业',blank=True,null=True,related_name='profession_users',on_delete=models.SET_NULL)
+    school = models.ForeignKey(School,verbose_name='院校',blank=True,null=True,related_name='school_users',on_delete=models.SET_NULL)
+    profes = models.ForeignKey(Profession,verbose_name='专业',blank=True,null=True,related_name='profession_users',on_delete=models.SET_NULL)
     trader = models.ForeignKey('self',verbose_name='交易师',blank=True,null=True,related_name='trader_users',on_delete=models.SET_NULL)
     registersource = models.SmallIntegerField(verbose_name='注册来源',choices=((1,'pc'),(2,'ios'),(3,'android'),(4,'mobileweb')),default=1)
     lastmodifytime = models.DateTimeField(auto_now=True)
@@ -118,7 +118,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
 
 class userTags(models.Model):
     user = models.ForeignKey(MyUser,related_name='user_tags')
-    tag = models.ForeignKey(tag)
+    tag = models.ForeignKey(Tag)
     isdeleted = models.BooleanField(blank=True,default=False)
     deletedUser = models.ForeignKey(MyUser,blank=True, null=True,related_name='userdelete_tags')
     deletedtime = models.DateTimeField(blank=True, null=True)
@@ -136,7 +136,7 @@ class MyToken(models.Model):
         on_delete=models.CASCADE, verbose_name=("MyUser")
     )
     created = models.DateTimeField(("Created"), auto_now_add=True)
-    clienttype = models.ForeignKey(clientType)
+    clienttype = models.ForeignKey(ClientType)
     isdeleted = models.BooleanField(verbose_name='是否已被删除',blank=True,default=False)
     class Meta:
         db_table = 'Token'

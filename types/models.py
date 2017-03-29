@@ -9,22 +9,14 @@ reload(sys)
 sys.setdefaultencoding('utf-8')
 
 
-class auditStatus(models.Model):
+class AuditStatus(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.CharField(max_length=16)
     nameE = models.CharField(max_length=128)
     def __str__(self):
         return self.nameC
 
-class projectStatus(models.Model):
-    id = models.AutoField(primary_key=True)
-    nameC = models.CharField(max_length=16)
-    nameE = models.CharField(max_length=128)
-
-    def __str__(self):
-        return self.nameC
-
-class orgType(models.Model):
+class ProjectStatus(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.CharField(max_length=16)
     nameE = models.CharField(max_length=128)
@@ -32,7 +24,15 @@ class orgType(models.Model):
     def __str__(self):
         return self.nameC
 
-class favoriteType(models.Model):
+class OrgType(models.Model):
+    id = models.AutoField(primary_key=True)
+    nameC = models.CharField(max_length=16)
+    nameE = models.CharField(max_length=128)
+
+    def __str__(self):
+        return self.nameC
+
+class FavoriteType(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.CharField(max_length=16)
     nameE = models.CharField(max_length=128)
@@ -41,7 +41,7 @@ class favoriteType(models.Model):
         return self.nameC
 
 
-class messageType(models.Model):
+class MessageType(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.CharField(max_length=16)
     nameE = models.CharField(max_length=128)
@@ -49,7 +49,7 @@ class messageType(models.Model):
     def __str__(self):
         return self.nameC
 
-class clientType(models.Model):
+class ClientType(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.CharField(max_length=16)
     nameE = models.CharField(max_length=128)
@@ -57,7 +57,7 @@ class clientType(models.Model):
     def __str__(self):
         return self.nameC
 
-class titleType(models.Model):
+class TitleType(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.CharField(max_length=16)
     nameE = models.CharField(max_length=128)
@@ -65,23 +65,23 @@ class titleType(models.Model):
         return self.nameC
 
 
-class continent(models.Model):
+class Continent(models.Model):
     id = models.AutoField(primary_key=True)
     continentC = models.CharField(max_length=16)
     continentE = models.CharField(max_length=32)
     def __str__(self):
         return self.continentC
 
-class country(models.Model):
+class Country(models.Model):
     id = models.AutoField(primary_key=True)
-    continent = models.ForeignKey(continent,related_name='countries',related_query_name='continent')
+    continent = models.ForeignKey(Continent,related_name='countries',related_query_name='continent')
     countryC = models.CharField(max_length=16)
     countryE = models.CharField(max_length=32)
     areaCode = models.CharField(max_length=8)
     def __str__(self):
         return self.countryC
 
-class currencyType(models.Model):
+class CurrencyType(models.Model):
     id = models.AutoField(primary_key=True)
     currencyC = models.CharField(max_length=16)
     currencyE = models.CharField(max_length=8)
@@ -89,7 +89,7 @@ class currencyType(models.Model):
         return self.currencyC
 
 
-class industry(models.Model):
+class Industry(models.Model):
     id = models.AutoField(primary_key=True)
     Pindustry = models.SmallIntegerField()
     industryC = models.CharField(max_length=16)
@@ -100,7 +100,7 @@ class industry(models.Model):
         return self.countryC
 
 
-class tag(models.Model):
+class Tag(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.CharField(max_length=16)
     nameE = models.CharField(max_length=16)
@@ -109,14 +109,14 @@ class tag(models.Model):
         return self.nameC
 
 
-class orgArea(models.Model):
+class OrgArea(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.CharField(max_length=16)
     def __str__(self):
         return self.nameC
 
 
-class school(models.Model):
+class School(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.TextField(blank=True,default='无')
     nameE = models.TextField(blank=True,default='none')
@@ -124,21 +124,21 @@ class school(models.Model):
         return self.nameC
 
 
-class profession(models.Model):
+class Profession(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.TextField(blank=True,default='无')
     nameE = models.TextField(blank=True,default='none')
     def __str__(self):
         return self.nameC
 
-class transactionPhases(models.Model):
+class TransactionPhases(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.CharField(max_length=16)
     nameE = models.CharField(max_length=32)
     def __str__(self):
         return self.nameC
 
-class transactionType(models.Model):
+class TransactionType(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.CharField(max_length=16)
     nameE = models.CharField(max_length=32)
