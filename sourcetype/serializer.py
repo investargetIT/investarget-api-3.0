@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from types.models import TransactionType, TransactionPhases, Profession, School, OrgArea, Tag, Industry, CurrencyType, \
+from sourcetype.models import TransactionType, TransactionPhases, Profession, School, OrgArea, Tag, Industry, CurrencyType, \
     AuditStatus, ProjectStatus, OrgType, FavoriteType, MessageType, ClientType, TitleType, Continent, Country
 
 

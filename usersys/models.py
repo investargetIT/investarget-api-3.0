@@ -11,8 +11,7 @@ from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
-from org.models import organization
-from types.models import AuditStatus, ClientType, TitleType,School,Profession,Tag
+from sourcetype.models import AuditStatus, ClientType, TitleType,School,Profession,Tag
 
 
 class MyUserBackend(ModelBackend):
@@ -44,8 +43,6 @@ class MyUserManager(BaseUserManager):
         user = self.model(
             mobile=mobile,
             email=MyUserManager.normalize_email(email),
-            is_staff=False,
-            is_active=True,
             is_superuser=False,
             **extra_fields
         )
@@ -70,17 +67,18 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     groups : 作为权限组
     """
     id = models.AutoField(primary_key=True)
+    usercode = models.CharField(max_length=128, default=str(datetime.datetime.now()), blank=True, unique=True)
     photoBucket = models.CharField(max_length=32,blank=True,null=True)
     photoKey = models.CharField(max_length=64,blank=True,null=True)
     cardBucket = models.CharField(max_length=32,blank=True,null=True)
     cardKey = models.CharField(max_length=64,blank=True,null=True)
     wechat = models.CharField(max_length=64,blank=True,null=True)
-    userstatu = models.ForeignKey(AuditStatus,verbose_name='作者',blank=True,default=1)
-    org = models.ForeignKey(organization,verbose_name='所属机构',blank=True,null=True,related_name='org_users',on_delete=models.SET_NULL)
+    userstatu = models.ForeignKey(AuditStatus,verbose_name='作者',blank=True,null=True)
+    org = models.ForeignKey('org.organization',verbose_name='所属机构',blank=True,null=True,related_name='org_users',on_delete=models.SET_NULL)
     name = models.CharField(verbose_name='姓名',max_length=128,db_index=True)
     nameE = models.CharField(verbose_name='name',max_length=128,db_index=True,blank=True,null=True)
     mobileAreaCode = models.CharField(max_length=3,blank=True,null=True,default='86')
-    mobile = models.CharField(verbose_name='手机',max_length=32,unique=True,db_index=True)
+    mobile = models.CharField(verbose_name='手机',max_length=32,db_index=True)
     company = models.CharField(max_length=64,blank=True,null=True)
     description = models.TextField(verbose_name='简介',blank=True,default='description')
     email = models.EmailField(verbose_name='邮箱', max_length=48,db_index=True)
@@ -94,15 +92,15 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     registersource = models.SmallIntegerField(verbose_name='注册来源',choices=((1,'pc'),(2,'ios'),(3,'android'),(4,'mobileweb')),default=1)
     lastmodifytime = models.DateTimeField(auto_now=True)
     lastmodifyuser = models.ForeignKey('self',verbose_name='修改者',blank=True,null=True,related_name='usermodify_users',related_query_name='user_modifyuser',on_delete=models.SET_NULL)
-    is_staff = models.BooleanField(verbose_name='登录admin', default=False)
-    is_active = models.BooleanField(verbose_name='是否活跃', default=True)
-    is_deleted = models.BooleanField(verbose_name='是否已被删除', default=False)
+    is_staff = models.BooleanField(verbose_name='登录admin', default=False, blank=True,)
+    is_active = models.BooleanField(verbose_name='是否活跃', default=True, blank=True,)
+    is_deleted = models.BooleanField(blank=True,verbose_name='是否已被删除', default=False)
     deleteduser = models.ForeignKey('self',verbose_name='删除者',blank=True,null=True,related_name='userdelete_users',related_query_name='user_deleteduser',on_delete=models.SET_NULL)
     deletedtime = models.DateTimeField(blank=True,null=True)
-    createdtime = models.DateTimeField(auto_now_add=True)
+    createdtime = models.DateTimeField(auto_now_add=True,blank=True)
     createuser = models.ForeignKey('self',verbose_name='创建者',blank=True,null=True,related_name='usercreate_users',related_query_name='user_createuser',on_delete=models.SET_NULL)
 
-    USERNAME_FIELD = 'mobile'
+    USERNAME_FIELD = 'usercode'
     REQUIRED_FIELDS = ['email']
 
 
@@ -117,10 +115,10 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
         db_table = "user"
 
 class userTags(models.Model):
-    user = models.ForeignKey(MyUser,related_name='user_tags')
-    tag = models.ForeignKey(Tag)
+    user = models.ForeignKey(MyUser,null=True,blank=True,on_delete=models.SET_NULL)
+    tag = models.ForeignKey(Tag, related_name='user_tags',null=True, blank=True,on_delete=models.SET_NULL)
     isdeleted = models.BooleanField(blank=True,default=False)
-    deletedUser = models.ForeignKey(MyUser,blank=True, null=True,related_name='userdelete_tags')
+    deletedUser = models.ForeignKey(MyUser,blank=True, null=True,related_name='userdelete_tags',on_delete=models.SET_NULL)
     deletedtime = models.DateTimeField(blank=True, null=True)
     createdtime = models.DateTimeField(auto_created=True)
     createuser = models.ForeignKey(MyUser,blank=True, null=True,related_name='usercreate_usertags',on_delete=models.SET_NULL)
@@ -139,7 +137,7 @@ class MyToken(models.Model):
     clienttype = models.ForeignKey(ClientType)
     isdeleted = models.BooleanField(verbose_name='是否已被删除',blank=True,default=False)
     class Meta:
-        db_table = 'Token'
+        db_table = 'user_token'
         verbose_name = ("MyToken")
         verbose_name_plural = ("MyTokens")
     def timeout(self):
@@ -187,16 +185,16 @@ class UserRelation(models.Model):
         else:
             super(UserRelation, self).save(*args, **kwargs)
     class Meta:
-        db_table = "UserRelation"
+        db_table = "user_relation"
 
 class MobileAuthCode(models.Model):
     mobile = models.CharField(verbose_name='手机号',unique=True,max_length=32)
     token = models.CharField(verbose_name='验证码token',max_length=128)
     code = models.CharField(verbose_name='验证码',max_length=32)
-    created = models.DateTimeField(auto_now_add=True)
+    createTime = models.DateTimeField(auto_now_add=True)
     def isexpired(self):
         return timezone.now() - self.created >= 600
     def __str__(self):
         return self.code + self.mobile
     class Meta:
-        db_table = "MobileAuthCode"
+        db_table = "mobileAuthCode"

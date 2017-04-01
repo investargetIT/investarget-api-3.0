@@ -12,12 +12,11 @@ from rest_framework import viewsets
 from rest_framework.decorators import api_view, detail_route
 from rest_framework.viewsets import GenericViewSet
 
-from types.models import ClientType
+from sourcetype.models import ClientType
 from usersys.models import MyUser, MyToken, UserRelation, MobileAuthCode
 from usersys.serializer import UserSerializer, UserListSerializer,UserRelationSerializer, UserCommenSerializer
 from utils.perimissionfields import userpermfield
-from utils.util import read_from_cache, write_to_cache, JSONResponse, catchexcption, loginTokenIsAvailable, \
-    permissiondeniedresponse
+from utils.util import read_from_cache, write_to_cache, JSONResponse, catchexcption, loginTokenIsAvailable
 
 
 class UserView(viewsets.ModelViewSet):
@@ -155,7 +154,7 @@ class UserView(viewsets.ModelViewSet):
         permissions = kwargs['permissions']
         canChangeField = []
         if not permissions:
-            return JSONResponse(permissiondeniedresponse)
+            return JSONResponse('')
         if 'usersys.change_myuser' in permissions:
             canChangeField[0:0] = userpermfield['usersys.change_myuser']
         if 'usersys.change_otheruser' in permissions:
@@ -183,8 +182,8 @@ class UserView(viewsets.ModelViewSet):
                     else:
                         keylist.remove(key)
                 else:
-                    permissiondeniedresponse['error'] = '没有权限修改 %s' % key
-                    return JSONResponse(permissiondeniedresponse)
+                    # permissiondeniedresponse['error'] = '没有权限修改 %s' % key
+                    return JSONResponse('')
             user.save(update_fields=keylist)
             newuser = self.get_object()
             if 'trader' in keylist:

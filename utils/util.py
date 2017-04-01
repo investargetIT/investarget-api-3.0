@@ -90,18 +90,14 @@ def loginTokenIsAvailable(permissions=None):
                 if token.created.replace(tzinfo=None) < datetime.datetime.utcnow() - datetime.timedelta(hours=24 * 3):
                     return JSONResponse({'result': None, 'success': False, 'error': 'token过期'})
                 request.user = token.user
-                if not permissions:
-                    user_has_permissions = []
+                user_has_permissions = []
+
+                if permissions:
                     for permission in permissions:
                         if request.user.has_perm(permission):
                             user_has_permissions.append(permission)
-                    kwargs['permissions'] = user_has_permissions
-                return func(self,request, *args, **kwargs)
+                kwargs['permissions'] = user_has_permissions
+                return func(self, request, *args, **kwargs)
+
         return _token_available
     return token_available
-
-permissiondeniedresponse = {
-                'success':False,
-                'result': None,
-                'error': '没有权限',
-            }

@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.db import models
 import sys
 
-from types.models import auditStatus, orgType , transactionPhases,currencyType
+from sourcetype.models import AuditStatus, OrgType , TransactionPhases,CurrencyType
 from usersys.models import MyUser
 
 reload(sys)
@@ -14,36 +14,60 @@ sys.setdefaultencoding('utf-8')
 class organization(models.Model):
     id = models.AutoField(primary_key=True)
     description = models.TextField(blank=True,null=True)
-    currency = models.ForeignKey(currencyType,blank=True,null=True,related_name='currency_orgs',on_delete=models.SET_NULL)
+    currency = models.ForeignKey(CurrencyType,blank=True,null=True,related_name='currency_orgs',on_delete=models.SET_NULL)
     decisionCycle = models.SmallIntegerField(default=180)
     decisionMakingProcess = models.TextField(blank=True,null=True)
     nameC = models.CharField(max_length=128,unique=True)
     nameE = models.CharField(max_length=128,unique=True,blank=True,null=True)
     orgcode = models.CharField(max_length=128,unique=True)
-    auditStatu = models.IntegerField(auditStatus,default=1)
-    orgtype = models.ForeignKey(orgType,blank=True,null=True)
-    transactionAmountF = models.IntegerField(blank=True,null=True)
-    transactionAmountT = models.IntegerField(blank=True,null=True)
+    orgtype = models.ForeignKey(OrgType,blank=True,null=True)
+    transactionAmountF = models.BigIntegerField(blank=True,null=True)
+    transactionAmountT = models.BigIntegerField(blank=True,null=True)
     weChat = models.CharField(max_length=32,blank=True,null=True)
-    fundSize = models.IntegerField(blank=True,null=True)
+    fundSize = models.BigIntegerField(blank=True,null=True)
     address = models.TextField(blank=True,null=True)
     typicalCase = models.TextField(blank=True,null=True)
-    fundSize_USD = models.IntegerField(blank=True,null=True)
-    transactionAmountF_USD = models.IntegerField(blank=True,null=True)
-    transactionAmountT_USD = models.IntegerField(blank=True,null=True)
+    fundSize_USD = models.BigIntegerField(blank=True,null=True)
+    transactionAmountF_USD = models.BigIntegerField(blank=True,null=True)
+    transactionAmountT_USD = models.BigIntegerField(blank=True,null=True)
     partnerOrInvestmentCommiterMember = models.TextField(blank=True,null=True)
     phone = models.CharField(max_length=16,blank=True,null=True)
     webSite = models.URLField(blank=True,null=True)
     companyEmail = models.EmailField(blank=True,null=True,max_length=32)
-
+    auditStatu = models.ForeignKey(AuditStatus, default=1)
+    auditUser = models.ForeignKey(MyUser, blank=True, null=True, related_name='useraudit_org',on_delete=models.SET_NULL)
     isDeleted = models.BooleanField(blank=True, default=False)
-    deleteUser = models.ForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='userdelete_projects')
+    deleteUser = models.ForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='userdelete_orgs')
     deleteTime = models.DateTimeField(blank=True, null=True)
-    createUser = models.ForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='usercreate_projects')
+    createUser = models.ForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='usercreate_orgs')
     createTime = models.DateTimeField(auto_now_add=True)
-    lastModifyUser = models.ForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='usermodify_projects')
+    lastModifyUser = models.ForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='usermodify_orgs')
     lastModifyTime = models.DateTimeField(auto_now=True)
     def __str__(self):
         return self.nameC
+
+class orgTransactionPhase(models.Model):
+    org = models.ForeignKey(organization,null=True,blank=True,on_delete=models.SET_NULL)
+    transactionPhase = models.ForeignKey(TransactionPhases,null=True,blank=True,related_name='org_TransactionPhases',on_delete=models.SET_NULL)
+    isdeleted = models.BooleanField(blank=True, default=False)
+    deletedUser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_orgTransactionPhases',on_delete=models.SET_NULL)
+    deletedtime = models.DateTimeField(blank=True, null=True)
+    createdtime = models.DateTimeField(auto_created=True)
+    createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_orgTransactionPhase',on_delete=models.SET_NULL)
+
     class Meta:
-        db_table = 'org'
+        db_table = "org_TransactionPhase"
+class orgRemarks(models.Model):
+    id = models.AutoField(primary_key=True)
+    org = models.ForeignKey(organization,null=True,blank=True,on_delete=models.SET_NULL)
+    remark = models.TextField(blank=True,null=True)
+    isdeleted = models.BooleanField(blank=True, default=False)
+    deletedUser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_orgremarks',on_delete=models.SET_NULL)
+    deletedtime = models.DateTimeField(blank=True, null=True)
+    createdtime = models.DateTimeField(auto_created=True)
+    createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_orgremarks',on_delete=models.SET_NULL)
+    lastmodifytime = models.DateTimeField(auto_now=True)
+    lastmodifyuser = models.ForeignKey(MyUser,  blank=True, null=True,related_name='usermodify_orgremarks', related_query_name='orgremark_modifyuser',on_delete=models.SET_NULL)
+
+    class Meta:
+        db_table = "orgremark"

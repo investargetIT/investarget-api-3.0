@@ -41,7 +41,13 @@ INSTALLED_APPS = [
     'rest_framework',
     'org',
     'proj',
-    'types',
+    'sourcetype',
+    'dataroom',
+    'timeline',
+    'activity',
+    'third',
+    'msg',
+    'guardian',
     'rest_framework_swagger'
 ]
 REST_FRAMEWORK = {
@@ -63,7 +69,11 @@ ROOT_URLCONF = 'invest.urls'
 AUTHENTICATION_BACKENDS = [
     'usersys.models.MyUserBackend',
     'django.contrib.auth.backends.ModelBackend',
+    'guardian.backends.ObjectPermissionBackend',
 ]
+
+
+ANONYMOUS_USER_ID=-1
 
 TEMPLATES = [
     {
