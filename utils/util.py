@@ -36,7 +36,23 @@ def cache_delete_key(key):
 
 
 
+permissiondeniedresponse = {
+                'success':False,
+                'result': None,
+                'error': '没有权限',
+            }
 
+successresponse = {
+                'success':True,
+                'result': None,
+                'error': None,
+}
+
+failresponse = {
+                'success':False,
+                'result': None,
+                'error': traceback.format_exc().split('\n')[-2],
+}
 
 
 
@@ -74,38 +90,36 @@ class JSONResponse(HttpResponse):
         kwargs['content_type'] = 'application/json; charset=utf-8'
         super(JSONResponse, self).__init__(content , **kwargs)
 
-def loginTokenIsAvailable(permissions=None):
+def loginTokenIsAvailable(permissions=None):#判断model级别权限
     def token_available(func):
         def _token_available(self,request, *args, **kwargs):
             try:
                 tokenkey = request.META.get('HTTP_TOKEN')
                 if tokenkey:
-                    token = MyToken.objects.get(key=tokenkey)
+                    token = MyToken.objects.get(key=tokenkey,isdeleted=False)
                 else:
-                    return JSONResponse({'result': None, 'success': False, 'error':'没有认证token'})
-            except Exception:
-                return JSONResponse({'result': None, 'success': False, 'error': traceback.format_exc().split('\n')[-2]})
+                    permissiondeniedresponse['error'] = '没有认证token'
+                    return JSONResponse(permissiondeniedresponse)
+            except Exception as exc:
+                return JSONResponse(failresponse)
             else:
-                if token.created.replace(tzinfo=None) < datetime.datetime.utcnow() - datetime.timedelta(hours=24 * 3):
-                    return JSONResponse({'result': None, 'success': False, 'error': 'token过期'})
+                if token.created.replace(tzinfo=None) < datetime.datetime.utcnow() - datetime.timedelta(hours=24 * 1):
+                    permissiondeniedresponse['error'] = 'token过期'
+                    return JSONResponse(permissiondeniedresponse)
                 request.user = token.user
                 user_has_permissions = []
-
                 if permissions:
                     for permission in permissions:
                         if request.user.has_perm(permission):
                             user_has_permissions.append(permission)
+                    if not user_has_permissions:
+                        return JSONResponse({'result': None, 'success': False, 'error': '没有权限'})
                 kwargs['permissions'] = user_has_permissions
-                return func(self, request, *args, **kwargs)
+                return func(self,request, *args, **kwargs)
 
         return _token_available
     return token_available
 
-permissiondeniedresponse = {
-                'success':False,
-                'result': None,
-                'error': '没有权限',
-            }
 
 
 def modelIdListToModelList(idlist,model):

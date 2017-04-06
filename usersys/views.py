@@ -22,7 +22,7 @@ from usersys.models import MyUser, MyToken, UserRelation, userTags, MobileAuthCo
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer
 from sourcetype.models import ClientType, Tag
 from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable, JSONResponse, modelIdListToModelList, \
-    permissiondeniedresponse, catchexcption, cache_delete_key
+    permissiondeniedresponse, catchexcption, cache_delete_key, successresponse, failresponse
 
 
 class UserView(viewsets.ModelViewSet):
@@ -52,7 +52,7 @@ class UserView(viewsets.ModelViewSet):
                 write_to_cache(self.redis_key+'_%s'%self.kwargs[lookup_url_kwarg],obj)
         return obj
 
-    @loginTokenIsAvailable(['MyUserSys.as_admin'])
+    @loginTokenIsAvailable(['usersys.as_admin'])
     def list(self, request, *args, **kwargs):
         page_size = request.GET.get('page_size')
         page_index = request.GET.get('page_index')  #从第一页开始
@@ -67,7 +67,8 @@ class UserView(viewsets.ModelViewSet):
             return JSONResponse({'success':True,'result':None,'count':0})
         queryset = queryset.page(page_index)
         serializer = self.get_serializer(queryset, many=True)
-        return JSONResponse({'success':True,'result':serializer.data,'count':len(serializer.data)})
+        successresponse['result'] = serializer.data
+        return JSONResponse(successresponse)
 
     #注册用户(新注册用户没有交易师)
     @transaction.atomic()
@@ -122,27 +123,20 @@ class UserView(viewsets.ModelViewSet):
                     return JSONResponse(permissiondeniedresponse)
             user.createuser = request.user
             user.save()
-            response = {
-                    'result': UserSerializer(user).data,
-                    'error': None,
-                }
-            return JSONResponse(response)
+            successresponse['result'] = UserSerializer(user).data
+            return JSONResponse(successresponse)
 
         except Exception:
             catchexcption(request)
-            response = {
-                'result': None,
-                'error': traceback.format_exc().split('\n')[-2],
-            }
-            return JSONResponse(response)
+            return JSONResponse(failresponse)
 
     #新增用户（可以有交易师）
     @transaction.atomic()
     @loginTokenIsAvailable()
     def adduser(self, request, *args, **kwargs):
-        if request.user.has_perm('MyUserSys.admin_add'):
+        if request.user.has_perm('usersys.admin_add'):
             canCreateField = []
-        elif request.user.has_perm('MyUserSys.trader_add'):
+        elif request.user.has_perm('usersys.trader_add'):
             canCreateField = []
         else:
             return JSONResponse(permissiondeniedresponse)
@@ -185,25 +179,18 @@ class UserView(viewsets.ModelViewSet):
                     permissiondeniedresponse['error'] = '没有权限修改 %s的%s'
             user.createuser = request.user
             user.save()
-            if request.user.has_perm('MyUserSys.admin_add'):
+            if request.user.has_perm('usersys.admin_add'):
                 if 'trader' in keylist:
                     user.investor_relations.create(investoruser=user, traderuser_id=data['trader'], type=True)
-            elif request.user.has_perm('MyUserSys.trader_add'):
+            elif request.user.has_perm('usersys.trader_add'):
                 user.trader = request.user
                 user.investor_relations.create(investoruser=user, traderuser=request.user, type=True)
-            response = {
-                'result': UserSerializer(user).data,
-                'error': None,
-            }
-            return JSONResponse(response)
+            successresponse['result'] = UserSerializer(user).data
+            return JSONResponse(successresponse)
         except Exception:
             catchexcption(request)
-            response = {
-                'success':False,
-                'result': None,
-                'error': traceback.format_exc().split('\n')[-2],
-            }
-            return JSONResponse(response)
+            return JSONResponse(failresponse)
+
 
     #get
     @loginTokenIsAvailable()
@@ -215,25 +202,19 @@ class UserView(viewsets.ModelViewSet):
             else:
                 if request.user.is_superuser:
                     userserializer = UserSerializer
-                elif request.user.has_perm('MyUserSys.as_admin'):
+                elif request.user.has_perm('usersys.as_admin'):
                     userserializer = UserSerializer
-                elif request.user.has_perm('MyUserSys.trader_change',self.get_object()):
+                elif request.user.has_perm('usersys.trader_change',self.get_object()):
                     userserializer = UserSerializer
                 else:
                     return JSONResponse(permissiondeniedresponse)
             serializer = userserializer(user)
-            response = {
-                'result': serializer.data,
-                'error': None,
-            }
-            return JSONResponse(response)
+            successresponse['result'] = serializer.data
+            return JSONResponse(successresponse)
+
         except Exception:
             catchexcption(request)
-            response = {
-                'result': None,
-                'error': traceback.format_exc().split('\n')[-2],
-            }
-            return JSONResponse(response)
+            return JSONResponse(failresponse)
 
 
     #patch
@@ -245,14 +226,14 @@ class UserView(viewsets.ModelViewSet):
             if request.user == user:
                 canChangeField[0:0] = []
             else:
-                if request.user.has_perm('MyUserSys.admin_change'):
+                if request.user.has_perm('usersys.admin_change'):
                     canChangeField[0:0] = []
-                elif request.user.has_perm('MyUserSys.trader_change',self.get_object()):
+                elif request.user.has_perm('usersys.trader_change',self.get_object()):
                     canChangeField[0:0] = []
                 else:
                     return JSONResponse(permissiondeniedresponse)
         except:
-            return JSONResponse({'success':False,'result': None,'error': traceback.format_exc().split('\n')[-2],})
+            return JSONResponse(failresponse)
         try:
             data = request.data
             keylist = data.keys()
@@ -281,32 +262,23 @@ class UserView(viewsets.ModelViewSet):
                     permissiondeniedresponse['error'] = '没有权限修改 %s的%s'% (key,user.name)
                     return JSONResponse(permissiondeniedresponse)
             user.save(update_fields=keylist)
-            if request.user.has_perm('MyUserSys.admin_add'):
+            if request.user.has_perm('usersys.admin_add'):
                 if 'trader' in keylist:
                     user.investor_relations.create(investoruser=user, traderuser_id=data['trader'], type=True)
-            elif request.user.has_perm('MyUserSys.trader_add'):
+            elif request.user.has_perm('usersys.trader_add'):
                 user.trader = request.user
                 user.investor_relations.create(investoruser=user, traderuser=request.user, type=True)
             cache_delete_key(self.redis_key+'_%s'%user.id)
             newuser = self.get_object()
             serializer = UserSerializer(newuser)
-            response = {
-                'success': True,
-                'result': serializer.data,
-                'error': None,
-            }
-            return JSONResponse(response)
+            successresponse['result'] = serializer.data
+            return JSONResponse(successresponse)
         except Exception:
             catchexcption(request)
-            response = {
-                'success': False,
-                'result': None,
-                'error': traceback.format_exc().split('\n')[-2],
-            }
-            return JSONResponse(response)
+            return JSONResponse(failresponse)
 
     #delete     'is_active' == false
-    @loginTokenIsAvailable(['MyUserSys.as_admin'])
+    @loginTokenIsAvailable(['usersys.as_admin'])
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         try:
@@ -329,17 +301,16 @@ class UserView(viewsets.ModelViewSet):
                         if manager.count():
                             raise ValueError(u'{} 上有关联数据'.format(link))
         except:
-            return JSONResponse({'error': traceback.format_exc().split('\n')[-2],})
-        instance.is_deleted = False
-        instance.deleteduser = request.user
-        instance.deletedtime = datetime.datetime.utcnow()
-        instance.save()
-        return JSONResponse({
-                'success': True,
-                'result': 'delete success ',
-                'error': None,
-            })
-
+            return JSONResponse(failresponse)
+        try:
+            instance.is_deleted = False
+            instance.deleteduser = request.user
+            instance.deletedtime = datetime.datetime.utcnow()
+            instance.save()
+            return JSONResponse(successresponse)
+        except:
+            catchexcption(request)
+            return JSONResponse(failresponse)
 
     @detail_route()
     def getUserPermissions(self, request, *args, **kwargs):
@@ -347,7 +318,8 @@ class UserView(viewsets.ModelViewSet):
         permissions = {}
         permissions['user_permissions'] = user.user_permissions.values()
         permissions['group_permissions'] = user.get_group_permissions()
-        return JSONResponse(permissions)
+        successresponse['result'] = permissions
+        return JSONResponse(successresponse)
 
 class UserRelationView(mixins.CreateModelMixin,
                        mixins.UpdateModelMixin,
@@ -371,7 +343,8 @@ class UserRelationView(mixins.CreateModelMixin,
             write_to_cache(self.redis_key, realtions)
             readusers = read_from_cache(self.redis_key)
             return readusers
-    @loginTokenIsAvailable(['MyUserSys.as_admin','MyUserSys.as_trader','MyUserSys.as_investor'])
+
+    @loginTokenIsAvailable(['usersys.as_admin','usersys.as_trader','usersys.as_investor'])
     def list(self, request, *args, **kwargs):
         page_size = request.GET.get('page_size')
         page_index = request.GET.get('page_index')  #从第一页开始
@@ -380,11 +353,11 @@ class UserRelationView(mixins.CreateModelMixin,
         if not page_index:
             page_index = 1
         queryset = self.filter_queryset(self.get_queryset())
-        if request.user.has_perm('MyUserSys.as_admin'):
+        if request.user.has_perm('usersys.as_admin'):
             queryset = queryset
-        elif request.user.has_perm('MyUserSys.as_trader'):
+        elif request.user.has_perm('usersys.as_trader'):
             queryset = queryset.filter(traderuser=request.user)
-        elif request.user.has_perm('MyUserSys.as_investor'):
+        elif request.user.has_perm('usersys.as_investor'):
             queryset = queryset.filter(investoruser=request.user)
         else:
             return JSONResponse({'success':False,'result':None,'error':'no permission'})
@@ -395,7 +368,8 @@ class UserRelationView(mixins.CreateModelMixin,
         queryset = queryset.page(page_index)
         serializer = self.get_serializer(queryset, many=True)
         return JSONResponse({'success':True,'result':serializer.data,'error':None})
-    @loginTokenIsAvailable(['MyUserSys.add_userrelation'])
+
+    @loginTokenIsAvailable(['usersys.add_userrelation'])
     def create(self, request, *args, **kwargs):
         try:
             investoruser = request.data['investoruser']
@@ -421,12 +395,13 @@ class UserRelationView(mixins.CreateModelMixin,
         except:
             catchexcption(request)
             response = {
+                'success': False,
                 'result': None,
                 'error': traceback.format_exc().split('\n')[-2],
             }
             return JSONResponse(response)
 
-    @loginTokenIsAvailable(['MyUserSys.change_userrelation'])
+    @loginTokenIsAvailable(['usersys.change_userrelation'])
     def update(self, request, *args, **kwargs):
         try:
             investoruser = request.data['investor']
@@ -448,6 +423,7 @@ class UserRelationView(mixins.CreateModelMixin,
             relation.deletedtime = datetime.datetime.now()
             relation.save()
             response = {
+                'success': True,
                 'result':'修改成功',
                 'error':None
             }
@@ -456,12 +432,13 @@ class UserRelationView(mixins.CreateModelMixin,
             transaction.rollback()
             catchexcption(request)
             response = {
+                'success': False,
                 'result': None,
                 'error': traceback.format_exc().split('\n')[-2],
             }
             return JSONResponse(response)
 
-    @loginTokenIsAvailable(['MyUserSys.delete_userrelation'])
+    @loginTokenIsAvailable(['usersys.delete_userrelation'])
     def destroy(self, request, *args, **kwargs):
         try:
             investoruser = request.data['investoruser']
@@ -473,6 +450,7 @@ class UserRelationView(mixins.CreateModelMixin,
             relation.deletedtime = datetime.datetime.now()
             relation.save()
             response = {
+                'success': True,
                 'result':'删除成功',
                 'error':None
             }
@@ -481,6 +459,7 @@ class UserRelationView(mixins.CreateModelMixin,
             transaction.rollback()
             catchexcption(request)
             response = {
+                'success': False,
                 'result': None,
                 'error': traceback.format_exc().split('\n')[-2],
             }
