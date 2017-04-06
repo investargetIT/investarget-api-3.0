@@ -40,7 +40,6 @@ def cache_delete_key(key):
 
 
 
-
 def custom_exception_handler(exc, context):
     # Call REST framework's default exception handler first,
     # to get the standard error response.
@@ -101,3 +100,15 @@ def loginTokenIsAvailable(permissions=None):
 
         return _token_available
     return token_available
+permissiondeniedresponse = {
+                'success':False,
+                'result': None,
+                'error': '没有权限',
+            }
+
+
+def modelIdListToModelList(idlist,model):
+    modelList = []
+    for modelId in idlist:
+        modelList.append(model.objects.get(id=modelId))
+    return modelList

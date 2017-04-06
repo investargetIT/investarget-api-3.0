@@ -175,7 +175,7 @@ class School(models.Model):
         return self.nameC
 
 
-class Profession(models.Model):
+class Specialty(models.Model):
     '''
     专业
     '''

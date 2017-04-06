@@ -5,13 +5,17 @@ import binascii
 import os
 
 import datetime
+import random
 from time import timezone
 
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
-from sourcetype.models import AuditStatus, ClientType, TitleType,School,Profession,Tag
+from django.db.models import Q
+from guardian.shortcuts import remove_perm, assign_perm
+
+from sourcetype.models import AuditStatus, ClientType, TitleType,School,Specialty,Tag
 
 
 class MyUserBackend(ModelBackend):
@@ -87,7 +91,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     gender = models.BooleanField(blank=True,default=0,help_text=('0=男，1=女'))
     remark = models.TextField(verbose_name='简介',blank=True,null=True)
     school = models.ForeignKey(School,verbose_name='院校',blank=True,null=True,related_name='school_users',on_delete=models.SET_NULL)
-    profes = models.ForeignKey(Profession,verbose_name='专业',blank=True,null=True,related_name='profession_users',on_delete=models.SET_NULL)
+    specialty = models.ForeignKey(Specialty,verbose_name='专业',blank=True,null=True,related_name='profession_users',on_delete=models.SET_NULL)
     trader = models.ForeignKey('self',verbose_name='交易师',blank=True,null=True,related_name='trader_users',on_delete=models.SET_NULL)
     registersource = models.SmallIntegerField(verbose_name='注册来源',choices=((1,'pc'),(2,'ios'),(3,'android'),(4,'mobileweb')),default=1)
     lastmodifytime = models.DateTimeField(auto_now=True)
@@ -112,7 +116,31 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     def __unicode__(self):
         return self.name
     class Meta:
-        db_table = "user"
+        db_table = "myuser"
+        permissions = (
+            ('as_investor', u'投资人'),
+            ('as_trader', u'交易师'),
+            ('as_supporter', u'项目方'),
+            ('as_admin', u'普通管理员'),
+            ('trader_add', u'交易师新增'),
+            ('admin_add',u'管理员新增'),
+            ('trader_change', u'交易师编辑'),
+            ('admin_change',u'管理员编辑')
+        )
+    def save(self, *args, **kwargs):
+        try:
+            if self.pk:
+                MyUser.objects.exclude(pk=self.pk).filter(Q(is_deleted=False),Q(mobile=self.mobile) | Q(email=self.email))
+            else:
+                MyUser.objects.filter(Q(is_deleted=False),Q(mobile=self.mobile) | Q(email=self.email))
+        except MyUser.DoesNotExist:
+            pass
+        else:
+            raise ValueError('mobile或email已存在')
+        if self.has_perm('MyUserSys.beinvestor'):
+            if not self.trader.has_perm('MyUserSys.betrader'):
+                raise ValueError('投资人或交易师没有对应权限')
+        super(MyUser,self).save(*args,**kwargs)
 
 class userTags(models.Model):
     user = models.ForeignKey(MyUser,null=True,blank=True,on_delete=models.SET_NULL)
@@ -129,17 +157,12 @@ class userTags(models.Model):
 
 class MyToken(models.Model):
     key = models.CharField('Key', max_length=48, primary_key=True)
-    user = models.ForeignKey(
-        MyUser, related_name='user_token',
-        on_delete=models.CASCADE, verbose_name=("MyUser")
-    )
+    user = models.ForeignKey(MyUser, related_name='user_token',on_delete=models.CASCADE, verbose_name=("MyUser"))
     created = models.DateTimeField(("Created"), auto_now_add=True)
     clienttype = models.ForeignKey(ClientType)
     isdeleted = models.BooleanField(verbose_name='是否已被删除',blank=True,default=False)
     class Meta:
         db_table = 'user_token'
-        verbose_name = ("MyToken")
-        verbose_name_plural = ("MyTokens")
     def timeout(self):
         return datetime.timedelta(hours=24 * 1) - (datetime.datetime.utcnow() - self.created.replace(tzinfo=None))
 
@@ -155,46 +178,64 @@ class MyToken(models.Model):
         return self.key
 
 class UserRelation(models.Model):
-    investoruser = models.ForeignKey(MyUser,related_name='investorRelation',related_query_name='investor_set',help_text=(
-            '作为投资人'
-        ),)
-    traderuser = models.ForeignKey(MyUser,related_name='traderRelation',related_query_name='trader_set',help_text=(
-            '作为交易师'
-        ),)
+    investoruser = models.ForeignKey(MyUser,related_name='investor_relations',help_text=('作为投资人'))
+    traderuser = models.ForeignKey(MyUser,related_name='trader_relations',help_text=('作为交易师'))
     relationtype = models.BooleanField('强弱关系',help_text=('强关系True，弱关系False'),default=False)
-    score = models.SmallIntegerField('交易师评分',default=0,blank=True)
+    score = models.SmallIntegerField('交易师评分', default=0, blank=True)
+    is_deleted = models.BooleanField(blank=True, default=False)
+    deletedUser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_relations')
+    deletedtime = models.DateTimeField(blank=True, null=True)
+    createdtime = models.DateTimeField(auto_now_add=True)
+    createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_relations',
+                                   on_delete=models.SET_NULL)
     def save(self, *args, **kwargs):
         try:
-            strong = UserRelation.objects.get(investoruser=self.investoruser, relationtype=True)
+            strong = UserRelation.objects.get(investoruser=self.investoruser, relationtype=True, is_deleted=False)
         except UserRelation.DoesNotExist:
             strongrelate = None
         else:
             strongrelate = strong
         if self.investoruser.id == self.traderuser.id:
-            raise ValueError('1投资人和交易师不能是同一个人')
-        elif UserRelation.objects.get(investoruser=self.investoruser,traderuser=self.traderuser):
-            raise ValueError('2已经存在一条这两名用户的记录了')
-        # elif strongrelate and kwargs.get('add') and self.relationtype == True:
-        #     raise ValueError('3强关系只能有一个')
+            raise ValueError('1.投资人和交易师不能是同一个人')
+        elif UserRelation.objects.get(investoruser=self.investoruser,traderuser=self.traderuser,is_deleted=False).pk != self.pk and self.pk:
+            raise ValueError('2.已经存在一条这两名用户的记录了')
         elif strongrelate and self.id != strongrelate.id and self.relationtype == True:
-            raise ValueError('6强关系只能有一个')
-        elif self.traderuser.usertype_id == 1:
-            raise ValueError('4投资人不能作为交易师与其他用户建立关系')
-        elif self.investoruser.usertype_id == 2:
-            raise ValueError('5交易师不能作为投资人与其他用户建立关系')
+            raise ValueError('3.强关系只能有一个')
+        elif self.traderuser.has_perm('betrader'):
+            raise ValueError('4.没有交易师权限关系')
+        elif self.investoruser.has_perm('beinvestor'):
+            raise ValueError('5.没有投资人权限')
         else:
+            if self.pk:
+                if self.is_deleted:
+                    remove_perm('MyUserSys.trader_change',self.traderuser,self.investoruser)
+                else:
+                    oldrela = UserRelation.objects.get(pk=self.pk)
+                    remove_perm('MyUserSys.trader_change',oldrela.traderuser,oldrela.investoruser)
+                    assign_perm('MyUserSys.trader_change',self.traderuser,self.investoruser)
+            else:
+                assign_perm('MyUserSys.trader_change', self.traderuser, self.investoruser)
             super(UserRelation, self).save(*args, **kwargs)
     class Meta:
         db_table = "user_relation"
 
+
 class MobileAuthCode(models.Model):
-    mobile = models.CharField(verbose_name='手机号',unique=True,max_length=32)
-    token = models.CharField(verbose_name='验证码token',max_length=128)
+    mobile = models.CharField(verbose_name='手机号',max_length=32)
+    token = models.CharField(verbose_name='验证码token',max_length=32)
     code = models.CharField(verbose_name='验证码',max_length=32)
     createTime = models.DateTimeField(auto_now_add=True)
     def isexpired(self):
         return timezone.now() - self.created >= 600
     def __str__(self):
-        return self.code + self.mobile
+        return self.code
     class Meta:
         db_table = "mobileAuthCode"
+    def save(self, *args, **kwargs):
+        if not self.token:
+            self.token = binascii.hexlify(os.urandom(16)).decode()
+        return super(MobileAuthCode, self).save(*args, **kwargs)
+    def getRandomCode(self):
+        code_list = [0,1,2,3,4,5,6,7,8,9]
+        myslice = random.sample(code_list, 6)
+        self.code = ''.join(myslice)

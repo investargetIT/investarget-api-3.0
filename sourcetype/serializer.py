@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from sourcetype.models import TransactionType, TransactionPhases, Profession, School, OrgArea, Tag, Industry, CurrencyType, \
+from sourcetype.models import TransactionType, TransactionPhases, Specialty, School, OrgArea, Tag, Industry, CurrencyType, \
     AuditStatus, ProjectStatus, OrgType, FavoriteType, MessageType, ClientType, TitleType, Continent, Country
 
 
@@ -86,7 +86,7 @@ class schoolSerializer(serializers.ModelSerializer):
 
 class professionSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Profession
+        model = Specialty
         fields = '__all__'
 
 
