@@ -100,6 +100,7 @@ def loginTokenIsAvailable(permissions=None):
 
         return _token_available
     return token_available
+
 permissiondeniedresponse = {
                 'success':False,
                 'result': None,

@@ -2,24 +2,34 @@ from django.conf.urls import url
 import views
 
 
-
 user_list = views.UserView.as_view({
         'get': 'list',
-        'post': 'create'
+        'post': 'adduser'   #新增
 })
+
+regist_user = views.UserView.as_view({
+        'post':'create',   #注册
+})
+
 user_detail = views.UserView.as_view({
-        'get': 'retrieve',
-        'put': 'update',
-        'patch': 'partial_update',
-        'delete': 'destroy'
+        'get': 'retrieve',   #查看详情
+        'patch': 'partial_update',  #修改
+        'delete': 'destroy'     #删除
+})
+user_Permissions = views.UserView.as_view({
+        'get': 'getUserPermissions',
+
 })
 
 user_transuser = views.UserRelationView.as_view({
         'get': 'list',
-        'put': 'update',
-        'post': 'create',
+        'put': 'update',       #修改用户关系
+        'post': 'create',      #增加用户关系
         'delete': 'destroy',
 })
+
+
+
 
 urlpatterns = [
     url(r'^$', user_list,name='user-list'),

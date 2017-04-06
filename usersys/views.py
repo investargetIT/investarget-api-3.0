@@ -488,8 +488,6 @@ class UserRelationView(mixins.CreateModelMixin,
 
 
 
-
-
 @api_view(['POST'])
 def login(request):
     receive = request.data
