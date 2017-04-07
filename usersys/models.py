@@ -125,7 +125,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
             ('trader_add', u'交易师新增'),
             ('admin_add',u'管理员新增'),
             ('trader_change', u'交易师编辑'),
-            ('admin_change',u'管理员编辑')
+            ('admin_change',u'管理员编辑') #sdfsdfsdlkfj
         )
     def save(self, *args, **kwargs):
         try:
