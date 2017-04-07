@@ -64,7 +64,6 @@ class MyUserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-
 # 在settings里面指定这个User类为AUTH_USER_MODEL
 class MyUser(AbstractBaseUser, PermissionsMixin):
     """
