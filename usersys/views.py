@@ -21,7 +21,7 @@ from rest_framework.viewsets import GenericViewSet
 from usersys.models import MyUser, MyToken, UserRelation, userTags, MobileAuthCode
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer
 from sourcetype.models import ClientType, Tag
-from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable, JSONResponse, modelIdListToModelList, \
+from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable, JSONResponse,\
     permissiondeniedresponse, catchexcption, cache_delete_key, successresponse, failresponse
 
 
@@ -111,7 +111,7 @@ class UserView(viewsets.ModelViewSet):
                             user.groups.add(Group.objects.get(id=data[key]))
                         elif key == 'tags':
                             usertaglist = []
-                            for tag in modelIdListToModelList(data[key], Tag):
+                            for tag in Tag.objects.in_bulk(data[key]):
                                 usertaglist.append(userTags(user=user, tag=tag, createuser=request.user))
                             user.user_tags.bulk_create(usertaglist)
                         else:
@@ -150,11 +150,8 @@ class UserView(viewsets.ModelViewSet):
             except MyUser.DoesNotExist:
                 pass
             else:
-                response = {
-                    'result': None,
-                    'error': 'user with this mobile already exists.',
-                }
-                return JSONResponse(response)
+                failresponse['error'] = '用户已存在'
+                return JSONResponse(failresponse)
             user = MyUser()
             user.set_password(password)
             keylist = data.keys()
@@ -168,7 +165,7 @@ class UserView(viewsets.ModelViewSet):
                             user.groups.add(Group.objects.get(id=data[key]))
                         elif key == 'tags':
                             usertaglist = []
-                            for tag in modelIdListToModelList(data[key], Tag):
+                            for tag in Tag.objects.in_bulk(data[key]):
                                 usertaglist.append(userTags(user=user, tag=tag, createuser=request.user))
                             user.user_tags.bulk_create(usertaglist)
                         else:
@@ -246,7 +243,7 @@ class UserView(viewsets.ModelViewSet):
                             user.groups.clear()
                             user.groups.add(Group.objects.get(id=data[key]))
                         elif key == 'tags':
-                            taglist = modelIdListToModelList(data[key],Tag)
+                            taglist = Tag.objects.in_bulk(data[key])
                             addlist = [item for item in taglist if item not in user.tags.all()]
                             removelist = [item for item in user.tags.all() if item not in taglist]
                             user.user_tags.filter(tag__in=removelist).update(isdeleted=True,deletedtime=datetime.datetime.utcnow(),deletedUser=request.user)
@@ -387,6 +384,7 @@ class UserRelationView(mixins.CreateModelMixin,
             newrelation.relationtype = relationtype
             newrelation.createuser =request.user
             newrelation.save()
+            cache_delete_key(self.redis_key)
             response = {
                 'result':'关系建立成功',
                 'error':None
@@ -422,6 +420,7 @@ class UserRelationView(mixins.CreateModelMixin,
             relation.deletedUser = request.user
             relation.deletedtime = datetime.datetime.now()
             relation.save()
+            cache_delete_key(self.redis_key)
             response = {
                 'success': True,
                 'result':'修改成功',
@@ -449,6 +448,7 @@ class UserRelationView(mixins.CreateModelMixin,
             relation.deletedUser = request.user
             relation.deletedtime = datetime.datetime.now()
             relation.save()
+            cache_delete_key(self.redis_key)
             response = {
                 'success': True,
                 'result':'删除成功',

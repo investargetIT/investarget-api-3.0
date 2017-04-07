@@ -120,10 +120,3 @@ def loginTokenIsAvailable(permissions=None):#判断model级别权限
         return _token_available
     return token_available
 
-
-
-def modelIdListToModelList(idlist,model):
-    modelList = []
-    for modelId in idlist:
-        modelList.append(model.objects.get(id=modelId))
-    return modelList
