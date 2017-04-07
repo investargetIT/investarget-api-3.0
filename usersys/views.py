@@ -22,7 +22,7 @@ from usersys.models import MyUser, MyToken, UserRelation, userTags, MobileAuthCo
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer
 from sourcetype.models import ClientType, Tag
 from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable, JSONResponse,\
-    permissiondeniedresponse, catchexcption, cache_delete_key, successresponse, failresponse
+    permissiondeniedresponse, catchexcption, cache_delete_key
 
 
 class UserView(viewsets.ModelViewSet):
@@ -64,11 +64,10 @@ class UserView(viewsets.ModelViewSet):
         try:
             queryset = Paginator(queryset, page_size)
         except EmptyPage:
-            return JSONResponse({'success':True,'result':None,'count':0})
+            return JSONResponse({'success':True,'result':[],'error':None})
         queryset = queryset.page(page_index)
         serializer = self.get_serializer(queryset, many=True)
-        successresponse['result'] = serializer.data
-        return JSONResponse(successresponse)
+        return JSONResponse({'success':True,'result': serializer.data,'error': None,})
 
     #注册用户(新注册用户没有交易师)
     @transaction.atomic()
@@ -92,10 +91,7 @@ class UserView(viewsets.ModelViewSet):
             except MyUser.DoesNotExist:
                 pass
             else:
-                response = {
-                    'result': None,
-                    'error': 'user with this mobile already exists.',
-                }
+                response = {'success':False,'result': None,'error': 'user with this mobile already exists.' }
                 return JSONResponse(response)
             user = MyUser()
             user.set_password(password)
@@ -123,12 +119,11 @@ class UserView(viewsets.ModelViewSet):
                     return JSONResponse(permissiondeniedresponse)
             user.createuser = request.user
             user.save()
-            successresponse['result'] = UserSerializer(user).data
-            return JSONResponse(successresponse)
+            return JSONResponse({'success':True,'result': UserSerializer(user).data,'error': None,})
 
         except Exception:
             catchexcption(request)
-            return JSONResponse(failresponse)
+            return JSONResponse({'success':False,'result': None,'error': traceback.format_exc().split('\n')[-2]})
 
     #新增用户（可以有交易师）
     @transaction.atomic()
@@ -150,8 +145,7 @@ class UserView(viewsets.ModelViewSet):
             except MyUser.DoesNotExist:
                 pass
             else:
-                failresponse['error'] = '用户已存在'
-                return JSONResponse(failresponse)
+                return JSONResponse({'success':False,'result': None,'error': '用户已存在',})
             user = MyUser()
             user.set_password(password)
             keylist = data.keys()
@@ -174,6 +168,7 @@ class UserView(viewsets.ModelViewSet):
                         keylist.remove(key)
                 else:
                     permissiondeniedresponse['error'] = '没有权限修改 %s的%s'
+                    return JSONResponse(permissiondeniedresponse)
             user.createuser = request.user
             user.save()
             if request.user.has_perm('usersys.admin_add'):
@@ -182,11 +177,10 @@ class UserView(viewsets.ModelViewSet):
             elif request.user.has_perm('usersys.trader_add'):
                 user.trader = request.user
                 user.investor_relations.create(investoruser=user, traderuser=request.user, type=True)
-            successresponse['result'] = UserSerializer(user).data
-            return JSONResponse(successresponse)
+            return JSONResponse({'success':True,'result': UserSerializer(user).data,'error': None,})
         except Exception:
             catchexcption(request)
-            return JSONResponse(failresponse)
+            return JSONResponse({'success':False,'result': None,'error': traceback.format_exc().split('\n')[-2],})
 
 
     #get
@@ -206,12 +200,11 @@ class UserView(viewsets.ModelViewSet):
                 else:
                     return JSONResponse(permissiondeniedresponse)
             serializer = userserializer(user)
-            successresponse['result'] = serializer.data
-            return JSONResponse(successresponse)
+            return JSONResponse({'success':True,'result': serializer.data,'error': None})
 
         except Exception:
             catchexcption(request)
-            return JSONResponse(failresponse)
+            return JSONResponse({'success':False,'result': None,'error': traceback.format_exc().split('\n')[-2],})
 
 
     #patch
@@ -230,7 +223,7 @@ class UserView(viewsets.ModelViewSet):
                 else:
                     return JSONResponse(permissiondeniedresponse)
         except:
-            return JSONResponse(failresponse)
+            return JSONResponse({'success':False,'result': None,'error': traceback.format_exc().split('\n')[-2],})
         try:
             data = request.data
             keylist = data.keys()
@@ -268,11 +261,10 @@ class UserView(viewsets.ModelViewSet):
             cache_delete_key(self.redis_key+'_%s'%user.id)
             newuser = self.get_object()
             serializer = UserSerializer(newuser)
-            successresponse['result'] = serializer.data
-            return JSONResponse(successresponse)
+            return JSONResponse({'success':True,'result': serializer.data,'error':None})
         except Exception:
             catchexcption(request)
-            return JSONResponse(failresponse)
+            return JSONResponse({'success':False,'result': None,'error': traceback.format_exc().split('\n')[-2]})
 
     #delete     'is_active' == false
     @loginTokenIsAvailable(['usersys.as_admin'])
@@ -298,16 +290,16 @@ class UserView(viewsets.ModelViewSet):
                         if manager.count():
                             raise ValueError(u'{} 上有关联数据'.format(link))
         except:
-            return JSONResponse(failresponse)
+            return JSONResponse({'success':False,'result': None,'error': traceback.format_exc().split('\n')[-2]})
         try:
             instance.is_deleted = False
             instance.deleteduser = request.user
             instance.deletedtime = datetime.datetime.utcnow()
             instance.save()
-            return JSONResponse(successresponse)
+            return JSONResponse({'success':True,'result': None,'error':None})
         except:
             catchexcption(request)
-            return JSONResponse(failresponse)
+            return JSONResponse({'success':False,'result': None,'error': traceback.format_exc().split('\n')[-2]})
 
     @detail_route()
     def getUserPermissions(self, request, *args, **kwargs):
@@ -315,8 +307,8 @@ class UserView(viewsets.ModelViewSet):
         permissions = {}
         permissions['user_permissions'] = user.user_permissions.values()
         permissions['group_permissions'] = user.get_group_permissions()
-        successresponse['result'] = permissions
-        return JSONResponse(successresponse)
+
+        return JSONResponse({'success':True,'result': permissions,'error':None})
 
 class UserRelationView(mixins.CreateModelMixin,
                        mixins.UpdateModelMixin,
@@ -325,6 +317,7 @@ class UserRelationView(mixins.CreateModelMixin,
                        GenericViewSet):
     filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
     # permission_classes = (AllowAny,)
+    queryset = UserRelation.objects.filter(is_deleted=False)
     filter_fields = ('investoruser', 'traderuser', 'relationtype')
     search_fields = ('investoruser', 'traderuser', 'relationtype')
     serializer_class = UserRelationSerializer
@@ -385,18 +378,11 @@ class UserRelationView(mixins.CreateModelMixin,
             newrelation.createuser =request.user
             newrelation.save()
             cache_delete_key(self.redis_key)
-            response = {
-                'result':'关系建立成功',
-                'error':None
-            }
-            return JSONResponse(response,status=status.HTTP_201_CREATED)
+            response = {'success':True,'result':'关系建立成功','error':None }
+            return JSONResponse(response)
         except:
             catchexcption(request)
-            response = {
-                'success': False,
-                'result': None,
-                'error': traceback.format_exc().split('\n')[-2],
-            }
+            response = {'success': False,'result': None,'error': traceback.format_exc().split('\n')[-2],}
             return JSONResponse(response)
 
     @loginTokenIsAvailable(['usersys.change_userrelation'])

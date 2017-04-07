@@ -1,193 +1,86 @@
 #coding=utf-8
-
+from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction
+from rest_framework import filters
+from rest_framework.viewsets import GenericViewSet
 from rest_framework import status
+from rest_framework import viewsets
 from rest_framework.decorators import api_view
-from rest_framework.views import APIView
 
 from proj.models import project, finance, favorite
-from proj.serializer import ProjSerializer, FavoriteSerializer
+from proj.serializer import ProjSerializer, FavoriteSerializer,FormatSerializer,FinanceSerializer
 from usersys.models import MyUser
-from utils.util import JSONResponse, catchexcption
+from utils.util import JSONResponse, catchexcption, read_from_cache, write_to_cache, successresponse, \
+    loginTokenIsAvailable
 
 
-class projlist(APIView):
-    def get(self, request):
-        allproj = project.objects.all()
-        serializer = ProjSerializer(allproj,many=True)
-        return JSONResponse({'result':serializer.data,'success':True,'error':None}, status=status.HTTP_200_OK)
+class ProjectView(viewsets.ModelViewSet):
+    filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
+    queryset = project.objects.filter(is_deleted=False)
+    filter_fields = ('titleC', 'titleE',)
+    search_fields = ('titleC', 'titleE')
+    serializer_class = ProjSerializer
+    redis_key = 'project'
+    Model = project
 
-    def post(self, request):
-        # if not (request.user.is_authenticated() and request.user.has_perm('usersys.add_myuser')):
-        #     return HttpResponse("没有权限",status=status.HTTP_403_FORBIDDEN)
+    def get_object(self):
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        assert lookup_url_kwarg in self.kwargs, (
+            'Expected view %s to be called with a URL keyword argument '
+            'named "%s". Fix your URL conf, or set the `.lookup_field` '
+            'attribute on the view correctly.' %
+            (self.__class__.__name__, lookup_url_kwarg)
+        )
+        obj = read_from_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg])
+        if not obj:
+            try:
+                obj = self.Model.objects.get(id=self.kwargs[lookup_url_kwarg], is_deleted=False)
+            except self.Model.DoesNotExist:
+                raise ValueError('obj with this "%s" is not exist' % self.kwargs[lookup_url_kwarg])
+            else:
+                write_to_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg], obj)
+        return obj
+
+    def list(self, request, *args, **kwargs):
+        page_size = request.GET.get('page_size')
+        page_index = request.GET.get('page_index')  # 从第一页开始
+        if not page_size:
+            page_size = 10
+        if not page_index:
+            page_index = 1
+        queryset = self.filter_queryset(self.queryset)
+        #加权限，筛选结果集
         try:
-            dic = request.data
-            financemodel = finance.objects.create(dic['finance'])
-            projstatu = dic['projStatuid']
-            supportuser = MyUser.objects.get(count=dic['supportUserid'])
-            proj = project.objects.create(title=dic['title'],statu=projstatu,supportuser=supportuser,description=dic['description'],finance=financemodel)
-            proj.save()
-            serializer = ProjSerializer(proj)
-        except:
-            return JSONResponse({'result':'add failed', 'success': False, 'error': None}, status=status.HTTP_400_BAD_REQUEST)
-        return JSONResponse({'result':serializer.data, 'success': True, 'error': serializer.errors},
-                                status=status.HTTP_200_OK)
+            queryset = Paginator(queryset, page_size)
+        except EmptyPage:
+            return JSONResponse({'success': True, 'result': None, 'count': 0})
+        queryset = queryset.page(page_index)
+        serializer = self.get_serializer(queryset, many=True)
+        successresponse['result'] = serializer.data
+        return JSONResponse(successresponse)
 
-
-
-
-        # if serializer.is_valid():
-            # serializer.save()
-            # return JSONResponse({'result':serializer.data,'success':True,'error':None}, status=status.HTTP_200_OK)
-        # return JSONResponse({'result':None,'success':False,'error':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-class projdetail(APIView):
-    def get(self,request,pk):
+    @loginTokenIsAvailable(['上传项目权限'])
+    def create(self, request, *args, **kwargs):
         try:
-            proj = project.objects.get(pk=pk)
-        except project.DoesNotExist:
-            return JSONResponse({'result':None,'success':False,'error':'not found'},status=status.HTTP_404_NOT_FOUND)
-        else:
-            serializer = ProjSerializer(proj)
-            return JSONResponse({'result':serializer.data,'success':True,'error':None},status=status.HTTP_200_OK)
-
-    def put(self,request,pk):
-        try:
-            proj = project.objects.get(pk=pk)
-        except project.DoesNotExist:
-            return JSONResponse({'result':None,'success':False,'error':'not found'},status=status.HTTP_404_NOT_FOUND)
-        else:
-            serializer = ProjSerializer(proj,data=request.data)
-            if serializer.is_valid():
-                serializer.save()
-                return JSONResponse({'result':serializer.data,'success':True,'error':None}, status=status.HTTP_200_OK)
-            return JSONResponse({'result':None,'success':False,'error':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-    def patch(self, request,pk):
-        # if not (request.user.is_authenticated() and request.user.has_perm('usersys.add_myuser')):
-        #     return HttpResponse("没有权限",status=status.HTTP_403_FORBIDDEN)
-        try:
-            proj = project.objects.get(pk=pk)
-        except project.DoesNotExist:
-            return JSONResponse({'result':None,'success':False,'error':'not found'},status=status.HTTP_404_NOT_FOUND)
-        else:
             data = request.data
-            list = data.keys()
-            for key in list:
-                if hasattr(proj,key):
-                    # if key == 'author':
-                    #     setattr(proj,'author_id' , data[key])
-                    # else:
-                        setattr(proj,key,data[key])
-            proj.save(update_fields=list)
-            serializer = ProjSerializer(proj)
-            try:
-                if serializer.is_valid():
-                    proj.save(update_fields=list)
-                    # transaction.commit()
-            except:
-                # transaction.rollback()
-                return JSONResponse({'result':None,'success':False,'error':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-            else:
-                return JSONResponse({'result':serializer.data,'success':True,'error':None}, status=status.HTTP_200_OK)
-    def delete(self, request,pk):
-        # if not (request.user.is_authenticated() and request.user.has_perm('usersys.add_myuser')):
-        #     return HttpResponse("没有权限",status=status.HTTP_403_FORBIDDEN)
-        try:
-            proj = project.objects.get(pk=pk)
-        except project.DoesNotExist:
-            return JSONResponse({'result':None,'success':False,'error':'not found'},status=status.HTTP_404_NOT_FOUND)
-        else:
-            try:
-                proj.delete()
-                transaction.commit()
-            except :
-                transaction.rollback()
-                return JSONResponse({'result': 'delete failed', 'success': False, 'error': 'HTTP_400_BAD_REQUEST'},
-                                    status=status.HTTP_400_BAD_REQUEST)
-            else:
-                return JSONResponse({'result':'delete success','success':True,'error':None},status=status.HTTP_200_OK)
+            projdata = data.get('proj')
+            financesdata = data.get('finances')
+            formatdata = data.get('format')
+            proj = ProjSerializer(projdata)
+            if proj.is_valid():
+                proj.save()
+            finances = FinanceSerializer(financesdata,many=True)
+            if finances.is_valid():
+                finances.save()
+            format = FormatSerializer(formatdata)
+            if format.is_valid():
+                format.save()
 
-@api_view(['GET','POST'])
-def allfavorite(request):
-    '''
-    List all favorite, or create a new favorite.
-    '''
-    if request.method == 'GET':
-        header = request.META
-        # if not (request.user.is_authenticated() and request.user.has_perm('usersys.add_myuser')):
-        #     return HttpResponse("没有权限",status=status.HTTP_403_FORBIDDEN)
-        userid = request.GET.get('userid')
-        projid = request.GET.get('projid')
-        typeid = request.GET.get('typeid')
-        tasks = favorite.objects.all()
-        if userid:
-            tasks = tasks.filter(user_id=userid)
-        if projid:
-            tasks = tasks.filter(proj_id=projid)
-        if typeid:
-            tasks = tasks.filter(favoritetype_id=typeid)
-        try:
-            # tasks = Paginator(tasks,2)   #page_size  每页多少条数据
-            # tasks = tasks.page(1)       #page_index 第几页
-            serializer = FavoriteSerializer(tasks, many=True)
-            return JSONResponse({'result': serializer.data,'success':True,'error':None}, content_type='application/json; charset=utf-8')
-        except Exception as msg:
+
+            successresponse['result'] = UserSerializer(user).data
+            return JSONResponse(successresponse)
+
+        except Exception:
             catchexcption(request)
-            return JSONResponse({'result': None, 'success': False, 'error': repr(msg)},
-                                    status=status.HTTP_400_BAD_REQUEST)
-    elif request.method == 'POST':
+            return JSONResponse(failresponse)
 
-
-
-        data = request.data
-        try:
-            with transaction.atomic():
-                proj = project.objects.get(id=data['projId'])
-                user = MyUser.objects.get(count=data['userId'])
-                favoriteType = data['favoriteType']
-                favoriteobj = favorite.objects.create(proj=proj,user=user,favoritetype=favoriteType)
-                favoriteobj.save()
-                favor = favorite.objects.get(proj=proj,user=user,favoritetype=favoriteType)
-                serializer = FavoriteSerializer(favor)
-                return JSONResponse({'result': serializer.data,'success':True,'error':None},status=status.HTTP_200_OK)
-        except Exception as exc:
-            catchexcption(request)
-            return JSONResponse({'result': None, 'success': False, 'error':repr(exc)},
-                                status=status.HTTP_400_BAD_REQUEST)
-
-
-
-@api_view(['GET', 'PUT', 'DELETE','PATCH'])
-def favoritetype(request, pk):
-    try:
-        task = favorite.objects.get(pk=pk)
-    except favorite.DoesNotExist:
-        catchexcption(request)
-        return JSONResponse({'result':None,'success':False,'error':'not found'},status=status.HTTP_404_NOT_FOUND)
-
-    if request.method == 'GET':
-        serializer = FavoriteSerializer(task)
-        return JSONResponse({'result': serializer.data,'success':True,'error':None})
-    elif request.method == 'PUT':
-        serializer = FavoriteSerializer(task, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return JSONResponse({'result': serializer.data,'success':True,'error':None})
-        else:
-            return JSONResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    elif request.method == 'DELETE':
-        task.delete()
-        return JSONResponse(status=status.HTTP_204_NO_CONTENT)
-    elif request.method == 'PATCH':
-        data = request.data
-        list = data.keys()
-        for key in list:
-            if hasattr(task,key):
-                if key == 'author':
-                    setattr(task,'author_id' , data[key])
-                else:
-                    setattr(task,key,data[key])
-        task.save(update_fields=list)
-        serializer = FavoriteSerializer(task)
-        return JSONResponse({'result': serializer.data,'success':True,'error':None})

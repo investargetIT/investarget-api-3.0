@@ -14,7 +14,7 @@ sys.setdefaultencoding('utf-8')
 class project(models.Model):
     id = models.AutoField(primary_key=True)
     titleC = models.CharField(max_length=128,db_index=True,default='标题')
-    titleE = models.CharField(max_length=256,blank=True,null=True)
+    titleE = models.CharField(max_length=256,blank=True,null=True,db_index=True)
     statu = models.ForeignKey(ProjectStatus,default=1)
     c_descriptionC = models.TextField(blank=True,default='项目描述')
     c_descriptionE = models.TextField(blank=True, default='project description')

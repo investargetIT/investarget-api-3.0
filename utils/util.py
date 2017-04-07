@@ -42,18 +42,6 @@ permissiondeniedresponse = {
                 'error': '没有权限',
             }
 
-successresponse = {
-                'success':True,
-                'result': None,
-                'error': None,
-}
-
-failresponse = {
-                'success':False,
-                'result': None,
-                'error': traceback.format_exc().split('\n')[-2],
-}
-
 
 
 def custom_exception_handler(exc, context):
@@ -101,7 +89,7 @@ def loginTokenIsAvailable(permissions=None):#判断model级别权限
                     permissiondeniedresponse['error'] = '没有认证token'
                     return JSONResponse(permissiondeniedresponse)
             except Exception as exc:
-                return JSONResponse(failresponse)
+                return JSONResponse({'success':False,'result': None,'error': traceback.format_exc().split('\n')[-2],})
             else:
                 if token.created.replace(tzinfo=None) < datetime.datetime.utcnow() - datetime.timedelta(hours=24 * 1):
                     permissiondeniedresponse['error'] = 'token过期'

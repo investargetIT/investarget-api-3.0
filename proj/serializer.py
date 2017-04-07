@@ -10,6 +10,13 @@ class FinanceSerializer(serializers.ModelSerializer):
         # fields = ('id','incomeFrom','incomeTo')
 
 
+class FormatSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = finance
+        fields = '__all__'
+        # fields = ('id','incomeFrom','incomeTo')
+
+
 class ProjSerializer(serializers.ModelSerializer):
     supportUser = UserSerializer(project.supportUser)
     proj_finance= FinanceSerializer(many=True)
