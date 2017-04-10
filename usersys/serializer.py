@@ -1,7 +1,7 @@
 from django.contrib.auth.models import Group
 from rest_framework import serializers
 
-from .models import MyUser, UserRelation
+from .models import MyUser, UserRelation, userTags
 
 
 class GroupSerializer(serializers.ModelSerializer):
@@ -24,6 +24,11 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('id','groups','name','is_superuser','userstatu','trader')
         depth = 1
 
+class CreatUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MyUser
+        fields = ('groups','name','userstatu','trader')
+
 
 class UserListSerializer(serializers.ModelSerializer):
     groups = GroupSerializer(MyUser.groups,many=True)
@@ -34,7 +39,10 @@ class UserListSerializer(serializers.ModelSerializer):
         fields = ('id','groups','name','is_superuser','userstatu','trader')
         depth = 1
 
-
+class UserTagsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = userTags
+        fields = '__all__'
 
 
 

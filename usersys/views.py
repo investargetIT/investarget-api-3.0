@@ -19,7 +19,8 @@ from rest_framework import viewsets
 from rest_framework.decorators import api_view, detail_route
 from rest_framework.viewsets import GenericViewSet
 from usersys.models import MyUser, MyToken, UserRelation, userTags, MobileAuthCode
-from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer
+from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer, UserTagsSerializer, \
+    CreatUserSerializer
 from sourcetype.models import ClientType, Tag
 from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable, JSONResponse,\
     permissiondeniedresponse, catchexcption, cache_delete_key
@@ -74,56 +75,53 @@ class UserView(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
-            mobilecode = data.get('mobilecode')
-            mobilecodetoken = data.get('mobilecodetoken')
+            mobilecode = data.pop('mobilecode', None)
+            mobilecodetoken = data.pop('mobilecodetoken', None)
             mobile = data.get('mobile')
             email = data.get('email')
+            # try:
+            #     mobileauthcode = MobileAuthCode.objects.get(mobile=mobile, code=mobilecode, token=mobilecodetoken)
+            # except MobileAuthCode.DoesNotExist:
+            #     raise ValueError('手机验证码不匹配')
+            # else:
+            #     if mobileauthcode.isexpired():
+            #         raise ValueError('验证码已过期')
+            password = data.pop('password', None)
             try:
-               mobileauthcode = MobileAuthCode.objects.get(mobile=mobile,code=mobilecode,token=mobilecodetoken)
-            except MobileAuthCode.DoesNotExist:
-                raise ValueError('手机验证码不匹配')
-            else:
-                if mobileauthcode.isexpired():
-                    raise ValueError('验证码已过期')
-            password = data.get('password')
-            try:
-                user = self.get_queryset().filter(Q(mobile=mobile)|Q(email=email))
+                user = self.get_queryset().get(Q(mobile=mobile) | Q(email=email))
             except MyUser.DoesNotExist:
                 pass
             else:
-                response = {'success':False,'result': None,'error': 'user with this mobile already exists.' }
+                response = {'success': False, 'result': None, 'error': 'user with this mobile already exists.'}
                 return JSONResponse(response)
-            user = MyUser()
+            user = MyUser(email=email, mobile=mobile)
             user.set_password(password)
-            canCreateField = []
-            keylist = data.keys()
-            for key in keylist:
-                if key in canCreateField:
-                    if hasattr(user, key):
-                        if key in ['org', 'userstatu', 'title', 'school', 'profes', 'registersource']:
-                            setattr(user, '%s_id' % key, data[key])
-                        elif key == 'groups':
-                            user.groups.clear()
-                            user.groups.add(Group.objects.get(id=data[key]))
-                        elif key == 'tags':
-                            usertaglist = []
-                            for tag in Tag.objects.in_bulk(data[key]):
-                                usertaglist.append(userTags(user=user, tag=tag, createuser=request.user))
-                            user.user_tags.bulk_create(usertaglist)
-                        else:
-                            setattr(user, key, data[key])
-                    else:
-                        keylist.remove(key)
-                else:
-                    permissiondeniedresponse['error'] = '没有权限修改 %s的%s' % (key, user.name)
-                    return JSONResponse(permissiondeniedresponse)
-            user.createuser = request.user
             user.save()
-            return JSONResponse({'success':True,'result': UserSerializer(user).data,'error': None,})
-
+            userser = CreatUserSerializer(user, data=data)
+            if userser.is_valid():
+                user = userser.save()
+                # canCreateField = []
+                keylist = data.keys()
+                for key in keylist:
+                    # if key not in canCreateField:
+                    #     data.pop(key)
+                    if key == 'tags':
+                        usertaglist = data.pop(key)
+                        taglist = []
+                        for tag in usertaglist:
+                            taglist.append({'tag': tag, 'user': user.pk, })
+                        usertags = UserTagsSerializer(data=taglist, many=True)
+                        if usertags.is_valid():
+                            usertags.save()
+                            # else:
+                            #     permissiondeniedresponse['error'] = '没有权限修改 %s的%s' % (key, user.name)
+                            #     return JSONResponse(permissiondeniedresponse)
+            else:
+                raise ValueError('err_%s' % userser.error_messages)
+            return JSONResponse({'success': True, 'result': UserSerializer(user).data, 'error': None, })
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success':False,'result': None,'error': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse({'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2]})
 
     #新增用户（可以有交易师）
     @transaction.atomic()
@@ -148,6 +146,7 @@ class UserView(viewsets.ModelViewSet):
                 return JSONResponse({'success':False,'result': None,'error': '用户已存在',})
             user = MyUser()
             user.set_password(password)
+            user.save()
             keylist = data.keys()
             for key in keylist:
                 if key in canCreateField:
@@ -155,7 +154,6 @@ class UserView(viewsets.ModelViewSet):
                         if key in ['org', 'trader','userstatu', 'title', 'school', 'profes', 'registersource']:
                             setattr(user, '%s_id' % key, data[key])
                         elif key == 'groups':
-                            user.groups.clear()
                             user.groups.add(Group.objects.get(id=data[key]))
                         elif key == 'tags':
                             usertaglist = []
