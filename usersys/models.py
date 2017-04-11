@@ -90,7 +90,6 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     remark = models.TextField(verbose_name='简介',blank=True,null=True)
     school = models.ForeignKey(School,verbose_name='院校',blank=True,null=True,related_name='school_users',on_delete=models.SET_NULL)
     specialty = models.ForeignKey(Specialty,verbose_name='专业',blank=True,null=True,related_name='profession_users',on_delete=models.SET_NULL)
-    trader = models.ForeignKey('self',verbose_name='交易师',blank=True,null=True,related_name='trader_users',on_delete=models.SET_NULL)
     registersource = models.SmallIntegerField(verbose_name='注册来源',choices=((1,'pc'),(2,'ios'),(3,'android'),(4,'mobileweb')),default=1)
     lastmodifytime = models.DateTimeField(auto_now=True)
     lastmodifyuser = models.ForeignKey('self',verbose_name='修改者',blank=True,null=True,related_name='usermodify_users',related_query_name='user_modifyuser',on_delete=models.SET_NULL)
@@ -114,7 +113,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     def __unicode__(self):
         return self.name
     class Meta:
-        db_table = "myuser"
+        db_table = "user"
         permissions = (
             ('as_investor', u'投资人'),
             ('as_trader', u'交易师'),
@@ -123,7 +122,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
             ('trader_add', u'交易师新增'),
             ('admin_add',u'管理员新增'),
             ('trader_change', u'交易师编辑'),
-            ('admin_change',u'管理员编辑') #sdfsdfsdlkfj
+            ('admin_change',u'管理员编辑')
         )
     def save(self, *args, **kwargs):
         try:
@@ -144,7 +143,7 @@ class userTags(models.Model):
     user = models.ForeignKey(MyUser,null=True,blank=True,on_delete=models.SET_NULL)
     tag = models.ForeignKey(Tag, related_name='user_tags',null=True, blank=True,on_delete=models.SET_NULL)
     isdeleted = models.BooleanField(blank=True,default=False)
-    deletedUser = models.ForeignKey(MyUser,blank=True, null=True,related_name='userdelete_tags',on_delete=models.SET_NULL)
+    deleteduser = models.ForeignKey(MyUser,blank=True, null=True,related_name='userdelete_tags',on_delete=models.SET_NULL)
     deletedtime = models.DateTimeField(blank=True, null=True)
     createdtime = models.DateTimeField(auto_created=True)
     createuser = models.ForeignKey(MyUser,blank=True, null=True,related_name='usercreate_usertags',on_delete=models.SET_NULL)
@@ -158,7 +157,7 @@ class MyToken(models.Model):
     user = models.ForeignKey(MyUser, related_name='user_token',on_delete=models.CASCADE, verbose_name=("MyUser"))
     created = models.DateTimeField(("Created"), auto_now_add=True)
     clienttype = models.ForeignKey(ClientType)
-    isdeleted = models.BooleanField(verbose_name='是否已被删除',blank=True,default=False)
+    is_deleted = models.BooleanField(verbose_name='是否已被删除',blank=True,default=False)
     class Meta:
         db_table = 'user_token'
     def timeout(self):
@@ -178,30 +177,33 @@ class MyToken(models.Model):
 class UserRelation(models.Model):
     investoruser = models.ForeignKey(MyUser,related_name='investor_relations',help_text=('作为投资人'))
     traderuser = models.ForeignKey(MyUser,related_name='trader_relations',help_text=('作为交易师'))
-    relationtype = models.BooleanField('强弱关系',help_text=('强关系True，弱关系False'),default=False)
-    score = models.SmallIntegerField('交易师评分', default=0, blank=True)
+    relationtype = models.BooleanField(help_text=('强关系True，弱关系False'),default=False)
+    score = models.SmallIntegerField(help_text=('交易师评分'), default=0, blank=True)
     is_deleted = models.BooleanField(blank=True, default=False)
-    deletedUser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_relations')
+    deleteduser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_relations')
     deletedtime = models.DateTimeField(blank=True, null=True)
     createdtime = models.DateTimeField(auto_now_add=True)
     createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_relations',
                                    on_delete=models.SET_NULL)
+    lastmodifytime = models.DateTimeField(blank=True, null=True)
+    lastmodifyuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usermodify_relations', )
     def save(self, *args, **kwargs):
-        try:
-            strong = UserRelation.objects.get(investoruser=self.investoruser, relationtype=True, is_deleted=False)
-        except UserRelation.DoesNotExist:
-            strongrelate = None
+        if self.pk:
+            userrelation = UserRelation.objects.exclude(pk=self.pk).filter(Q(is_deleted=False), Q(investoruser=self.investoruser))
         else:
-            strongrelate = strong
+            userrelation = UserRelation.objects.filter(Q(is_deleted=False), Q(investoruser=self.investoruser))
+        if userrelation.exists():
+            if userrelation.filter(traderuser_id=self.traderuser_id).exists():
+                raise ValueError('2.已经存在一条这两名用户的记录了')
+            elif userrelation.filter(relationtype=True).exists() and self.relationtype:
+                raise ValueError('3.强关系只能有一个,如有必要，先删除，在添加')
+        else:
+            self.relationtype = True
         if self.investoruser.id == self.traderuser.id:
             raise ValueError('1.投资人和交易师不能是同一个人')
-        elif UserRelation.objects.get(investoruser=self.investoruser,traderuser=self.traderuser,is_deleted=False).pk != self.pk and self.pk:
-            raise ValueError('2.已经存在一条这两名用户的记录了')
-        elif strongrelate and self.id != strongrelate.id and self.relationtype == True:
-            raise ValueError('3.强关系只能有一个')
-        elif self.traderuser.has_perm('betrader'):
+        elif not self.traderuser.has_perm('as_trader'):
             raise ValueError('4.没有交易师权限关系')
-        elif self.investoruser.has_perm('beinvestor'):
+        elif not self.investoruser.has_perm('as_investor'):
             raise ValueError('5.没有投资人权限')
         else:
             if self.pk:

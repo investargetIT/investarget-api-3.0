@@ -16,6 +16,7 @@ class message(models.Model):
     receiver = models.ForeignKey(MyUser,blank=True,null=True,related_name='userreceive_msgs')
     created = models.DateTimeField(verbose_name='创建日期',auto_now_add=True)
     isread = models.BooleanField(verbose_name='是否已读',default=False,blank=True)
+    is_deleted = models.ForeignKey(MyUser,blank=True,null=True,related_name='userdelete_messages')
     def save(self, *args, **kwargs):
         if self.sender is self.receiver :
             return ValueError('收信人与发信人相同')

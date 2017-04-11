@@ -16,7 +16,7 @@ from rest_framework import mixins
 from rest_framework import status
 from rest_framework import viewsets
 
-from rest_framework.decorators import api_view, detail_route
+from rest_framework.decorators import api_view, detail_route, list_route
 from rest_framework.viewsets import GenericViewSet
 from usersys.models import MyUser, MyToken, UserRelation, userTags, MobileAuthCode
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer, UserTagsSerializer, \
@@ -28,7 +28,7 @@ from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable, J
 
 class UserView(viewsets.ModelViewSet):
     filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
-    queryset = MyUser.objects.filter(is_deleted=False).order_by('id')
+    queryset = MyUser.objects.filter(is_deleted=False)
     filter_fields = ('mobile','email','name','id','groups','trader',)
     search_fields = ('mobile','email','name','id','org__id','trader')
     serializer_class = UserListSerializer
@@ -79,16 +79,16 @@ class UserView(viewsets.ModelViewSet):
             mobilecodetoken = data.pop('mobilecodetoken', None)
             mobile = data.get('mobile')
             email = data.get('email')
-            # try:
-            #     mobileauthcode = MobileAuthCode.objects.get(mobile=mobile, code=mobilecode, token=mobilecodetoken)
-            # except MobileAuthCode.DoesNotExist:
-            #     raise ValueError('手机验证码不匹配')
-            # else:
-            #     if mobileauthcode.isexpired():
-            #         raise ValueError('验证码已过期')
+            try:
+                mobileauthcode = MobileAuthCode.objects.get(mobile=mobile, code=mobilecode, token=mobilecodetoken)
+            except MobileAuthCode.DoesNotExist:
+                raise ValueError('手机验证码不匹配')
+            else:
+                if mobileauthcode.isexpired():
+                    raise ValueError('验证码已过期')
             password = data.pop('password', None)
             try:
-                user = self.get_queryset().get(Q(mobile=mobile) | Q(email=email))
+                self.queryset.get(Q(mobile=mobile) | Q(email=email))
             except MyUser.DoesNotExist:
                 pass
             else:
@@ -97,39 +97,35 @@ class UserView(viewsets.ModelViewSet):
             user = MyUser(email=email, mobile=mobile)
             user.set_password(password)
             user.save()
-            userser = CreatUserSerializer(user, data=data)
-            if userser.is_valid():
-                user = userser.save()
-                # canCreateField = []
-                keylist = data.keys()
-                for key in keylist:
-                    # if key not in canCreateField:
-                    #     data.pop(key)
-                    if key == 'tags':
-                        usertaglist = data.pop(key)
-                        taglist = []
-                        for tag in usertaglist:
-                            taglist.append({'tag': tag, 'user': user.pk, })
-                        usertags = UserTagsSerializer(data=taglist, many=True)
-                        if usertags.is_valid():
-                            usertags.save()
-                            # else:
-                            #     permissiondeniedresponse['error'] = '没有权限修改 %s的%s' % (key, user.name)
-                            #     return JSONResponse(permissiondeniedresponse)
+            keylist = data.keys()
+            canCreateField = []
+            cannoteditlist = [key for key in keylist if key not in canCreateField]
+            if cannoteditlist:
+                permissiondeniedresponse['error'] = '没有权限修改%s' % cannoteditlist
+                return JSONResponse(permissiondeniedresponse)
+            tags = data.pop('tags', None)
+            userserializer = CreatUserSerializer(user, data=data)
+            if userserializer.is_valid():
+                user = userserializer.save()
+                if tags:
+                    usertaglist = []
+                    for tag in tags:
+                        usertaglist.append(userTags(user=user, tag_id=tag, ))
+                    user.user_tags.bulk_create(usertaglist)
             else:
-                raise ValueError('err_%s' % userser.error_messages)
+                raise ValueError('userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
             return JSONResponse({'success': True, 'result': UserSerializer(user).data, 'error': None, })
         except Exception:
             catchexcption(request)
             return JSONResponse({'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2]})
 
-    #新增用户（可以有交易师）
+    # 新增用户
     @transaction.atomic()
     @loginTokenIsAvailable()
     def adduser(self, request, *args, **kwargs):
-        if request.user.has_perm('usersys.admin_add'):
+        if request.user.has_perm('MyUserSys.admin_add'):
             canCreateField = []
-        elif request.user.has_perm('usersys.trader_add'):
+        elif request.user.has_perm('MyUserSys.trader_add'):
             canCreateField = []
         else:
             return JSONResponse(permissiondeniedresponse)
@@ -139,46 +135,35 @@ class UserView(viewsets.ModelViewSet):
             email = data.get('email')
             mobile = data.get('mobile')
             try:
-                user = self.get_queryset().filter(Q(mobile=mobile)|Q(email=email))
+                user = self.get_queryset().get(Q(mobile=mobile) | Q(email=email))
             except MyUser.DoesNotExist:
                 pass
             else:
-                return JSONResponse({'success':False,'result': None,'error': '用户已存在',})
+                raise ValueError('user with this mobile or email has already been exist')
             user = MyUser()
             user.set_password(password)
             user.save()
             keylist = data.keys()
-            for key in keylist:
-                if key in canCreateField:
-                    if hasattr(user, key):
-                        if key in ['org', 'trader','userstatu', 'title', 'school', 'profes', 'registersource']:
-                            setattr(user, '%s_id' % key, data[key])
-                        elif key == 'groups':
-                            user.groups.add(Group.objects.get(id=data[key]))
-                        elif key == 'tags':
-                            usertaglist = []
-                            for tag in Tag.objects.in_bulk(data[key]):
-                                usertaglist.append(userTags(user=user, tag=tag, createuser=request.user))
-                            user.user_tags.bulk_create(usertaglist)
-                        else:
-                            setattr(user, key, data[key])
-                    else:
-                        keylist.remove(key)
-                else:
-                    permissiondeniedresponse['error'] = '没有权限修改 %s的%s'
-                    return JSONResponse(permissiondeniedresponse)
-            user.createuser = request.user
-            user.save()
-            if request.user.has_perm('usersys.admin_add'):
-                if 'trader' in keylist:
-                    user.investor_relations.create(investoruser=user, traderuser_id=data['trader'], type=True)
-            elif request.user.has_perm('usersys.trader_add'):
-                user.trader = request.user
-                user.investor_relations.create(investoruser=user, traderuser=request.user, type=True)
-            return JSONResponse({'success':True,'result': UserSerializer(user).data,'error': None,})
+            canCreateField = []
+            cannoteditlist = [key for key in keylist if key not in canCreateField]
+            if cannoteditlist:
+                permissiondeniedresponse['error'] = '没有权限修改%s' % cannoteditlist
+                return JSONResponse(permissiondeniedresponse)
+            tags = data.pop('tags', None)
+            userserializer = CreatUserSerializer(user, data=data)
+            if userserializer.is_valid():
+                user = userserializer.save()
+                if tags:
+                    usertaglist = []
+                    for tag in tags:
+                        usertaglist.append(userTags(user=user, tag_id=tag, ))
+                    user.user_tags.bulk_create(usertaglist)
+            else:
+                raise ValueError('userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
+            return JSONResponse({'success': True, 'result': UserSerializer(user).data, 'error': None, })
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success':False,'result': None,'error': traceback.format_exc().split('\n')[-2],})
+            return JSONResponse({'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], })
 
 
     #get
@@ -189,9 +174,7 @@ class UserView(viewsets.ModelViewSet):
             if request.user == user:
                 userserializer = UserSerializer
             else:
-                if request.user.is_superuser:
-                    userserializer = UserSerializer
-                elif request.user.has_perm('usersys.as_admin'):
+                if request.user.has_perm('usersys.as_admin'):
                     userserializer = UserSerializer
                 elif request.user.has_perm('usersys.trader_change',self.get_object()):
                     userserializer = UserSerializer
@@ -225,47 +208,32 @@ class UserView(viewsets.ModelViewSet):
         try:
             data = request.data
             keylist = data.keys()
-            for key in keylist:
-                if key in canChangeField:
-                    if hasattr(user, key):
-                        if key in ['org','trader','userstatu','title','school','profes','registersource']:
-                            setattr(user, '%s_id'%key, data[key])
-                        elif key == 'groups':
-                            user.groups.clear()
-                            user.groups.add(Group.objects.get(id=data[key]))
-                        elif key == 'tags':
-                            taglist = Tag.objects.in_bulk(data[key])
-                            addlist = [item for item in taglist if item not in user.tags.all()]
-                            removelist = [item for item in user.tags.all() if item not in taglist]
-                            user.user_tags.filter(tag__in=removelist).update(isdeleted=True,deletedtime=datetime.datetime.utcnow(),deletedUser=request.user)
-                            usertaglist = []
-                            for tag in addlist:
-                               usertaglist.append(userTags(user=user,tag=tag,createuser=request.user))
-                            user.user_tags.bulk_create(usertaglist)
-                        else:
-                            setattr(user,key,data[key])
-                    else:
-                        keylist.remove(key)
-                else:
-                    permissiondeniedresponse['error'] = '没有权限修改 %s的%s'% (key,user.name)
-                    return JSONResponse(permissiondeniedresponse)
-            user.save(update_fields=keylist)
-            if request.user.has_perm('usersys.admin_add'):
-                if 'trader' in keylist:
-                    user.investor_relations.create(investoruser=user, traderuser_id=data['trader'], type=True)
-            elif request.user.has_perm('usersys.trader_add'):
-                user.trader = request.user
-                user.investor_relations.create(investoruser=user, traderuser=request.user, type=True)
-            cache_delete_key(self.redis_key+'_%s'%user.id)
-            newuser = self.get_object()
-            serializer = UserSerializer(newuser)
-            return JSONResponse({'success':True,'result': serializer.data,'error':None})
+            canCreateField = []
+            cannoteditlist = [key for key in keylist if key not in canCreateField]
+            if cannoteditlist:
+                permissiondeniedresponse['error'] = '没有权限修改%s' % cannoteditlist
+                return JSONResponse(permissiondeniedresponse)
+            tags = data.pop('tags', None)
+            userserializer = CreatUserSerializer(user, data=data)
+            if userserializer.is_valid():
+                user = userserializer.save()
+                if tags:
+                    taglist = Tag.objects.in_bulk(tags)
+                    addlist = [item for item in taglist if item not in user.tags.all()]
+                    removelist = [item for item in user.tags.all() if item not in taglist]
+                    user.user_tags.filter(tag__in=removelist,is_deleted=False).update(is_deleted=True,deletedtime=datetime.datetime.now(),deleteduser=request.user)
+                    usertaglist = []
+                    for tag in addlist:
+                        usertaglist.append(userTags(user=user, tag=tag, createuser=request.user))
+                    user.user_tags.bulk_create(usertaglist)
+            else:
+                raise ValueError('userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
+            return JSONResponse({'success': True, 'result': UserSerializer(user).data, 'error': None, })
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success':False,'result': None,'error': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse({'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], })
 
     #delete     'is_active' == false
-    @loginTokenIsAvailable(['usersys.as_admin'])
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         try:
@@ -287,52 +255,83 @@ class UserView(viewsets.ModelViewSet):
                     except FieldDoesNotExist as ex:
                         if manager.count():
                             raise ValueError(u'{} 上有关联数据'.format(link))
-        except:
-            return JSONResponse({'success':False,'result': None,'error': traceback.format_exc().split('\n')[-2]})
-        try:
-            instance.is_deleted = False
+            instance.is_deleted = True
             instance.deleteduser = request.user
             instance.deletedtime = datetime.datetime.utcnow()
             instance.save()
-            return JSONResponse({'success':True,'result': None,'error':None})
+            response = {'success': True, 'result': UserSerializer(instance).data, 'error': None}
+            return JSONResponse(response)
+
         except:
             catchexcption(request)
-            return JSONResponse({'success':False,'result': None,'error': traceback.format_exc().split('\n')[-2]})
+            response = {'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], }
+            return JSONResponse(response)
 
-    @detail_route()
-    def getUserPermissions(self, request, *args, **kwargs):
-        user = self.get_object()
-        permissions = {}
-        permissions['user_permissions'] = user.user_permissions.values()
-        permissions['group_permissions'] = user.get_group_permissions()
+    @list_route(methods=['post'])
+    def findpassword(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            mobilecode = data.pop('mobilecode', None)
+            mobilecodetoken = data.pop('mobilecodetoken', None)
+            mobile = data.get('mobile')
+            password = data.get('password')
+            try:
+                mobileauthcode = MobileAuthCode.objects.get(mobile=mobile, code=mobilecode, token=mobilecodetoken)
+            except MobileAuthCode.DoesNotExist:
+                raise ValueError('手机验证码不匹配')
+            else:
+                if mobileauthcode.isexpired():
+                    raise ValueError('验证码已过期')
+            user = self.queryset.get(mobile=mobile)
+            user.set_password(password)
+            user.save(update_fields=['password'])
+            return JSONResponse({'success': True, 'result': password, 'error': None})
+        except:
+            return JSONResponse({'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2],})
 
-        return JSONResponse({'success':True,'result': permissions,'error':None})
+    @loginTokenIsAvailable()
+    @detail_route(methods=['put'])
+    def changepassword(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            oldpassword = data.get('oldpassword')
+            password = data.get('password')
+            passwordagain = data.get('passwordagain')
+            user = self.get_object()
+            if user == request.user:
+                if user.check_password(oldpassword):
+                    raise ValueError('密码错误')
+                if not password or password != passwordagain:
+                    raise ValueError('新密码输入有误')
+            else:
+                raise ValueError('没有权限')
+            user.set_password(password)
+            user.save(update_fields=['password'])
+            return JSONResponse({'success': True, 'result': password, 'error': None})
+        except:
+            return JSONResponse({'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2],})
 
-class UserRelationView(mixins.CreateModelMixin,
-                       mixins.UpdateModelMixin,
-                       mixins.DestroyModelMixin,
-                       mixins.ListModelMixin,
-                       GenericViewSet):
+    @loginTokenIsAvailable(['usersys.as_admin'])
+    @detail_route(methods=['get'])
+    def resetpassword(self,request, *args, **kwargs):
+        try:
+            user = self.get_object()
+            user.set_password('Aa123456')
+            user.save(update_fields=['password'])
+            return JSONResponse({'success': True, 'result': 'Aa123456', 'error': None})
+        except:
+            return JSONResponse({'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], })
+
+
+class UserRelationView(viewsets.ModelViewSet):
     filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
     # permission_classes = (AllowAny,)
-    queryset = UserRelation.objects.filter(is_deleted=False)
     filter_fields = ('investoruser', 'traderuser', 'relationtype')
     search_fields = ('investoruser', 'traderuser', 'relationtype')
+    queryset = UserRelation.objects.filter(is_deleted=False)
     serializer_class = UserRelationSerializer
-    redis_key = 'usersrelation'
-    Model = UserRelation
 
-    def get_queryset(self):
-        realtions = read_from_cache(self.redis_key)
-        if realtions:
-            return realtions
-        else:
-            realtions = self.Model.objects.all().order_by('id')
-            write_to_cache(self.redis_key, realtions)
-            readusers = read_from_cache(self.redis_key)
-            return readusers
-
-    @loginTokenIsAvailable(['usersys.as_admin','usersys.as_trader','usersys.as_investor'])
+    @loginTokenIsAvailable(['MyUserSys.as_admin','MyUserSys.as_trader','MyUserSys.as_investor'])
     def list(self, request, *args, **kwargs):
         page_size = request.GET.get('page_size')
         page_index = request.GET.get('page_index')  #从第一页开始
@@ -341,11 +340,11 @@ class UserRelationView(mixins.CreateModelMixin,
         if not page_index:
             page_index = 1
         queryset = self.filter_queryset(self.get_queryset())
-        if request.user.has_perm('usersys.as_admin'):
+        if request.user.has_perm('MyUserSys.as_admin'):
             queryset = queryset
-        elif request.user.has_perm('usersys.as_trader'):
+        elif request.user.has_perm('MyUserSys.as_trader'):
             queryset = queryset.filter(traderuser=request.user)
-        elif request.user.has_perm('usersys.as_investor'):
+        elif request.user.has_perm('MyUserSys.as_investor'):
             queryset = queryset.filter(investoruser=request.user)
         else:
             return JSONResponse({'success':False,'result':None,'error':'no permission'})
@@ -357,96 +356,93 @@ class UserRelationView(mixins.CreateModelMixin,
         serializer = self.get_serializer(queryset, many=True)
         return JSONResponse({'success':True,'result':serializer.data,'error':None})
 
-    @loginTokenIsAvailable(['usersys.add_userrelation'])
+
+    # @loginTokenIsAvailable(['MyUserSys.add_userrelation'])
     def create(self, request, *args, **kwargs):
         try:
-            investoruser = request.data['investoruser']
-            traderuser = request.data['traderuser']
-            relationtype = request.data['relationtype']
-            newrelation = UserRelation()
-            if not relationtype:
-                pass
+            data = request.data
+            # data = {
+            #     'investoruser':2,
+            #     'traderuser':2,
+            #     'relationtype':False,
+            # }
+            data['createuser'] = request.user.id
+            newrelation = UserRelationSerializer(data=data)
+            if newrelation.is_valid():
+                newrelation.save()
+                response = {'success': True, 'result':newrelation.data, 'error': None}
             else:
-                investor = MyUser.objects.get(id=investoruser)
-                investor.trader_id = traderuser
-                investor.save()
-            newrelation.investoruser_id = investoruser
-            newrelation.traderuser_id = traderuser
-            newrelation.relationtype = relationtype
-            newrelation.createuser =request.user
-            newrelation.save()
-            cache_delete_key(self.redis_key)
-            response = {'success':True,'result':'关系建立成功','error':None }
+                raise ValueError('%s'%newrelation.errors)
             return JSONResponse(response)
         except:
             catchexcption(request)
-            response = {'success': False,'result': None,'error': traceback.format_exc().split('\n')[-2],}
+            response = {'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], }
             return JSONResponse(response)
 
-    @loginTokenIsAvailable(['usersys.change_userrelation'])
+    def get_object(self):
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        assert lookup_url_kwarg in self.kwargs, (
+            'Expected view %s to be called with a URL keyword argument '
+            'named "%s". Fix your URL conf, or set the `.lookup_field` '
+            'attribute on the view correctly.' %
+            (self.__class__.__name__, lookup_url_kwarg)
+        )
+        try:
+            obj = UserRelation.objects.get(id=self.kwargs[lookup_url_kwarg],is_deleted=False)
+        except UserRelation.DoesNotExist:
+                raise ValueError('obj with pk = "%s" is not exist'%self.kwargs[lookup_url_kwarg])
+        return obj
+
+
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            userrelation = self.get_object()
+            if request.user.has_perm('MyUserSys.as_admin'):
+                pass
+            elif request.user == userrelation.traderuser or request.user == userrelation.investoruser:
+                pass
+            else:
+                return JSONResponse(permissiondeniedresponse)
+            serializer = UserRelationSerializer(userrelation)
+            response = {'success':True,'result': serializer.data,'error': None,}
+            return JSONResponse(response)
+        except:
+            catchexcption(request)
+            response = {'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], }
+            return JSONResponse(response)
+
+    # @loginTokenIsAvailable(['MyUserSys.change_userrelation'])
     def update(self, request, *args, **kwargs):
         try:
-            investoruser = request.data['investor']
-            traderuser = request.data['trader']
-
-            newtraderuser = request.data['newtrader']
-            newrelationtype = request.data['newtype']
-
-            if not newrelationtype:
-                pass
+            data = request.data
+            data['lastmodifyuser'] = request.user.id
+            data['lastmodifytime'] = datetime.datetime.now()
+            relation = self.get_object()
+            newrelation = UserRelationSerializer(relation,data=data)
+            if newrelation.is_valid():
+                newrelation.save()
+                response = {'success': True, 'result':newrelation.data, 'error': None}
             else:
-                investor = MyUser.objects.get(id=investoruser)
-                investor.trader_id = newtraderuser
-                investor.save()
-            relation = UserRelation.objects.get(investoruser_id=investoruser, traderuser_id=traderuser,is_deleted=False)
-            relation.traderuser_id = newtraderuser
-            relation.relationtype = newrelationtype
-            relation.deletedUser = request.user
-            relation.deletedtime = datetime.datetime.now()
-            relation.save()
-            cache_delete_key(self.redis_key)
-            response = {
-                'success': True,
-                'result':'修改成功',
-                'error':None
-            }
-            return JSONResponse(response,status=status.HTTP_201_CREATED)
+                raise ValueError('err:%s'%newrelation.errors)
+            return JSONResponse(response)
         except:
-            transaction.rollback()
             catchexcption(request)
-            response = {
-                'success': False,
-                'result': None,
-                'error': traceback.format_exc().split('\n')[-2],
-            }
+            response = {'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], }
             return JSONResponse(response)
 
-    @loginTokenIsAvailable(['usersys.delete_userrelation'])
+    @loginTokenIsAvailable(['MyUserSys.delete_userrelation'])
     def destroy(self, request, *args, **kwargs):
         try:
-            investoruser = request.data['investoruser']
-            traderuser = request.data['traderuser']
-
-            relation = self.get_queryset().get(investoruser=investoruser,traderuser=traderuser)
-            relation.is_deleted = True
-            relation.deletedUser = request.user
-            relation.deletedtime = datetime.datetime.now()
-            relation.save()
-            cache_delete_key(self.redis_key)
-            response = {
-                'success': True,
-                'result':'删除成功',
-                'error':None
-            }
-            return JSONResponse(response,status=status.HTTP_201_CREATED)
+            userrelation = self.get_object()
+            userrelation.is_deleted = True
+            userrelation.deleteduser = request.user
+            userrelation.deletedtime = datetime.datetime.now()
+            userrelation.save()
+            response = {'success': True, 'result': UserRelationSerializer(userrelation).data, 'error': None}
+            return JSONResponse(response)
         except:
-            transaction.rollback()
             catchexcption(request)
-            response = {
-                'success': False,
-                'result': None,
-                'error': traceback.format_exc().split('\n')[-2],
-            }
+            response = {'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], }
             return JSONResponse(response)
 
 
@@ -484,13 +480,13 @@ def login(request):
 
 def maketoken(user,clienttype):
     try:
-        tokens = MyToken.objects.filter(user=user, clienttype__id=clienttype, isdeleted=False)
+        tokens = MyToken.objects.filter(user=user, clienttype__id=clienttype, is_deleted=False)
     except MyToken.DoesNotExist:
         pass
     else:
         for token in tokens:
-            token.isdeleted = True
-            token.save(update_fields=['isdeleted'])
+            token.is_deleted = True
+            token.save(update_fields=['is_deleted'])
     type = ClientType.objects.get(id=clienttype)
     token = MyToken.objects.create(user=user, clienttype=type)
     serializer = UserListSerializer(user)

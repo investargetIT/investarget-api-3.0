@@ -17,25 +17,38 @@ user_detail = views.UserView.as_view({
         'patch': 'partial_update',  #修改
         'delete': 'destroy'     #删除
 })
-user_Permissions = views.UserView.as_view({
-        'get': 'getUserPermissions',
 
+
+find_password = views.UserView.as_view({
+        'post': 'findpassword',
 })
 
-user_transuser = views.UserRelationView.as_view({
+change_password = views.UserView.as_view({
+        'get': 'resetpassword',
+        'put': 'changepassword'
+})
+
+
+user_relationship = views.UserRelationView.as_view({
         'get': 'list',
-        'put': 'update',       #修改用户关系
-        'post': 'create',      #增加用户关系
+        'post': 'create',
+})
+detail_relation = views.UserRelationView.as_view({
+        'put': 'update',
         'delete': 'destroy',
+        'get': 'retrieve',
 })
 
 
 
 
 urlpatterns = [
-    url(r'^$', user_list,name='user-list'),
+    url(r'^$', user_list,name='user-list',),
     url(r'^(?P<pk>\d+)/$', user_detail,name='user-detail'),
+    url(r'^password/$', find_password ,name='find-password'),
+    url(r'^password/(?P<pk>\d+)/$', change_password ,name='change-password'),
+    url(r'^relationship/$', user_relationship, name='user-relationship'),
+    url(r'^relationship/(?P<pk>\d+)/$', detail_relation, name='user-relationship'),
+    url(r'^register/$', regist_user),
     url(r'^login/$', views.login),
-    url(r'^transuser/$', user_transuser,name='user-transuser'),
-
 ]

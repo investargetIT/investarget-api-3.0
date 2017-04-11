@@ -3,6 +3,10 @@ from rest_framework import serializers
 
 from .models import MyUser, UserRelation, userTags
 
+class UserRelationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserRelation
+        fields = ('investoruser','traderuser','relationtype')
 
 class GroupSerializer(serializers.ModelSerializer):
     class Meta:
@@ -17,11 +21,11 @@ class UserCommenSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     groups = GroupSerializer(MyUser.groups,many=True)
-    trader = UserCommenSerializer(MyUser.trader)
+    investor_relations = UserRelationSerializer(MyUser.investor_relations,many=True)
     class Meta:
         model = MyUser
         # fields = '__all__'
-        fields = ('id','groups','name','is_superuser','userstatu','trader')
+        fields = ('id','groups','name','is_superuser','userstatu','investor_relations')
         depth = 1
 
 class CreatUserSerializer(serializers.ModelSerializer):
@@ -32,11 +36,11 @@ class CreatUserSerializer(serializers.ModelSerializer):
 
 class UserListSerializer(serializers.ModelSerializer):
     groups = GroupSerializer(MyUser.groups,many=True)
-    trader = UserCommenSerializer(MyUser.trader)
+    investor_relations = UserRelationSerializer(MyUser.investor_relations, many=True)
     class Meta:
         model = MyUser
         # fields = '__all__'
-        fields = ('id','groups','name','is_superuser','userstatu','trader')
+        fields = ('id','groups','name','is_superuser','userstatu','investor_relations')
         depth = 1
 
 class UserTagsSerializer(serializers.ModelSerializer):
@@ -46,7 +50,3 @@ class UserTagsSerializer(serializers.ModelSerializer):
 
 
 
-class UserRelationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserRelation
-        fields = ('investoruser','traderuser','relationtype')
