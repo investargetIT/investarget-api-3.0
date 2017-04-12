@@ -76,31 +76,31 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     cardBucket = models.CharField(max_length=32,blank=True,null=True)
     cardKey = models.CharField(max_length=64,blank=True,null=True)
     wechat = models.CharField(max_length=64,blank=True,null=True)
-    userstatu = models.ForeignKey(AuditStatus,verbose_name='作者',blank=True,null=True)
-    org = models.ForeignKey('org.organization',verbose_name='所属机构',blank=True,null=True,related_name='org_users',on_delete=models.SET_NULL)
-    name = models.CharField(verbose_name='姓名',max_length=128,db_index=True,blank=True,null=True)
-    nameE = models.CharField(verbose_name='name',max_length=128,db_index=True,blank=True,null=True)
+    userstatu = models.ForeignKey(AuditStatus,help_text='作者',blank=True,null=True)
+    org = models.ForeignKey('org.organization',help_text='所属机构',blank=True,null=True,related_name='org_users',on_delete=models.SET_NULL)
+    name = models.CharField(help_text='姓名',max_length=128,db_index=True,blank=True,null=True)
+    nameE = models.CharField(help_text='name',max_length=128,db_index=True,blank=True,null=True)
     mobileAreaCode = models.CharField(max_length=3,blank=True,null=True,default='86')
-    mobile = models.CharField(verbose_name='手机',max_length=32,db_index=True,blank=True,null=True)
+    mobile = models.CharField(help_text='手机',max_length=32,db_index=True,blank=True,null=True)
     company = models.CharField(max_length=64,blank=True,null=True)
-    description = models.TextField(verbose_name='简介',blank=True,default='description')
+    description = models.TextField(help_text='简介',blank=True,default='description')
     tags = models.ManyToManyField(Tag, through='userTags', through_fields=('user', 'tag'), blank=True)
-    email = models.EmailField(verbose_name='邮箱', max_length=48,db_index=True,blank=True,null=True)
+    email = models.EmailField(help_text='邮箱', max_length=48,db_index=True,blank=True,null=True)
     title = models.ForeignKey(TitleType,blank=True,null=True,related_name='title_users',related_query_name='user_title',on_delete=models.SET_NULL)
     gender = models.BooleanField(blank=True,default=0,help_text=('0=男，1=女'))
-    remark = models.TextField(verbose_name='简介',blank=True,null=True)
-    school = models.ForeignKey(School,verbose_name='院校',blank=True,null=True,related_name='school_users',on_delete=models.SET_NULL)
-    specialty = models.ForeignKey(Specialty,verbose_name='专业',blank=True,null=True,related_name='profession_users',on_delete=models.SET_NULL)
-    registersource = models.SmallIntegerField(verbose_name='注册来源',choices=((1,'pc'),(2,'ios'),(3,'android'),(4,'mobileweb')),default=1)
+    remark = models.TextField(help_text='简介',blank=True,null=True)
+    school = models.ForeignKey(School,help_text='院校',blank=True,null=True,related_name='school_users',on_delete=models.SET_NULL)
+    specialty = models.ForeignKey(Specialty,help_text='专业',blank=True,null=True,related_name='profession_users',on_delete=models.SET_NULL)
+    registersource = models.SmallIntegerField(help_text='注册来源',choices=((1,'pc'),(2,'ios'),(3,'android'),(4,'mobileweb')),default=1)
     lastmodifytime = models.DateTimeField(auto_now=True)
-    lastmodifyuser = models.ForeignKey('self',verbose_name='修改者',blank=True,null=True,related_name='usermodify_users',related_query_name='user_modifyuser',on_delete=models.SET_NULL)
-    is_staff = models.BooleanField(verbose_name='登录admin', default=False, blank=True,)
-    is_active = models.BooleanField(verbose_name='是否活跃', default=True, blank=True,)
-    is_deleted = models.BooleanField(blank=True,verbose_name='是否已被删除', default=False)
-    deleteduser = models.ForeignKey('self',verbose_name='删除者',blank=True,null=True,related_name='userdelete_users',related_query_name='user_deleteduser',on_delete=models.SET_NULL)
+    lastmodifyuser = models.ForeignKey('self',help_text='修改者',blank=True,null=True,related_name='usermodify_users',related_query_name='user_modifyuser',on_delete=models.SET_NULL)
+    is_staff = models.BooleanField(help_text='登录admin', default=False, blank=True,)
+    is_active = models.BooleanField(help_text='是否活跃', default=True, blank=True,)
+    is_deleted = models.BooleanField(blank=True,help_text='是否已被删除', default=False)
+    deleteduser = models.ForeignKey('self',help_text='删除者',blank=True,null=True,related_name='userdelete_users',related_query_name='user_deleteduser',on_delete=models.SET_NULL)
     deletedtime = models.DateTimeField(blank=True,null=True)
     createdtime = models.DateTimeField(auto_now_add=True,blank=True)
-    createuser = models.ForeignKey('self',verbose_name='创建者',blank=True,null=True,related_name='usercreate_users',related_query_name='user_createuser',on_delete=models.SET_NULL)
+    createuser = models.ForeignKey('self',help_text='创建者',blank=True,null=True,related_name='usercreate_users',related_query_name='user_createuser',on_delete=models.SET_NULL)
 
     USERNAME_FIELD = 'usercode'
     REQUIRED_FIELDS = ['email']
@@ -210,27 +210,34 @@ class UserRelation(models.Model):
             if self.pk:
                 if self.is_deleted:
                     remove_perm('MyUserSys.trader_change',self.traderuser,self.investoruser)
+                    remove_perm('MyUserSys.change_userrelation', self.traderuser, self)
+                    remove_perm('MyUserSys.delete_userrelation', self.traderuser, self)
                 else:
                     oldrela = UserRelation.objects.get(pk=self.pk)
                     remove_perm('MyUserSys.trader_change',oldrela.traderuser,oldrela.investoruser)
+                    remove_perm('MyUserSys.change_userrelation', oldrela.traderuser, self)
+                    remove_perm('MyUserSys.delete_userrelation', oldrela.traderuser, self)
                     assign_perm('MyUserSys.trader_change',self.traderuser,self.investoruser)
+                    assign_perm('MyUserSys.change_userrelation', self.traderuser, self)
+                    assign_perm('MyUserSys.delete_userrelation', self.traderuser, self)
             else:
                 assign_perm('MyUserSys.trader_change', self.traderuser, self.investoruser)
+                assign_perm('MyUserSys.change_userrelation', self.traderuser, self)
+                assign_perm('MyUserSys.delete_userrelation', self.traderuser, self)
             super(UserRelation, self).save(*args, **kwargs)
     class Meta:
         db_table = "user_relation"
         permissions =  (
-            ('trader_addrelation', u'交易师新建联系'),
-            ('admin_addrelation',u'管理员新建联系'),
-            ('trader_changerelation', u'交易师编辑联系'),
-            ('admin_changerelation',u'管理员编辑联系')
+            ('admin_adduserrelation', u'管理员建立用户联系'),
+            ('admin_changeuserrelation', u'管理员修改用户联系'),
+            ('admin_deleteuserrelation', u'管理员删除用户联系'),
         )
 
 
 class MobileAuthCode(models.Model):
-    mobile = models.CharField(verbose_name='手机号',max_length=32)
-    token = models.CharField(verbose_name='验证码token',max_length=32)
-    code = models.CharField(verbose_name='验证码',max_length=32)
+    mobile = models.CharField(help_text='手机号',max_length=32)
+    token = models.CharField(help_text='验证码token',max_length=32)
+    code = models.CharField(help_text='验证码',max_length=32)
     createTime = models.DateTimeField(auto_now_add=True)
     def isexpired(self):
         return timezone.now() - self.created >= 600

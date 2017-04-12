@@ -24,10 +24,9 @@ from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable, J
 
 
 class UserView(viewsets.ModelViewSet):
-    filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
+    filter_backends = (filters.DjangoFilterBackend,)
     queryset = MyUser.objects.filter(is_deleted=False)
     filter_fields = ('mobile','email','name','id','groups','trader',)
-    search_fields = ('mobile','email','name','id','org__id','trader')
     serializer_class = UserSerializer
     redis_key = 'users'
     Model = MyUser
@@ -340,14 +339,13 @@ class UserView(viewsets.ModelViewSet):
 
 
 class UserRelationView(viewsets.ModelViewSet):
-    filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
+    filter_backends = (filters.DjangoFilterBackend,)
     # permission_classes = (AllowAny,)
-    filter_fields = ('investoruser', 'traderuser', 'relationtype')
-    search_fields = ('investoruser', 'traderuser', 'relationtype')
+    filter_fields = ('id','investoruser', 'traderuser', 'relationtype')
     queryset = UserRelation.objects.filter(is_deleted=False)
     serializer_class = UserRelationSerializer
 
-    @loginTokenIsAvailable(['MyUserSys.as_adminuser','MyUserSys.as_traderuser','MyUserSys.as_investoruser'])
+    @loginTokenIsAvailable(['MyUserSys.as_admin','MyUserSys.as_trader','MyUserSys.as_investor'])
     def list(self, request, *args, **kwargs):
         page_size = request.GET.get('page_size')
         page_index = request.GET.get('page_index')  #从第一页开始
@@ -356,11 +354,11 @@ class UserRelationView(viewsets.ModelViewSet):
         if not page_index:
             page_index = 1
         queryset = self.filter_queryset(self.get_queryset())
-        if request.user.has_perm('MyUserSys.as_adminuser'):
+        if request.user.has_perm('MyUserSys.as_admin'):
             queryset = queryset
-        elif request.user.has_perm('MyUserSys.as_traderuser'):
+        elif request.user.has_perm('MyUserSys.as_trader'):
             queryset = queryset.filter(traderuser=request.user)
-        elif request.user.has_perm('MyUserSys.as_investoruser'):
+        elif request.user.has_perm('MyUserSys.as_investor'):
             queryset = queryset.filter(investoruser=request.user)
         else:
             return JSONResponse({'success':False,'result':None,'error':'no permission'})
@@ -376,19 +374,18 @@ class UserRelationView(viewsets.ModelViewSet):
     @loginTokenIsAvailable(['MyUserSys.add_userrelation'])
     def create(self, request, *args, **kwargs):
         try:
-            data = request.data
-            if request.user.has_perm('MyUserSys.admin_adduser'):
-                pass
-            elif request.user.has_perm('MyUserSys.trader_adduser'):
-                data['traderuser'] = request.user.id
-            else:
-                return JSONResponse(permissiondeniedresponse)
-            data['createuser'] = request.user.id
             # data = {
             #     'investoruser':2,
             #     'traderuser':2,
             #     'relationtype':False,
             # }
+            data = request.data
+            if request.user.has_perm('MyUserSys.admin_adduserrelation'):
+                pass
+            elif request.user.has_perm('MyUserSys.add_userrelation'):
+                data['traderuser'] = request.user.id
+            else:
+                raise ValueError('没有权限')
             data['createuser'] = request.user.id
             newrelation = UserRelationSerializer(data=data)
             if newrelation.is_valid():
@@ -420,12 +417,12 @@ class UserRelationView(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         try:
             userrelation = self.get_object()
-            if request.user.has_perm('MyUserSys.as_adminuser'):
+            if request.user.has_perm('MyUserSys.as_admin'):
                 pass
             elif request.user == userrelation.traderuser or request.user == userrelation.investoruser:
                 pass
             else:
-                return JSONResponse(permissiondeniedresponse)
+                raise ('没有权限')
             serializer = UserRelationSerializer(userrelation)
             response = {'success':True,'result': serializer.data,'error': None,}
             return JSONResponse(response)
@@ -434,13 +431,20 @@ class UserRelationView(viewsets.ModelViewSet):
             response = {'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], }
             return JSONResponse(response)
 
-    # @loginTokenIsAvailable(['MyUserSys.change_userrelation'])
+    # @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
         try:
             data = request.data
+            relation = self.get_object()
+            if request.user.has_perm('MyUserSys.admin_changeuserrelation'):
+                pass
+            elif request.user.has_perm('MyUserSys.change_userrelation', relation):
+                data['traderuser'] = request.user.id
+                data.pop('relationtype', None)
+            else:
+                raise ('没有权限')
             data['lastmodifyuser'] = request.user.id
             data['lastmodifytime'] = datetime.datetime.now()
-            relation = self.get_object()
             newrelation = UserRelationSerializer(relation,data=data)
             if newrelation.is_valid():
                 newrelation.save()
@@ -457,6 +461,12 @@ class UserRelationView(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         try:
             userrelation = self.get_object()
+            if request.user.has_perm('MyUserSys.delete_userrelation',userrelation):
+                pass
+            elif request.user.has_perm('MyUserSys.admin_deleteuserrelation'):
+                pass
+            else:
+                raise ('没有权限')
             userrelation.is_deleted = True
             userrelation.deleteduser = request.user
             userrelation.deletedtime = datetime.datetime.now()

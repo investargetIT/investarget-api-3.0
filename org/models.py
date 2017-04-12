@@ -14,6 +14,7 @@ sys.setdefaultencoding('utf-8')
 class organization(models.Model):
     id = models.AutoField(primary_key=True)
     description = models.TextField(blank=True,null=True)
+    orgtransactionphase = models.ManyToManyField(TransactionPhases, through='orgTransactionPhase',through_fields=('org', 'transactionPhase'), blank=True)
     currency = models.ForeignKey(CurrencyType,blank=True,null=True,related_name='currency_orgs',on_delete=models.SET_NULL)
     decisionCycle = models.SmallIntegerField(default=180)
     decisionMakingProcess = models.TextField(blank=True,null=True)
