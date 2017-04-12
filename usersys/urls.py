@@ -18,6 +18,9 @@ user_detail = views.UserView.as_view({
         'delete': 'destroy'     #删除
 })
 
+user_detailinfo = views.UserView.as_view({
+        'get':'getdetailinfo'
+})
 
 find_password = views.UserView.as_view({
         'post': 'findpassword',
@@ -44,7 +47,8 @@ detail_relation = views.UserRelationView.as_view({
 
 urlpatterns = [
     url(r'^$', user_list,name='user-list',),
-    url(r'^(?P<pk>\d+)/$', user_detail,name='user-detail'),
+    url(r'^(?P<pk>\d+)/$', user_detail,name='user-one'),
+    url(r'^detail/(?P<pk>\d+)/$', user_detailinfo,name='user-detailinfo'),
     url(r'^password/$', find_password ,name='find-password'),
     url(r'^password/(?P<pk>\d+)/$', change_password ,name='change-password'),
     url(r'^relationship/$', user_relationship, name='user-relationship'),

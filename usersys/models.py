@@ -84,6 +84,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     mobile = models.CharField(verbose_name='手机',max_length=32,db_index=True,blank=True,null=True)
     company = models.CharField(max_length=64,blank=True,null=True)
     description = models.TextField(verbose_name='简介',blank=True,default='description')
+    tags = models.ManyToManyField(Tag, through='userTags', through_fields=('user', 'tag'), blank=True)
     email = models.EmailField(verbose_name='邮箱', max_length=48,db_index=True,blank=True,null=True)
     title = models.ForeignKey(TitleType,blank=True,null=True,related_name='title_users',related_query_name='user_title',on_delete=models.SET_NULL)
     gender = models.BooleanField(blank=True,default=0,help_text=('0=男，1=女'))
@@ -115,14 +116,14 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     class Meta:
         db_table = "user"
         permissions = (
-            ('as_investor', u'投资人'),
-            ('as_trader', u'交易师'),
-            ('as_supporter', u'项目方'),
-            ('as_admin', u'普通管理员'),
-            ('trader_add', u'交易师新增'),
-            ('admin_add',u'管理员新增'),
-            ('trader_change', u'交易师编辑'),
-            ('admin_change',u'管理员编辑')
+            ('as_investoruser', u'投资人'),
+            ('as_traderuser', u'交易师'),
+            ('as_supporteruser', u'项目方'),
+            ('as_adminuser', u'普通管理员'),
+            ('trader_adduser', u'交易师新增'),
+            ('admin_adduser',u'管理员新增'),
+            ('trader_changeuser', u'交易师编辑'),
+            ('admin_changeuser',u'管理员编辑')
         )
     def save(self, *args, **kwargs):
         try:
@@ -201,9 +202,9 @@ class UserRelation(models.Model):
             self.relationtype = True
         if self.investoruser.id == self.traderuser.id:
             raise ValueError('1.投资人和交易师不能是同一个人')
-        elif not self.traderuser.has_perm('as_trader'):
+        elif not self.traderuser.has_perm('as_traderuser'):
             raise ValueError('4.没有交易师权限关系')
-        elif not self.investoruser.has_perm('as_investor'):
+        elif not self.investoruser.has_perm('as_investoruser'):
             raise ValueError('5.没有投资人权限')
         else:
             if self.pk:
@@ -218,6 +219,12 @@ class UserRelation(models.Model):
             super(UserRelation, self).save(*args, **kwargs)
     class Meta:
         db_table = "user_relation"
+        permissions =  (
+            ('trader_addrelation', u'交易师新建联系'),
+            ('admin_addrelation',u'管理员新建联系'),
+            ('trader_changerelation', u'交易师编辑联系'),
+            ('admin_changerelation',u'管理员编辑联系')
+        )
 
 
 class MobileAuthCode(models.Model):

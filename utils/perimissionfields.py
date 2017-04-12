@@ -2,6 +2,8 @@
 
 
 userpermfield = {
-    'usersys.change_myuser':[],
-    'usersys.change_otheruser':[],
+    'usersys.admin_changeuser':[],
+    'usersys.trader_changeuser':[],
+    'usersys.admin_adduser':[],
+    'usersys.trader_adduser':[],
 }
