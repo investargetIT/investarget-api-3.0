@@ -1,1 +1,10 @@
 .idea/
+dataroom/migrations/
+activity/migrations/
+msg/migrations/
+org/migrations/
+proj/migrations/
+sourcetype/migrations/
+timeline/migrations/
+third/migrations/
+usersys/migrations/

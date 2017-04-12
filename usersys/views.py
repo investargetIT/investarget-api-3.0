@@ -75,22 +75,31 @@ class UserView(viewsets.ModelViewSet):
             mobilecodetoken = data.pop('mobilecodetoken', None)
             mobile = data.get('mobile')
             email = data.get('email')
-            try:
-                mobileauthcode = MobileAuthCode.objects.get(mobile=mobile, code=mobilecode, token=mobilecodetoken)
-            except MobileAuthCode.DoesNotExist:
-                raise ValueError('手机验证码不匹配')
+            if mobile:
+                try:
+                    mobileauthcode = MobileAuthCode.objects.get(mobile=mobile, code=mobilecode, token=mobilecodetoken)
+                except MobileAuthCode.DoesNotExist:
+                    raise ValueError('手机验证码不匹配')
+                else:
+                    if mobileauthcode.isexpired():
+                        raise ValueError('验证码已过期')
+                if email:
+                    filterQ = Q(mobile=mobile) | Q(email=email)
+                else:
+                    filterQ = Q(mobile=mobile)
+            elif email:
+                filterQ = Q(email=email)
             else:
-                if mobileauthcode.isexpired():
-                    raise ValueError('验证码已过期')
-            password = data.pop('password', None)
+                raise KeyError('mobile、email至少有一项不能为空')
             try:
-                self.queryset.get(Q(mobile=mobile) | Q(email=email))
+                self.queryset.get(filterQ)
             except MyUser.DoesNotExist:
                 pass
             else:
                 response = {'success': False, 'result': None, 'error': 'user with this mobile already exists.'}
                 return JSONResponse(response)
             user = MyUser(email=email, mobile=mobile)
+            password = data.pop('password', None)
             user.set_password(password)
             user.save()
             keylist = data.keys()
