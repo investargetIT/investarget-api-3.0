@@ -19,6 +19,7 @@ from usersys.models import MyUser, MyToken, UserRelation, userTags, MobileAuthCo
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
     CreatUserSerializer , UserCommenSerializer
 from sourcetype.models import ClientType, Tag
+from utils import perimissionfields
 from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable, JSONResponse,\
     permissiondeniedresponse, catchexcption, cache_delete_key
 
@@ -67,59 +68,53 @@ class UserView(viewsets.ModelViewSet):
         return JSONResponse({'success':True,'result': serializer.data,'error': None,})
 
     #注册用户(新注册用户没有交易师)
-    @transaction.atomic()
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
         try:
-            data = request.data
-            mobilecode = data.pop('mobilecode', None)
-            mobilecodetoken = data.pop('mobilecodetoken', None)
-            mobile = data.get('mobile')
-            email = data.get('email')
-            if mobile:
+            with transaction.atomic():
+                data = request.data
+                mobilecode = data.pop('mobilecode', None)
+                mobilecodetoken = data.pop('mobilecodetoken', None)
+                mobile = data.get('mobile')
+                email = data.get('email')
+                if mobile:
+                    try:
+                        mobileauthcode = MobileAuthCode.objects.get(mobile=mobile, code=mobilecode, token=mobilecodetoken)
+                    except MobileAuthCode.DoesNotExist:
+                        raise ValueError('手机验证码不匹配')
+                    else:
+                        if mobileauthcode.isexpired():
+                            raise ValueError('验证码已过期')
+                    if email:
+                        filterQ = Q(mobile=mobile) | Q(email=email)
+                    else:
+                        filterQ = Q(mobile=mobile)
+                elif email:
+                    filterQ = Q(email=email)
+                else:
+                    raise KeyError('mobile、email至少有一项不能为空')
                 try:
-                    mobileauthcode = MobileAuthCode.objects.get(mobile=mobile, code=mobilecode, token=mobilecodetoken)
-                except MobileAuthCode.DoesNotExist:
-                    raise ValueError('手机验证码不匹配')
+                    self.queryset.get(filterQ)
+                except MyUser.DoesNotExist:
+                    pass
                 else:
-                    if mobileauthcode.isexpired():
-                        raise ValueError('验证码已过期')
-                if email:
-                    filterQ = Q(mobile=mobile) | Q(email=email)
+                    raise ValueError('user has been already exist')
+                user = MyUser(email=email, mobile=mobile)
+                password = data.pop('password', None)
+                user.set_password(password)
+                user.save()
+                tags = data.pop('tags', None)
+                userserializer = CreatUserSerializer(user, data=data)
+                if userserializer.is_valid():
+                    user = userserializer.save()
+                    if tags:
+                        usertaglist = []
+                        for tag in tags:
+                            usertaglist.append(userTags(user=user, tag_id=tag, ))
+                        user.user_tags.bulk_create(usertaglist)
                 else:
-                    filterQ = Q(mobile=mobile)
-            elif email:
-                filterQ = Q(email=email)
-            else:
-                raise KeyError('mobile、email至少有一项不能为空')
-            try:
-                self.queryset.get(filterQ)
-            except MyUser.DoesNotExist:
-                pass
-            else:
-                response = {'success': False, 'result': None, 'error': 'user with this mobile already exists.'}
-                return JSONResponse(response)
-            user = MyUser(email=email, mobile=mobile)
-            password = data.pop('password', None)
-            user.set_password(password)
-            user.save()
-            keylist = data.keys()
-            canCreateField = []
-            cannoteditlist = [key for key in keylist if key not in canCreateField]
-            if cannoteditlist:
-                permissiondeniedresponse['error'] = '没有权限修改%s' % cannoteditlist
-                return JSONResponse(permissiondeniedresponse)
-            tags = data.pop('tags', None)
-            userserializer = CreatUserSerializer(user, data=data)
-            if userserializer.is_valid():
-                user = userserializer.save()
-                if tags:
-                    usertaglist = []
-                    for tag in tags:
-                        usertaglist.append(userTags(user=user, tag_id=tag, ))
-                    user.user_tags.bulk_create(usertaglist)
-            else:
-                raise ValueError('userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
-            return JSONResponse({'success': True, 'result': UserSerializer(user).data, 'error': None, })
+                    raise ValueError('userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
+                return JSONResponse({'success': True, 'result': UserSerializer(user).data, 'error': None, })
         except Exception:
             catchexcption(request)
             return JSONResponse({'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2]})
@@ -127,43 +122,43 @@ class UserView(viewsets.ModelViewSet):
     # 新增用户
     @loginTokenIsAvailable()
     def adduser(self, request, *args, **kwargs):
+        data = request.data
         if request.user.has_perm('MyUserSys.admin_adduser'):
-            canCreateField = []
+            canCreateField = perimissionfields.userpermfield['usersys.admin_adduser']
         elif request.user.has_perm('MyUserSys.trader_adduser'):
-            canCreateField = []
+            canCreateField = perimissionfields.userpermfield['usersys.trader_adduser']
         else:
             return JSONResponse(permissiondeniedresponse)
         try:
-            data = request.data
-            password = data.get('password')
-            email = data.get('email')
-            mobile = data.get('mobile')
-            try:
-                user = self.get_queryset().get(Q(mobile=mobile) | Q(email=email))
-            except MyUser.DoesNotExist:
-                pass
-            else:
-                raise ValueError('user with this mobile or email has already been exist')
-            user = MyUser()
-            user.set_password(password)
-            user.save()
-            keylist = data.keys()
-            cannoteditlist = [key for key in keylist if key not in canCreateField]
-            if cannoteditlist:
-                permissiondeniedresponse['error'] = '没有权限修改%s' % cannoteditlist
-                return JSONResponse(permissiondeniedresponse)
-            tags = data.pop('tags', None)
-            userserializer = CreatUserSerializer(user, data=data)
-            if userserializer.is_valid():
-                user = userserializer.save()
-                if tags:
-                    usertaglist = []
-                    for tag in tags:
-                        usertaglist.append(userTags(user=user, tag_id=tag, ))
-                    user.user_tags.bulk_create(usertaglist)
-            else:
-                raise ValueError('userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
-            return JSONResponse({'success': True, 'result': UserSerializer(user).data, 'error': None, })
+            with transaction.atomic():
+                password = data.get('password')
+                email = data.get('email')
+                mobile = data.get('mobile')
+                try:
+                    user = self.get_queryset().get(Q(mobile=mobile) | Q(email=email))
+                except MyUser.DoesNotExist:
+                    pass
+                else:
+                    raise ValueError('user with this mobile or email has already been exist')
+                user = MyUser()
+                user.set_password(password)
+                user.save()
+                keylist = data.keys()
+                cannoteditlist = [key for key in keylist if key not in canCreateField]
+                if cannoteditlist:
+                    raise KeyError('没有权限修改%s' % cannoteditlist)
+                tags = data.pop('tags', None)
+                userserializer = CreatUserSerializer(user, data=data)
+                if userserializer.is_valid():
+                    user = userserializer.save()
+                    if tags:
+                        usertaglist = []
+                        for tag in tags:
+                            usertaglist.append(userTags(user=user, tag_id=tag, ))
+                        user.user_tags.bulk_create(usertaglist)
+                else:
+                    raise ValueError('userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
+                return JSONResponse({'success': True, 'result': UserSerializer(user).data, 'error': None, })
         except Exception:
             catchexcption(request)
             return JSONResponse({'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], })
@@ -198,9 +193,9 @@ class UserView(viewsets.ModelViewSet):
             if request.user == user:
                 userserializer = UserSerializer
             else:
-                if request.user.has_perm('MyUserSys.as_admin'):
+                if request.user.has_perm('MyUserSys.as_adminuser'):
                     userserializer = UserSerializer
-                elif request.user.has_perm('MyUserSys.trader_change', self.get_object()):
+                elif request.user.has_perm('MyUserSys.trader_changeuser', self.get_object()):
                     userserializer = UserSerializer
                 else:
                     return JSONResponse(permissiondeniedresponse)
@@ -217,42 +212,37 @@ class UserView(viewsets.ModelViewSet):
     def partial_update(self, request, *args, **kwargs):
         try:
             user = self.get_object()
-            canChangeField = []
             if request.user == user:
-                canChangeField[0:0] = []
+                canChangeField = perimissionfields.userpermfield['changeself']
             else:
                 if request.user.has_perm('usersys.admin_changeuser'):
-                    canChangeField[0:0] = []
+                    canChangeField = perimissionfields.userpermfield['usersys.admin_changeuser']
                 elif request.user.has_perm('usersys.trader_changeuser',self.get_object()):
-                    canChangeField[0:0] = []
+                    canChangeField = perimissionfields.userpermfield['usersys.trader_changeuser']
                 else:
-                    return JSONResponse(permissiondeniedresponse)
-        except:
-            return JSONResponse({'success':False,'result': None,'error': traceback.format_exc().split('\n')[-2],})
-        try:
+                    raise ValueError('没有权限')
             data = request.data
             keylist = data.keys()
-            canCreateField = []
-            cannoteditlist = [key for key in keylist if key not in canCreateField]
+            cannoteditlist = [key for key in keylist if key not in canChangeField]
             if cannoteditlist:
-                permissiondeniedresponse['error'] = '没有权限修改%s' % cannoteditlist
-                return JSONResponse(permissiondeniedresponse)
-            tags = data.pop('tags', None)
-            userserializer = CreatUserSerializer(user, data=data)
-            if userserializer.is_valid():
-                user = userserializer.save()
-                if tags:
-                    taglist = Tag.objects.in_bulk(tags)
-                    addlist = [item for item in taglist if item not in user.tags.all()]
-                    removelist = [item for item in user.tags.all() if item not in taglist]
-                    user.user_tags.filter(tag__in=removelist,is_deleted=False).update(is_deleted=True,deletedtime=datetime.datetime.now(),deleteduser=request.user)
-                    usertaglist = []
-                    for tag in addlist:
-                        usertaglist.append(userTags(user=user, tag=tag, createuser=request.user))
-                    user.user_tags.bulk_create(usertaglist)
-            else:
-                raise ValueError('userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
-            return JSONResponse({'success': True, 'result': UserSerializer(user).data, 'error': None, })
+                raise ValueError('没有权限修改_%s' % cannoteditlist)
+            with transaction.atomic():
+                tags = data.pop('tags', None)
+                userserializer = CreatUserSerializer(user, data=data)
+                if userserializer.is_valid():
+                    user = userserializer.save()
+                    if tags:
+                        taglist = Tag.objects.in_bulk(tags)
+                        addlist = [item for item in taglist if item not in user.tags.all()]
+                        removelist = [item for item in user.tags.all() if item not in taglist]
+                        user.user_tags.filter(tag__in=removelist,is_deleted=False).update(is_deleted=True,deletedtime=datetime.datetime.now(),deleteduser=request.user)
+                        usertaglist = []
+                        for tag in addlist:
+                            usertaglist.append(userTags(user=user, tag=tag, createuser=request.user))
+                        user.user_tags.bulk_create(usertaglist)
+                else:
+                    raise ValueError('userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
+                return JSONResponse({'success': True, 'result': UserSerializer(user).data, 'error': None, })
         except Exception:
             catchexcption(request)
             return JSONResponse({'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], })
@@ -279,13 +269,13 @@ class UserView(viewsets.ModelViewSet):
                     except FieldDoesNotExist as ex:
                         if manager.count():
                             raise ValueError(u'{} 上有关联数据'.format(link))
-            instance.is_deleted = True
-            instance.deleteduser = request.user
-            instance.deletedtime = datetime.datetime.utcnow()
-            instance.save()
-            response = {'success': True, 'result': UserSerializer(instance).data, 'error': None}
-            return JSONResponse(response)
-
+            with transaction.atomic():
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.utcnow()
+                instance.save()
+                response = {'success': True, 'result': UserSerializer(instance).data, 'error': None}
+                return JSONResponse(response)
         except:
             catchexcption(request)
             response = {'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], }
@@ -306,10 +296,11 @@ class UserView(viewsets.ModelViewSet):
             else:
                 if mobileauthcode.isexpired():
                     raise ValueError('验证码已过期')
-            user = self.queryset.get(mobile=mobile)
-            user.set_password(password)
-            user.save(update_fields=['password'])
-            return JSONResponse({'success': True, 'result': password, 'error': None})
+            with transaction.atomic():
+                user = self.queryset.get(mobile=mobile)
+                user.set_password(password)
+                user.save(update_fields=['password'])
+                return JSONResponse({'success': True, 'result': password, 'error': None})
         except:
             return JSONResponse({'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2],})
 
@@ -329,9 +320,10 @@ class UserView(viewsets.ModelViewSet):
                     raise ValueError('新密码输入有误')
             else:
                 raise ValueError('没有权限')
-            user.set_password(password)
-            user.save(update_fields=['password'])
-            return JSONResponse({'success': True, 'result': password, 'error': None})
+            with transaction.atomic():
+                user.set_password(password)
+                user.save(update_fields=['password'])
+                return JSONResponse({'success': True, 'result': password, 'error': None})
         except:
             return JSONResponse({'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2],})
 
@@ -340,9 +332,10 @@ class UserView(viewsets.ModelViewSet):
     def resetpassword(self,request, *args, **kwargs):
         try:
             user = self.get_object()
-            user.set_password('Aa123456')
-            user.save(update_fields=['password'])
-            return JSONResponse({'success': True, 'result': 'Aa123456', 'error': None})
+            with transaction.atomic():
+                user.set_password('Aa123456')
+                user.save(update_fields=['password'])
+                return JSONResponse({'success': True, 'result': 'Aa123456', 'error': None})
         except:
             return JSONResponse({'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], })
 
@@ -383,11 +376,6 @@ class UserRelationView(viewsets.ModelViewSet):
     @loginTokenIsAvailable(['MyUserSys.add_userrelation'])
     def create(self, request, *args, **kwargs):
         try:
-            # data = {
-            #     'investoruser':2,
-            #     'traderuser':2,
-            #     'relationtype':False,
-            # }
             data = request.data
             if request.user.has_perm('MyUserSys.admin_adduserrelation'):
                 pass
@@ -396,13 +384,14 @@ class UserRelationView(viewsets.ModelViewSet):
             else:
                 raise ValueError('没有权限')
             data['createuser'] = request.user.id
-            newrelation = UserRelationSerializer(data=data)
-            if newrelation.is_valid():
-                newrelation.save()
-                response = {'success': True, 'result':newrelation.data, 'error': None}
-            else:
-                raise ValueError('%s'%newrelation.errors)
-            return JSONResponse(response)
+            with transaction.atomic():
+                newrelation = UserRelationSerializer(data=data)
+                if newrelation.is_valid():
+                    newrelation.save()
+                    response = {'success': True, 'result':newrelation.data, 'error': None}
+                else:
+                    raise ValueError('%s'%newrelation.errors)
+                return JSONResponse(response)
         except:
             catchexcption(request)
             response = {'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], }
@@ -454,13 +443,14 @@ class UserRelationView(viewsets.ModelViewSet):
                 raise ('没有权限')
             data['lastmodifyuser'] = request.user.id
             data['lastmodifytime'] = datetime.datetime.now()
-            newrelation = UserRelationSerializer(relation,data=data)
-            if newrelation.is_valid():
-                newrelation.save()
-                response = {'success': True, 'result':newrelation.data, 'error': None}
-            else:
-                raise ValueError('err:%s'%newrelation.errors)
-            return JSONResponse(response)
+            with transaction.atomic():
+                newrelation = UserRelationSerializer(relation,data=data)
+                if newrelation.is_valid():
+                    newrelation.save()
+                    response = {'success': True, 'result':newrelation.data, 'error': None}
+                else:
+                    raise ValueError('err:%s'%newrelation.errors)
+                return JSONResponse(response)
         except:
             catchexcption(request)
             response = {'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], }
@@ -476,12 +466,13 @@ class UserRelationView(viewsets.ModelViewSet):
                 pass
             else:
                 raise ('没有权限')
-            userrelation.is_deleted = True
-            userrelation.deleteduser = request.user
-            userrelation.deletedtime = datetime.datetime.now()
-            userrelation.save()
-            response = {'success': True, 'result': UserRelationSerializer(userrelation).data, 'error': None}
-            return JSONResponse(response)
+            with transaction.atomic():
+                userrelation.is_deleted = True
+                userrelation.deleteduser = request.user
+                userrelation.deletedtime = datetime.datetime.now()
+                userrelation.save()
+                response = {'success': True, 'result': UserRelationSerializer(userrelation).data, 'error': None}
+                return JSONResponse(response)
         except:
             catchexcption(request)
             response = {'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], }

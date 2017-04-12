@@ -87,7 +87,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(help_text='邮箱', max_length=48,db_index=True,blank=True,null=True)
     title = models.ForeignKey(TitleType,blank=True,null=True,related_name='title_users',related_query_name='user_title',on_delete=models.SET_NULL)
     gender = models.BooleanField(blank=True,default=0,help_text=('0=男，1=女'))
-    remark = models.TextField(help_text='简介',blank=True,null=True)
+    remark = models.TextField(help_text='备注',blank=True,null=True)
     school = models.ForeignKey(School,help_text='院校',blank=True,null=True,related_name='school_users',on_delete=models.SET_NULL)
     specialty = models.ForeignKey(Specialty,help_text='专业',blank=True,null=True,related_name='profession_users',on_delete=models.SET_NULL)
     registersource = models.SmallIntegerField(help_text='注册来源',choices=((1,'pc'),(2,'ios'),(3,'android'),(4,'mobileweb')),default=1)

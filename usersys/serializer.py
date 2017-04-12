@@ -39,7 +39,7 @@ class UserSerializer(serializers.ModelSerializer):
 class CreatUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = MyUser
-        fields = ('id', 'groups', 'tags', 'name', 'mobile', 'email', 'title', 'company', 'org',)
+        fields = ('photoBucket','photoKey','cardBucket','cardKey','wechat','org','name','nameE','mobileAreaCode','mobile','company','description','tags','email','title','gender','school','specialty','registersource','remark')
 
 #用户列表显示信息
 class UserListSerializer(serializers.ModelSerializer):
