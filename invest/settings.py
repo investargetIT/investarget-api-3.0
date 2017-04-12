@@ -53,7 +53,7 @@ INSTALLED_APPS = [
 REST_FRAMEWORK = {
     # 'DEFAULT_PERMISSION_CLASSES': ('rest_framework.permissions.IsAuthenticatedOrReadOnly',),
     'PAGINATE_BY': 10,
-    'EXCEPTION_HANDLER': 'usersys.utils.custom_exception_handler',
+
 }
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

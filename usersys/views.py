@@ -482,33 +482,23 @@ class UserRelationView(viewsets.ModelViewSet):
 
 @api_view(['POST'])
 def login(request):
-    receive = request.data
-    if request.method == 'POST':
-        username = receive['mobile']
+    try:
+        receive = request.data
+        username = receive['account']
         password = receive['password']
         clienttype = request.META.get('HTTP_CLIENTTYPE')
-        user = auth.authenticate(mobile=username, password=password)
-        if user is not None and clienttype not in [1,2,3,4,5]:
-            # update the token
-            response = maketoken(user,clienttype)
-            return JSONResponse({
-                "result": 1,
-                "user_info":response, # response contain user_info and token
-                })
-        else:
-            try:
-                if clienttype is None:
-                    cause = u'登录类型不可用'
-                else:
-                    MyUser.objects.get(mobile=username)
-                    cause = u'密码错误'
-            except MyUser.DoesNotExist:
-                cause = u'用户不存在'
+        user = auth.authenticate(username=username, password=password)
+        if not user or not clienttype:
+            if not clienttype:
+                raise ValueError(u'登录类型不可用')
+            else:
+                raise ValueError(u'账号密码有误')
+        response = maketoken(user, clienttype)
+        return JSONResponse({"result": response, "success": True, 'error': None, })
+    except Exception:
+        response = {'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], }
+        return JSONResponse(response)
 
-            return JSONResponse({
-                "result": 0,
-                "message":cause,
-                })
 
 
 def maketoken(user,clienttype):
@@ -540,4 +530,3 @@ def add_or_change_strongrelate(investor,trader):
         relate.traderuser_id = trader
         relate.relationtype = True
     relate.save()
-

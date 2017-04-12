@@ -19,24 +19,26 @@ from sourcetype.models import AuditStatus, ClientType, TitleType,School,Specialt
 
 
 class MyUserBackend(ModelBackend):
-    def authenticate(self, mobile=None, pwd=None, email=None):
+    def authenticate(self, username=None, password=None, **kwargs):
         try:
-            if mobile:
-                user = MyUser.objects.get(mobile=mobile,is_deleted=False)
+            if '@' not in username:
+                user = MyUser.objects.get(mobile=username,is_deleted=False)
             else:
-                user = MyUser.objects.get(email=email,is_deleted=False)
+                user = MyUser.objects.get(email=username,is_deleted=False)
         except MyUser.DoesNotExist:
             pass
         else:
-            if user.check_password(pwd):
+            if user.check_password(password):
                 return user
         return None
 
     def get_user(self, user_id):
+
         try:
-            return MyUser.objects.get(pk=user_id)
+            user = MyUser._default_manager.get(pk=user_id)
         except MyUser.DoesNotExist:
             return None
+        return user if not user.is_deleted else None
 
 class MyUserManager(BaseUserManager):
     def create_user(self,email,mobile=None,password=None,**extra_fields):
@@ -110,7 +112,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
         return self.name
     def get_short_name(self):
         return self.name
-    def __unicode__(self):
+    def __str__(self):
         return self.name
     class Meta:
         db_table = "user"
