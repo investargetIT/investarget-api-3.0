@@ -35,3 +35,8 @@ class FavoriteSerializer(serializers.ModelSerializer):
         fields = '__all__'
         # fields = ('id','proj','user','favoritetype')
         depth = 1
+
+class ProjCreatSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = project
+        fields = ('titleC','statu','currency','projFormat','tags')

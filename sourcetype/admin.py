@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 # Register your models here.
-from .models import TransactionType, TransactionPhases, Profession, School, OrgArea, Tag, Industry, CurrencyType, \
+from .models import TransactionType, TransactionPhases,School, Specialty,OrgArea, Tag, Industry, CurrencyType, \
     AuditStatus, ProjectStatus, OrgType, FavoriteType, MessageType, ClientType, TitleType, Continent, Country
 
 admin.site.register(ProjectStatus)

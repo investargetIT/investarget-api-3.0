@@ -48,8 +48,8 @@ class organization(models.Model):
         return self.nameC
 
 class orgTransactionPhase(models.Model):
-    org = models.ForeignKey(organization,null=True,blank=True,on_delete=models.SET_NULL)
-    transactionPhase = models.ForeignKey(TransactionPhases,null=True,blank=True,related_name='org_TransactionPhases',on_delete=models.SET_NULL)
+    org = models.ForeignKey(organization,null=True,blank=True,related_name='org_orgTransactionPhases')
+    transactionPhase = models.ForeignKey(TransactionPhases,null=True,blank=True,related_name='transactionPhase_orgTransactionPhases',on_delete=models.SET_NULL)
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_orgTransactionPhases',on_delete=models.SET_NULL)
     deletedtime = models.DateTimeField(blank=True, null=True)

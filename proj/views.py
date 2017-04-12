@@ -1,4 +1,6 @@
 #coding=utf-8
+import traceback
+
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction
 from rest_framework import filters
@@ -8,10 +10,10 @@ from rest_framework import viewsets
 from rest_framework.decorators import api_view
 
 from proj.models import project, finance, favorite
-from proj.serializer import ProjSerializer, FavoriteSerializer,FormatSerializer,FinanceSerializer
+from proj.serializer import ProjSerializer, FavoriteSerializer,FormatSerializer,FinanceSerializer, ProjCreatSerializer
 from usersys.models import MyUser
-from utils.util import JSONResponse, catchexcption, read_from_cache, write_to_cache, successresponse, \
-    loginTokenIsAvailable
+from utils.util import JSONResponse, catchexcption, read_from_cache, write_to_cache, loginTokenIsAvailable
+
 
 
 class ProjectView(viewsets.ModelViewSet):
@@ -56,31 +58,42 @@ class ProjectView(viewsets.ModelViewSet):
             return JSONResponse({'success': True, 'result': None, 'count': 0})
         queryset = queryset.page(page_index)
         serializer = self.get_serializer(queryset, many=True)
-        successresponse['result'] = serializer.data
-        return JSONResponse(successresponse)
 
-    @loginTokenIsAvailable(['上传项目权限'])
+        return JSONResponse({
+                'success':True,
+                'result': serializer.data,
+                'error': None})
+
+    # @loginTokenIsAvailable(['上传项目权限'])
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
+            # data.pop()
             projdata = data.get('proj')
             financesdata = data.get('finances')
             formatdata = data.get('format')
-            proj = ProjSerializer(projdata)
-            if proj.is_valid():
-                proj.save()
-            finances = FinanceSerializer(financesdata,many=True)
-            if finances.is_valid():
-                finances.save()
-            format = FormatSerializer(formatdata)
+
+            format = FormatSerializer(data=formatdata)
             if format.is_valid():
-                format.save()
-
-
-            successresponse['result'] = UserSerializer(user).data
-            return JSONResponse(successresponse)
-
+                projFormat = format.save()
+                projdata['projFormat'] = projFormat.pk
+            proj = ProjCreatSerializer(data=projdata)
+            if proj.is_valid():
+                pro = proj.save()
+                for f in financesdata:
+                    f['proj'] = pro.pk
+            finances = FinanceSerializer(data=financesdata,many=True)
+            if finances.is_valid():
+               finances.save()
+            return JSONResponse({
+                'success':True,
+                'result': ProjSerializer(pro).data,
+                'error': None})
         except Exception:
             catchexcption(request)
-            return JSONResponse(failresponse)
+            return JSONResponse({
+                'success':False,
+                'result': None,
+                'error': traceback.format_exc().split('\n')[-2],
+})
 

@@ -20,12 +20,11 @@ from sourcetype.models import AuditStatus, ClientType, TitleType,School,Specialt
 
 class MyUserBackend(ModelBackend):
     def authenticate(self, mobile=None, pwd=None, email=None):
-
         try:
             if mobile:
-                user = MyUser.objects.get(mobile=mobile)
+                user = MyUser.objects.get(mobile=mobile,is_deleted=False)
             else:
-                user = MyUser.objects.get(email=email)
+                user = MyUser.objects.get(email=email,is_deleted=False)
         except MyUser.DoesNotExist:
             pass
         else:
@@ -70,7 +69,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     groups : 作为权限组
     """
     id = models.AutoField(primary_key=True)
-    usercode = models.CharField(max_length=128, default=str(datetime.datetime.now()), blank=True, unique=True)
+    usercode = models.CharField(max_length=128,blank=True, unique=True)
     photoBucket = models.CharField(max_length=32,blank=True,null=True)
     photoKey = models.CharField(max_length=64,blank=True,null=True)
     cardBucket = models.CharField(max_length=32,blank=True,null=True)
@@ -126,18 +125,19 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
             ('admin_changeuser',u'管理员编辑')
         )
     def save(self, *args, **kwargs):
+        if not self.usercode:
+            self.usercode = str(datetime.datetime.now())
         try:
+            if not self.email and not self.mobile:
+                raise ValueError('mobile ，email都为空')
             if self.pk:
-                MyUser.objects.exclude(pk=self.pk).filter(Q(is_deleted=False),Q(mobile=self.mobile) | Q(email=self.email))
+                MyUser.objects.exclude(pk=self.pk).get(Q(is_deleted=False),Q(mobile=self.mobile) | Q(email=self.email))
             else:
-                MyUser.objects.filter(Q(is_deleted=False),Q(mobile=self.mobile) | Q(email=self.email))
+                MyUser.objects.get(Q(is_deleted=False),Q(mobile=self.mobile) | Q(email=self.email))
         except MyUser.DoesNotExist:
             pass
         else:
             raise ValueError('mobile或email已存在')
-        if self.has_perm('MyUserSys.beinvestor'):
-            if not self.trader.has_perm('MyUserSys.betrader'):
-                raise ValueError('投资人或交易师没有对应权限')
         super(MyUser,self).save(*args,**kwargs)
 
 class userTags(models.Model):

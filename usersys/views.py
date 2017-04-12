@@ -488,7 +488,7 @@ def login(request):
         password = receive['password']
         clienttype = request.META.get('HTTP_CLIENTTYPE')
         user = auth.authenticate(mobile=username, password=password)
-        if user is not None and user.is_active and clienttype not in [1,2,3,4,5]:
+        if user is not None and clienttype not in [1,2,3,4,5]:
             # update the token
             response = maketoken(user,clienttype)
             return JSONResponse({
@@ -516,6 +516,8 @@ def maketoken(user,clienttype):
         tokens = MyToken.objects.filter(user=user, clienttype__id=clienttype, is_deleted=False)
     except MyToken.DoesNotExist:
         pass
+    except Exception as excp:
+        raise ValueError(repr(excp))
     else:
         for token in tokens:
             token.is_deleted = True
