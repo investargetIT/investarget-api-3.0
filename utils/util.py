@@ -64,12 +64,12 @@ def loginTokenIsAvailable(permissions=None):#判断model级别权限
                 if tokenkey:
                     token = MyToken.objects.get(key=tokenkey,is_deleted=False)
                 else:
-                    return JSONResponse({'result': None, 'success': False, 'errorcode':3000})
+                    return JSONResponse({'result': None, 'success': False, 'errorcode':3000,'errormsg':None})
             except Exception as exc:
-                return JSONResponse({'success':False,'result': None,'errorcode': 3000,})
+                return JSONResponse({'success':False,'result': None,'errorcode': 3000,'errormsg':repr(exc)})
             else:
                 if token.created < datetime.datetime.now() - datetime.timedelta(hours=24 * 1):
-                    return JSONResponse({'result': None, 'success': False, 'errorcode':3000})
+                    return JSONResponse({'result': None, 'success': False, 'errorcode':3000,'errormsg':None})
                 request.user = token.user
                 user_has_permissions = []
                 if permissions:
@@ -77,7 +77,7 @@ def loginTokenIsAvailable(permissions=None):#判断model级别权限
                         if request.user.has_perm(permission):
                             user_has_permissions.append(permission)
                     if not user_has_permissions:
-                        return JSONResponse({'result': None, 'success': False, 'errorcode':2009})
+                        return JSONResponse({'result': None, 'success': False, 'errorcode':2009,'errormsg':None})
                 kwargs['permissions'] = user_has_permissions
                 return func(self,request, *args, **kwargs)
 

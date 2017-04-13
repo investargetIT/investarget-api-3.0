@@ -3,7 +3,6 @@ import traceback
 
 import datetime
 from django.contrib import auth
-from django.contrib.auth.models import Group
 from django.core.exceptions import FieldDoesNotExist
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction,models
@@ -19,7 +18,7 @@ from rest_framework.decorators import api_view, detail_route, list_route
 from usersys.models import MyUser, MyToken, UserRelation, userTags, MobileAuthCode , InvestError
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
     CreatUserSerializer , UserCommenSerializer
-from sourcetype.models import ClientType, Tag
+from sourcetype.models import Tag
 from utils import perimissionfields
 from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable, JSONResponse,\
     catchexcption, cache_delete_key
@@ -120,7 +119,7 @@ class UserView(viewsets.ModelViewSet):
             return JSONResponse({'success': False, 'result': None, 'errorcode':err.code,'errormsg':err.msg})
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None,'errorcode':9999, 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
+            return JSONResponse({'success': False, 'result': None,'errorcode':9999, 'errormsg': traceback.format_exc().split('\n')[-2]})
 
     # 新增用户
     @loginTokenIsAvailable()
@@ -149,7 +148,7 @@ class UserView(viewsets.ModelViewSet):
                 keylist = data.keys()
                 cannoteditlist = [key for key in keylist if key not in canCreateField]
                 if cannoteditlist:
-                    raise KeyError('没有权限修改%s' % cannoteditlist)
+                    raise InvestError(code=2009,msg='没有权限修改%s' % cannoteditlist)
                 tags = data.pop('tags', None)
                 userserializer = CreatUserSerializer(user, data=data)
                 if userserializer.is_valid():
@@ -167,7 +166,7 @@ class UserView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
+                                 'errormsg': traceback.format_exc().split('\n')[-2]})
 
     #get
     @loginTokenIsAvailable()
@@ -189,7 +188,7 @@ class UserView(viewsets.ModelViewSet):
             return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
+            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,'errormsg': traceback.format_exc().split('\n')[-2]})
 
     @detail_route(methods=['get'])
     @loginTokenIsAvailable()
@@ -213,7 +212,7 @@ class UserView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
+                                 'errormsg': traceback.format_exc().split('\n')[-2]})
 
     #patch
     @loginTokenIsAvailable()
@@ -228,12 +227,12 @@ class UserView(viewsets.ModelViewSet):
                 elif request.user.has_perm('usersys.trader_changeuser',self.get_object()):
                     canChangeField = perimissionfields.userpermfield['usersys.trader_changeuser']
                 else:
-                    raise InvestError('没有权限')
+                    raise InvestError(code=2009)
             data = request.data
             keylist = data.keys()
             cannoteditlist = [key for key in keylist if key not in canChangeField]
             if cannoteditlist:
-                raise InvestError('没有权限修改_%s' % cannoteditlist)
+                raise InvestError(code=2009,msg='没有权限修改_%s' % cannoteditlist)
             with transaction.atomic():
                 tags = data.pop('tags', None)
                 userserializer = CreatUserSerializer(user, data=data)
@@ -256,7 +255,7 @@ class UserView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
+                                 'errormsg': traceback.format_exc().split('\n')[-2]})
 
     #delete
     @loginTokenIsAvailable(['usersys.as_adminuser'])
@@ -272,15 +271,15 @@ class UserView(viewsets.ModelViewSet):
                 # one to one
                 if isinstance(manager, models.Model):
                     if hasattr(manager, 'is_deleted') and manager.is_active:
-                        raise InvestError(u'{} 上有关联数据'.format(link))
+                        raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
                 else:
                     try:
                         manager.model._meta.get_field('is_deleted')
                         if manager.filter(is_active=True).count():
-                            raise InvestError(u'{} 上有关联数据'.format(link))
+                            raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
                     except FieldDoesNotExist as ex:
                         if manager.count():
-                            raise InvestError(u'{} 上有关联数据'.format(link))
+                            raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
             with transaction.atomic():
                 instance.is_deleted = True
                 instance.deleteduser = request.user
@@ -293,7 +292,7 @@ class UserView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
+                                 'errormsg': traceback.format_exc().split('\n')[-2]})
 
     @list_route(methods=['post'])
     def findpassword(self, request, *args, **kwargs):
@@ -306,10 +305,10 @@ class UserView(viewsets.ModelViewSet):
             try:
                 mobileauthcode = MobileAuthCode.objects.get(mobile=mobile, code=mobilecode, token=mobilecodetoken)
             except MobileAuthCode.DoesNotExist:
-                raise InvestError('手机验证码不匹配')
+                raise InvestError(code=2005,msg='手机验证码不匹配')
             else:
                 if mobileauthcode.isexpired():
-                    raise InvestError('验证码已过期')
+                    raise InvestError(code=20051,msg='验证码已过期')
             with transaction.atomic():
                 user = self.queryset.get(mobile=mobile)
                 user.set_password(password)
@@ -320,7 +319,7 @@ class UserView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
+                                 'errormsg': traceback.format_exc().split('\n')[-2]})
 
     @detail_route(methods=['put'])
     @loginTokenIsAvailable()
@@ -333,11 +332,11 @@ class UserView(viewsets.ModelViewSet):
             user = self.get_object()
             if user == request.user:
                 if user.check_password(oldpassword):
-                    raise InvestError('密码错误')
+                    raise InvestError(code=2001,msg='密码错误')
                 if not password or password != passwordagain:
-                    raise InvestError('新密码输入有误')
+                    raise InvestError(code=2001,msg='新密码输入有误')
             else:
-                raise InvestError('没有权限')
+                raise InvestError(code=2009)
             with transaction.atomic():
                 user.set_password(password)
                 user.save(update_fields=['password'])
@@ -347,7 +346,7 @@ class UserView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
+                                 'errormsg': traceback.format_exc().split('\n')[-2]})
 
     @detail_route(methods=['get'])
     @loginTokenIsAvailable(['usersys.as_adminuser'])
@@ -363,7 +362,7 @@ class UserView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
+                                 'errormsg': traceback.format_exc().split('\n')[-2]})
 
 
 class UserRelationView(viewsets.ModelViewSet):
@@ -423,7 +422,7 @@ class UserRelationView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
+                                 'errormsg': traceback.format_exc().split('\n')[-2]})
 
     def get_object(self):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
@@ -456,7 +455,7 @@ class UserRelationView(viewsets.ModelViewSet):
             return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
+            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,'errormsg': traceback.format_exc().split('\n')[-2]})
 
     @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
@@ -485,7 +484,7 @@ class UserRelationView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
+                                 'errormsg': traceback.format_exc().split('\n')[-2]})
 
     @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
@@ -509,15 +508,15 @@ class UserRelationView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
+                                 'errormsg': traceback.format_exc().split('\n')[-2]})
 
 
 @api_view(['POST'])
 def login(request):
     try:
         receive = request.data
-        username = receive.get['account']
-        password = receive.get['password']
+        username = receive['account']
+        password = receive['password']
         if not username or not password:
             raise InvestError(code=20071,msg='参数不全')
         clienttype = request.META.get('HTTP_CLIENTTYPE')
@@ -533,14 +532,14 @@ def login(request):
             return JSONResponse({'success': False, 'result': None, 'errorcode':err.code,'errormsg':err.msg})
     except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None,'errorcode':9999, 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
+            return JSONResponse({'success': False, 'result': None,'errorcode':9999, 'errormsg': traceback.format_exc().split('\n')[-2]})
 
 
 
 
 def maketoken(user,clienttype):
     try:
-        tokens = MyToken.objects.filter(user=user, clienttype__id=clienttype, is_deleted=False)
+        tokens = MyToken.objects.filter(user=user, clienttype_id=clienttype, is_deleted=False)
     except MyToken.DoesNotExist:
         pass
     except Exception as excp:
@@ -549,8 +548,7 @@ def maketoken(user,clienttype):
         for token in tokens:
             token.is_deleted = True
             token.save(update_fields=['is_deleted'])
-    type = ClientType.objects.get(id=clienttype)
-    token = MyToken.objects.create(user=user, clienttype=type)
+    token = MyToken.objects.create(user=user, clienttype_id=clienttype)
     serializer = UserListSerializer(user)
     response = serializer.data
     return {'token':token.key,
