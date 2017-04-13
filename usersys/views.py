@@ -185,8 +185,8 @@ class UserView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse({'success':False,'result': None,'error': traceback.format_exc().split('\n')[-2],})
 
-    # @loginTokenIsAvailable()
     @detail_route(methods=['get'])
+    @loginTokenIsAvailable()
     def getdetailinfo(self, request, *args, **kwargs):
         try:
             user = self.get_object()
@@ -247,7 +247,8 @@ class UserView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse({'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], })
 
-    #delete     'is_active' == false
+    #delete
+    @loginTokenIsAvailable(['usersys.as_adminuser'])
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         try:
@@ -304,8 +305,8 @@ class UserView(viewsets.ModelViewSet):
         except:
             return JSONResponse({'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2],})
 
-    @loginTokenIsAvailable()
     @detail_route(methods=['put'])
+    @loginTokenIsAvailable()
     def changepassword(self, request, *args, **kwargs):
         try:
             data = request.data
@@ -327,8 +328,8 @@ class UserView(viewsets.ModelViewSet):
         except:
             return JSONResponse({'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2],})
 
-    # @loginTokenIsAvailable(['usersys.as_adminuser'])
     @detail_route(methods=['get'])
+    @loginTokenIsAvailable(['usersys.as_adminuser'])
     def resetpassword(self,request, *args, **kwargs):
         try:
             user = self.get_object()
@@ -347,7 +348,7 @@ class UserRelationView(viewsets.ModelViewSet):
     queryset = UserRelation.objects.filter(is_deleted=False)
     serializer_class = UserRelationSerializer
 
-    @loginTokenIsAvailable(['MyUserSys.as_admin','MyUserSys.as_trader','MyUserSys.as_investor'])
+    @loginTokenIsAvailable(['MyUserSys.as_adminuser','MyUserSys.as_traderuser','MyUserSys.as_investoruser'])
     def list(self, request, *args, **kwargs):
         page_size = request.GET.get('page_size')
         page_index = request.GET.get('page_index')  #从第一页开始
@@ -356,11 +357,11 @@ class UserRelationView(viewsets.ModelViewSet):
         if not page_index:
             page_index = 1
         queryset = self.filter_queryset(self.get_queryset())
-        if request.user.has_perm('MyUserSys.as_admin'):
+        if request.user.has_perm('MyUserSys.as_adminuser'):
             queryset = queryset
-        elif request.user.has_perm('MyUserSys.as_trader'):
+        elif request.user.has_perm('MyUserSys.as_traderuser'):
             queryset = queryset.filter(traderuser=request.user)
-        elif request.user.has_perm('MyUserSys.as_investor'):
+        elif request.user.has_perm('MyUserSys.as_investoruser'):
             queryset = queryset.filter(investoruser=request.user)
         else:
             return JSONResponse({'success':False,'result':None,'error':'no permission'})
@@ -373,7 +374,7 @@ class UserRelationView(viewsets.ModelViewSet):
         return JSONResponse({'success':True,'result':serializer.data,'error':None})
 
 
-    @loginTokenIsAvailable(['MyUserSys.add_userrelation'])
+    @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
@@ -411,11 +412,11 @@ class UserRelationView(viewsets.ModelViewSet):
                 raise ValueError('obj with pk = "%s" is not exist'%self.kwargs[lookup_url_kwarg])
         return obj
 
-
+    @loginTokenIsAvailable()
     def retrieve(self, request, *args, **kwargs):
         try:
             userrelation = self.get_object()
-            if request.user.has_perm('MyUserSys.as_admin'):
+            if request.user.has_perm('MyUserSys.as_adminuser'):
                 pass
             elif request.user == userrelation.traderuser or request.user == userrelation.investoruser:
                 pass
@@ -429,7 +430,7 @@ class UserRelationView(viewsets.ModelViewSet):
             response = {'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], }
             return JSONResponse(response)
 
-    # @loginTokenIsAvailable()
+    @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
         try:
             data = request.data
@@ -456,7 +457,7 @@ class UserRelationView(viewsets.ModelViewSet):
             response = {'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], }
             return JSONResponse(response)
 
-    @loginTokenIsAvailable(['MyUserSys.delete_userrelation'])
+    @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
         try:
             userrelation = self.get_object()
@@ -519,14 +520,3 @@ def maketoken(user,clienttype):
     return {'token':token.key,
         "user_info": response,
     }
-
-def add_or_change_strongrelate(investor,trader):
-    try:
-        relate = UserRelation.objects.get(investoruser__id=investor,relationtype=True)
-        relate.traderuser_id = trader
-    except UserRelation.DoesNotExist:
-        relate = UserRelation()
-        relate.investoruser_id = investor
-        relate.traderuser_id = trader
-        relate.relationtype = True
-    relate.save()
