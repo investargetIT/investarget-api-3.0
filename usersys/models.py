@@ -10,7 +10,7 @@ from time import timezone
 
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
-from django.contrib.auth.models import PermissionsMixin
+from django.contrib.auth.models import PermissionsMixin, Group
 from django.db import models
 from django.db.models import Q
 from guardian.shortcuts import remove_perm, assign_perm
@@ -71,6 +71,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     groups : 作为权限组
     """
     id = models.AutoField(primary_key=True)
+    # groups = models.ForeignKey(Group,blank=True,help_text=('group'), related_name="user_set",related_query_name="user",)
     usercode = models.CharField(max_length=128,blank=True, unique=True)
     photoBucket = models.CharField(max_length=32,blank=True,null=True)
     photoKey = models.CharField(max_length=64,blank=True,null=True)
@@ -132,10 +133,16 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
         try:
             if not self.email and not self.mobile:
                 raise ValueError('mobile ，email都为空')
-            if self.pk:
-                MyUser.objects.exclude(pk=self.pk).get(Q(is_deleted=False),Q(mobile=self.mobile) | Q(email=self.email))
+            if self.email:
+                filters = Q(email=self.email)
+                if self.mobile:
+                    filters = Q(mobile=self.mobile) | Q(email=self.email)
             else:
-                MyUser.objects.get(Q(is_deleted=False),Q(mobile=self.mobile) | Q(email=self.email))
+                filters = Q(mobile=self.mobile)
+            if self.pk:
+                MyUser.objects.exclude(pk=self.pk).get(Q(is_deleted=False),filters)
+            else:
+                MyUser.objects.get(Q(is_deleted=False),filters)
         except MyUser.DoesNotExist:
             pass
         else:
@@ -145,7 +152,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
 class userTags(models.Model):
     user = models.ForeignKey(MyUser,null=True,blank=True,on_delete=models.SET_NULL)
     tag = models.ForeignKey(Tag, related_name='user_tags',null=True, blank=True,on_delete=models.SET_NULL)
-    isdeleted = models.BooleanField(blank=True,default=False)
+    is_deleted = models.BooleanField(blank=True,default=False)
     deleteduser = models.ForeignKey(MyUser,blank=True, null=True,related_name='userdelete_tags',on_delete=models.SET_NULL)
     deletedtime = models.DateTimeField(blank=True, null=True)
     createdtime = models.DateTimeField(auto_created=True)

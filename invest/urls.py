@@ -15,12 +15,15 @@ Including another URLconf
 """
 from django.conf.urls import url, include
 from django.contrib import admin
+from rest_framework_swagger.views import get_swagger_view
 
 import proj.urls
 import usersys.urls
 
+schema_view = get_swagger_view(title='investarget-api-3.0')
+
 urlpatterns = [
-    url(r'^admin/', admin.site.urls),
+    url(r'^$', schema_view)
 ]
 urlpatterns += [
     url(r'^admin/', admin.site.urls),

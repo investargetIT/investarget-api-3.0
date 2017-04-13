@@ -71,7 +71,7 @@ def loginTokenIsAvailable(permissions=None):#判断model级别权限
             try:
                 tokenkey = request.META.get('HTTP_TOKEN')
                 if tokenkey:
-                    token = MyToken.objects.get(key=tokenkey,isdeleted=False)
+                    token = MyToken.objects.get(key=tokenkey,is_deleted=False)
                 else:
                     permissiondeniedresponse['error'] = '没有认证token'
                     return JSONResponse(permissiondeniedresponse)
