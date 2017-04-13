@@ -12,16 +12,17 @@ from django.db import transaction,models
 from django.db.models import Q
 from django.db.models.fields.reverse_related import ForeignObjectRel
 from rest_framework import filters
+from rest_framework import status
 from rest_framework import viewsets
 
 from rest_framework.decorators import api_view, detail_route, list_route
-from usersys.models import MyUser, MyToken, UserRelation, userTags, MobileAuthCode
+from usersys.models import MyUser, MyToken, UserRelation, userTags, MobileAuthCode , InvestError
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
     CreatUserSerializer , UserCommenSerializer
 from sourcetype.models import ClientType, Tag
 from utils import perimissionfields
 from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable, JSONResponse,\
-    permissiondeniedresponse, catchexcption, cache_delete_key
+    catchexcption, cache_delete_key
 
 
 class UserView(viewsets.ModelViewSet):
@@ -45,7 +46,7 @@ class UserView(viewsets.ModelViewSet):
             try:
                 obj = self.Model.objects.get(id=self.kwargs[lookup_url_kwarg],is_deleted=False)
             except self.Model.DoesNotExist:
-                raise ValueError('obj with this "%s" is not exist'%self.kwargs[lookup_url_kwarg])
+                raise InvestError(code=2002)
             else:
                 write_to_cache(self.redis_key+'_%s'%self.kwargs[lookup_url_kwarg],obj)
         return obj
@@ -62,10 +63,10 @@ class UserView(viewsets.ModelViewSet):
         try:
             queryset = Paginator(queryset, page_size)
         except EmptyPage:
-            return JSONResponse({'success':True,'result':[],'error':None})
+            return JSONResponse({'success':True,'result':[],'errorcode':1000,'errormsg':None})
         queryset = queryset.page(page_index)
         serializer = UserListSerializer(queryset, many=True)
-        return JSONResponse({'success':True,'result': serializer.data,'error': None,})
+        return JSONResponse({'success':True,'result': serializer.data,'errorcode':1000,'errormsg':None})
 
     #注册用户(新注册用户没有交易师)
     @transaction.atomic
@@ -81,10 +82,10 @@ class UserView(viewsets.ModelViewSet):
                     try:
                         mobileauthcode = MobileAuthCode.objects.get(mobile=mobile, code=mobilecode, token=mobilecodetoken)
                     except MobileAuthCode.DoesNotExist:
-                        raise ValueError('手机验证码不匹配')
+                        raise InvestError(code=2005)
                     else:
                         if mobileauthcode.isexpired():
-                            raise ValueError('验证码已过期')
+                            raise InvestError(code=20051)
                     if email:
                         filterQ = Q(mobile=mobile) | Q(email=email)
                     else:
@@ -92,14 +93,14 @@ class UserView(viewsets.ModelViewSet):
                 elif email:
                     filterQ = Q(email=email)
                 else:
-                    raise KeyError('mobile、email至少有一项不能为空')
+                    raise InvestError(code=2007,msg='mobile、email不能都为空')
                 try:
                     self.queryset.get(filterQ)
                 except MyUser.DoesNotExist:
                     pass
                 else:
-                    raise ValueError('user has been already exist')
-                user = MyUser(email=email, mobile=mobile)
+                    raise InvestError(code=2004)
+                user = MyUser(email=email,mobile=mobile)
                 password = data.pop('password', None)
                 user.set_password(password)
                 user.save()
@@ -113,11 +114,13 @@ class UserView(viewsets.ModelViewSet):
                             usertaglist.append(userTags(user=user, tag_id=tag, ))
                         user.user_tags.bulk_create(usertaglist)
                 else:
-                    raise ValueError('userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
-                return JSONResponse({'success': True, 'result': UserSerializer(user).data, 'error': None, })
+                    raise InvestError(code=20071,msg='%s\n%s' % (userserializer.error_messages, userserializer.errors))
+                return JSONResponse({'success': True, 'result': UserSerializer(user).data, 'errorcode':1000,'errormsg':None})
+        except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode':err.code,'errormsg':err.msg})
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse({'success': False, 'result': None,'errorcode':9999, 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
 
     # 新增用户
     @loginTokenIsAvailable()
@@ -128,7 +131,7 @@ class UserView(viewsets.ModelViewSet):
         elif request.user.has_perm('usersys.trader_adduser'):
             canCreateField = perimissionfields.userpermfield['usersys.trader_adduser']
         else:
-            return JSONResponse(permissiondeniedresponse)
+            return JSONResponse({'result': None, 'success': False, 'errorcode':2009,'errormsg':None})
         try:
             with transaction.atomic():
                 password = data.get('password')
@@ -139,7 +142,7 @@ class UserView(viewsets.ModelViewSet):
                 except MyUser.DoesNotExist:
                     pass
                 else:
-                    raise ValueError('user with this mobile or email has already been exist')
+                    raise InvestError(code=2004)
                 user = MyUser()
                 user.set_password(password)
                 user.save()
@@ -157,12 +160,14 @@ class UserView(viewsets.ModelViewSet):
                             usertaglist.append(userTags(user=user, tag_id=tag, ))
                         user.user_tags.bulk_create(usertaglist)
                 else:
-                    raise ValueError('userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
-                return JSONResponse({'success': True, 'result': UserSerializer(user).data, 'error': None, })
+                    raise InvestError(code=20071,msg='userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
+                return JSONResponse({'success': True, 'result': UserSerializer(user).data, 'errorcode': 1000,'errormsg':None})
+        except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], })
-
+            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
+                                 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
 
     #get
     @loginTokenIsAvailable()
@@ -177,13 +182,14 @@ class UserView(viewsets.ModelViewSet):
                 elif request.user.has_perm('usersys.trader_changeuser',self.get_object()):
                     userserializer = UserListSerializer
                 else:
-                    return JSONResponse(permissiondeniedresponse)
+                    return JSONResponse({'result': None, 'success': False, 'errorcode':2009,'errormsg':None})
             serializer = userserializer(user)
-            return JSONResponse({'success':True,'result': serializer.data,'error': None})
-
+            return JSONResponse({'success':True,'result': serializer.data,'errorcode':1000,'errormsg':None})
+        except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success':False,'result': None,'error': traceback.format_exc().split('\n')[-2],})
+            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
 
     @detail_route(methods=['get'])
     @loginTokenIsAvailable()
@@ -198,14 +204,16 @@ class UserView(viewsets.ModelViewSet):
                 elif request.user.has_perm('usersys.trader_changeuser', self.get_object()):
                     userserializer = UserSerializer
                 else:
-                    return JSONResponse(permissiondeniedresponse)
+                    return JSONResponse({'result': None, 'success': False, 'errorcode':2009,'errormsg':None})
             serializer = userserializer(user)
-            response = {'success': True, 'result': serializer.data, 'error': None, }
+            response = {'success': True, 'result': serializer.data, 'errorcode':1000,'errormsg':None}
             return JSONResponse(response)
+        except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
         except Exception:
             catchexcption(request)
-            response = {'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], }
-            return JSONResponse(response)
+            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
+                                 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
 
     #patch
     @loginTokenIsAvailable()
@@ -220,12 +228,12 @@ class UserView(viewsets.ModelViewSet):
                 elif request.user.has_perm('usersys.trader_changeuser',self.get_object()):
                     canChangeField = perimissionfields.userpermfield['usersys.trader_changeuser']
                 else:
-                    raise ValueError('没有权限')
+                    raise InvestError('没有权限')
             data = request.data
             keylist = data.keys()
             cannoteditlist = [key for key in keylist if key not in canChangeField]
             if cannoteditlist:
-                raise ValueError('没有权限修改_%s' % cannoteditlist)
+                raise InvestError('没有权限修改_%s' % cannoteditlist)
             with transaction.atomic():
                 tags = data.pop('tags', None)
                 userserializer = CreatUserSerializer(user, data=data)
@@ -241,11 +249,14 @@ class UserView(viewsets.ModelViewSet):
                             usertaglist.append(userTags(user=user, tag=tag, createuser=request.user))
                         user.user_tags.bulk_create(usertaglist)
                 else:
-                    raise ValueError('userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
-                return JSONResponse({'success': True, 'result': UserSerializer(user).data, 'error': None, })
+                    raise InvestError(code=20071,msg='userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
+                return JSONResponse({'success': True, 'result': UserSerializer(user).data, 'errorcode':1000,'errormsg':None})
+        except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], })
+            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
+                                 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
 
     #delete
     @loginTokenIsAvailable(['usersys.as_adminuser'])
@@ -261,26 +272,28 @@ class UserView(viewsets.ModelViewSet):
                 # one to one
                 if isinstance(manager, models.Model):
                     if hasattr(manager, 'is_deleted') and manager.is_active:
-                        raise ValueError(u'{} 上有关联数据'.format(link))
+                        raise InvestError(u'{} 上有关联数据'.format(link))
                 else:
                     try:
                         manager.model._meta.get_field('is_deleted')
                         if manager.filter(is_active=True).count():
-                            raise ValueError(u'{} 上有关联数据'.format(link))
+                            raise InvestError(u'{} 上有关联数据'.format(link))
                     except FieldDoesNotExist as ex:
                         if manager.count():
-                            raise ValueError(u'{} 上有关联数据'.format(link))
+                            raise InvestError(u'{} 上有关联数据'.format(link))
             with transaction.atomic():
                 instance.is_deleted = True
                 instance.deleteduser = request.user
                 instance.deletedtime = datetime.datetime.utcnow()
                 instance.save()
-                response = {'success': True, 'result': UserSerializer(instance).data, 'error': None}
+                response = {'success': True, 'result': UserSerializer(instance).data, 'errorcode':1000,'errormsg':None}
                 return JSONResponse(response)
-        except:
+        except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+        except Exception:
             catchexcption(request)
-            response = {'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], }
-            return JSONResponse(response)
+            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
+                                 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
 
     @list_route(methods=['post'])
     def findpassword(self, request, *args, **kwargs):
@@ -293,17 +306,21 @@ class UserView(viewsets.ModelViewSet):
             try:
                 mobileauthcode = MobileAuthCode.objects.get(mobile=mobile, code=mobilecode, token=mobilecodetoken)
             except MobileAuthCode.DoesNotExist:
-                raise ValueError('手机验证码不匹配')
+                raise InvestError('手机验证码不匹配')
             else:
                 if mobileauthcode.isexpired():
-                    raise ValueError('验证码已过期')
+                    raise InvestError('验证码已过期')
             with transaction.atomic():
                 user = self.queryset.get(mobile=mobile)
                 user.set_password(password)
                 user.save(update_fields=['password'])
-                return JSONResponse({'success': True, 'result': password, 'error': None})
-        except:
-            return JSONResponse({'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2],})
+                return JSONResponse({'success': True, 'result': password, 'errorcode':1000,'errormsg':None})
+        except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+        except Exception:
+            catchexcption(request)
+            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
+                                 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
 
     @detail_route(methods=['put'])
     @loginTokenIsAvailable()
@@ -316,17 +333,21 @@ class UserView(viewsets.ModelViewSet):
             user = self.get_object()
             if user == request.user:
                 if user.check_password(oldpassword):
-                    raise ValueError('密码错误')
+                    raise InvestError('密码错误')
                 if not password or password != passwordagain:
-                    raise ValueError('新密码输入有误')
+                    raise InvestError('新密码输入有误')
             else:
-                raise ValueError('没有权限')
+                raise InvestError('没有权限')
             with transaction.atomic():
                 user.set_password(password)
                 user.save(update_fields=['password'])
-                return JSONResponse({'success': True, 'result': password, 'error': None})
-        except:
-            return JSONResponse({'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2],})
+                return JSONResponse({'success': True, 'result': password, 'errorcode':1000,'errormsg':None})
+        except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+        except Exception:
+            catchexcption(request)
+            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
+                                 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
 
     @detail_route(methods=['get'])
     @loginTokenIsAvailable(['usersys.as_adminuser'])
@@ -336,9 +357,13 @@ class UserView(viewsets.ModelViewSet):
             with transaction.atomic():
                 user.set_password('Aa123456')
                 user.save(update_fields=['password'])
-                return JSONResponse({'success': True, 'result': 'Aa123456', 'error': None})
-        except:
-            return JSONResponse({'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], })
+                return JSONResponse({'success': True, 'result': 'Aa123456','errorcode':1000,'errormsg':None})
+        except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+        except Exception:
+            catchexcption(request)
+            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
+                                 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
 
 
 class UserRelationView(viewsets.ModelViewSet):
@@ -364,17 +389,17 @@ class UserRelationView(viewsets.ModelViewSet):
         elif request.user.has_perm('usersys.as_investoruser'):
             queryset = queryset.filter(investoruser=request.user)
         else:
-            return JSONResponse({'success':False,'result':None,'error':'no permission'})
+            return JSONResponse({'success':False,'result':None,'errorcode':2009,'errormsg':None})
         try:
             queryset = Paginator(queryset, page_size)
         except EmptyPage:
-            return JSONResponse({'success':True,'result':[],'error':None})
+            return JSONResponse({'success':True,'result':[],'errorcode':1000,'errormsg':None})
         queryset = queryset.page(page_index)
         serializer = self.get_serializer(queryset, many=True)
-        return JSONResponse({'success':True,'result':serializer.data,'error':None})
+        return JSONResponse({'success':True,'result':serializer.data,'errorcode':1000,'errormsg':None})
 
 
-    @loginTokenIsAvailable()
+    # @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
@@ -383,20 +408,22 @@ class UserRelationView(viewsets.ModelViewSet):
             elif request.user.has_perm('usersys.add_userrelation'):
                 data['traderuser'] = request.user.id
             else:
-                raise ValueError('没有权限')
+                raise InvestError(code=2009)
             data['createuser'] = request.user.id
             with transaction.atomic():
                 newrelation = UserRelationSerializer(data=data)
                 if newrelation.is_valid():
                     newrelation.save()
-                    response = {'success': True, 'result':newrelation.data, 'error': None}
+                    response = {'success': True, 'result':newrelation.data,'errorcode':1000,'errormsg':None}
                 else:
-                    raise ValueError('%s'%newrelation.errors)
+                    raise InvestError(code=20071,msg='%s'%newrelation.errors)
                 return JSONResponse(response)
-        except:
+        except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+        except Exception:
             catchexcption(request)
-            response = {'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], }
-            return JSONResponse(response)
+            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
+                                 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
 
     def get_object(self):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
@@ -409,7 +436,7 @@ class UserRelationView(viewsets.ModelViewSet):
         try:
             obj = UserRelation.objects.get(id=self.kwargs[lookup_url_kwarg],is_deleted=False)
         except UserRelation.DoesNotExist:
-                raise ValueError('obj with pk = "%s" is not exist'%self.kwargs[lookup_url_kwarg])
+                raise InvestError(code=2101,msg='relation with pk = "%s" is not exist'%self.kwargs[lookup_url_kwarg])
         return obj
 
     @loginTokenIsAvailable()
@@ -421,14 +448,15 @@ class UserRelationView(viewsets.ModelViewSet):
             elif request.user == userrelation.traderuser or request.user == userrelation.investoruser:
                 pass
             else:
-                raise ('没有权限')
+                raise InvestError(code=2009)
             serializer = UserRelationSerializer(userrelation)
-            response = {'success':True,'result': serializer.data,'error': None,}
+            response = {'success':True,'result': serializer.data,'errorcode':1000,'errormsg':None}
             return JSONResponse(response)
-        except:
+        except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+        except Exception:
             catchexcption(request)
-            response = {'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], }
-            return JSONResponse(response)
+            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
 
     @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
@@ -441,21 +469,23 @@ class UserRelationView(viewsets.ModelViewSet):
                 data['traderuser'] = request.user.id
                 data.pop('relationtype', None)
             else:
-                raise ('没有权限')
+                raise InvestError(code=2009,msg='没有权限')
             data['lastmodifyuser'] = request.user.id
             data['lastmodifytime'] = datetime.datetime.now()
             with transaction.atomic():
                 newrelation = UserRelationSerializer(relation,data=data)
                 if newrelation.is_valid():
                     newrelation.save()
-                    response = {'success': True, 'result':newrelation.data, 'error': None}
+                    response = {'success': True, 'result':newrelation.data, 'errorcode':1000,'errormsg':None}
                 else:
-                    raise ValueError('err:%s'%newrelation.errors)
+                    raise InvestError(code=20071,msg=newrelation.errors)
                 return JSONResponse(response)
-        except:
+        except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+        except Exception:
             catchexcption(request)
-            response = {'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], }
-            return JSONResponse(response)
+            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
+                                 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
 
     @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
@@ -466,39 +496,45 @@ class UserRelationView(viewsets.ModelViewSet):
             elif request.user.has_perm('usersys.admin_deleteuserrelation'):
                 pass
             else:
-                raise ('没有权限')
+                raise InvestError(code=2009,msg='没有权限')
             with transaction.atomic():
                 userrelation.is_deleted = True
                 userrelation.deleteduser = request.user
                 userrelation.deletedtime = datetime.datetime.now()
                 userrelation.save()
-                response = {'success': True, 'result': UserRelationSerializer(userrelation).data, 'error': None}
+                response = {'success': True, 'result': UserRelationSerializer(userrelation).data,'errorcode':1000,'errormsg':None}
                 return JSONResponse(response)
-        except:
+        except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+        except Exception:
             catchexcption(request)
-            response = {'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], }
-            return JSONResponse(response)
-
+            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
+                                 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
 
 
 @api_view(['POST'])
 def login(request):
     try:
         receive = request.data
-        username = receive['account']
-        password = receive['password']
+        username = receive.get['account']
+        password = receive.get['password']
+        if not username or not password:
+            raise InvestError(code=20071,msg='参数不全')
         clienttype = request.META.get('HTTP_CLIENTTYPE')
         user = auth.authenticate(username=username, password=password)
         if not user or not clienttype:
             if not clienttype:
-                raise ValueError(u'登录类型不可用')
+                raise InvestError(code=2003,msg='登录类型不可用')
             else:
-                raise ValueError(u'账号密码有误')
+                raise InvestError(code=2001,msg='密码错误')
         response = maketoken(user, clienttype)
-        return JSONResponse({"result": response, "success": True, 'error': None, })
+        return JSONResponse({"result": response, "success": True, 'errorcode':1000,'errormsg':None})
+    except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode':err.code,'errormsg':err.msg})
     except Exception:
-        response = {'success': False, 'result': None, 'error': traceback.format_exc().split('\n')[-2], }
-        return JSONResponse(response)
+            catchexcption(request)
+            return JSONResponse({'success': False, 'result': None,'errorcode':9999, 'errormsg': traceback.format_exc().split('\n')[-2].split(':')[-1]})
+
 
 
 
@@ -508,7 +544,7 @@ def maketoken(user,clienttype):
     except MyToken.DoesNotExist:
         pass
     except Exception as excp:
-        raise ValueError(repr(excp))
+        raise InvestError(msg=repr(excp))
     else:
         for token in tokens:
             token.is_deleted = True

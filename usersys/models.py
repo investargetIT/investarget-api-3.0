@@ -17,6 +17,11 @@ from guardian.shortcuts import remove_perm, assign_perm
 
 from sourcetype.models import AuditStatus, ClientType, TitleType,School,Specialty,Tag
 
+class InvestError(Exception):
+    def __init__(self, code=None, msg=None):
+        Exception.__init__(self)
+        self.code = code
+        self.msg = msg
 
 class MyUserBackend(ModelBackend):
     def authenticate(self, username=None, password=None, **kwargs):
@@ -26,14 +31,13 @@ class MyUserBackend(ModelBackend):
             else:
                 user = MyUser.objects.get(email=username,is_deleted=False)
         except MyUser.DoesNotExist:
-            pass
+            raise InvestError(code=2002)
         else:
             if user.check_password(password):
                 return user
         return None
 
     def get_user(self, user_id):
-
         try:
             user = MyUser._default_manager.get(pk=user_id)
         except MyUser.DoesNotExist:
@@ -262,3 +266,5 @@ class MobileAuthCode(models.Model):
         code_list = [0,1,2,3,4,5,6,7,8,9]
         myslice = random.sample(code_list, 6)
         self.code = ''.join(myslice)
+
+

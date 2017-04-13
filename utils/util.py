@@ -10,7 +10,6 @@ import traceback
 from usersys.models import MyToken
 
 REDIS_TIMEOUT = 1 * 24 * 60 * 60
-
 weixinfilepath = '/Users/investarget/Desktop/django_server/third_header/weixin'
 linkedinfilepath = '/Users/investarget/Desktop/django_server/third_header/Linkedin'
 excptionlogpath = '/Users/investarget/Desktop/django_server/excption_log'
@@ -33,14 +32,6 @@ def cache_clearALL():
 #删除
 def cache_delete_key(key):
     cache.delete(key)
-
-
-
-permissiondeniedresponse = {
-                'success':False,
-                'result': None,
-                'error': '没有权限',
-            }
 
 #记录request error
 def catchexcption(request):
@@ -73,14 +64,12 @@ def loginTokenIsAvailable(permissions=None):#判断model级别权限
                 if tokenkey:
                     token = MyToken.objects.get(key=tokenkey,is_deleted=False)
                 else:
-                    permissiondeniedresponse['error'] = '没有认证token'
-                    return JSONResponse(permissiondeniedresponse)
+                    return JSONResponse({'result': None, 'success': False, 'errorcode':3000})
             except Exception as exc:
-                return JSONResponse({'success':False,'result': None,'error': traceback.format_exc().split('\n')[-2],})
+                return JSONResponse({'success':False,'result': None,'errorcode': 3000,})
             else:
-                if token.created.replace(tzinfo=None) < datetime.datetime.utcnow() - datetime.timedelta(hours=24 * 1):
-                    permissiondeniedresponse['error'] = 'token过期'
-                    return JSONResponse(permissiondeniedresponse)
+                if token.created < datetime.datetime.now() - datetime.timedelta(hours=24 * 1):
+                    return JSONResponse({'result': None, 'success': False, 'errorcode':3000})
                 request.user = token.user
                 user_has_permissions = []
                 if permissions:
@@ -88,7 +77,7 @@ def loginTokenIsAvailable(permissions=None):#判断model级别权限
                         if request.user.has_perm(permission):
                             user_has_permissions.append(permission)
                     if not user_has_permissions:
-                        return JSONResponse({'result': None, 'success': False, 'error': '没有权限'})
+                        return JSONResponse({'result': None, 'success': False, 'errorcode':2009})
                 kwargs['permissions'] = user_has_permissions
                 return func(self,request, *args, **kwargs)
 
