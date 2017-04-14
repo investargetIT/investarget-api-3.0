@@ -435,7 +435,7 @@ class UserRelationView(viewsets.ModelViewSet):
         try:
             obj = UserRelation.objects.get(id=self.kwargs[lookup_url_kwarg],is_deleted=False)
         except UserRelation.DoesNotExist:
-                raise InvestError(code=2101,msg='relation with pk = "%s" is not exist'%self.kwargs[lookup_url_kwarg])
+                raise InvestError(code=2011,msg='relation with pk = "%s" is not exist'%self.kwargs[lookup_url_kwarg])
         return obj
 
     @loginTokenIsAvailable()
@@ -542,8 +542,6 @@ def maketoken(user,clienttype):
         tokens = MyToken.objects.filter(user=user, clienttype_id=clienttype, is_deleted=False)
     except MyToken.DoesNotExist:
         pass
-    except Exception as excp:
-        raise InvestError(msg=repr(excp))
     else:
         for token in tokens:
             token.is_deleted = True

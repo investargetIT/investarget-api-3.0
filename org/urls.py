@@ -10,13 +10,19 @@ org_list = views.OrganizationView.as_view({
 org_detail = views.OrganizationView.as_view({
         'get': 'retrieve',
         'put': 'update',
+        'delete': 'destroy'
+})
+
+org_remark = views.OrgRemarkView.as_view({
+        'get': 'retrieve',
+        'put': 'update',
         'patch': 'partial_update',
         'delete': 'destroy'
 })
 
 
 urlpatterns = [
-    # url(r'^$', org_list,name='org-list'),
-    # url(r'^(?P<pk>\d+)/$', org_detail,name='org-detail'),
-
+        url(r'^$', org_list,name='org-list'),
+        url(r'^(?P<pk>\d+)/$', org_detail,name='org-detail'),
+        url(r'remark/^(?P<pk>\d+)/$', org_detail,name='org-detail'),
 ]

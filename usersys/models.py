@@ -47,8 +47,7 @@ class MyUserBackend(ModelBackend):
 class MyUserManager(BaseUserManager):
     def create_user(self,email,mobile=None,password=None,**extra_fields):
         if not email:
-            raise ValueError('Users must have an email address')
-
+            raise InvestError(code=20071)
         user = self.model(
             mobile=mobile,
             email=MyUserManager.normalize_email(email),
@@ -86,7 +85,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     org = models.ForeignKey('org.organization',help_text='所属机构',blank=True,null=True,related_name='org_users',on_delete=models.SET_NULL)
     name = models.CharField(help_text='姓名',max_length=128,db_index=True,blank=True,null=True)
     nameE = models.CharField(help_text='name',max_length=128,db_index=True,blank=True,null=True)
-    mobileAreaCode = models.CharField(max_length=3,blank=True,null=True,default='86')
+    mobileAreaCode = models.CharField(max_length=10,blank=True,null=True,default='86')
     mobile = models.CharField(help_text='手机',max_length=32,db_index=True,blank=True,null=True)
     company = models.CharField(max_length=64,blank=True,null=True)
     description = models.TextField(help_text='简介',blank=True,default='description')
@@ -136,7 +135,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
             self.usercode = str(datetime.datetime.now())
         try:
             if not self.email and not self.mobile:
-                raise ValueError('mobile ，email都为空')
+                raise InvestError(code=2007)
             if self.email:
                 filters = Q(email=self.email)
                 if self.mobile:
@@ -150,7 +149,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
         except MyUser.DoesNotExist:
             pass
         else:
-            raise ValueError('mobile或email已存在')
+            raise InvestError(code=2004)
         super(MyUser,self).save(*args,**kwargs)
 
 class userTags(models.Model):
@@ -208,17 +207,17 @@ class UserRelation(models.Model):
             userrelation = UserRelation.objects.filter(Q(is_deleted=False), Q(investoruser=self.investoruser))
         if userrelation.exists():
             if userrelation.filter(traderuser_id=self.traderuser_id).exists():
-                raise ValueError('2.已经存在一条这两名用户的记录了')
+                raise InvestError(code=2012)
             elif userrelation.filter(relationtype=True).exists() and self.relationtype:
-                raise ValueError('3.强关系只能有一个,如有必要，先删除，在添加')
+                raise InvestError(code=2013,msg='3.强关系只能有一个,如有必要，先删除，在添加')
         else:
             self.relationtype = True
         if self.investoruser.id == self.traderuser.id:
-            raise ValueError('1.投资人和交易师不能是同一个人')
+            raise InvestError(code=2014,msg='1.投资人和交易师不能是同一个人')
         elif not self.traderuser.has_perm('as_traderuser'):
-            raise ValueError('4.没有交易师权限关系')
+            raise InvestError(code=2015,msg='4.没有交易师权限关系')
         elif not self.investoruser.has_perm('as_investoruser'):
-            raise ValueError('5.没有投资人权限')
+            raise InvestError(code=2015,msg='5.没有投资人权限')
         else:
             if self.pk:
                 if self.is_deleted:

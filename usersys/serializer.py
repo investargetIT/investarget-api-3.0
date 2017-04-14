@@ -40,7 +40,6 @@ class CreatUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = MyUser
         fields = ('groups','photoBucket','photoKey','cardBucket','cardKey','wechat','org','name','nameE','mobileAreaCode','mobile','company','description','tags','email','title','gender','school','specialty','registersource','remark')
-
 #用户列表显示信息
 class UserListSerializer(serializers.ModelSerializer):
     groups = GroupSerializer(MyUser.groups,many=True)

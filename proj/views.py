@@ -12,8 +12,8 @@ from rest_framework.decorators import api_view
 from proj.models import project, finance, favorite
 from proj.serializer import ProjSerializer, FavoriteSerializer,FormatSerializer,FinanceSerializer, ProjCreatSerializer
 from usersys.models import MyUser
+from utils import perimissionfields
 from utils.util import JSONResponse, catchexcption, read_from_cache, write_to_cache, loginTokenIsAvailable
-
 
 
 class ProjectView(viewsets.ModelViewSet):
@@ -64,11 +64,20 @@ class ProjectView(viewsets.ModelViewSet):
                 'result': serializer.data,
                 'error': None})
 
-    # @loginTokenIsAvailable(['上传项目权限'])
+    @loginTokenIsAvailable(['proj.add_project'])
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
-            # data.pop()
+            keylist = data.keys()
+            cannoteditlist = [key for key in keylist if key not in canCreateField]
+            if cannoteditlist:
+                raise InvestError(code=2009, msg='没有权限修改%s' % cannoteditlist)
+            # if request.user.has_perm('usersys.as_adminuser'):
+            #     canCreateField = perimissionfields.userpermfield['usersys.admin_adduser']
+            # elif request.user.has_perm('usersys.trader_adduser'):
+            #     canCreateField = perimissionfields.userpermfield['usersys.trader_adduser']
+            # else:
+            #     return JSONResponse({'result': None, 'success': False, 'errorcode': 2009, 'errormsg': None})
             projdata = data.get('proj')
             financesdata = data.get('finances')
             formatdata = data.get('format')

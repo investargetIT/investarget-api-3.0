@@ -20,6 +20,7 @@ class project(models.Model):
     c_descriptionE = models.TextField(blank=True, default='company description')
     p_introducteC = models.TextField(blank=True, default='项目介绍')
     p_introducteE = models.TextField(blank=True, default='project introduction')
+    isoverseasproject = models.BooleanField(blank=True,default=True,help_text='是否是海外项目')
     supportUser = models.ForeignKey(MyUser,blank=True,null=True,related_name='usersupport_projs',on_delete=models.SET_NULL)
     isHidden = models.BooleanField(blank=True,default=False)
     financeAmount = models.BigIntegerField(blank=True,null=True)
