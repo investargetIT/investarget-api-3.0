@@ -5,7 +5,9 @@ import views
 
 user_list = views.UserView.as_view({
         'get': 'list',
-        'post': 'adduser'   #新增
+        'post': 'adduser',   #新增
+        'put': 'update',  #修改
+        'delete': 'destroy',     #删除
 })
 
 regist_user = views.UserView.as_view({
@@ -14,8 +16,6 @@ regist_user = views.UserView.as_view({
 
 user_detail = views.UserView.as_view({
         'get': 'retrieve',   #查看详情
-        'patch': 'partial_update',  #修改
-        'delete': 'destroy'     #删除
 })
 
 user_detailinfo = views.UserView.as_view({
@@ -32,13 +32,13 @@ change_password = views.UserView.as_view({
 })
 
 
-user_relationship = views.UserRelationView.as_view({
+user_relationshiplist = views.UserRelationView.as_view({
         'get': 'list',
         'post': 'create',
-})
-detail_relation = views.UserRelationView.as_view({
         'put': 'update',
         'delete': 'destroy',
+})
+detail_relationone = views.UserRelationView.as_view({
         'get': 'retrieve',
 })
 
@@ -51,8 +51,8 @@ urlpatterns = [
     url(r'^detail/(?P<pk>\d+)/$', user_detailinfo,name='user-detailinfo'),
     url(r'^password/$', find_password ,name='find-password'),
     url(r'^password/(?P<pk>\d+)/$', change_password ,name='change-password'),
-    url(r'^relationship/$', user_relationship, name='user-relationship'),
-    url(r'^relationship/(?P<pk>\d+)/$', detail_relation, name='user-relationship'),
+    url(r'^relationship/$', user_relationshiplist, name='user-relationshiplist'),
+    url(r'^relationship/(?P<pk>\d+)/$', detail_relationone, name='user-relationshipone'),
     url(r'^register/$', regist_user),
     url(r'^login/$', views.login),
 ]

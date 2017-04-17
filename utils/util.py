@@ -8,6 +8,7 @@ import datetime
 import traceback
 
 from usersys.models import MyToken
+from usersys.serializer import UserListSerializer
 
 REDIS_TIMEOUT = 1 * 24 * 60 * 60
 weixinfilepath = '/Users/investarget/Desktop/django_server/third_header/weixin'
@@ -84,3 +85,18 @@ def loginTokenIsAvailable(permissions=None):#判断model级别权限
         return _token_available
     return token_available
 
+def maketoken(user,clienttype):
+    try:
+        tokens = MyToken.objects.filter(user=user, clienttype_id=clienttype, is_deleted=False)
+    except MyToken.DoesNotExist:
+        pass
+    else:
+        for token in tokens:
+            token.is_deleted = True
+            token.save(update_fields=['is_deleted'])
+    token = MyToken.objects.create(user=user, clienttype_id=clienttype)
+    serializer = UserListSerializer(user)
+    response = serializer.data
+    return {'token':token.key,
+        "user_info": response,
+    }

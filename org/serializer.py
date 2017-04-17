@@ -11,9 +11,7 @@ class OrgCommonSerializer(serializers.ModelSerializer):
 class OrgSerializer(serializers.ModelSerializer):
     class Meta:
         model = organization
-        # fields = '__all__'
-        fields = ('id','name','orgcode','auditStatu',)
-        depth = 1
+        exclude = ('id','name','orgcode','auditStatu',)
 
 class OrgDetailSerializer(serializers.ModelSerializer):
     class Meta:

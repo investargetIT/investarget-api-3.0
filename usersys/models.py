@@ -74,7 +74,6 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     groups : 作为权限组
     """
     id = models.AutoField(primary_key=True)
-    # groups = models.ForeignKey(Group,blank=True,help_text=('group'), related_name="user_set",related_query_name="user",)
     usercode = models.CharField(max_length=128,blank=True, unique=True)
     photoBucket = models.CharField(max_length=32,blank=True,null=True)
     photoKey = models.CharField(max_length=64,blank=True,null=True)
@@ -133,7 +132,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
 
             ('admin_adduser', u'管理员新增用户'),
             ('admin_deleteuser', u'管理员删除'),
-            ('admin_changeuser', u'管理员修改用户'),
+            ('admin_changeuser', u'管理员修改用户(包含重置密码)'),
             ('admin_getuser', u'管理员查看用户'),
         )
     def save(self, *args, **kwargs):
@@ -156,6 +155,26 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
             pass
         else:
             raise InvestError(code=2004)
+        if self.pk:
+            olduser = MyUser.objects.get(pk=self.pk)
+            if not self.is_deleted:
+                if olduser.org and self.org and olduser.org != self.org:
+                    remove_perm('org.user_getorg',self,olduser.org)
+                    assign_perm('org.user_getorg',self,self.org)
+                elif olduser.org and not self.org:
+                    remove_perm('org.user_getorg', self, olduser.org)
+                elif not olduser.org and self.org:
+                    assign_perm('org.user_getorg', self, self.org)
+                if not olduser.createuser and self.createuser:
+                    assign_perm('usersys.user_deleteuser', self.createuser, self)
+            else:
+                if olduser.org:
+                    remove_perm('org.user_getorg', self, olduser.org)
+                if olduser.createuser:
+                    remove_perm('usersys.user_getuser', olduser.createuser, self)
+                    remove_perm('usersys.user_changeuser', olduser.createuser, self)
+                    remove_perm('usersys.user_deleteuser', olduser.createuser, self)
+
         super(MyUser,self).save(*args,**kwargs)
 
 class userTags(models.Model):
@@ -174,9 +193,9 @@ class userTags(models.Model):
 class MyToken(models.Model):
     key = models.CharField('Key', max_length=48, primary_key=True)
     user = models.ForeignKey(MyUser, related_name='user_token',on_delete=models.CASCADE, verbose_name=("MyUser"))
-    created = models.DateTimeField(("Created"), auto_now_add=True)
+    created = models.DateTimeField(help_text="CreatedTime", auto_now_add=True)
     clienttype = models.ForeignKey(ClientType)
-    is_deleted = models.BooleanField(verbose_name='是否已被删除',blank=True,default=False)
+    is_deleted = models.BooleanField(help_text='是否已被删除',blank=True,default=False)
     class Meta:
         db_table = 'user_token'
     def timeout(self):
@@ -213,7 +232,7 @@ class UserRelation(models.Model):
             userrelation = UserRelation.objects.filter(Q(is_deleted=False), Q(investoruser=self.investoruser))
         if userrelation.exists():
             if userrelation.filter(traderuser_id=self.traderuser_id).exists():
-                raise InvestError(code=2012)
+                raise InvestError(code=2012,msg='4.关系已存在')
             elif userrelation.filter(relationtype=True).exists() and self.relationtype:
                 raise InvestError(code=2013,msg='3.强关系只能有一个,如有必要，先删除，在添加')
         else:
@@ -222,7 +241,7 @@ class UserRelation(models.Model):
             raise InvestError(code=2014,msg='1.投资人和交易师不能是同一个人')
         elif not self.traderuser.has_perm('usersys.as_traderuser'):
             raise InvestError(code=2015,msg='4.没有交易师权限关系')
-        elif not self.investoruser.has_perm('as_investoruser'):
+        elif not self.investoruser.has_perm('usersys.as_investoruser'):
             raise InvestError(code=2015,msg='5.没有投资人权限')
         else:
             if self.pk:

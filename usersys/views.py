@@ -10,6 +10,7 @@ from django.db import transaction,models
 # Create your views here.
 from django.db.models import Q
 from django.db.models.fields.reverse_related import ForeignObjectRel
+from guardian.shortcuts import assign_perm
 from rest_framework import filters
 from rest_framework import status
 from rest_framework import viewsets
@@ -21,7 +22,7 @@ from usersys.serializer import UserSerializer, UserListSerializer, UserRelationS
 from sourcetype.models import Tag
 from utils import perimissionfields
 from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable, JSONResponse,\
-    catchexcption, cache_delete_key
+    catchexcption, cache_delete_key, maketoken
 
 
 class UserView(viewsets.ModelViewSet):
@@ -32,22 +33,32 @@ class UserView(viewsets.ModelViewSet):
     redis_key = 'users'
     Model = MyUser
 
-    def get_object(self):
-        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-        assert lookup_url_kwarg in self.kwargs, (
-            'Expected view %s to be called with a URL keyword argument '
-            'named "%s". Fix your URL conf, or set the `.lookup_field` '
-            'attribute on the view correctly.' %
-            (self.__class__.__name__, lookup_url_kwarg)
-        )
-        obj = read_from_cache(self.redis_key+'_%s'%self.kwargs[lookup_url_kwarg])
-        if not obj:
-            try:
-                obj = self.Model.objects.get(id=self.kwargs[lookup_url_kwarg],is_deleted=False)
-            except self.Model.DoesNotExist:
-                raise InvestError(code=2002)
-            else:
-                write_to_cache(self.redis_key+'_%s'%self.kwargs[lookup_url_kwarg],obj)
+    def get_object(self,pk=None):
+        if pk:
+            obj = read_from_cache(self.redis_key + '_%s' % pk)
+            if not obj:
+                try:
+                    obj = self.Model.objects.get(id=pk, is_deleted=False)
+                except self.Model.DoesNotExist:
+                    raise InvestError(code=2002)
+                else:
+                    write_to_cache(self.redis_key + '_%s' % pk, obj)
+        else:
+            lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+            assert lookup_url_kwarg in self.kwargs, (
+                'Expected view %s to be called with a URL keyword argument '
+                'named "%s". Fix your URL conf, or set the `.lookup_field` '
+                'attribute on the view correctly.' %
+                (self.__class__.__name__, lookup_url_kwarg)
+            )
+            obj = read_from_cache(self.redis_key+'_%s'%self.kwargs[lookup_url_kwarg])
+            if not obj:
+                try:
+                    obj = self.Model.objects.get(id=self.kwargs[lookup_url_kwarg],is_deleted=False)
+                except self.Model.DoesNotExist:
+                    raise InvestError(code=2002)
+                else:
+                    write_to_cache(self.redis_key+'_%s'%self.kwargs[lookup_url_kwarg],obj)
         return obj
 
     @loginTokenIsAvailable(['usersys.admin_getuser','usersys.user_getuser'])
@@ -68,7 +79,6 @@ class UserView(viewsets.ModelViewSet):
         return JSONResponse({'success':True,'result': serializer.data,'errorcode':1000,'errormsg':None})
 
     #注册用户(新注册用户没有交易师)
-    @transaction.atomic
     def create(self, request, *args, **kwargs):
         try:
             with transaction.atomic():
@@ -125,6 +135,8 @@ class UserView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def adduser(self, request, *args, **kwargs):
         data = request.data
+        data['createduser'] = request.user.id
+        data['createdtime'] = datetime.datetime.now()
         if request.user.has_perm('usersys.admin_adduser'):
             canCreateField = perimissionfields.userpermfield['usersys.admin_adduser']
         elif request.user.has_perm('usersys.user_adduser'):
@@ -160,6 +172,10 @@ class UserView(viewsets.ModelViewSet):
                         user.user_tags.bulk_create(usertaglist)
                 else:
                     raise InvestError(code=20071,msg='userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
+                if user.createuser:
+                    assign_perm('usersys.user_getuser', user.createuser, user)
+                    assign_perm('usersys.user_changeuser', user.createuser, user)
+                    assign_perm('usersys.user_deleteuser', user.createuser, user)
                 return JSONResponse({'success': True, 'result': UserSerializer(user).data, 'errorcode': 1000,'errormsg':None})
         except InvestError as err:
             return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
@@ -178,10 +194,12 @@ class UserView(viewsets.ModelViewSet):
             else:
                 if request.user.has_perm('usersys.admin_getuser'):
                     userserializer = UserListSerializer
+                elif request.user.has_perm('usersys.user_getuser'):
+                    userserializer = UserListSerializer
                 elif request.user.has_perm('usersys.user_getuser',user):
                     userserializer = UserListSerializer
                 else:
-                    return JSONResponse({'result': None, 'success': False, 'errorcode':2009,'errormsg':None})
+                    raise InvestError(code=2009)
             serializer = userserializer(user)
             return JSONResponse({'success':True,'result': serializer.data,'errorcode':1000,'errormsg':None})
         except InvestError as err:
@@ -200,10 +218,12 @@ class UserView(viewsets.ModelViewSet):
             else:
                 if request.user.has_perm('usersys.admin_getuser'):
                     userserializer = UserSerializer
+                elif request.user.has_perm('usersys.user_getuser'):
+                    userserializer = UserListSerializer
                 elif request.user.has_perm('usersys.user_getuser', user):
                     userserializer = UserSerializer
                 else:
-                    return JSONResponse({'result': None, 'success': False, 'errorcode':2009,'errormsg':None})
+                    raise InvestError(code=2009)
             serializer = userserializer(user)
             response = {'success': True, 'result': serializer.data, 'errorcode':1000,'errormsg':None}
             return JSONResponse(response)
@@ -214,42 +234,46 @@ class UserView(viewsets.ModelViewSet):
             return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
                                  'errormsg': traceback.format_exc().split('\n')[-2]})
 
-    #patch
-    @loginTokenIsAvailable()
-    def partial_update(self, request, *args, **kwargs):
+    #put
+    # @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
         try:
-            user = self.get_object()
-            if request.user == user:
-                canChangeField = perimissionfields.userpermfield['changeself']
-            else:
-                if request.user.has_perm('usersys.admin_changeuser'):
-                    canChangeField = perimissionfields.userpermfield['usersys.admin_changeuser']
-                elif request.user.has_perm('usersys.user_changeuser',user):
-                    canChangeField = perimissionfields.userpermfield['usersys.trader_changeuser']
-                else:
-                    raise InvestError(code=2009)
-            data = request.data
-            keylist = data.keys()
-            cannoteditlist = [key for key in keylist if key not in canChangeField]
-            if cannoteditlist:
-                raise InvestError(code=2009,msg='没有权限修改_%s' % cannoteditlist)
+            userlist = request.data
             with transaction.atomic():
-                tags = data.pop('tags', None)
-                userserializer = CreatUserSerializer(user, data=data)
-                if userserializer.is_valid():
-                    user = userserializer.save()
-                    if tags:
-                        taglist = Tag.objects.in_bulk(tags)
-                        addlist = [item for item in taglist if item not in user.tags.all()]
-                        removelist = [item for item in user.tags.all() if item not in taglist]
-                        user.user_tags.filter(tag__in=removelist,is_deleted=False).update(is_deleted=True,deletedtime=datetime.datetime.now(),deleteduser=request.user)
-                        usertaglist = []
-                        for tag in addlist:
-                            usertaglist.append(userTags(user=user, tag=tag, createuser=request.user))
-                        user.user_tags.bulk_create(usertaglist)
-                else:
-                    raise InvestError(code=20071,msg='userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
-                return JSONResponse({'success': True, 'result': UserSerializer(user).data, 'errorcode':1000,'errormsg':None})
+                for userid in userlist:
+                    user = self.get_object(userid)
+                    if request.user == user:
+                        canChangeField = perimissionfields.userpermfield['changeself']
+                    else:
+                        if request.user.has_perm('usersys.admin_changeuser'):
+                            canChangeField = perimissionfields.userpermfield['usersys.admin_changeuser']
+                        elif request.user.has_perm('usersys.user_changeuser',user):
+                            canChangeField = perimissionfields.userpermfield['usersys.trader_changeuser']
+                        else:
+                            raise InvestError(code=2009)
+                    data = request.data
+                    data['lastmodifyuser'] = request.user.id
+                    data['lastmodifytime'] = datetime.datetime.now()
+                    keylist = data.keys()
+                    cannoteditlist = [key for key in keylist if key not in canChangeField]
+                    if cannoteditlist:
+                        raise InvestError(code=2009,msg='没有权限修改_%s' % cannoteditlist)
+                    tags = data.pop('tags', None)
+                    userserializer = CreatUserSerializer(user, data=data)
+                    if userserializer.is_valid():
+                        user = userserializer.save()
+                        if tags:
+                            taglist = Tag.objects.in_bulk(tags)
+                            addlist = [item for item in taglist if item not in user.tags.all()]
+                            removelist = [item for item in user.tags.all() if item not in taglist]
+                            user.user_tags.filter(tag__in=removelist,is_deleted=False).update(is_deleted=True,deletedtime=datetime.datetime.now(),deleteduser=request.user)
+                            usertaglist = []
+                            for tag in addlist:
+                                usertaglist.append(userTags(user=user, tag=tag, createuser=request.user))
+                            user.user_tags.bulk_create(usertaglist)
+                    else:
+                        raise InvestError(code=20071,msg='userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
+                return JSONResponse({'success': True, 'result': userlist, 'errorcode':1000,'errormsg':None})
         except InvestError as err:
             return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
         except Exception:
@@ -261,36 +285,38 @@ class UserView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
         try:
-            instance = self.get_object()
-            if request.user.has_perm('usersys.admin_deleteuser') or request.user.has_perm('usersys.user_deleteuser',instance):
-                pass
-            else:
-                raise InvestError(code=2009)
-            rel_fileds = [f for f in instance._meta.get_fields() if isinstance(f, ForeignObjectRel)]
-            links = [f.get_accessor_name() for f in rel_fileds]
-            for link in links:
-                manager = getattr(instance, link, None)
-                if not manager:
-                    continue
-                # one to one
-                if isinstance(manager, models.Model):
-                    if hasattr(manager, 'is_deleted') and manager.is_active:
-                        raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
-                else:
-                    try:
-                        manager.model._meta.get_field('is_deleted')
-                        if manager.filter(is_active=True).count():
-                            raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
-                    except FieldDoesNotExist as ex:
-                        if manager.count():
-                            raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
+            userlist = request.data
             with transaction.atomic():
-                instance.is_deleted = True
-                instance.deleteduser = request.user
-                instance.deletedtime = datetime.datetime.utcnow()
-                instance.save()
-                response = {'success': True, 'result': UserSerializer(instance).data, 'errorcode':1000,'errormsg':None}
-                return JSONResponse(response)
+                for userid in userlist:
+                    instance = self.get_object(userid)
+                    if request.user.has_perm('usersys.admin_deleteuser') or request.user.has_perm('usersys.user_deleteuser',instance):
+                        pass
+                    else:
+                        raise InvestError(code=2009)
+                    rel_fileds = [f for f in instance._meta.get_fields() if isinstance(f, ForeignObjectRel)]
+                    links = [f.get_accessor_name() for f in rel_fileds]
+                    for link in links:
+                        manager = getattr(instance, link, None)
+                        if not manager:
+                            continue
+                        # one to one
+                        if isinstance(manager, models.Model):
+                            if hasattr(manager, 'is_deleted') and manager.is_active:
+                                raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
+                        else:
+                            try:
+                                manager.model._meta.get_field('is_deleted')
+                                if manager.filter(is_active=True).count():
+                                    raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
+                            except FieldDoesNotExist as ex:
+                                if manager.count():
+                                    raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
+                    instance.is_deleted = True
+                    instance.deleteduser = request.user
+                    instance.deletedtime = datetime.datetime.utcnow()
+                    instance.save()
+                    response = {'success': True, 'result': UserSerializer(instance).data, 'errorcode':1000,'errormsg':None}
+                    return JSONResponse(response)
         except InvestError as err:
             return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
         except Exception:
@@ -405,6 +431,8 @@ class UserRelationView(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
+            data['createduser'] = request.user.id
+            data['createdtime'] = datetime.datetime.now()
             if request.user.has_perm('usersys.admin_adduserrelation'):
                 pass
             elif request.user.has_perm('usersys.user_adduserrelation'):
@@ -427,18 +455,31 @@ class UserRelationView(viewsets.ModelViewSet):
             return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
                                  'errormsg': traceback.format_exc().split('\n')[-2]})
 
-    def get_object(self):
-        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-        assert lookup_url_kwarg in self.kwargs, (
-            'Expected view %s to be called with a URL keyword argument '
-            'named "%s". Fix your URL conf, or set the `.lookup_field` '
-            'attribute on the view correctly.' %
-            (self.__class__.__name__, lookup_url_kwarg)
-        )
-        try:
-            obj = UserRelation.objects.get(id=self.kwargs[lookup_url_kwarg],is_deleted=False)
-        except UserRelation.DoesNotExist:
-                raise InvestError(code=2011,msg='relation with pk = "%s" is not exist'%self.kwargs[lookup_url_kwarg])
+    def get_object(self,pk=None):
+        if pk:
+            lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+            assert lookup_url_kwarg in self.kwargs, (
+                'Expected view %s to be called with a URL keyword argument '
+                'named "%s". Fix your URL conf, or set the `.lookup_field` '
+                'attribute on the view correctly.' %
+                (self.__class__.__name__, lookup_url_kwarg)
+            )
+            try:
+                obj = UserRelation.objects.get(id=self.kwargs[lookup_url_kwarg], is_deleted=False)
+            except UserRelation.DoesNotExist:
+                raise InvestError(code=2011, msg='relation with pk = "%s" is not exist' % self.kwargs[lookup_url_kwarg])
+        else:
+            lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+            assert lookup_url_kwarg in self.kwargs, (
+                'Expected view %s to be called with a URL keyword argument '
+                'named "%s". Fix your URL conf, or set the `.lookup_field` '
+                'attribute on the view correctly.' %
+                (self.__class__.__name__, lookup_url_kwarg)
+            )
+            try:
+                obj = UserRelation.objects.get(id=self.kwargs[lookup_url_kwarg],is_deleted=False)
+            except UserRelation.DoesNotExist:
+                    raise InvestError(code=2011,msg='relation with pk = "%s" is not exist'%self.kwargs[lookup_url_kwarg])
         return obj
 
     @loginTokenIsAvailable()
@@ -446,6 +487,8 @@ class UserRelationView(viewsets.ModelViewSet):
         try:
             userrelation = self.get_object()
             if request.user.has_perm('usersys.admin_getuserrelation'):
+                pass
+            elif request.user.has_perm('usersys.user_getuserrelation'):
                 pass
             elif request.user.has_perm('usersys.user_getuserrelation',userrelation):
                 pass
@@ -463,25 +506,28 @@ class UserRelationView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
         try:
-            data = request.data
-            relation = self.get_object()
-            if request.user.has_perm('usersys.admin_changeuserrelation'):
-                pass
-            elif request.user.has_perm('usersys.user_changeuserrelation', relation):
-                data['traderuser'] = request.user.id
-                data.pop('relationtype', None)
-            else:
-                raise InvestError(code=2009,msg='没有权限')
-            data['lastmodifyuser'] = request.user.id
-            data['lastmodifytime'] = datetime.datetime.now()
             with transaction.atomic():
-                newrelation = UserRelationSerializer(relation,data=data)
-                if newrelation.is_valid():
-                    newrelation.save()
-                    response = {'success': True, 'result':newrelation.data, 'errorcode':1000,'errormsg':None}
-                else:
-                    raise InvestError(code=20071,msg=newrelation.errors)
-                return JSONResponse(response)
+                parmdict = request.data
+                relationidlist = parmdict['relationlist']
+                relationlist = UserRelation.objects.in_bulk(relationidlist)
+                for relation in relationlist:
+                    data = parmdict['newdata']
+                    if request.user.has_perm('usersys.admin_changeuserrelation'):
+                        pass
+                    elif request.user.has_perm('usersys.user_changeuserrelation', relation):
+                        data['traderuser'] = request.user.id
+                        data.pop('relationtype', None)
+                    else:
+                        raise InvestError(code=2009,msg='没有权限')
+                    data['lastmodifyuser'] = request.user.id
+                    data['lastmodifytime'] = datetime.datetime.now()
+
+                    newrelation = UserRelationSerializer(relation,data=data)
+                    if newrelation.is_valid():
+                        newrelation.save()
+                    else:
+                        raise InvestError(code=20071,msg=newrelation.errors)
+                return JSONResponse({'success': True, 'result':UserRelationSerializer(relationlist,many=True).data, 'errorcode':1000,'errormsg':None})
         except InvestError as err:
             return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
         except Exception:
@@ -492,19 +538,21 @@ class UserRelationView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
         try:
-            userrelation = self.get_object()
-            if request.user.has_perm('usersys.user_deleteuserrelation',userrelation):
-                pass
-            elif request.user.has_perm('usersys.admin_deleteuserrelation'):
-                pass
-            else:
-                raise InvestError(code=2009,msg='没有权限')
             with transaction.atomic():
-                userrelation.is_deleted = True
-                userrelation.deleteduser = request.user
-                userrelation.deletedtime = datetime.datetime.now()
-                userrelation.save()
-                response = {'success': True, 'result': UserRelationSerializer(userrelation).data,'errorcode':1000,'errormsg':None}
+                relationidlist = request.data
+                relationlist = self.queryset.in_bulk(relationidlist)
+                for userrelation in relationlist:
+                    if request.user.has_perm('usersys.user_deleteuserrelation',userrelation):
+                        pass
+                    elif request.user.has_perm('usersys.admin_deleteuserrelation'):
+                        pass
+                    else:
+                        raise InvestError(code=2009,msg='没有权限')
+                    userrelation.is_deleted = True
+                    userrelation.deleteduser = request.user
+                    userrelation.deletedtime = datetime.datetime.now()
+                    userrelation.save()
+                response = {'success': True, 'result': UserRelationSerializer(relationlist,many=True).data,'errorcode':1000,'errormsg':None}
                 return JSONResponse(response)
         except InvestError as err:
             return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
@@ -529,6 +577,10 @@ def login(request):
                 raise InvestError(code=2003,msg='登录类型不可用')
             else:
                 raise InvestError(code=2001,msg='密码错误')
+        user.last_login = datetime.datetime.now()
+        if user.is_active:
+            user.is_active = True
+        user.save()
         response = maketoken(user, clienttype)
         return JSONResponse({"result": response, "success": True, 'errorcode':1000,'errormsg':None})
     except InvestError as err:
@@ -539,19 +591,3 @@ def login(request):
 
 
 
-
-def maketoken(user,clienttype):
-    try:
-        tokens = MyToken.objects.filter(user=user, clienttype_id=clienttype, is_deleted=False)
-    except MyToken.DoesNotExist:
-        pass
-    else:
-        for token in tokens:
-            token.is_deleted = True
-            token.save(update_fields=['is_deleted'])
-    token = MyToken.objects.create(user=user, clienttype_id=clienttype)
-    serializer = UserListSerializer(user)
-    response = serializer.data
-    return {'token':token.key,
-        "user_info": response,
-    }

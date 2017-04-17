@@ -4,6 +4,7 @@ from django.db import models
 import sys
 
 from django.db.models import Q
+from guardian.shortcuts import assign_perm, remove_perm
 
 from sourcetype.models import AuditStatus, OrgType , TransactionPhases,CurrencyType, Industry
 from usersys.models import MyUser
@@ -53,14 +54,28 @@ class organization(models.Model):
         return self.nameC
     class Meta:
         permissions = (
-            ('adminadd_org','管理员新增机构'),
-            ('adminchange_org','管理员修改机构'),
-            ('admindelete_org','管理员删除机构'),
-            ('get_organization','查看机构信息'),
+            ('admin_addorg','管理员新增机构'),
+            ('admin_changeorg','管理员修改机构'),
+            ('admin_deleteorg','管理员删除机构'),
+            ('admin_getorg','管理员查看机构信息'),
+
+            ('user_addorg', '用户新增机构'),
+            ('user_changeorg', '用户修改机构(obj级别权限)'),
+            ('user_deleteorg', '用户删除机构(obj级别权限)'),
+            ('user_getorg', '用户查看机构(obj/class级别权限)'),
         )
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
         if self.pk:
+            oldorg = organization.objects.get(pk=self.pk)
+            if self.orgcode:
+                if MyUser.objects.exclude(pk=self.pk).filter(is_deleted=False,orgcode=self.orgcode).exists():
+                    raise ValueError()
+            if self.is_deleted:
+                remove_perm('org.user_getorg', self.createuser, self)
+                remove_perm('org.user_changeorg', self.createuser, self)
+                remove_perm('org.user_deleteorg', self.createuser, self)
+        else:
             if self.orgcode:
                 if MyUser.objects.filter(is_deleted=False,orgcode=self.orgcode).exists():
                     raise ValueError()
