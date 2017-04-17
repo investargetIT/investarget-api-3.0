@@ -121,14 +121,20 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     class Meta:
         db_table = "user"
         permissions = (
-            ('as_investoruser', u'投资人'),
-            ('as_traderuser', u'交易师'),
-            ('as_supporteruser', u'项目方'),
-            ('as_adminuser', u'普通管理员'),
-            ('trader_adduser', u'交易师新增'),
-            ('admin_adduser',u'管理员新增'),
-            ('trader_changeuser', u'交易师编辑'),
-            ('admin_changeuser',u'管理员编辑')
+            ('as_investoruser', u'投资人身份'),
+            ('as_traderuser', u'交易师身份'),
+            ('as_supporteruser', u'项目方身份'),
+            ('as_adminuser', u'管理员身份'),
+
+            ('user_adduser', u'用户新增用户'),
+            ('user_deleteuser', u'用户删除用户(obj级别权限)'),
+            ('user_changeuser', u'用户修改用户(obj级别权限)'),
+            ('user_getuser', u'用户查看用户(obj/class级别权限)'),
+
+            ('admin_adduser', u'管理员新增用户'),
+            ('admin_deleteuser', u'管理员删除'),
+            ('admin_changeuser', u'管理员修改用户'),
+            ('admin_getuser', u'管理员查看用户'),
         )
     def save(self, *args, **kwargs):
         if not self.usercode:
@@ -214,28 +220,45 @@ class UserRelation(models.Model):
             self.relationtype = True
         if self.investoruser.id == self.traderuser.id:
             raise InvestError(code=2014,msg='1.投资人和交易师不能是同一个人')
-        elif not self.traderuser.has_perm('as_traderuser'):
+        elif not self.traderuser.has_perm('usersys.as_traderuser'):
             raise InvestError(code=2015,msg='4.没有交易师权限关系')
         elif not self.investoruser.has_perm('as_investoruser'):
             raise InvestError(code=2015,msg='5.没有投资人权限')
         else:
             if self.pk:
                 if self.is_deleted:
-                    remove_perm('MyUserSys.trader_change',self.traderuser,self.investoruser)
-                    remove_perm('MyUserSys.change_userrelation', self.traderuser, self)
-                    remove_perm('MyUserSys.delete_userrelation', self.traderuser, self)
+                    remove_perm('usersys.user_getuser',self.traderuser,self.investoruser)
+                    remove_perm('usersys.user_changeuser', self.traderuser, self.investoruser)
+                    remove_perm('usersys.user_deleteuser', self.traderuser, self.investoruser)
+
+                    remove_perm('usersys.user_getuserrelation', self.traderuser, self)
+                    remove_perm('usersys.user_changeuserrelation', self.traderuser, self)
+                    remove_perm('usersys.user_deleteuserrelation', self.traderuser, self)
                 else:
                     oldrela = UserRelation.objects.get(pk=self.pk)
-                    remove_perm('MyUserSys.trader_change',oldrela.traderuser,oldrela.investoruser)
-                    remove_perm('MyUserSys.change_userrelation', oldrela.traderuser, self)
-                    remove_perm('MyUserSys.delete_userrelation', oldrela.traderuser, self)
-                    assign_perm('MyUserSys.trader_change',self.traderuser,self.investoruser)
-                    assign_perm('MyUserSys.change_userrelation', self.traderuser, self)
-                    assign_perm('MyUserSys.delete_userrelation', self.traderuser, self)
+                    remove_perm('usersys.user_getuser', oldrela.traderuser, oldrela.investoruser)
+                    remove_perm('usersys.user_changeuser', oldrela.traderuser, oldrela.investoruser)
+                    remove_perm('usersys.user_deleteuser', oldrela.traderuser, oldrela.investoruser)
+
+                    remove_perm('usersys.user_getuserrelation', oldrela.traderuser, self)
+                    remove_perm('usersys.user_changeuserrelation', oldrela.traderuser, self)
+                    remove_perm('usersys.user_deleteuserrelation', oldrela.traderuser, self)
+
+                    assign_perm('usersys.user_getuser',self.traderuser,self.investoruser)
+                    assign_perm('usersys.user_changeuser', self.traderuser, self.investoruser)
+                    assign_perm('usersys.user_deleteuser', self.traderuser, self.investoruser)
+
+                    assign_perm('usersys.user_getuserrelation', self.traderuser, self)
+                    assign_perm('usersys.user_changeuserrelation', self.traderuser, self)
+                    assign_perm('usersys.user_deleteuserrelation', self.traderuser, self)
             else:
-                assign_perm('MyUserSys.trader_change', self.traderuser, self.investoruser)
-                assign_perm('MyUserSys.change_userrelation', self.traderuser, self)
-                assign_perm('MyUserSys.delete_userrelation', self.traderuser, self)
+                assign_perm('usersys.user_getuser', self.traderuser, self.investoruser)
+                assign_perm('usersys.user_changeuser', self.traderuser, self.investoruser)
+                assign_perm('usersys.user_deleteuser', self.traderuser, self.investoruser)
+
+                assign_perm('usersys.user_getuserrelation', self.traderuser, self)
+                assign_perm('usersys.user_changeuserrelation', self.traderuser, self)
+                assign_perm('usersys.user_deleteuserrelation', self.traderuser, self)
             super(UserRelation, self).save(*args, **kwargs)
     class Meta:
         db_table = "user_relation"
@@ -243,6 +266,12 @@ class UserRelation(models.Model):
             ('admin_adduserrelation', u'管理员建立用户联系'),
             ('admin_changeuserrelation', u'管理员修改用户联系'),
             ('admin_deleteuserrelation', u'管理员删除用户联系'),
+            ('admin_getuserrelation', u'管理员查看用户联系'),
+
+            ('user_adduserrelation', u'用户建立用户联系'),
+            ('user_changeuserrelation', u'用户改用户联系（obj级别）'),
+            ('user_deleteuserrelation', u'用户删除用户联系（obj级别）'),
+            ('user_getuserrelation', u'用户查看用户联系（obj/class级别）'),
         )
 
 

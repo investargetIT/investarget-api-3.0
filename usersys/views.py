@@ -50,7 +50,7 @@ class UserView(viewsets.ModelViewSet):
                 write_to_cache(self.redis_key+'_%s'%self.kwargs[lookup_url_kwarg],obj)
         return obj
 
-    @loginTokenIsAvailable(['usersys.as_adminuser'])
+    @loginTokenIsAvailable(['usersys.admin_getuser','usersys.user_getuser'])
     def list(self, request, *args, **kwargs):
         page_size = request.GET.get('page_size')
         page_index = request.GET.get('page_index')  #从第一页开始
@@ -127,13 +127,13 @@ class UserView(viewsets.ModelViewSet):
         data = request.data
         if request.user.has_perm('usersys.admin_adduser'):
             canCreateField = perimissionfields.userpermfield['usersys.admin_adduser']
-        elif request.user.has_perm('usersys.trader_adduser'):
+        elif request.user.has_perm('usersys.user_adduser'):
             canCreateField = perimissionfields.userpermfield['usersys.trader_adduser']
         else:
             return JSONResponse({'result': None, 'success': False, 'errorcode':2009,'errormsg':None})
         try:
             with transaction.atomic():
-                password = data.get('password')
+                password = data.pop('password','Aa123456')
                 email = data.get('email')
                 mobile = data.get('mobile')
                 try:
@@ -176,9 +176,9 @@ class UserView(viewsets.ModelViewSet):
             if request.user == user:
                 userserializer = UserListSerializer
             else:
-                if request.user.has_perm('usersys.as_adminuser'):
+                if request.user.has_perm('usersys.admin_getuser'):
                     userserializer = UserListSerializer
-                elif request.user.has_perm('usersys.trader_changeuser',self.get_object()):
+                elif request.user.has_perm('usersys.user_getuser',user):
                     userserializer = UserListSerializer
                 else:
                     return JSONResponse({'result': None, 'success': False, 'errorcode':2009,'errormsg':None})
@@ -198,9 +198,9 @@ class UserView(viewsets.ModelViewSet):
             if request.user == user:
                 userserializer = UserSerializer
             else:
-                if request.user.has_perm('usersys.as_adminuser'):
+                if request.user.has_perm('usersys.admin_getuser'):
                     userserializer = UserSerializer
-                elif request.user.has_perm('usersys.trader_changeuser', self.get_object()):
+                elif request.user.has_perm('usersys.user_getuser', user):
                     userserializer = UserSerializer
                 else:
                     return JSONResponse({'result': None, 'success': False, 'errorcode':2009,'errormsg':None})
@@ -224,7 +224,7 @@ class UserView(viewsets.ModelViewSet):
             else:
                 if request.user.has_perm('usersys.admin_changeuser'):
                     canChangeField = perimissionfields.userpermfield['usersys.admin_changeuser']
-                elif request.user.has_perm('usersys.trader_changeuser',self.get_object()):
+                elif request.user.has_perm('usersys.user_changeuser',user):
                     canChangeField = perimissionfields.userpermfield['usersys.trader_changeuser']
                 else:
                     raise InvestError(code=2009)
@@ -258,10 +258,14 @@ class UserView(viewsets.ModelViewSet):
                                  'errormsg': traceback.format_exc().split('\n')[-2]})
 
     #delete
-    @loginTokenIsAvailable(['usersys.as_adminuser'])
+    @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
         try:
+            instance = self.get_object()
+            if request.user.has_perm('usersys.admin_deleteuser') or request.user.has_perm('usersys.user_deleteuser',instance):
+                pass
+            else:
+                raise InvestError(code=2009)
             rel_fileds = [f for f in instance._meta.get_fields() if isinstance(f, ForeignObjectRel)]
             links = [f.get_accessor_name() for f in rel_fileds]
             for link in links:
@@ -349,7 +353,7 @@ class UserView(viewsets.ModelViewSet):
                                  'errormsg': traceback.format_exc().split('\n')[-2]})
 
     @detail_route(methods=['get'])
-    @loginTokenIsAvailable(['usersys.as_adminuser'])
+    @loginTokenIsAvailable(['usersys.admin_changeuser'])
     def resetpassword(self,request, *args, **kwargs):
         try:
             user = self.get_object()
@@ -367,12 +371,11 @@ class UserView(viewsets.ModelViewSet):
 
 class UserRelationView(viewsets.ModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,)
-    # permission_classes = (AllowAny,)
     filter_fields = ('id','investoruser', 'traderuser', 'relationtype')
     queryset = UserRelation.objects.filter(is_deleted=False)
     serializer_class = UserRelationSerializer
 
-    @loginTokenIsAvailable(['usersys.as_adminuser','usersys.as_traderuser','usersys.as_investoruser'])
+    @loginTokenIsAvailable(['usersys.admin_getuserrelation','usersys.user_getuserrelation'])
     def list(self, request, *args, **kwargs):
         page_size = request.GET.get('page_size')
         page_index = request.GET.get('page_index')  #从第一页开始
@@ -404,7 +407,7 @@ class UserRelationView(viewsets.ModelViewSet):
             data = request.data
             if request.user.has_perm('usersys.admin_adduserrelation'):
                 pass
-            elif request.user.has_perm('usersys.add_userrelation'):
+            elif request.user.has_perm('usersys.user_adduserrelation'):
                 data['traderuser'] = request.user.id
             else:
                 raise InvestError(code=2009)
@@ -442,9 +445,9 @@ class UserRelationView(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         try:
             userrelation = self.get_object()
-            if request.user.has_perm('usersys.as_adminuser'):
+            if request.user.has_perm('usersys.admin_getuserrelation'):
                 pass
-            elif request.user == userrelation.traderuser or request.user == userrelation.investoruser:
+            elif request.user.has_perm('usersys.user_getuserrelation',userrelation):
                 pass
             else:
                 raise InvestError(code=2009)
@@ -464,7 +467,7 @@ class UserRelationView(viewsets.ModelViewSet):
             relation = self.get_object()
             if request.user.has_perm('usersys.admin_changeuserrelation'):
                 pass
-            elif request.user.has_perm('usersys.change_userrelation', relation):
+            elif request.user.has_perm('usersys.user_changeuserrelation', relation):
                 data['traderuser'] = request.user.id
                 data.pop('relationtype', None)
             else:
@@ -490,7 +493,7 @@ class UserRelationView(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         try:
             userrelation = self.get_object()
-            if request.user.has_perm('usersys.delete_userrelation',userrelation):
+            if request.user.has_perm('usersys.user_deleteuserrelation',userrelation):
                 pass
             elif request.user.has_perm('usersys.admin_deleteuserrelation'):
                 pass
