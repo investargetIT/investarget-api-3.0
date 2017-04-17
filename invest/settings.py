@@ -112,7 +112,7 @@ DATABASES = {
         'NAME': 'investarget',
         'USER':'root',
         'PASSWORD':'root123456',
-        'HOST':'localhost',
+        'HOST':'192.168.1.201',
         'PORT':'3306',
     }
 }
@@ -139,7 +139,7 @@ AUTH_PASSWORD_VALIDATORS = [
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379",
+        "LOCATION": "redis://192.168.1.201:6379",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "PICKLE_VERSION": -1  # Use the latest protocol version
