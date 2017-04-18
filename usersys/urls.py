@@ -5,9 +5,9 @@ import views
 
 user_list = views.UserView.as_view({
         'get': 'list',
-        'post': 'adduser',   #新增
-        'put': 'update',  #修改
-        'delete': 'destroy',     #删除
+        'post': 'adduser',   #（系统内新增用户）
+        'put': 'update',     #修改（批量）
+        'delete': 'destroy', #删除（批量）
 })
 
 regist_user = views.UserView.as_view({
@@ -35,8 +35,8 @@ change_password = views.UserView.as_view({
 user_relationshiplist = views.UserRelationView.as_view({
         'get': 'list',
         'post': 'create',
-        'put': 'update',
-        'delete': 'destroy',
+        'put': 'update',         #（批量）
+        'delete': 'destroy',     #（批量）
 })
 detail_relationone = views.UserRelationView.as_view({
         'get': 'retrieve',

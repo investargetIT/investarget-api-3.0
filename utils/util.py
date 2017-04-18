@@ -17,7 +17,6 @@ excptionlogpath = '/Users/investarget/Desktop/django_server/excption_log'
 
 
 
-
 #读
 def read_from_cache(key):
     value = cache.get(key)

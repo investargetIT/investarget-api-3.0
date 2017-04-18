@@ -3,6 +3,7 @@ import traceback
 
 import datetime
 from django.contrib import auth
+from django.contrib.auth.models import Group
 from django.core.exceptions import FieldDoesNotExist
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction,models
@@ -28,7 +29,7 @@ from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable, J
 class UserView(viewsets.ModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = MyUser.objects.filter(is_deleted=False)
-    filter_fields = ('mobile','email','name','id','groups')
+    filter_fields = ('mobile','email','name','id','groups','org')
     serializer_class = UserSerializer
     redis_key = 'users'
     Model = MyUser
@@ -235,7 +236,7 @@ class UserView(viewsets.ModelViewSet):
                                  'errormsg': traceback.format_exc().split('\n')[-2]})
 
     #put
-    # @loginTokenIsAvailable()
+    @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
         try:
             userlist = request.data
@@ -282,7 +283,7 @@ class UserView(viewsets.ModelViewSet):
                                  'errormsg': traceback.format_exc().split('\n')[-2]})
 
     #delete
-    @loginTokenIsAvailable()
+    # @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
         try:
             userlist = request.data
@@ -301,15 +302,15 @@ class UserView(viewsets.ModelViewSet):
                             continue
                         # one to one
                         if isinstance(manager, models.Model):
-                            if hasattr(manager, 'is_deleted') and manager.is_active:
+                            if hasattr(manager, 'is_deleted') and not manager.is_deleted:
                                 raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
                         else:
                             try:
                                 manager.model._meta.get_field('is_deleted')
-                                if manager.filter(is_active=True).count():
+                                if manager.all().filter(is_deleted=False).count():
                                     raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
                             except FieldDoesNotExist as ex:
-                                if manager.count():
+                                if manager.all().count():
                                     raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
                     instance.is_deleted = True
                     instance.deleteduser = request.user
@@ -588,6 +589,4 @@ def login(request):
     except Exception:
             catchexcption(request)
             return JSONResponse({'success': False, 'result': None,'errorcode':9999, 'errormsg': traceback.format_exc().split('\n')[-2]})
-
-
 

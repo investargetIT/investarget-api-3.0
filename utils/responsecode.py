@@ -1,7 +1,9 @@
 #coding=utf-8
-userresponsecode = {
-    '1000':u'成功',
+responsecode = {
+    '1000':u'请求成功',
     '9999':'没标明状态码的错误',
+
+
 
     '2001':'密码错误',
     '2002':'用户不存在',
@@ -20,18 +22,11 @@ userresponsecode = {
     '2013':'强关系只能有一个',
     '2014':'不能在两个相同的人之间建立关系',
     '2015':'建立关系的用户没有相应的权限(as_投资人或as_交易师)',
-}
 
 
-projresponsecode = {
-    '4000':'',
-}
-orgresponsecode = {
-    '5000':'',
-}
-dataroomresponsecode = {
-    '6000':'',
-}
-timelineresponsecode = {
-    '7000':'',
+
+    '5001':'机构代码（orgcode）已存在',
+    '5002':'机构不存在'
+
+
 }

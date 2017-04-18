@@ -7,7 +7,7 @@ from django.db.models import Q
 from guardian.shortcuts import assign_perm, remove_perm
 
 from sourcetype.models import AuditStatus, OrgType , TransactionPhases,CurrencyType, Industry
-from usersys.models import MyUser
+from usersys.models import MyUser, InvestError
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
@@ -41,11 +41,11 @@ class organization(models.Model):
     industry = models.ForeignKey(Industry,help_text='机构行业',blank=True,null=True)
     webSite = models.URLField(blank=True,null=True)
     companyEmail = models.EmailField(blank=True,null=True,max_length=32)
-    auditStatu = models.ForeignKey(AuditStatus, default=1)
+    auditStatu = models.ForeignKey(AuditStatus, blank=True, default=1)
     auditUser = models.ForeignKey(MyUser, blank=True, null=True, related_name='useraudit_orgs')
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteuser = models.ForeignKey(MyUser, blank=True, null=True,related_name='userdelete_orgs')
-    deleteuime = models.DateTimeField(blank=True, null=True)
+    deletetime = models.DateTimeField(blank=True, null=True)
     createuser = models.ForeignKey(MyUser, blank=True, null=True,related_name='usercreate_orgs')
     createtime = models.DateTimeField(auto_now_add=True)
     lastmodifyuser = models.ForeignKey(MyUser, blank=True, null=True,related_name='usermodify_orgs')
@@ -62,23 +62,23 @@ class organization(models.Model):
             ('user_addorg', '用户新增机构'),
             ('user_changeorg', '用户修改机构(obj级别权限)'),
             ('user_deleteorg', '用户删除机构(obj级别权限)'),
-            ('user_getorg', '用户查看机构(obj/class级别权限)'),
+            ('user_getorg', '用户查看机构'),
         )
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
         if self.pk:
             oldorg = organization.objects.get(pk=self.pk)
             if self.orgcode:
-                if MyUser.objects.exclude(pk=self.pk).filter(is_deleted=False,orgcode=self.orgcode).exists():
-                    raise ValueError()
-            if self.is_deleted:
-                remove_perm('org.user_getorg', self.createuser, self)
-                remove_perm('org.user_changeorg', self.createuser, self)
-                remove_perm('org.user_deleteorg', self.createuser, self)
+                if organization.objects.exclude(pk=self.pk).filter(is_deleted=False,orgcode=self.orgcode).exists():
+                    raise InvestError(code=5001,msg='orgcode已存在')
+            if self.is_deleted and oldorg.createuser:
+                remove_perm('org.user_getorg', oldorg.createuser, self)
+                remove_perm('org.user_changeorg', oldorg.createuser, self)
+                remove_perm('org.user_deleteorg', oldorg.createuser, self)
         else:
             if self.orgcode:
-                if MyUser.objects.filter(is_deleted=False,orgcode=self.orgcode).exists():
-                    raise ValueError()
+                if organization.objects.filter(is_deleted=False,orgcode=self.orgcode).exists():
+                    raise InvestError(code=5001,msg='orgcode已存在')
         super(organization,self).save(force_insert,force_update,using,update_fields)
 
 class orgTransactionPhase(models.Model):
@@ -106,3 +106,14 @@ class orgRemarks(models.Model):
 
     class Meta:
         db_table = "orgremark"
+        permissions = (
+            ('admin_getremark','管理员查看机构备注'),
+            ('admin_changeremark', '管理员修改机构备注'),
+            ('admin_addremark', '管理员增加机构备注'),
+            ('admin_deleteremark', '管理员删除机构备注'),
+
+            ('user_getremark', '用户查看机构备注（obj级别）'),
+            ('user_changeremark', '用户修改机构备注（obj级别）'),
+            ('user_addremark', '用户增加机构备注'),
+            ('user_deleteremark','用户删除机构备注（obj级别）'),
+        )
