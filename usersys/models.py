@@ -16,12 +16,8 @@ from django.db.models import Q
 from guardian.shortcuts import remove_perm, assign_perm
 
 from sourcetype.models import AuditStatus, ClientType, TitleType,School,Specialty,Tag
+from utils.myClass import InvestError
 
-class InvestError(Exception):
-    def __init__(self, code=None, msg=None):
-        Exception.__init__(self)
-        self.code = code
-        self.msg = msg
 
 class MyUserBackend(ModelBackend):
     def authenticate(self, username=None, password=None, **kwargs):

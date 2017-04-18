@@ -6,8 +6,8 @@ from usersys.serializer import UserSerializer
 class FinanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = finance
-        fields = '__all__'
-        # fields = ('id','incomeFrom','incomeTo')
+        # fields = '__all__'
+        exclude = ('id','proj','deleteuser','deletetime','createuser','createtime','lastmodifyuser','lastmodifytime','is_deleted')
 
 
 class FormatSerializer(serializers.ModelSerializer):
@@ -19,12 +19,27 @@ class FormatSerializer(serializers.ModelSerializer):
 
 class ProjSerializer(serializers.ModelSerializer):
     supportUser = UserSerializer(project.supportUser)
-    proj_finance= FinanceSerializer(many=True)
+    proj_finances = FinanceSerializer(many=True)
     class Meta:
         model = project
-        # fields = '__all__'
-        fields = ('id','supportUser','projFormat','proj_finance')
+        fields = '__all__'
         depth = 1
+
+class ProjCommonSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = project
+        fields = ('id','industries','titleC','tags','financeAmount','financeAmount_USD','country','statu','isHidden')
+        depth = 1
+
+class ProjCreatSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = project
+        fields = '__all__'
+
+
+
+
+
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
@@ -36,7 +51,3 @@ class FavoriteSerializer(serializers.ModelSerializer):
         # fields = ('id','proj','user','favoritetype')
         depth = 1
 
-class ProjCreatSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = project
-        fields = ('titleC','statu','currency','projFormat','tags')

@@ -7,11 +7,11 @@ from django.db.models import Q, FieldDoesNotExist
 from django.db.models.fields.reverse_related import ForeignObjectRel
 from guardian.shortcuts import assign_perm
 from rest_framework import filters , viewsets
-from usersys.models import InvestError
 from org.models import organization, orgTransactionPhase, orgRemarks
 from org.serializer import OrgSerializer, OrgCommonSerializer, OrgDetailSerializer, \
     OrgRemarkSerializer, OrgRemarkDetailSerializer
-from utils.util import loginTokenIsAvailable, JSONResponse, catchexcption, read_from_cache, write_to_cache
+from utils.myClass import InvestError, JSONResponse
+from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache
 from django.db import transaction,models
 
 class OrganizationView(viewsets.ModelViewSet):

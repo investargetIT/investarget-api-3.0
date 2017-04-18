@@ -7,7 +7,8 @@ from django.db.models import Q
 from guardian.shortcuts import assign_perm, remove_perm
 
 from sourcetype.models import AuditStatus, OrgType , TransactionPhases,CurrencyType, Industry
-from usersys.models import MyUser, InvestError
+from usersys.models import MyUser
+from utils.myClass import InvestError
 
 reload(sys)
 sys.setdefaultencoding('utf-8')

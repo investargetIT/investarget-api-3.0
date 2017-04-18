@@ -17,12 +17,13 @@ from rest_framework import status
 from rest_framework import viewsets
 
 from rest_framework.decorators import api_view, detail_route, list_route
-from usersys.models import MyUser, MyToken, UserRelation, userTags, MobileAuthCode , InvestError
+from usersys.models import MyUser, MyToken, UserRelation, userTags, MobileAuthCode
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
     CreatUserSerializer , UserCommenSerializer
 from sourcetype.models import Tag
 from utils import perimissionfields
-from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable, JSONResponse,\
+from utils.myClass import JSONResponse, InvestError
+from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable,\
     catchexcption, cache_delete_key, maketoken
 
 

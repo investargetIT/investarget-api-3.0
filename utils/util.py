@@ -1,14 +1,12 @@
 #coding=utf-8
-from rest_framework import status
-from rest_framework.views import exception_handler
+
 from django.core.cache import cache
-from django.http import HttpResponse
-from rest_framework.renderers import JSONRenderer
 import datetime
 import traceback
 
 from usersys.models import MyToken
 from usersys.serializer import UserListSerializer
+from utils.myClass import JSONResponse
 
 REDIS_TIMEOUT = 1 * 24 * 60 * 60
 weixinfilepath = '/Users/investarget/Desktop/django_server/third_header/weixin'
@@ -49,12 +47,6 @@ def logexcption():
     f.writelines(now.strftime('%H:%M:%S')+'\n'+ traceback.format_exc()+'\n\n')
     f.close()
 
-
-class JSONResponse(HttpResponse):
-    def __init__(self,data, **kwargs):
-        content = JSONRenderer().render(data=data)
-        kwargs['content_type'] = 'application/json; charset=utf-8'
-        super(JSONResponse, self).__init__(content , **kwargs)
 
 def loginTokenIsAvailable(permissions=None):#判断model级别权限
     def token_available(func):
