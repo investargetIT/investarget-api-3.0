@@ -1,26 +1,35 @@
 from rest_framework import serializers
 
-from org.models import organization
+from org.models import organization, orgRemarks
+
+
+# from usersys.serializer import UserCommenSerializer
 
 
 class OrgCommonSerializer(serializers.ModelSerializer):
+    # org_users = UserCommenSerializer(many=True)
     class Meta:
         model = organization
-        fields = ('id','name','auditStatu')
+        fields = ('id','nameC','auditStatu','org_users')
 
 class OrgSerializer(serializers.ModelSerializer):
     class Meta:
         model = organization
-        # fields = '__all__'
-        fields = ('id','name','orgcode','auditStatu',)
-        depth = 1
+        fileds = ('id','nameC','orgcode','auditStatu',)
 
 class OrgDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = organization
-        fileds = '__all__'
+        # exclude = ('id',)
+        fields = '__all__'
 
-class CreateOrgSerializer(serializers.ModelSerializer):
+
+class OrgRemarkSerializer(serializers.ModelSerializer):
     class Meta:
-        model = organization
+        model = orgRemarks
+        fields = ('id','org','remark','createtime')
+
+class OrgRemarkDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = orgRemarks
         fields = '__all__'

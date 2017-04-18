@@ -16,7 +16,6 @@ org_detail = views.OrganizationView.as_view({
 org_remark = views.OrgRemarkView.as_view({
         'get': 'retrieve',
         'put': 'update',
-        'patch': 'partial_update',
         'delete': 'destroy'
 })
 

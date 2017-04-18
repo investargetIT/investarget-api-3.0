@@ -17,6 +17,7 @@ from django.conf.urls import url, include
 from django.contrib import admin
 from rest_framework_swagger.views import get_swagger_view
 
+import org.urls
 import proj.urls
 import usersys.urls
 
@@ -29,5 +30,6 @@ urlpatterns += [
     url(r'^admin/', admin.site.urls),
     url(r'^user/', include(usersys.urls)),
     url(r'^proj/',include(proj.urls)),
+    url(r'^org/',include(org.urls)),
 
 ]

@@ -1,19 +1,17 @@
 #coding=utf-8
-from rest_framework import status
-from rest_framework.views import exception_handler
+
 from django.core.cache import cache
-from django.http import HttpResponse
-from rest_framework.renderers import JSONRenderer
 import datetime
 import traceback
 
 from usersys.models import MyToken
+from usersys.serializer import UserListSerializer
+from utils.myClass import JSONResponse
 
 REDIS_TIMEOUT = 1 * 24 * 60 * 60
 weixinfilepath = '/Users/investarget/Desktop/django_server/third_header/weixin'
 linkedinfilepath = '/Users/investarget/Desktop/django_server/third_header/Linkedin'
 excptionlogpath = '/Users/investarget/Desktop/django_server/excption_log'
-
 
 
 
@@ -50,12 +48,6 @@ def logexcption():
     f.close()
 
 
-class JSONResponse(HttpResponse):
-    def __init__(self,data, **kwargs):
-        content = JSONRenderer().render(data=data)
-        kwargs['content_type'] = 'application/json; charset=utf-8'
-        super(JSONResponse, self).__init__(content , **kwargs)
-
 def loginTokenIsAvailable(permissions=None):#判断model级别权限
     def token_available(func):
         def _token_available(self,request, *args, **kwargs):
@@ -84,3 +76,18 @@ def loginTokenIsAvailable(permissions=None):#判断model级别权限
         return _token_available
     return token_available
 
+def maketoken(user,clienttype):
+    try:
+        tokens = MyToken.objects.filter(user=user, clienttype_id=clienttype, is_deleted=False)
+    except MyToken.DoesNotExist:
+        pass
+    else:
+        for token in tokens:
+            token.is_deleted = True
+            token.save(update_fields=['is_deleted'])
+    token = MyToken.objects.create(user=user, clienttype_id=clienttype)
+    serializer = UserListSerializer(user)
+    response = serializer.data
+    return {'token':token.key,
+        "user_info": response,
+    }

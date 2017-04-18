@@ -15,7 +15,7 @@ class project(models.Model):
     id = models.AutoField(primary_key=True)
     titleC = models.CharField(max_length=128,db_index=True,default='标题')
     titleE = models.CharField(max_length=256,blank=True,null=True,db_index=True)
-    statu = models.ForeignKey(ProjectStatus,default=1)
+    statu = models.ForeignKey(ProjectStatus,help_text='项目状态',default=1)
     c_descriptionC = models.TextField(blank=True, default='公司介绍')
     c_descriptionE = models.TextField(blank=True, default='company description')
     p_introducteC = models.TextField(blank=True, default='项目介绍')
@@ -51,6 +51,18 @@ class project(models.Model):
         return self.titleC
     class Meta:
         db_table = 'project'
+        permissions = (
+            ('admin_addproj','管理员上传项目'),
+            ('admin_changeproj', '管理员修改项目'),
+            ('admin_deleteproj', '管理员删除项目'),
+            ('admin_getproj', '管理员查看项目'),
+
+            ('user_addproj', '用户上传项目'),
+            ('user_changeproj', '用户修改项目(obj级别)'),
+            ('user_deleteproj', '用户删除项目(obj级别)'),
+            ('user_getproj','用户查看项目(obj级别)'),
+
+        )
 
 class format(models.Model):
     id = models.AutoField(primary_key=True)

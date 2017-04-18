@@ -1,26 +1,21 @@
 #coding=utf-8
 import traceback
-
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction
+from django.db.models import Q, datetime
 from rest_framework import filters
-from rest_framework.viewsets import GenericViewSet
-from rest_framework import status
 from rest_framework import viewsets
-from rest_framework.decorators import api_view
-
 from proj.models import project, finance, favorite
-from proj.serializer import ProjSerializer, FavoriteSerializer,FormatSerializer,FinanceSerializer, ProjCreatSerializer
-from usersys.models import MyUser
-from utils import perimissionfields
-from utils.util import JSONResponse, catchexcption, read_from_cache, write_to_cache, loginTokenIsAvailable
+from proj.serializer import ProjSerializer, FavoriteSerializer,FormatSerializer,FinanceSerializer, ProjCreatSerializer, \
+    ProjCommonSerializer
+from utils.util import catchexcption, read_from_cache, write_to_cache, loginTokenIsAvailable
+from utils.myClass import JSONResponse, InvestError
 
 
 class ProjectView(viewsets.ModelViewSet):
     filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
     queryset = project.objects.filter(is_deleted=False)
     filter_fields = ('titleC', 'titleE',)
-    search_fields = ('titleC', 'titleE')
     serializer_class = ProjSerializer
     redis_key = 'project'
     Model = project
@@ -38,7 +33,7 @@ class ProjectView(viewsets.ModelViewSet):
             try:
                 obj = self.Model.objects.get(id=self.kwargs[lookup_url_kwarg], is_deleted=False)
             except self.Model.DoesNotExist:
-                raise ValueError('obj with this "%s" is not exist' % self.kwargs[lookup_url_kwarg])
+                raise InvestError('obj with this "%s" is not exist' % self.kwargs[lookup_url_kwarg])
             else:
                 write_to_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg], obj)
         return obj
@@ -51,58 +46,121 @@ class ProjectView(viewsets.ModelViewSet):
         if not page_index:
             page_index = 1
         queryset = self.filter_queryset(self.queryset)
-        #加权限，筛选结果集
+        if request.user.is_anonymous:
+            queryset = queryset.filter(isHidden=False)
+        else:
+            if request.user.has_perm('proj.admin_getproj'):
+                queryset = queryset
+            else:
+                queryset = queryset.filter(Q(isHidden=False) | Q(createuser=request.user))
         try:
             queryset = Paginator(queryset, page_size)
         except EmptyPage:
-            return JSONResponse({'success': True, 'result': None, 'count': 0})
+            return JSONResponse({'success': True, 'result': [], 'errorcode': 1000, 'errormsg': None})
         queryset = queryset.page(page_index)
-        serializer = self.get_serializer(queryset, many=True)
+        serializer = ProjCommonSerializer(queryset, many=True)
+        return JSONResponse({'success': True, 'result': serializer.data, 'errorcode': 1000, 'errormsg': None})
 
-        return JSONResponse({
-                'success':True,
-                'result': serializer.data,
-                'error': None})
 
-    @loginTokenIsAvailable(['proj.add_project'])
+    @loginTokenIsAvailable(['proj.admin_addproj','proj.user_addproj'])
     def create(self, request, *args, **kwargs):
         try:
-            data = request.data
-            keylist = data.keys()
-            cannoteditlist = [key for key in keylist if key not in canCreateField]
-            if cannoteditlist:
-                raise InvestError(code=2009, msg='没有权限修改%s' % cannoteditlist)
-            # if request.user.has_perm('usersys.as_adminuser'):
-            #     canCreateField = perimissionfields.userpermfield['usersys.admin_adduser']
-            # elif request.user.has_perm('usersys.trader_adduser'):
-            #     canCreateField = perimissionfields.userpermfield['usersys.trader_adduser']
-            # else:
-            #     return JSONResponse({'result': None, 'success': False, 'errorcode': 2009, 'errormsg': None})
-            projdata = data.get('proj')
-            financesdata = data.get('finances')
-            formatdata = data.get('format')
-
-            format = FormatSerializer(data=formatdata)
-            if format.is_valid():
-                projFormat = format.save()
-                projdata['projFormat'] = projFormat.pk
-            proj = ProjCreatSerializer(data=projdata)
-            if proj.is_valid():
-                pro = proj.save()
-                for f in financesdata:
-                    f['proj'] = pro.pk
-            finances = FinanceSerializer(data=financesdata,many=True)
-            if finances.is_valid():
-               finances.save()
-            return JSONResponse({
-                'success':True,
-                'result': ProjSerializer(pro).data,
-                'error': None})
+            projdata = request.data
+            projdata['createuser'] = request.user.id
+            financesdata = projdata.pop('finances',None)
+            formatdata = projdata.pop('format',None)
+            with transaction.atomic():
+                if formatdata:
+                    formatdata['createuser'] = request.user.id
+                    format = FormatSerializer(data=formatdata)
+                    if format.is_valid():
+                        projFormat = format.save()
+                        projdata['projFormat'] = projFormat.pk
+                    else:
+                        raise InvestError(code=4001, msg='format_%s'%format.error_messages)
+                else:
+                    raise InvestError(code=4001,msg='formatdata缺失')
+                proj = ProjCreatSerializer(data=projdata)
+                if proj.is_valid():
+                    pro = proj.save()
+                    if financesdata:
+                        for f in financesdata:
+                            f['proj'] = pro.pk
+                            f['createuser'] = request.user.id
+                        finances = FinanceSerializer(data=financesdata,many=True)
+                        if finances.is_valid():
+                           finances.save()
+                        else:
+                            raise InvestError(code=4001,
+                                              msg='财务信息有误_%s\n%s' % (finances.error_messages, finances.errors))
+                else:
+                    raise InvestError(code=4001,
+                                          msg='data有误_%s\n%s' % (proj.error_messages, proj.errors))
+                return JSONResponse({'success':True,'result': ProjSerializer(pro).data,'errorcode':1000,'errormsg':None})
+        except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
         except Exception:
             catchexcption(request)
-            return JSONResponse({
-                'success':False,
-                'result': None,
-                'error': traceback.format_exc().split('\n')[-2],
-})
+            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
+                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+
+    @loginTokenIsAvailable()
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            if request.user.has_perm('proj.admin_getproj'):
+                serializerclass = ProjSerializer
+            else:
+                serializerclass = ProjSerializer
+            instance = self.get_object()
+            serializer = serializerclass(instance)
+            return JSONResponse({'success': True, 'result': serializer.data, 'errorcode': 1000, 'errormsg': None})
+        except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+        except Exception:
+            catchexcption(request)
+            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
+                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+
+    # def update(self, request, *args, **kwargs):
+    #     data = request.data
+    #     data['lastmodifyuser'] = request.user.id
+    #     data['lastmodifytime'] = datetime.datetime.now()
+    #     try:
+    #         org = self.get_object()
+    #         if request.user.has_perm('org.admin_changeorg'):
+    #             pass
+    #         elif request.user.has_perm('org.user_changeorg', org):
+    #             pass
+    #         else:
+    #             raise InvestError(code=2009)
+    #         with transaction.atomic():
+    #             formatdata = data.pop('format', None)
+    #             financesdata = data.pop('finanaces',None)
+    #             projserializer = ProjCreatSerializer(org, data=data)
+    #             if projserializer.is_valid():
+    #                 org = projserializer.save()
+    #                 if formatdata:
+    #                     orgTransactionPhaselist = []
+    #                     for transactionPhase in orgTransactionPhases:
+    #                         orgTransactionPhaselist.append(
+    #                             orgTransactionPhase(org=org, transactionPhase_id=transactionPhase, ))
+    #                     org.org_orgTransactionPhases.bulk_create(orgTransactionPhaselist)
+    #             else:
+    #                 raise InvestError(code=20071,
+    #                                   msg='data有误_%s\n%s' % (orgserializer.error_messages, orgserializer.errors))
+    #             return JSONResponse(
+    #                 {'success': True, 'result': OrgSerializer(org).data, 'errorcode': 1000, 'errormsg': None})
+    #     except InvestError as err:
+    #         return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+    #     except Exception:
+    #         catchexcption(request)
+    #         return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
+    #                              'errormsg': traceback.format_exc().split('\n')[-2]})
+
+
+
+
+
+
+
 
