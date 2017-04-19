@@ -9,13 +9,15 @@ from .models import MyUser, UserRelation, userTags
 class UserRelationSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserRelation
-        fields = ('id','investoruser','traderuser','relationtype','score')
+        fields = ('id','investoruser','traderuser','relationtype','score','datasource')
 
 #用户关系全部信息
 class UserRelationDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserRelation
         fields = '__all__'
+        read_only_fields = ('datasource',)
+
 #权限组基本信息
 class GroupSerializer(serializers.ModelSerializer):
     class Meta:
@@ -33,14 +35,17 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = MyUser
         fields = '__all__'
+        read_only_fields = ('datasource', 'usercode')
         depth = 1
 
 #创建用户所需信息
 class CreatUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = MyUser
-        fields = ('groups','photoBucket','photoKey','cardBucket','cardKey','wechat','org','name','nameE','mobileAreaCode','mobile','company','description','tags','email','title','gender','school','specialty','registersource','remark')
-#用户列表显示信息
+        fields = ('groups','photoBucket','photoKey','cardBucket','cardKey','wechat','org','name','nameE','mobileAreaCode','mobile','company','description','tags','email','title','gender','school','specialty','registersource','remark','datasource')
+        read_only_fields = ('datasource', 'usercode')
+
+# 用户列表显示信息
 class UserListSerializer(serializers.ModelSerializer):
     groups = GroupSerializer(MyUser.groups,many=True)
     org = OrgCommonSerializer(MyUser.org)

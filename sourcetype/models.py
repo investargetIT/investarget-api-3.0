@@ -16,7 +16,7 @@ class AuditStatus(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.CharField(max_length=16)
     nameE = models.CharField(max_length=128)
-    isdeleted = models.BooleanField(blank=True,default=False)
+    is_deleted = models.BooleanField(blank=True,default=False)
     def __str__(self):
         return self.nameC
 
@@ -27,7 +27,7 @@ class ProjectStatus(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.CharField(max_length=16)
     nameE = models.CharField(max_length=128)
-    isdeleted = models.BooleanField(blank=True, default=False)
+    is_deleted = models.BooleanField(blank=True, default=False)
     def __str__(self):
         return self.nameC
 
@@ -38,7 +38,7 @@ class OrgType(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.CharField(max_length=16)
     nameE = models.CharField(max_length=128)
-    isdeleted = models.BooleanField(blank=True, default=False)
+    is_deleted = models.BooleanField(blank=True, default=False)
     def __str__(self):
         return self.nameC
 
@@ -49,7 +49,7 @@ class FavoriteType(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.CharField(max_length=16)
     nameE = models.CharField(max_length=128)
-    isdeleted = models.BooleanField(blank=True, default=False)
+    is_deleted = models.BooleanField(blank=True, default=False)
     def __str__(self):
         return self.nameC
 
@@ -61,7 +61,7 @@ class MessageType(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.CharField(max_length=16)
     nameE = models.CharField(max_length=128)
-    isdeleted = models.BooleanField(blank=True, default=False)
+    is_deleted = models.BooleanField(blank=True, default=False)
     def __str__(self):
         return self.nameC
 
@@ -72,7 +72,7 @@ class ClientType(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.CharField(max_length=16)
     nameE = models.CharField(max_length=128)
-    isdeleted = models.BooleanField(blank=True, default=False)
+    is_deleted = models.BooleanField(blank=True, default=False)
     def __str__(self):
         return self.nameC
 
@@ -83,7 +83,7 @@ class TitleType(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.CharField(max_length=16)
     nameE = models.CharField(max_length=128)
-    isdeleted = models.BooleanField(blank=True, default=False)
+    is_deleted = models.BooleanField(blank=True, default=False)
     def __str__(self):
         return self.nameC
 
@@ -95,7 +95,7 @@ class Continent(models.Model):
     id = models.AutoField(primary_key=True)
     continentC = models.CharField(max_length=16)
     continentE = models.CharField(max_length=32)
-    isdeleted = models.BooleanField(blank=True, default=False)
+    is_deleted = models.BooleanField(blank=True, default=False)
     def __str__(self):
         return self.continentC
 
@@ -108,7 +108,7 @@ class Country(models.Model):
     countryC = models.CharField(max_length=16)
     countryE = models.CharField(max_length=32)
     areaCode = models.CharField(max_length=8)
-    isdeleted = models.BooleanField(blank=True, default=False)
+    is_deleted = models.BooleanField(blank=True, default=False)
     def __str__(self):
         return self.countryC
 
@@ -119,7 +119,7 @@ class CurrencyType(models.Model):
     id = models.AutoField(primary_key=True)
     currencyC = models.CharField(max_length=16)
     currencyE = models.CharField(max_length=8)
-    isdeleted = models.BooleanField(blank=True, default=False)
+    is_deleted = models.BooleanField(blank=True, default=False)
     def __str__(self):
         return self.currencyC
 
@@ -134,7 +134,7 @@ class Industry(models.Model):
     industryE = models.CharField(max_length=32)
     bucket = models.CharField(max_length=8)
     key = models.CharField(max_length=64)
-    isdeleted = models.BooleanField(blank=True, default=False)
+    is_deleted = models.BooleanField(blank=True, default=False)
     def __str__(self):
         return self.countryC
 
@@ -147,7 +147,7 @@ class Tag(models.Model):
     nameC = models.CharField(max_length=16)
     nameE = models.CharField(max_length=16)
     hotpoint = models.SmallIntegerField(blank=True,default=0)
-    isdeleted = models.BooleanField(blank=True, default=False)
+    is_deleted = models.BooleanField(blank=True, default=False)
     def __str__(self):
         return self.nameC
 
@@ -170,7 +170,7 @@ class School(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.TextField(blank=True,default='无')
     nameE = models.TextField(blank=True,default='none')
-    isdeleted = models.BooleanField(blank=True, default=False)
+    is_deleted = models.BooleanField(blank=True, default=False)
     def __str__(self):
         return self.nameC
 
@@ -182,7 +182,7 @@ class Specialty(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.TextField(blank=True,default='无')
     nameE = models.TextField(blank=True,default='none')
-    isdeleted = models.BooleanField(blank=True, default=False)
+    is_deleted = models.BooleanField(blank=True, default=False)
     def __str__(self):
         return self.nameC
 
@@ -193,7 +193,7 @@ class TransactionPhases(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.CharField(max_length=16)
     nameE = models.CharField(max_length=32)
-    isdeleted = models.BooleanField(blank=True, default=False)
+    is_deleted = models.BooleanField(blank=True, default=False)
     def __str__(self):
         return self.nameC
 
@@ -204,7 +204,7 @@ class TransactionType(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.CharField(max_length=16)
     nameE = models.CharField(max_length=32)
-    isdeleted = models.BooleanField(blank=True, default=False)
+    is_deleted = models.BooleanField(blank=True, default=False)
     def __str__(self):
         return self.nameC
 
@@ -215,6 +215,17 @@ class TransactionStatus(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.CharField(max_length=16)
     nameE = models.CharField(max_length=32)
-    isdeleted = models.BooleanField(blank=True, default=False)
+    is_deleted = models.BooleanField(blank=True, default=False)
+    def __str__(self):
+        return self.nameC
+
+class DataSource(models.Model):
+    '''
+    平台来源（数据）
+     '''
+    id = models.AutoField(primary_key=True)
+    nameC = models.CharField(max_length=32)
+    nameE = models.CharField(max_length=64,blank=True,null=True)
+    is_deleted = models.BooleanField(blank=True, default=False)
     def __str__(self):
         return self.nameC
