@@ -10,13 +10,6 @@ class FinanceSerializer(serializers.ModelSerializer):
         exclude = ('id','proj','deleteuser','deletetime','createuser','createtime','lastmodifyuser','lastmodifytime','is_deleted')
 
 
-class FormatSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = finance
-        fields = '__all__'
-        # fields = ('id','incomeFrom','incomeTo')
-
-
 class ProjSerializer(serializers.ModelSerializer):
     supportUser = UserSerializer(project.supportUser)
     proj_finances = FinanceSerializer(many=True)

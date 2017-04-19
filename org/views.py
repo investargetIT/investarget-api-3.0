@@ -10,6 +10,7 @@ from rest_framework import filters , viewsets
 from org.models import organization, orgTransactionPhase, orgRemarks
 from org.serializer import OrgSerializer, OrgCommonSerializer, OrgDetailSerializer, \
     OrgRemarkSerializer, OrgRemarkDetailSerializer
+from sourcetype.models import TransactionPhases
 from utils.myClass import InvestError, JSONResponse
 from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache
 from django.db import transaction,models
@@ -137,11 +138,16 @@ class OrganizationView(viewsets.ModelViewSet):
                 if orgserializer.is_valid():
                     org = orgserializer.save()
                     if orgTransactionPhases:
-                        orgTransactionPhaselist = []
-                        for transactionPhase in orgTransactionPhases:
-                            orgTransactionPhaselist.append(
-                                orgTransactionPhase(org=org, transactionPhase_id=transactionPhase, ))
-                        org.org_orgTransactionPhases.bulk_create(orgTransactionPhaselist)
+                        transactionPhaselist = TransactionPhases.objects.filter(is_deleted=False).in_bulk(orgTransactionPhases)
+                        addlist = [item for item in transactionPhaselist if item not in org.orgtransactionphase.all()]
+                        removelist = [item for item in org.orgtransactionphase.all() if item not in transactionPhaselist]
+                        org.org_orgTransactionPhases.filter(transactionPhase__in=removelist, is_deleted=False).update(is_deleted=True,
+                                                                                           deletedtime=datetime.datetime.now(),
+                                                                                           deleteduser=request.user)
+                        usertaglist = []
+                        for transactionPhase in addlist:
+                            usertaglist.append(orgTransactionPhase(org=org, transactionPhase=transactionPhase, createuser=request.user))
+                        org.org_orgTransactionPhases.bulk_create(usertaglist)
                 else:
                     raise InvestError(code=20071,
                                       msg='data有误_%s\n%s' % (orgserializer.error_messages, orgserializer.errors))
@@ -184,7 +190,7 @@ class OrganizationView(viewsets.ModelViewSet):
                             raise InvestError(code=2010, msg=u'{} 上有关联数据'.format(link))
             with transaction.atomic():
                 instance.is_deleted = True
-                # instance.deleteduser = request.user
+                instance.deleteduser = request.user
                 instance.deletetime = datetime.datetime.utcnow()
                 instance.save()
                 response = {'success': True, 'result': OrgDetailSerializer(instance).data, 'errorcode': 1000,

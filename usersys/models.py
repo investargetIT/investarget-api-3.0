@@ -15,17 +15,20 @@ from django.db import models
 from django.db.models import Q
 from guardian.shortcuts import remove_perm, assign_perm
 
-from sourcetype.models import AuditStatus, ClientType, TitleType,School,Specialty,Tag
+from sourcetype.models import AuditStatus, ClientType, TitleType,School,Specialty,Tag, DataSource
 from utils.myClass import InvestError
 
 
 class MyUserBackend(ModelBackend):
     def authenticate(self, username=None, password=None, **kwargs):
+        datasource = kwargs['datasource']
+        if not datasource:
+            raise InvestError(code=8888,msg='没有datasource')
         try:
             if '@' not in username:
-                user = MyUser.objects.get(mobile=username,is_deleted=False)
+                user = MyUser.objects.get(mobile=username,is_deleted=False,datasource_id=datasource)
             else:
-                user = MyUser.objects.get(email=username,is_deleted=False)
+                user = MyUser.objects.get(email=username,is_deleted=False,datasource_id=datasource)
         except MyUser.DoesNotExist:
             raise InvestError(code=2002)
         else:
@@ -101,7 +104,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     deletedtime = models.DateTimeField(blank=True,null=True)
     createdtime = models.DateTimeField(auto_now_add=True,blank=True)
     createuser = models.ForeignKey('self',help_text='创建者',blank=True,null=True,related_name='usercreate_users',related_query_name='user_createuser',on_delete=models.SET_NULL)
-
+    datasource = models.ForeignKey(DataSource,help_text='数据源')
     USERNAME_FIELD = 'usercode'
     REQUIRED_FIELDS = ['email']
 
@@ -221,6 +224,7 @@ class UserRelation(models.Model):
                                    on_delete=models.SET_NULL)
     lastmodifytime = models.DateTimeField(blank=True, null=True)
     lastmodifyuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usermodify_relations', )
+    datasource = models.ForeignKey(DataSource, help_text='数据源')
     def save(self, *args, **kwargs):
         if self.pk:
             userrelation = UserRelation.objects.exclude(pk=self.pk).filter(Q(is_deleted=False), Q(investoruser=self.investoruser))
