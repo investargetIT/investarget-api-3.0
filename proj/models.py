@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 from django.db import models
 
 # Create your models here.
-from sourcetype.models import FavoriteType, ProjectStatus,CurrencyType,Tag,Country,TransactionType,Industry
+from sourcetype.models import FavoriteType, ProjectStatus,CurrencyType,Tag,Country,TransactionType,Industry, DataSource
 from usersys.models import MyUser
 import sys
 reload(sys)
@@ -63,7 +63,7 @@ class project(models.Model):
     createtime = models.DateTimeField(auto_now_add=True)
     lastmodifyuser = models.ForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='usermodify_projects')
     lastmodifytime = models.DateTimeField(auto_now=True)
-
+    datasource = models.ForeignKey(DataSource, help_text='数据源')
     def __str__(self):
         return self.titleC
     class Meta:
@@ -102,7 +102,7 @@ class finance(models.Model):
     createtime = models.DateTimeField(auto_now_add=True)
     lastmodifyuser = models.ForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='usermodify_finances')
     lastmodifytime = models.DateTimeField(auto_now=True)
-
+    datasource = models.ForeignKey(DataSource, help_text='数据源')
     def __str__(self):
         if self.proj:
             return self.proj.titleC
@@ -113,8 +113,8 @@ class finance(models.Model):
 
 
 class projectTags(models.Model):
-    proj = models.ForeignKey(project, )
-    tag = models.ForeignKey(Tag, related_name='project_tags')
+    proj = models.ForeignKey(project,related_name='project_tags' )
+    tag = models.ForeignKey(Tag, related_name='tag_projects')
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_projtags')
     deletedtime = models.DateTimeField(blank=True, null=True)
@@ -126,8 +126,8 @@ class projectTags(models.Model):
 
 
 class projectIndustries(models.Model):
-    proj = models.ForeignKey(project, )
-    industry = models.ForeignKey(Industry, related_name='project_industries')
+    proj = models.ForeignKey(project,related_name='project_industries')
+    industry = models.ForeignKey(Industry, related_name='industry_projects')
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_projIndustries')
     deletedtime = models.DateTimeField(blank=True, null=True)
@@ -139,8 +139,8 @@ class projectIndustries(models.Model):
 
 
 class projectTransactionType(models.Model):
-    proj = models.ForeignKey(project, )
-    transactionType = models.ForeignKey(TransactionType, related_name='project_TransactionTypes')
+    proj = models.ForeignKey(project, related_name='project_TransactionTypes')
+    transactionType = models.ForeignKey(TransactionType, related_name='transactionType_projects')
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_projtransactionTypes')
     deletedtime = models.DateTimeField(blank=True, null=True)
@@ -162,6 +162,7 @@ class favorite(models.Model):
     deletedtime = models.DateTimeField(blank=True, null=True)
     createdtime = models.DateTimeField(auto_created=True)
     createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_favoriteproj',on_delete=models.SET_NULL)
+    datasource = models.ForeignKey(DataSource, help_text='数据源')
     def __str__(self):
         return self.favoritetype.__str__() + self.proj.title + self.user.name
     #单指 新增 操作  ，修改会出问题的

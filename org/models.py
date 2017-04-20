@@ -86,8 +86,8 @@ class organization(models.Model):
         super(organization,self).save(force_insert,force_update,using,update_fields)
 
 class orgTransactionPhase(models.Model):
-    org = models.ForeignKey(organization,null=True,blank=True,related_name='transactionPhase_orgs')
-    transactionPhase = models.ForeignKey(TransactionPhases,null=True,blank=True,related_name='org_orgTransactionPhases',on_delete=models.SET_NULL)
+    org = models.ForeignKey(organization,null=True,blank=True,related_name='org_orgTransactionPhases')
+    transactionPhase = models.ForeignKey(TransactionPhases,null=True,blank=True,related_name='transactionPhase_orgs',on_delete=models.SET_NULL)
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_orgTransactionPhases',on_delete=models.SET_NULL)
     deletedtime = models.DateTimeField(blank=True, null=True)
@@ -98,7 +98,7 @@ class orgTransactionPhase(models.Model):
         db_table = "org_TransactionPhase"
 class orgRemarks(models.Model):
     id = models.AutoField(primary_key=True)
-    org = models.ForeignKey(organization,null=True,blank=True,on_delete=models.SET_NULL)
+    org = models.ForeignKey(organization,null=True,blank=True,related_name='org_remarks')
     remark = models.TextField(blank=True,null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_orgremarks',on_delete=models.SET_NULL)
