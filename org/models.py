@@ -68,10 +68,12 @@ class organization(models.Model):
         )
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
+        if not self.datasource:
+            raise InvestError(code=8888,msg='机构datasource不能空')
         if self.pk:
             oldorg = organization.objects.get(pk=self.pk)
             if self.orgcode:
-                if organization.objects.exclude(pk=self.pk).filter(is_deleted=False,orgcode=self.orgcode).exists():
+                if organization.objects.exclude(pk=self.pk).filter(is_deleted=False,orgcode=self.orgcode,datasource=self.datasource).exists():
                     raise InvestError(code=5001,msg='orgcode已存在')
             if self.is_deleted and oldorg.createuser:
                 remove_perm('org.user_getorg', oldorg.createuser, self)
@@ -79,7 +81,7 @@ class organization(models.Model):
                 remove_perm('org.user_deleteorg', oldorg.createuser, self)
         else:
             if self.orgcode:
-                if organization.objects.filter(is_deleted=False,orgcode=self.orgcode).exists():
+                if organization.objects.filter(is_deleted=False,orgcode=self.orgcode,datasource=self.datasource).exists():
                     raise InvestError(code=5001,msg='orgcode已存在')
         super(organization,self).save(force_insert,force_update,using,update_fields)
 
@@ -119,3 +121,8 @@ class orgRemarks(models.Model):
             ('user_addremark', '用户增加机构备注'),
             ('user_deleteremark','用户删除机构备注（obj级别）'),
         )
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if not self.datasource:
+            raise InvestError(code=8888,msg='机构备注没有datasource')
+        super(orgRemarks,self).save(force_insert,force_update,using,update_fields)

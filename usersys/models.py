@@ -81,7 +81,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     wechat = models.CharField(max_length=64,blank=True,null=True)
     userstatu = models.ForeignKey(AuditStatus,help_text='作者',blank=True,null=True)
     org = models.ForeignKey('org.organization',help_text='所属机构',blank=True,null=True,related_name='org_users',on_delete=models.SET_NULL)
-    name = models.CharField(help_text='姓名',max_length=128,db_index=True,blank=True,null=True)
+    nameC = models.CharField(help_text='姓名',max_length=128,db_index=True,blank=True,null=True)
     nameE = models.CharField(help_text='name',max_length=128,db_index=True,blank=True,null=True)
     mobileAreaCode = models.CharField(max_length=10,blank=True,null=True,default='86')
     mobile = models.CharField(help_text='手机',max_length=32,db_index=True,blank=True,null=True)
@@ -111,11 +111,11 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
 
     objects = MyUserManager()  # 在这里关联自定义的UserManager
     def get_full_name(self):
-        return self.name
+        return self.nameC
     def get_short_name(self):
-        return self.name
+        return self.nameC
     def __str__(self):
-        return self.name
+        return self.nameC
     class Meta:
         db_table = "user"
         permissions = (
@@ -138,6 +138,8 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
         if not self.usercode:
             self.usercode = str(datetime.datetime.now())
         try:
+            if not self.datasource:
+                raise InvestError(code=8888,msg='datasource有误')
             if not self.email and not self.mobile:
                 raise InvestError(code=2007)
             if self.email:
@@ -147,15 +149,15 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
             else:
                 filters = Q(mobile=self.mobile)
             if self.pk:
-                MyUser.objects.exclude(pk=self.pk).get(Q(is_deleted=False),filters)
+                MyUser.objects.exclude(pk=self.pk).get(Q(is_deleted=False,datasource=self.datasource),filters)
             else:
-                MyUser.objects.get(Q(is_deleted=False),filters)
+                MyUser.objects.get(Q(is_deleted=False,datasource=self.datasource),filters)
         except MyUser.DoesNotExist:
             pass
         else:
             raise InvestError(code=2004)
         if self.pk:
-            olduser = MyUser.objects.get(pk=self.pk)
+            olduser = MyUser.objects.get(pk=self.pk,datasource=self.datasource)
             if not self.is_deleted:
                 if olduser.org and self.org and olduser.org != self.org:
                     remove_perm('org.user_getorg',self,olduser.org)
@@ -226,10 +228,12 @@ class UserRelation(models.Model):
     lastmodifyuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usermodify_relations', )
     datasource = models.ForeignKey(DataSource, help_text='数据源')
     def save(self, *args, **kwargs):
+        if not self.datasource:
+            raise InvestError(code=8888,msg='datasource有误')
         if self.pk:
-            userrelation = UserRelation.objects.exclude(pk=self.pk).filter(Q(is_deleted=False), Q(investoruser=self.investoruser))
+            userrelation = UserRelation.objects.exclude(pk=self.pk).filter(is_deleted=False,datasource=self.datasource,investoruser=self.investoruser)
         else:
-            userrelation = UserRelation.objects.filter(Q(is_deleted=False), Q(investoruser=self.investoruser))
+            userrelation = UserRelation.objects.filter(is_deleted=False,datasource=self.datasource, investoruser=self.investoruser)
         if userrelation.exists():
             if userrelation.filter(traderuser_id=self.traderuser_id).exists():
                 raise InvestError(code=2012,msg='4.关系已存在')

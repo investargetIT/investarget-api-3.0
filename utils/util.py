@@ -63,6 +63,8 @@ def loginTokenIsAvailable(permissions=None):#判断model级别权限
                 if token.created < datetime.datetime.now() - datetime.timedelta(hours=24 * 1):
                     return JSONResponse({'result': None, 'success': False, 'errorcode':3000,'errormsg':None})
                 request.user = token.user
+                if token.user.is_deleted:
+                    return JSONResponse({'success': False, 'result': None, 'errorcode': 2002, 'errormsg':'用户已被删除'})
                 user_has_permissions = []
                 if permissions:
                     for permission in permissions:
@@ -91,3 +93,56 @@ def maketoken(user,clienttype):
     return {'token':token.key,
         "user_info": response,
     }
+
+def returnDictChangeToLanguage(dictdata,lang=None):
+    newdict = {}
+    if lang == 'en':
+        for key,value in dictdata.items():
+            if key[-1] == 'E' and dictdata.has_key(key[0:-1]+'C'):
+                newdict[key[0:-1]] = value
+            elif key[-1] == 'C' and dictdata.has_key(key[0:-1]+'E'):
+                pass
+            else:
+                if isinstance(value,dict):
+                    newdict[key] = returnDictChangeToLanguage(value,lang=lang)
+                elif isinstance(value,list):
+                    newlist = []
+                    for minvalues in value:
+                        if isinstance(minvalues, dict):
+                            newlist.append(returnDictChangeToLanguage(minvalues,lang=lang))
+                        else:
+                            newlist.append(minvalues)
+                    newdict[key] = newlist
+                else:
+                    newdict[key] = value
+    else:
+        for key,value in dictdata.items():
+            if key[-1] == 'E' and dictdata.has_key(key[0:-1]+'C'):
+                pass
+            elif key[-1] == 'C' and dictdata.has_key(key[0:-1]+'E'):
+                newdict[key[0:-1]] = value
+            else:
+                if isinstance(value,dict):
+                    newdict[key] = returnDictChangeToLanguage(value, lang=lang)
+                elif isinstance(value,list):
+                    newlist = []
+                    for minvalues in value:
+                        if isinstance(minvalues, dict):
+                            newlist.append(returnDictChangeToLanguage(minvalues, lang=lang))
+                        else:
+                            newlist.append(minvalues)
+                    newdict[key] = newlist
+                else:
+                    newdict[key] = value
+
+    return newdict
+
+#list内嵌dict
+def returnListChangeToLanguage(listdata,lang=None):
+    newlist = []
+    for listone in listdata:
+        if isinstance(listone,dict):
+            newlist.append(returnDictChangeToLanguage(listone,lang=lang))
+        else:
+            newlist.append(listone)
+    return newlist
