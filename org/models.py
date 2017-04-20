@@ -6,7 +6,7 @@ import sys
 from django.db.models import Q
 from guardian.shortcuts import assign_perm, remove_perm
 
-from sourcetype.models import AuditStatus, OrgType , TransactionPhases,CurrencyType, Industry
+from sourcetype.models import AuditStatus, OrgType , TransactionPhases,CurrencyType, Industry, DataSource
 from usersys.models import MyUser
 from utils.myClass import InvestError
 
@@ -51,6 +51,7 @@ class organization(models.Model):
     createtime = models.DateTimeField(auto_now_add=True)
     lastmodifyuser = models.ForeignKey(MyUser, blank=True, null=True,related_name='usermodify_orgs')
     lastmodifytime = models.DateTimeField(auto_now=True)
+    datasource = models.ForeignKey(DataSource,help_text='数据源')
     def __str__(self):
         return self.nameC
     class Meta:
@@ -104,7 +105,7 @@ class orgRemarks(models.Model):
     createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_orgremarks',on_delete=models.SET_NULL)
     lastmodifytime = models.DateTimeField(auto_now=True)
     lastmodifyuser = models.ForeignKey(MyUser,  blank=True, null=True,related_name='usermodify_orgremarks', related_query_name='orgremark_modifyuser',on_delete=models.SET_NULL)
-
+    datasource = models.ForeignKey(DataSource, help_text='数据源')
     class Meta:
         db_table = "orgremark"
         permissions = (

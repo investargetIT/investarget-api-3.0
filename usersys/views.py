@@ -19,7 +19,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import api_view, detail_route, list_route
 from usersys.models import MyUser, MyToken, UserRelation, userTags, MobileAuthCode
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
-    CreatUserSerializer , UserCommenSerializer , UserRelationDetailSerializer
+    CreatUserSerializer , UserCommenSerializer , UserRelationDetailSerializer, dictToLang
 from sourcetype.models import Tag, DataSource
 from utils import perimissionfields
 from utils.myClass import JSONResponse, InvestError
@@ -55,7 +55,7 @@ class UserView(viewsets.ModelViewSet):
             obj = read_from_cache(self.redis_key + '_%s' % pk)
             if not obj:
                 try:
-                    obj = self.Model.objects.get(id=pk, is_deleted=False)
+                    obj = self.queryset.get(id=pk)
                 except self.Model.DoesNotExist:
                     raise InvestError(code=2002)
                 else:
@@ -65,7 +65,7 @@ class UserView(viewsets.ModelViewSet):
             obj = read_from_cache(self.redis_key+'_%s'%self.kwargs[lookup_url_kwarg])
             if not obj:
                 try:
-                    obj = self.Model.objects.get(id=self.kwargs[lookup_url_kwarg],is_deleted=False)
+                    obj = self.queryset.get(id=self.kwargs[lookup_url_kwarg])
                 except self.Model.DoesNotExist:
                     raise InvestError(code=2002)
                 else:
@@ -131,6 +131,7 @@ class UserView(viewsets.ModelViewSet):
                 password = data.pop('password', None)
                 user.set_password(password)
                 user.save()
+
                 tags = data.pop('tags', None)
                 userserializer = CreatUserSerializer(user, data=data)
                 if userserializer.is_valid():
@@ -138,11 +139,12 @@ class UserView(viewsets.ModelViewSet):
                     if tags:
                         usertaglist = []
                         for tag in tags:
-                            usertaglist.append(userTags(user=user, tag_id=tag, ))
-                        user.user_tags.bulk_create(usertaglist)
+                            usertaglist.append(userTags(user=user, tag_id=tag, createdtime=datetime.datetime.now()))
+                        user.user_usertags.bulk_create(usertaglist)
                 else:
                     raise InvestError(code=20071,msg='%s\n%s' % (userserializer.error_messages, userserializer.errors))
-                return JSONResponse({'success': True, 'result': UserSerializer(user).data, 'errorcode':1000,'errormsg':None})
+                returndic = UserSerializer(user).data
+                return JSONResponse({'success': True, 'result': dictToLang(returndic,lang='en'), 'errorcode':1000,'errormsg':None})
         except InvestError as err:
             return JSONResponse({'success': False, 'result': None, 'errorcode':err.code,'errormsg':err.msg})
         except Exception:
@@ -186,7 +188,7 @@ class UserView(viewsets.ModelViewSet):
                         usertaglist = []
                         for tag in tags:
                             usertaglist.append(userTags(user=user, tag_id=tag, ))
-                        user.user_tags.bulk_create(usertaglist)
+                        user.user_usertags.bulk_create(usertaglist)
                 else:
                     raise InvestError(code=20071,msg='userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
                 if user.createuser:
@@ -283,11 +285,11 @@ class UserView(viewsets.ModelViewSet):
                             taglist = Tag.objects.in_bulk(tags)
                             addlist = [item for item in taglist if item not in user.tags.all()]
                             removelist = [item for item in user.tags.all() if item not in taglist]
-                            user.user_tags.filter(tag__in=removelist,is_deleted=False).update(is_deleted=True,deletedtime=datetime.datetime.now(),deleteduser=request.user)
+                            user.user_usertags.filter(tag__in=removelist,is_deleted=False).update(is_deleted=True,deletedtime=datetime.datetime.now(),deleteduser=request.user)
                             usertaglist = []
                             for tag in addlist:
                                 usertaglist.append(userTags(user=user, tag=tag, createuser=request.user))
-                            user.user_tags.bulk_create(usertaglist)
+                            user.user_usertags.bulk_create(usertaglist)
                     else:
                         raise InvestError(code=20071,msg='userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
                 return JSONResponse({'success': True, 'result': userlist, 'errorcode':1000,'errormsg':None})
@@ -475,21 +477,23 @@ class UserRelationView(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
-            data['createduser'] = request.user.id
-            data['createdtime'] = datetime.datetime.now()
-            data['datasource'] = request.user.datasource.id
-            if request.user.has_perm('usersys.admin_adduserrelation'):
-                pass
-            elif request.user.has_perm('usersys.user_adduserrelation'):
-                data['traderuser'] = request.user.id
-            else:
-                raise InvestError(code=2009)
+            # data['createduser'] = request.user.id
+            # data['datasource'] = 1
+            # if request.user.has_perm('usersys.admin_adduserrelation'):
+            #     pass
+            # elif request.user.has_perm('usersys.user_adduserrelation'):
+            #     data['traderuser'] = request.user.id
+            # else:
+            #     raise InvestError(code=2009)
             with transaction.atomic():
                 newrelation = UserRelationDetailSerializer(data=data)
                 if newrelation.is_valid():
-                    if newrelation.validated_data.investoruser.datasource != request.user.datasource or newrelation.validated_data.traderuser.datasource != request.user.datasource:
-                        raise InvestError(code=8888)
-                    newrelation.save()
+                    # if newrelation.validated_data.investoruser.datasource != request.user.datasource or newrelation.validated_data.traderuser.datasource != request.user.datasource:
+                    #     raise InvestError(code=8888)
+                    relation = newrelation.save()
+                    assign_perm('usersys.user_getuserrelation', relation.traderuser, relation)
+                    assign_perm('usersys.user_changeuserrelation', relation.traderuser, relation)
+                    assign_perm('usersys.user_deleteuserrelation', relation.traderuser, relation)
                     response = {'success': True, 'result':newrelation.data,'errorcode':1000,'errormsg':None}
                 else:
                     raise InvestError(code=20071,msg='%s'%newrelation.errors)
@@ -625,10 +629,10 @@ def login(request):
                 raise InvestError(code=8888)
         else:
             raise InvestError(code=8888, msg='source field is required')
-        if not username or not password or not datasource:
+        if not username or not password or not userdatasource:
             raise InvestError(code=20071,msg='参数不全')
         clienttype = request.META.get('HTTP_CLIENTTYPE')
-        user = auth.authenticate(username=username, password=password, datasource=datasource)
+        user = auth.authenticate(username=username, password=password, datasource=userdatasource)
         if not user or not clienttype:
             if not clienttype:
                 raise InvestError(code=2003,msg='登录类型不可用')
