@@ -3,13 +3,13 @@ import traceback
 
 import datetime
 from django.contrib import auth
-from django.contrib.auth.models import Group
 from django.core.exceptions import FieldDoesNotExist
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction,models
 
 # Create your views here.
 from django.db.models import Q
+from django.db.models import QuerySet
 from django.db.models.fields.reverse_related import ForeignObjectRel
 from guardian.shortcuts import assign_perm
 from rest_framework import filters
@@ -19,8 +19,8 @@ from rest_framework import viewsets
 from rest_framework.decorators import api_view, detail_route, list_route
 from usersys.models import MyUser, MyToken, UserRelation, userTags, MobileAuthCode
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
-    CreatUserSerializer , UserCommenSerializer
-from sourcetype.models import Tag
+    CreatUserSerializer , UserCommenSerializer , UserRelationDetailSerializer, dictToLang
+from sourcetype.models import Tag, DataSource
 from utils import perimissionfields
 from utils.myClass import JSONResponse, InvestError
 from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable,\
@@ -35,43 +35,54 @@ class UserView(viewsets.ModelViewSet):
     redis_key = 'users'
     Model = MyUser
 
+    def get_queryset(self):
+        if self.request.user.is_anonymous:
+            raise InvestError(code=8889)
+        assert self.queryset is not None, (
+            "'%s' should either include a `queryset` attribute, "
+            "or override the `get_queryset()` method."
+            % self.__class__.__name__
+        )
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            queryset = queryset.all().filter(datasource=self.request.user.datasource)
+        else:
+            raise InvestError(code=8890)
+        return queryset
+
     def get_object(self,pk=None):
         if pk:
             obj = read_from_cache(self.redis_key + '_%s' % pk)
             if not obj:
                 try:
-                    obj = self.Model.objects.get(id=pk, is_deleted=False)
+                    obj = self.queryset.get(id=pk)
                 except self.Model.DoesNotExist:
                     raise InvestError(code=2002)
                 else:
                     write_to_cache(self.redis_key + '_%s' % pk, obj)
         else:
-            lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-            assert lookup_url_kwarg in self.kwargs, (
-                'Expected view %s to be called with a URL keyword argument '
-                'named "%s". Fix your URL conf, or set the `.lookup_field` '
-                'attribute on the view correctly.' %
-                (self.__class__.__name__, lookup_url_kwarg)
-            )
+            lookup_url_kwarg = 'pk'
             obj = read_from_cache(self.redis_key+'_%s'%self.kwargs[lookup_url_kwarg])
             if not obj:
                 try:
-                    obj = self.Model.objects.get(id=self.kwargs[lookup_url_kwarg],is_deleted=False)
+                    obj = self.queryset.get(id=self.kwargs[lookup_url_kwarg])
                 except self.Model.DoesNotExist:
                     raise InvestError(code=2002)
                 else:
                     write_to_cache(self.redis_key+'_%s'%self.kwargs[lookup_url_kwarg],obj)
+        if obj.datasource != self.request.user.datasource:
+            raise InvestError(code=8888,msg='资源非同源')
         return obj
 
     @loginTokenIsAvailable(['usersys.admin_getuser','usersys.user_getuser'])
     def list(self, request, *args, **kwargs):
         page_size = request.GET.get('page_size')
-        page_index = request.GET.get('page_index')  #从第一页开始
+        page_index = request.GET.get('page_index')#从第一页开始
         if not page_size:
             page_size = 10
         if not page_index:
             page_index = 1
-        queryset = self.filter_queryset(self.queryset)
+        queryset = self.filter_queryset(self.get_queryset())
         try:
             queryset = Paginator(queryset, page_size)
         except EmptyPage:
@@ -89,6 +100,15 @@ class UserView(viewsets.ModelViewSet):
                 mobilecodetoken = data.pop('mobilecodetoken', None)
                 mobile = data.get('mobile')
                 email = data.get('email')
+                source = data.pop('datasource',None)
+                if source:
+                    datasource = DataSource.objects.filter(id=source,is_deleted=False)
+                    if datasource.exists():
+                        userdatasource = datasource.first()
+                    else:
+                        raise  InvestError(code=8888)
+                else:
+                    raise InvestError(code=8888,msg='source field is required')
                 if mobile:
                     try:
                         mobileauthcode = MobileAuthCode.objects.get(mobile=mobile, code=mobilecode, token=mobilecodetoken)
@@ -104,17 +124,14 @@ class UserView(viewsets.ModelViewSet):
                 elif email:
                     filterQ = Q(email=email)
                 else:
-                    raise InvestError(code=2007,msg='mobile、email不能都为空')
-                try:
-                    self.queryset.get(filterQ)
-                except MyUser.DoesNotExist:
-                    pass
-                else:
+                    raise InvestError(code=2007,msg='mobile、email cannot all be null')
+                if self.queryset.filter(filterQ,datasource=userdatasource).exists():
                     raise InvestError(code=2004)
-                user = MyUser(email=email,mobile=mobile)
+                user = MyUser(email=email,mobile=mobile,datasource=userdatasource)
                 password = data.pop('password', None)
                 user.set_password(password)
                 user.save()
+
                 tags = data.pop('tags', None)
                 userserializer = CreatUserSerializer(user, data=data)
                 if userserializer.is_valid():
@@ -122,11 +139,12 @@ class UserView(viewsets.ModelViewSet):
                     if tags:
                         usertaglist = []
                         for tag in tags:
-                            usertaglist.append(userTags(user=user, tag_id=tag, ))
-                        user.user_tags.bulk_create(usertaglist)
+                            usertaglist.append(userTags(user=user, tag_id=tag, createdtime=datetime.datetime.now()))
+                        user.user_usertags.bulk_create(usertaglist)
                 else:
                     raise InvestError(code=20071,msg='%s\n%s' % (userserializer.error_messages, userserializer.errors))
-                return JSONResponse({'success': True, 'result': UserSerializer(user).data, 'errorcode':1000,'errormsg':None})
+                returndic = UserSerializer(user).data
+                return JSONResponse({'success': True, 'result': dictToLang(returndic,lang='en'), 'errorcode':1000,'errormsg':None})
         except InvestError as err:
             return JSONResponse({'success': False, 'result': None, 'errorcode':err.code,'errormsg':err.msg})
         except Exception:
@@ -139,22 +157,21 @@ class UserView(viewsets.ModelViewSet):
         data = request.data
         data['createduser'] = request.user.id
         data['createdtime'] = datetime.datetime.now()
+        data['datasource'] = request.user.datasource.id
         if request.user.has_perm('usersys.admin_adduser'):
             canCreateField = perimissionfields.userpermfield['usersys.admin_adduser']
         elif request.user.has_perm('usersys.user_adduser'):
             canCreateField = perimissionfields.userpermfield['usersys.trader_adduser']
         else:
-            return JSONResponse({'result': None, 'success': False, 'errorcode':2009,'errormsg':None})
+            return JSONResponse({'result': None, 'success': False, 'errorcode':2009,'errormsg':'没有新增权限'})
         try:
             with transaction.atomic():
                 password = data.pop('password','Aa123456')
                 email = data.get('email')
                 mobile = data.get('mobile')
-                try:
-                    user = self.get_queryset().get(Q(mobile=mobile) | Q(email=email))
-                except MyUser.DoesNotExist:
-                    pass
-                else:
+                if not email and not mobile:
+                    raise InvestError(code=2007)
+                if self.get_queryset().filter(Q(mobile=mobile) | Q(email=email)).exists():
                     raise InvestError(code=2004)
                 user = MyUser()
                 user.set_password(password)
@@ -171,7 +188,7 @@ class UserView(viewsets.ModelViewSet):
                         usertaglist = []
                         for tag in tags:
                             usertaglist.append(userTags(user=user, tag_id=tag, ))
-                        user.user_tags.bulk_create(usertaglist)
+                        user.user_usertags.bulk_create(usertaglist)
                 else:
                     raise InvestError(code=20071,msg='userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
                 if user.createuser:
@@ -268,11 +285,11 @@ class UserView(viewsets.ModelViewSet):
                             taglist = Tag.objects.in_bulk(tags)
                             addlist = [item for item in taglist if item not in user.tags.all()]
                             removelist = [item for item in user.tags.all() if item not in taglist]
-                            user.user_tags.filter(tag__in=removelist,is_deleted=False).update(is_deleted=True,deletedtime=datetime.datetime.now(),deleteduser=request.user)
+                            user.user_usertags.filter(tag__in=removelist,is_deleted=False).update(is_deleted=True,deletedtime=datetime.datetime.now(),deleteduser=request.user)
                             usertaglist = []
                             for tag in addlist:
                                 usertaglist.append(userTags(user=user, tag=tag, createuser=request.user))
-                            user.user_tags.bulk_create(usertaglist)
+                            user.user_usertags.bulk_create(usertaglist)
                     else:
                         raise InvestError(code=20071,msg='userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
                 return JSONResponse({'success': True, 'result': userlist, 'errorcode':1000,'errormsg':None})
@@ -334,6 +351,19 @@ class UserView(viewsets.ModelViewSet):
             mobilecodetoken = data.pop('mobilecodetoken', None)
             mobile = data.get('mobile')
             password = data.get('password')
+            source = data.pop('datasource', None)
+            if source:
+                datasource = DataSource.objects.filter(id=source, is_deleted=False)
+                if datasource.exists():
+                    userdatasource = datasource.first()
+                else:
+                    raise InvestError(code=8888)
+            else:
+                raise InvestError(code=8888, msg='source field is required')
+            try:
+                user = self.queryset.get(mobile=mobile, datasource=userdatasource)
+            except MyUser.DoesNotExist:
+                raise InvestError(code=2002,msg='用户不存在——%s'%source)
             try:
                 mobileauthcode = MobileAuthCode.objects.get(mobile=mobile, code=mobilecode, token=mobilecodetoken)
             except MobileAuthCode.DoesNotExist:
@@ -342,7 +372,6 @@ class UserView(viewsets.ModelViewSet):
                 if mobileauthcode.isexpired():
                     raise InvestError(code=20051,msg='验证码已过期')
             with transaction.atomic():
-                user = self.queryset.get(mobile=mobile)
                 user.set_password(password)
                 user.save(update_fields=['password'])
                 return JSONResponse({'success': True, 'result': password, 'errorcode':1000,'errormsg':None})
@@ -403,6 +432,21 @@ class UserRelationView(viewsets.ModelViewSet):
     queryset = UserRelation.objects.filter(is_deleted=False)
     serializer_class = UserRelationSerializer
 
+    def get_queryset(self):
+        if self.request.user.is_anonymous:
+            raise InvestError(code=8889)
+        assert self.queryset is not None, (
+            "'%s' should either include a `queryset` attribute, "
+            "or override the `get_queryset()` method."
+            % self.__class__.__name__
+        )
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            queryset = queryset.all().filter(datasource=self.request.user.datasource)
+        else:
+            raise InvestError(code=8890)
+        return queryset
+
     @loginTokenIsAvailable(['usersys.admin_getuserrelation','usersys.user_getuserrelation'])
     def list(self, request, *args, **kwargs):
         page_size = request.GET.get('page_size')
@@ -433,19 +477,23 @@ class UserRelationView(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
-            data['createduser'] = request.user.id
-            data['createdtime'] = datetime.datetime.now()
-            if request.user.has_perm('usersys.admin_adduserrelation'):
-                pass
-            elif request.user.has_perm('usersys.user_adduserrelation'):
-                data['traderuser'] = request.user.id
-            else:
-                raise InvestError(code=2009)
-            data['createuser'] = request.user.id
+            # data['createduser'] = request.user.id
+            # data['datasource'] = 1
+            # if request.user.has_perm('usersys.admin_adduserrelation'):
+            #     pass
+            # elif request.user.has_perm('usersys.user_adduserrelation'):
+            #     data['traderuser'] = request.user.id
+            # else:
+            #     raise InvestError(code=2009)
             with transaction.atomic():
-                newrelation = UserRelationSerializer(data=data)
+                newrelation = UserRelationDetailSerializer(data=data)
                 if newrelation.is_valid():
-                    newrelation.save()
+                    # if newrelation.validated_data.investoruser.datasource != request.user.datasource or newrelation.validated_data.traderuser.datasource != request.user.datasource:
+                    #     raise InvestError(code=8888)
+                    relation = newrelation.save()
+                    assign_perm('usersys.user_getuserrelation', relation.traderuser, relation)
+                    assign_perm('usersys.user_changeuserrelation', relation.traderuser, relation)
+                    assign_perm('usersys.user_deleteuserrelation', relation.traderuser, relation)
                     response = {'success': True, 'result':newrelation.data,'errorcode':1000,'errormsg':None}
                 else:
                     raise InvestError(code=20071,msg='%s'%newrelation.errors)
@@ -481,7 +529,9 @@ class UserRelationView(viewsets.ModelViewSet):
             try:
                 obj = UserRelation.objects.get(id=self.kwargs[lookup_url_kwarg],is_deleted=False)
             except UserRelation.DoesNotExist:
-                    raise InvestError(code=2011,msg='relation with pk = "%s" is not exist'%self.kwargs[lookup_url_kwarg])
+                raise InvestError(code=2011,msg='relation with pk = "%s" is not exist'%self.kwargs[lookup_url_kwarg])
+        if obj.datasource != self.request.user.datasource:
+            raise InvestError(code=8888,msg='资源非同源')
         return obj
 
     @loginTokenIsAvailable()
@@ -511,7 +561,7 @@ class UserRelationView(viewsets.ModelViewSet):
             with transaction.atomic():
                 parmdict = request.data
                 relationidlist = parmdict['relationlist']
-                relationlist = UserRelation.objects.in_bulk(relationidlist)
+                relationlist = self.get_queryset().in_bulk(relationidlist)
                 for relation in relationlist:
                     data = parmdict['newdata']
                     if request.user.has_perm('usersys.admin_changeuserrelation'):
@@ -542,7 +592,7 @@ class UserRelationView(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 relationidlist = request.data
-                relationlist = self.queryset.in_bulk(relationidlist)
+                relationlist = self.get_queryset().in_bulk(relationidlist)
                 for userrelation in relationlist:
                     if request.user.has_perm('usersys.user_deleteuserrelation',userrelation):
                         pass
@@ -570,10 +620,19 @@ def login(request):
         receive = request.data
         username = receive['account']
         password = receive['password']
-        if not username or not password:
+        source = receive.pop('datasource', None)
+        if source:
+            datasource = DataSource.objects.filter(id=source, is_deleted=False)
+            if datasource.exists():
+                userdatasource = datasource.first()
+            else:
+                raise InvestError(code=8888)
+        else:
+            raise InvestError(code=8888, msg='source field is required')
+        if not username or not password or not userdatasource:
             raise InvestError(code=20071,msg='参数不全')
         clienttype = request.META.get('HTTP_CLIENTTYPE')
-        user = auth.authenticate(username=username, password=password)
+        user = auth.authenticate(username=username, password=password, datasource=userdatasource)
         if not user or not clienttype:
             if not clienttype:
                 raise InvestError(code=2003,msg='登录类型不可用')

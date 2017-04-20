@@ -1,5 +1,6 @@
 
 from django.http import HttpResponse
+from rest_framework import filters
 from rest_framework.renderers import JSONRenderer
 
 
@@ -14,3 +15,12 @@ class InvestError(Exception):
         Exception.__init__(self)
         self.code = code
         self.msg = msg
+
+class DataSourceFilter(filters.BaseFilterBackend):
+
+    def filter_queryset(self, request, queryset, view):
+        if request.user.is_anonymous:
+            raise InvestError(code=8889)
+        if hasattr(request.user,'datasource') and request.user.datasource:
+            queryset = queryset.all().filter(datasource=request.user.datasource)
+        return queryset

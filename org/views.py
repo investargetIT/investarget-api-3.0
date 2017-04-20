@@ -4,12 +4,14 @@ import datetime
 from django.core.paginator import Paginator, EmptyPage
 from django.db.models import Q, FieldDoesNotExist
 # Create your views here.
+from django.db.models import QuerySet
 from django.db.models.fields.reverse_related import ForeignObjectRel
 from guardian.shortcuts import assign_perm
 from rest_framework import filters , viewsets
 from org.models import organization, orgTransactionPhase, orgRemarks
 from org.serializer import OrgSerializer, OrgCommonSerializer, OrgDetailSerializer, \
     OrgRemarkSerializer, OrgRemarkDetailSerializer
+from sourcetype.models import TransactionPhases
 from utils.myClass import InvestError, JSONResponse
 from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache
 from django.db import transaction,models
@@ -21,12 +23,27 @@ class OrganizationView(viewsets.ModelViewSet):
     serializer_class = OrgDetailSerializer
     redis_key = 'organization'
 
+    def get_queryset(self):
+        if self.request.user.is_anonymous:
+            raise InvestError(code=8889)
+        assert self.queryset is not None, (
+            "'%s' should either include a `queryset` attribute, "
+            "or override the `get_queryset()` method."
+            % self.__class__.__name__
+        )
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            queryset = queryset.all().filter(datasource=self.request.user.datasource)
+        else:
+            raise InvestError(code=8890)
+        return queryset
+
     def get_object(self, pk=None):
         if pk:
             obj = read_from_cache(self.redis_key + '_%s' % pk)
             if not obj:
                 try:
-                    obj = self.queryset.get(id=pk, is_deleted=False)
+                    obj = self.queryset.get(id=pk)
                 except organization.DoesNotExist:
                     raise InvestError(code=5002)
                 else:
@@ -42,11 +59,13 @@ class OrganizationView(viewsets.ModelViewSet):
             obj = read_from_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg])
             if not obj:
                 try:
-                    obj = self.queryset.get(id=self.kwargs[lookup_url_kwarg], is_deleted=False)
+                    obj = self.queryset.get(id=self.kwargs[lookup_url_kwarg])
                 except organization.DoesNotExist:
                     raise InvestError(code=5002)
                 else:
                     write_to_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg], obj)
+        if obj.datasource != self.request.user.datasource:
+            raise InvestError(code=8888, msg='资源非同源')
         return obj
 
     @loginTokenIsAvailable()
@@ -57,7 +76,7 @@ class OrganizationView(viewsets.ModelViewSet):
             page_size = 10
         if not page_index:
             page_index = 1
-        queryset = self.filter_queryset(self.queryset)
+        queryset = self.filter_queryset(self.get_queryset())
         try:
             queryset = Paginator(queryset, page_size)
         except EmptyPage:
@@ -75,6 +94,7 @@ class OrganizationView(viewsets.ModelViewSet):
         data = request.data
         data['createuser'] = request.user.id
         data['auditStatu'] = 1
+        data['datasource'] = request.user.datasource.id
         try:
             with transaction.atomic():
                 orgTransactionPhases = data.pop('transactionPhases', None)
@@ -137,11 +157,16 @@ class OrganizationView(viewsets.ModelViewSet):
                 if orgserializer.is_valid():
                     org = orgserializer.save()
                     if orgTransactionPhases:
-                        orgTransactionPhaselist = []
-                        for transactionPhase in orgTransactionPhases:
-                            orgTransactionPhaselist.append(
-                                orgTransactionPhase(org=org, transactionPhase_id=transactionPhase, ))
-                        org.org_orgTransactionPhases.bulk_create(orgTransactionPhaselist)
+                        transactionPhaselist = TransactionPhases.objects.filter(is_deleted=False).in_bulk(orgTransactionPhases)
+                        addlist = [item for item in transactionPhaselist if item not in org.orgtransactionphase.all()]
+                        removelist = [item for item in org.orgtransactionphase.all() if item not in transactionPhaselist]
+                        org.org_orgTransactionPhases.filter(transactionPhase__in=removelist, is_deleted=False).update(is_deleted=True,
+                                                                                           deletedtime=datetime.datetime.now(),
+                                                                                           deleteduser=request.user)
+                        usertaglist = []
+                        for transactionPhase in addlist:
+                            usertaglist.append(orgTransactionPhase(org=org, transactionPhase=transactionPhase, createuser=request.user))
+                        org.org_orgTransactionPhases.bulk_create(usertaglist)
                 else:
                     raise InvestError(code=20071,
                                       msg='data有误_%s\n%s' % (orgserializer.error_messages, orgserializer.errors))
@@ -184,7 +209,7 @@ class OrganizationView(viewsets.ModelViewSet):
                             raise InvestError(code=2010, msg=u'{} 上有关联数据'.format(link))
             with transaction.atomic():
                 instance.is_deleted = True
-                # instance.deleteduser = request.user
+                instance.deleteduser = request.user
                 instance.deletetime = datetime.datetime.utcnow()
                 instance.save()
                 response = {'success': True, 'result': OrgDetailSerializer(instance).data, 'errorcode': 1000,
