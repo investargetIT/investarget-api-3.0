@@ -1,18 +1,41 @@
 from rest_framework import serializers
 
-from proj.models import project, finance, favorite
-from usersys.serializer import UserSerializer
+from proj.models import project, finance, favoriteProject
+from usersys.serializer import UserCommenSerializer
+
 
 class FinanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = finance
-        # fields = '__all__'
-        exclude = ('id','proj','deleteuser','deletetime','createuser','createtime','lastmodifyuser','lastmodifytime','is_deleted')
+        fields = '__all__'
+        # exclude = ('id','proj','deleteuser','deletetime','createuser','createtime','lastmodifyuser','lastmodifytime','is_deleted')
+
+class FinanceChangeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = finance
+        fields = '__all__'
+        read_only_fields = ('datasource','createuser','createtime','proj')
+
+class FinanceCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = finance
+        fields = '__all__'
+        read_only_fields = ('deletetime', 'lastmodifyuser', 'lastmodifytime', 'is_deleted', 'deleteuser')
+
+
+class ProjFinanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = finance
+        exclude = ('deleteuser','deletetime','createuser','createtime','lastmodifyuser','lastmodifytime',)
+
+
+
+
 
 
 class ProjSerializer(serializers.ModelSerializer):
-    supportUser = UserSerializer(project.supportUser)
-    proj_finances = FinanceSerializer(many=True)
+    supportUser = UserCommenSerializer(project.supportUser)
+    proj_finances = ProjFinanceSerializer(many=True)
     class Meta:
         model = project
         fields = '__all__'
@@ -36,11 +59,11 @@ class ProjCreatSerializer(serializers.ModelSerializer):
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
-    user = UserSerializer(favorite.user)
-    proj = ProjSerializer(favorite.proj)
+    user = UserCommenSerializer()
+    proj = ProjCommonSerializer()
     class Meta:
-        model = favorite
+        model = favoriteProject
         fields = '__all__'
-        # fields = ('id','proj','user','favoritetype')
+        # fields = ('id','proj','user','trader','favoritetype')
         depth = 1
 
