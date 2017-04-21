@@ -341,7 +341,7 @@ class UserView(viewsets.ModelViewSet):
                                     raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
                     instance.is_deleted = True
                     instance.deleteduser = request.user
-                    instance.deletedtime = datetime.datetime.utcnow()
+                    instance.deletedtime = datetime.datetime.now()
                     instance.save()
                     userlist.append(UserSerializer(instance).data)
                 response = {'success': True, 'result': returnListChangeToLanguage(userlist,lang), 'errorcode':1000,'errormsg':None}

@@ -595,7 +595,7 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
                         raise InvestError(code=2009)
                     instance.is_deleted = True
                     instance.deleteduser = request.user
-                    instance.deletedtime = datetime.datetime.utcnow()
+                    instance.deletedtime = datetime.datetime.now()
                     instance.save()
                     userlist.append(FavoriteSerializer(instance).data)
                 response = {'success': True, 'result': returnListChangeToLanguage(userlist, lang), 'errorcode': 1000,
