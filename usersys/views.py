@@ -19,18 +19,18 @@ from rest_framework import viewsets
 from rest_framework.decorators import api_view, detail_route, list_route
 from usersys.models import MyUser, MyToken, UserRelation, userTags, MobileAuthCode
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
-    CreatUserSerializer , UserCommenSerializer , UserRelationDetailSerializer, dictToLang
+    CreatUserSerializer , UserCommenSerializer , UserRelationDetailSerializer
 from sourcetype.models import Tag, DataSource
 from utils import perimissionfields
 from utils.myClass import JSONResponse, InvestError
 from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable,\
-    catchexcption, cache_delete_key, maketoken
+    catchexcption, cache_delete_key, maketoken, returnDictChangeToLanguage, returnListChangeToLanguage
 
 
 class UserView(viewsets.ModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = MyUser.objects.filter(is_deleted=False)
-    filter_fields = ('mobile','email','name','id','groups','org')
+    filter_fields = ('mobile','email','nameC','id','groups','org')
     serializer_class = UserSerializer
     redis_key = 'users'
     Model = MyUser
@@ -78,6 +78,7 @@ class UserView(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         page_size = request.GET.get('page_size')
         page_index = request.GET.get('page_index')#从第一页开始
+        lang = request.GET.get('lang')
         if not page_size:
             page_size = 10
         if not page_index:
@@ -89,13 +90,14 @@ class UserView(viewsets.ModelViewSet):
             return JSONResponse({'success':True,'result':[],'errorcode':1000,'errormsg':None})
         queryset = queryset.page(page_index)
         serializer = UserListSerializer(queryset, many=True)
-        return JSONResponse({'success':True,'result': serializer.data,'errorcode':1000,'errormsg':None})
+        return JSONResponse({'success':True,'result': returnListChangeToLanguage(serializer.data,lang),'errorcode':1000,'errormsg':None})
 
     #注册用户(新注册用户没有交易师)
     def create(self, request, *args, **kwargs):
         try:
             with transaction.atomic():
                 data = request.data
+                lang = request.GET.get('lang')
                 mobilecode = data.pop('mobilecode', None)
                 mobilecodetoken = data.pop('mobilecodetoken', None)
                 mobile = data.get('mobile')
@@ -144,7 +146,7 @@ class UserView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(code=20071,msg='%s\n%s' % (userserializer.error_messages, userserializer.errors))
                 returndic = UserSerializer(user).data
-                return JSONResponse({'success': True, 'result': dictToLang(returndic,lang='en'), 'errorcode':1000,'errormsg':None})
+                return JSONResponse({'success': True, 'result': returnDictChangeToLanguage(returndic,lang), 'errorcode':1000,'errormsg':None})
         except InvestError as err:
             return JSONResponse({'success': False, 'result': None, 'errorcode':err.code,'errormsg':err.msg})
         except Exception:
@@ -195,7 +197,7 @@ class UserView(viewsets.ModelViewSet):
                     assign_perm('usersys.user_getuser', user.createuser, user)
                     assign_perm('usersys.user_changeuser', user.createuser, user)
                     assign_perm('usersys.user_deleteuser', user.createuser, user)
-                return JSONResponse({'success': True, 'result': UserSerializer(user).data, 'errorcode': 1000,'errormsg':None})
+                return JSONResponse({'success': True, 'result': returnDictChangeToLanguage(UserSerializer(user).data), 'errorcode': 1000,'errormsg':None})
         except InvestError as err:
             return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
         except Exception:
@@ -207,6 +209,7 @@ class UserView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def retrieve(self, request, *args, **kwargs):
         try:
+            lang = request.GET.get('lang')
             user = self.get_object()
             if request.user == user:
                 userserializer = UserListSerializer
@@ -220,7 +223,7 @@ class UserView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(code=2009)
             serializer = userserializer(user)
-            return JSONResponse({'success':True,'result': serializer.data,'errorcode':1000,'errormsg':None})
+            return JSONResponse({'success':True,'result': returnDictChangeToLanguage(serializer.data,lang),'errorcode':1000,'errormsg':None})
         except InvestError as err:
             return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
         except Exception:
@@ -231,6 +234,7 @@ class UserView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def getdetailinfo(self, request, *args, **kwargs):
         try:
+            lang = request.GET.get('lang')
             user = self.get_object()
             if request.user == user:
                 userserializer = UserSerializer
@@ -244,7 +248,7 @@ class UserView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(code=2009)
             serializer = userserializer(user)
-            response = {'success': True, 'result': serializer.data, 'errorcode':1000,'errormsg':None}
+            response = {'success': True, 'result': returnDictChangeToLanguage(serializer.data,lang), 'errorcode':1000,'errormsg':None}
             return JSONResponse(response)
         except InvestError as err:
             return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
@@ -257,9 +261,11 @@ class UserView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
         try:
-            userlist = request.data
+            lang = request.GET.get('lang')
+            useridlist = request.data
+            userlist = []
             with transaction.atomic():
-                for userid in userlist:
+                for userid in useridlist:
                     user = self.get_object(userid)
                     if request.user == user:
                         canChangeField = perimissionfields.userpermfield['changeself']
@@ -292,7 +298,8 @@ class UserView(viewsets.ModelViewSet):
                             user.user_usertags.bulk_create(usertaglist)
                     else:
                         raise InvestError(code=20071,msg='userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
-                return JSONResponse({'success': True, 'result': userlist, 'errorcode':1000,'errormsg':None})
+                    userlist.append(userserializer.data)
+                return JSONResponse({'success': True, 'result': returnListChangeToLanguage(userlist,lang), 'errorcode':1000,'errormsg':None})
         except InvestError as err:
             return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
         except Exception:
@@ -301,12 +308,16 @@ class UserView(viewsets.ModelViewSet):
                                  'errormsg': traceback.format_exc().split('\n')[-2]})
 
     #delete
-    # @loginTokenIsAvailable()
+    @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
         try:
-            userlist = request.data
+            useridlist = request.data
+            userlist = []
+            lang = request.GET.get('lang')
+            if not useridlist:
+                raise InvestError(code=20071,msg='except a not null list')
             with transaction.atomic():
-                for userid in userlist:
+                for userid in useridlist:
                     instance = self.get_object(userid)
                     if request.user.has_perm('usersys.admin_deleteuser') or request.user.has_perm('usersys.user_deleteuser',instance):
                         pass
@@ -334,8 +345,9 @@ class UserView(viewsets.ModelViewSet):
                     instance.deleteduser = request.user
                     instance.deletedtime = datetime.datetime.utcnow()
                     instance.save()
-                    response = {'success': True, 'result': UserSerializer(instance).data, 'errorcode':1000,'errormsg':None}
-                    return JSONResponse(response)
+                    userlist.append(UserSerializer(instance).data)
+                response = {'success': True, 'result': returnListChangeToLanguage(userlist,lang), 'errorcode':1000,'errormsg':None}
+                return JSONResponse(response)
         except InvestError as err:
             return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
         except Exception:
@@ -451,6 +463,7 @@ class UserRelationView(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         page_size = request.GET.get('page_size')
         page_index = request.GET.get('page_index')  #从第一页开始
+        lang = request.GET.get('lang')
         if not page_size:
             page_size = 10
         if not page_index:
@@ -470,31 +483,32 @@ class UserRelationView(viewsets.ModelViewSet):
             return JSONResponse({'success':True,'result':[],'errorcode':1000,'errormsg':None})
         queryset = queryset.page(page_index)
         serializer = self.get_serializer(queryset, many=True)
-        return JSONResponse({'success':True,'result':serializer.data,'errorcode':1000,'errormsg':None})
+        return JSONResponse({'success':True,'result':returnListChangeToLanguage(serializer.data,lang),'errorcode':1000,'errormsg':None})
 
 
-    # @loginTokenIsAvailable()
+    @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
-            # data['createduser'] = request.user.id
-            # data['datasource'] = 1
-            # if request.user.has_perm('usersys.admin_adduserrelation'):
-            #     pass
-            # elif request.user.has_perm('usersys.user_adduserrelation'):
-            #     data['traderuser'] = request.user.id
-            # else:
-            #     raise InvestError(code=2009)
+            data['createduser'] = request.user.id
+            data['datasource'] = 1
+            lang = request.GET.get('lang')
+            if request.user.has_perm('usersys.admin_adduserrelation'):
+                pass
+            elif request.user.has_perm('usersys.user_adduserrelation'):
+                data['traderuser'] = request.user.id
+            else:
+                raise InvestError(code=2009)
             with transaction.atomic():
                 newrelation = UserRelationDetailSerializer(data=data)
                 if newrelation.is_valid():
-                    # if newrelation.validated_data.investoruser.datasource != request.user.datasource or newrelation.validated_data.traderuser.datasource != request.user.datasource:
-                    #     raise InvestError(code=8888)
+                    if newrelation.validated_data.investoruser.datasource != request.user.datasource or newrelation.validated_data.traderuser.datasource != request.user.datasource:
+                        raise InvestError(code=8888)
                     relation = newrelation.save()
                     assign_perm('usersys.user_getuserrelation', relation.traderuser, relation)
                     assign_perm('usersys.user_changeuserrelation', relation.traderuser, relation)
                     assign_perm('usersys.user_deleteuserrelation', relation.traderuser, relation)
-                    response = {'success': True, 'result':newrelation.data,'errorcode':1000,'errormsg':None}
+                    response = {'success': True, 'result':returnDictChangeToLanguage(newrelation.data,lang),'errorcode':1000,'errormsg':None}
                 else:
                     raise InvestError(code=20071,msg='%s'%newrelation.errors)
                 return JSONResponse(response)
@@ -538,6 +552,7 @@ class UserRelationView(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         try:
             userrelation = self.get_object()
+            lang = request.GET.get('lang')
             if request.user.has_perm('usersys.admin_getuserrelation'):
                 pass
             elif request.user.has_perm('usersys.user_getuserrelation'):
@@ -547,7 +562,7 @@ class UserRelationView(viewsets.ModelViewSet):
             else:
                 raise InvestError(code=2009)
             serializer = UserRelationSerializer(userrelation)
-            response = {'success':True,'result': serializer.data,'errorcode':1000,'errormsg':None}
+            response = {'success':True,'result': returnDictChangeToLanguage(serializer.data,lang),'errorcode':1000,'errormsg':None}
             return JSONResponse(response)
         except InvestError as err:
             return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
@@ -560,6 +575,7 @@ class UserRelationView(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 parmdict = request.data
+                lang = request.GET.get('lang')
                 relationidlist = parmdict['relationlist']
                 relationlist = self.get_queryset().in_bulk(relationidlist)
                 for relation in relationlist:
@@ -579,7 +595,7 @@ class UserRelationView(viewsets.ModelViewSet):
                         newrelation.save()
                     else:
                         raise InvestError(code=20071,msg=newrelation.errors)
-                return JSONResponse({'success': True, 'result':UserRelationSerializer(relationlist,many=True).data, 'errorcode':1000,'errormsg':None})
+                return JSONResponse({'success': True, 'result':returnListChangeToLanguage(UserRelationSerializer(relationlist,many=True).data,lang), 'errorcode':1000,'errormsg':None})
         except InvestError as err:
             return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
         except Exception:
@@ -592,6 +608,7 @@ class UserRelationView(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 relationidlist = request.data
+                lang = request.GET.get('lang')
                 relationlist = self.get_queryset().in_bulk(relationidlist)
                 for userrelation in relationlist:
                     if request.user.has_perm('usersys.user_deleteuserrelation',userrelation):
@@ -604,7 +621,7 @@ class UserRelationView(viewsets.ModelViewSet):
                     userrelation.deleteduser = request.user
                     userrelation.deletedtime = datetime.datetime.now()
                     userrelation.save()
-                response = {'success': True, 'result': UserRelationSerializer(relationlist,many=True).data,'errorcode':1000,'errormsg':None}
+                response = {'success': True, 'result': returnListChangeToLanguage(UserRelationSerializer(relationlist,many=True),lang).data,'errorcode':1000,'errormsg':None}
                 return JSONResponse(response)
         except InvestError as err:
             return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
@@ -618,6 +635,8 @@ class UserRelationView(viewsets.ModelViewSet):
 def login(request):
     try:
         receive = request.data
+        lang = request.GET.get('lang')
+        clienttype = request.META.get('HTTP_CLIENTTYPE')
         username = receive['account']
         password = receive['password']
         source = receive.pop('datasource', None)
@@ -628,22 +647,21 @@ def login(request):
             else:
                 raise InvestError(code=8888)
         else:
-            raise InvestError(code=8888, msg='source field is required')
+            raise InvestError(code=8888, msg='datasource field is required')
         if not username or not password or not userdatasource:
             raise InvestError(code=20071,msg='参数不全')
-        clienttype = request.META.get('HTTP_CLIENTTYPE')
         user = auth.authenticate(username=username, password=password, datasource=userdatasource)
         if not user or not clienttype:
             if not clienttype:
                 raise InvestError(code=2003,msg='登录类型不可用')
             else:
-                raise InvestError(code=2001,msg='密码错误')
+                raise InvestError(code=2001,msg='0密码错误0')
         user.last_login = datetime.datetime.now()
         if user.is_active:
             user.is_active = True
         user.save()
         response = maketoken(user, clienttype)
-        return JSONResponse({"result": response, "success": True, 'errorcode':1000,'errormsg':None})
+        return JSONResponse({"result": returnDictChangeToLanguage(response,lang), "success": True, 'errorcode':1000,'errormsg':None})
     except InvestError as err:
             return JSONResponse({'success': False, 'result': None, 'errorcode':err.code,'errormsg':err.msg})
     except Exception:

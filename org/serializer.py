@@ -10,12 +10,12 @@ class OrgCommonSerializer(serializers.ModelSerializer):
     # org_users = UserCommenSerializer(many=True)
     class Meta:
         model = organization
-        fields = ('id','nameC','auditStatu','org_users')
+        fields = ('id','nameC','nameE','auditStatu','org_users')
 
 class OrgSerializer(serializers.ModelSerializer):
     class Meta:
         model = organization
-        fileds = ('id','nameC','orgcode','auditStatu',)
+        fileds = ('id','nameC','nameE','orgcode','auditStatu',)
 
 class OrgDetailSerializer(serializers.ModelSerializer):
     class Meta:

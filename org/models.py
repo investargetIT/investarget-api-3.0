@@ -68,10 +68,12 @@ class organization(models.Model):
         )
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
+        if not self.datasource:
+            raise InvestError(code=8888,msg='机构datasource不能空')
         if self.pk:
             oldorg = organization.objects.get(pk=self.pk)
             if self.orgcode:
-                if organization.objects.exclude(pk=self.pk).filter(is_deleted=False,orgcode=self.orgcode).exists():
+                if organization.objects.exclude(pk=self.pk).filter(is_deleted=False,orgcode=self.orgcode,datasource=self.datasource).exists():
                     raise InvestError(code=5001,msg='orgcode已存在')
             if self.is_deleted and oldorg.createuser:
                 remove_perm('org.user_getorg', oldorg.createuser, self)
@@ -79,13 +81,13 @@ class organization(models.Model):
                 remove_perm('org.user_deleteorg', oldorg.createuser, self)
         else:
             if self.orgcode:
-                if organization.objects.filter(is_deleted=False,orgcode=self.orgcode).exists():
+                if organization.objects.filter(is_deleted=False,orgcode=self.orgcode,datasource=self.datasource).exists():
                     raise InvestError(code=5001,msg='orgcode已存在')
         super(organization,self).save(force_insert,force_update,using,update_fields)
 
 class orgTransactionPhase(models.Model):
-    org = models.ForeignKey(organization,null=True,blank=True,related_name='transactionPhase_orgs')
-    transactionPhase = models.ForeignKey(TransactionPhases,null=True,blank=True,related_name='org_orgTransactionPhases',on_delete=models.SET_NULL)
+    org = models.ForeignKey(organization,null=True,blank=True,related_name='org_orgTransactionPhases')
+    transactionPhase = models.ForeignKey(TransactionPhases,null=True,blank=True,related_name='transactionPhase_orgs',on_delete=models.SET_NULL)
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_orgTransactionPhases',on_delete=models.SET_NULL)
     deletedtime = models.DateTimeField(blank=True, null=True)
@@ -96,7 +98,7 @@ class orgTransactionPhase(models.Model):
         db_table = "org_TransactionPhase"
 class orgRemarks(models.Model):
     id = models.AutoField(primary_key=True)
-    org = models.ForeignKey(organization,null=True,blank=True,on_delete=models.SET_NULL)
+    org = models.ForeignKey(organization,null=True,blank=True,related_name='org_remarks')
     remark = models.TextField(blank=True,null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_orgremarks',on_delete=models.SET_NULL)
@@ -119,3 +121,8 @@ class orgRemarks(models.Model):
             ('user_addremark', '用户增加机构备注'),
             ('user_deleteremark','用户删除机构备注（obj级别）'),
         )
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if not self.datasource:
+            raise InvestError(code=8888,msg='机构备注没有datasource')
+        super(orgRemarks,self).save(force_insert,force_update,using,update_fields)
