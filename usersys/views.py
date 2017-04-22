@@ -74,7 +74,7 @@ class UserView(viewsets.ModelViewSet):
             raise InvestError(code=8888,msg='资源非同源')
         return obj
 
-    @loginTokenIsAvailable(['usersys.admin_getuser','usersys.user_getuser'])
+    @loginTokenIsAvailable(['usersys.admin_getuser'])
     def list(self, request, *args, **kwargs):
         page_size = request.GET.get('page_size')
         page_index = request.GET.get('page_index')#从第一页开始
@@ -216,8 +216,6 @@ class UserView(viewsets.ModelViewSet):
             else:
                 if request.user.has_perm('usersys.admin_getuser'):
                     userserializer = UserListSerializer
-                elif request.user.has_perm('usersys.user_getuser'):
-                    userserializer = UserListSerializer
                 elif request.user.has_perm('usersys.user_getuser',user):
                     userserializer = UserListSerializer
                 else:
@@ -343,7 +341,7 @@ class UserView(viewsets.ModelViewSet):
                                     raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
                     instance.is_deleted = True
                     instance.deleteduser = request.user
-                    instance.deletedtime = datetime.datetime.utcnow()
+                    instance.deletedtime = datetime.datetime.now()
                     instance.save()
                     userlist.append(UserSerializer(instance).data)
                 response = {'success': True, 'result': returnListChangeToLanguage(userlist,lang), 'errorcode':1000,'errormsg':None}
@@ -554,8 +552,6 @@ class UserRelationView(viewsets.ModelViewSet):
             userrelation = self.get_object()
             lang = request.GET.get('lang')
             if request.user.has_perm('usersys.admin_getuserrelation'):
-                pass
-            elif request.user.has_perm('usersys.user_getuserrelation'):
                 pass
             elif request.user.has_perm('usersys.user_getuserrelation',userrelation):
                 pass

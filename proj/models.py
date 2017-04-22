@@ -77,7 +77,7 @@ class project(models.Model):
             ('user_addproj', '用户上传项目'),
             ('user_changeproj', '用户修改项目(obj级别)'),
             ('user_deleteproj', '用户删除项目(obj级别)'),
-            ('user_getproj','用户查看项目(obj级别)'),
+            ('user_getproj','用户查看项目(obj/class级别)'),
 
         )
 
@@ -153,26 +153,35 @@ class projectTransactionType(models.Model):
 
 
 #收藏只能 新增/删除/查看/  ，不能修改
-class favorite(models.Model):
+class favoriteProject(models.Model):
     proj = models.ForeignKey(project,related_name='proj_favorite')
     user = models.ForeignKey(MyUser,related_name='user_favorite')
-    favoritetype = models.ForeignKey(FavoriteType,related_name='favoritetype_proj',verbose_name='收藏类型')
+    trader = models.ForeignKey(MyUser,blank=True,null=True,related_name='trader_favorite',help_text='交易师id（用户感兴趣时联系/交易师推荐）')
+    favoritetype = models.ForeignKey(FavoriteType,related_name='favoritetype_proj',help_text='收藏类型')
     is_deleted = models.BooleanField(blank=True, default=False)
-    deleteduser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_favoriteproj',on_delete=models.SET_NULL)
+    deleteduser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_favoriteproj')
     deletedtime = models.DateTimeField(blank=True, null=True)
     createdtime = models.DateTimeField(auto_created=True)
-    createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_favoriteproj',on_delete=models.SET_NULL)
+    createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_favoriteproj')
     datasource = models.ForeignKey(DataSource, help_text='数据源')
     def __str__(self):
         return self.favoritetype.__str__() + self.proj.title + self.user.name
-    #单指 新增 操作  ，修改会出问题的
-    def save(self, force_insert=False, force_update=False, using=None,
-             update_fields=None):
-        obj = favorite.objects.filter(proj=self.proj,user=self.user,favoritetype=self.favoritetype)
-        if obj:
-            raise ValueError('已经存在一条相同的记录了')
-        else:
-            super(favorite, self).save()
+    # #单指 新增 操作  ，修改会出问题的
+    # def save(self, force_insert=False, force_update=False, using=None,
+    #          update_fields=None):
+    #     obj = favorite.objects.filter(proj=self.proj,user=self.user,favoritetype=self.favoritetype)
+    #     if obj:
+    #         raise ValueError('已经存在一条相同的记录了')
+    #     else:
+    #         super(favorite, self).save()
     class Meta:
         ordering = ('proj',)
         db_table = 'project_favorite'
+        permissions = (
+            ('user_addfavorite','用户添加favorite(obj级别——给交易师的)'),
+            ('user_getfavorite', '用户查看favorite(obj级别——给交易师的)'),
+
+            ('admin_addfavorite', '管理员添加favorite'),
+            ('admin_getfavorite', '管理员查看favorite'),
+            ('admin_deletefavorite','管理员删除favorite'),
+        )

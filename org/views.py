@@ -289,7 +289,7 @@ class OrgRemarkView(viewsets.ModelViewSet):
         if not page_index:
             page_index = 1
         queryset = self.filter_queryset(self.get_queryset())
-        if not request.user.has_perm('org.admin_getremark'):
+        if request.user.has_perm('org.admin_getremark'):
             queryset = queryset
         else:
             queryset = queryset.filter(createuser_id=request.user.id)
