@@ -33,7 +33,7 @@ class ProjFinanceSerializer(serializers.ModelSerializer):
 
 
 
-class ProjSerializer(serializers.ModelSerializer):
+class ProjSe0rializer(serializers.ModelSerializer):
     supportUser = UserCommenSerializer(project.supportUser)
     proj_finances = ProjFinanceSerializer(many=True)
     class Meta:
@@ -44,7 +44,7 @@ class ProjSerializer(serializers.ModelSerializer):
 class ProjCommonSerializer(serializers.ModelSerializer):
     class Meta:
         model = project
-        fields = ('id','industries','titleC','tags','financeAmount','financeAmount_USD','country','statu','isHidden')
+        fields = ('id','industries','titleC','titleE','tags','financeAmount','financeAmount_USD','country','statu','isHidden')
         depth = 1
 
 class ProjCreatSerializer(serializers.ModelSerializer):
@@ -55,7 +55,10 @@ class ProjCreatSerializer(serializers.ModelSerializer):
 
 
 
-
+class FavoriteCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = favoriteProject
+        fields = '__all__'
 
 
 class FavoriteSerializer(serializers.ModelSerializer):

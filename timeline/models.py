@@ -1,11 +1,10 @@
+#coding=utf-8
 from __future__ import unicode_literals
-
 from django.db import models
-
-# Create your models here.
 from proj.models import project
 from usersys.models import MyUser
-from sourcetype.models import TransactionStatus
+from sourcetype.models import TransactionStatus, DataSource
+
 
 class timeline(models.Model):
     id = models.AutoField(primary_key=True)
@@ -24,6 +23,7 @@ class timeline(models.Model):
     createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_timelines',on_delete=models.SET_NULL)
     lastmodifytime = models.DateTimeField(auto_now=True)
     lastmodifyuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usermodify_timelines',on_delete=models.SET_NULL)
+    datasource = models.ForeignKey(DataSource, help_text='数据源')
     class Meta:
         db_table = 'timeline'
 
@@ -56,5 +56,6 @@ class timelineremark(models.Model):
     createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_timelineremarks',on_delete=models.SET_NULL)
     lastmodifytime = models.DateTimeField(auto_now=True)
     lastmodifyuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usermodify_timelineremarks', on_delete=models.SET_NULL)
+
     class Meta:
         db_table = 'timelineremarks'

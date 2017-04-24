@@ -32,7 +32,7 @@ class UserView(viewsets.ModelViewSet):
     queryset = MyUser.objects.filter(is_deleted=False)
     filter_fields = ('mobile','email','nameC','id','groups','org')
     serializer_class = UserSerializer
-    redis_key = 'users'
+    redis_key = 'user'
     Model = MyUser
 
     def get_queryset(self):

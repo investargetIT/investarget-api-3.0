@@ -1,12 +1,16 @@
 #coding=utf8
 from __future__ import unicode_literals
 
+import datetime
 from django.db import models
 
 # Create your models here.
 from sourcetype.models import FavoriteType, ProjectStatus,CurrencyType,Tag,Country,TransactionType,Industry, DataSource
 from usersys.models import MyUser
 import sys
+
+from utils.myClass import InvestError
+
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
@@ -78,8 +82,13 @@ class project(models.Model):
             ('user_changeproj', '用户修改项目(obj级别)'),
             ('user_deleteproj', '用户删除项目(obj级别)'),
             ('user_getproj','用户查看项目(obj/class级别)'),
-
         )
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if not self.datasource or self.datasource != self.createuser.datasource:
+            raise InvestError(code=8888,msg='项目datasource不合法')
+        super(project,self).save(force_insert,force_update,using,update_fields)
+
 
 class finance(models.Model):
     id = models.AutoField(primary_key=True)
@@ -110,7 +119,11 @@ class finance(models.Model):
 
     class Meta:
         db_table = 'projectFinance'
-
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if not self.datasource or self.datasource != self.proj.datasource:
+            raise InvestError(code=8888,msg='项目财务信息datasource不合法')
+        super(finance,self).save(force_insert,force_update,using,update_fields)
 
 class projectTags(models.Model):
     proj = models.ForeignKey(project,related_name='project_tags' )
@@ -166,14 +179,16 @@ class favoriteProject(models.Model):
     datasource = models.ForeignKey(DataSource, help_text='数据源')
     def __str__(self):
         return self.favoritetype.__str__() + self.proj.title + self.user.name
-    # #单指 新增 操作  ，修改会出问题的
-    # def save(self, force_insert=False, force_update=False, using=None,
-    #          update_fields=None):
-    #     obj = favorite.objects.filter(proj=self.proj,user=self.user,favoritetype=self.favoritetype)
-    #     if obj:
-    #         raise ValueError('已经存在一条相同的记录了')
-    #     else:
-    #         super(favorite, self).save()
+    #只用于create和delete，没有update
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if not self.datasource or self.datasource != self.proj.datasource:
+            raise InvestError(code=8888,msg='项目收藏datasource与项目不符')
+        if not self.pk: #交易师不能自己主动删除推荐，再次推荐同一个项目时删除旧的添加新的(暂定)
+            deletedata = {'is_deleted':True,'deleteduser':self.createuser.id,'deletedtime':datetime.datetime.now()}
+            favoriteProject.objects.filter(proj=self.proj,user=self.user,trader=self.trader,favoritetype=self.favoritetype,is_deleted=False,
+                                              datasource=self.datasource,createuser=self.createuser).update(deletedata)
+        super(favoriteProject,self).save(force_insert,force_update,using,update_fields)
     class Meta:
         ordering = ('proj',)
         db_table = 'project_favorite'

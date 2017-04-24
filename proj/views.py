@@ -11,7 +11,7 @@ from rest_framework import viewsets
 import datetime
 from proj.models import project, finance, projectTags, projectIndustries, projectTransactionType, favoriteProject
 from proj.serializer import ProjSerializer, FinanceSerializer, ProjCreatSerializer, \
-    ProjCommonSerializer, FinanceChangeSerializer, FinanceCreateSerializer, FavoriteSerializer
+    ProjCommonSerializer, FinanceChangeSerializer, FinanceCreateSerializer, FavoriteSerializer, FavoriteCreateSerializer
 from sourcetype.models import Tag, Industry, TransactionType
 from usersys.models import MyUser
 from utils.util import catchexcption, read_from_cache, write_to_cache, loginTokenIsAvailable, returnListChangeToLanguage, \
@@ -458,7 +458,7 @@ class ProjFinanceView(viewsets.ModelViewSet):
 class ProjectFavoriteView(viewsets.ModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = favoriteProject.objects.all().filter(is_deleted=False)
-    filter_fields = ('proj', 'user','trader','favoritetype')
+    filter_fields = ('user','trader','favoritetype')
     serializer_class = FavoriteSerializer
     Model = favoriteProject
 
@@ -482,7 +482,7 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
             try:
                 obj = self.queryset.get(id=pk)
             except finance.DoesNotExist:
-                raise InvestError(code=40031)
+                raise InvestError(code=4006)
         else:
             lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
             assert lookup_url_kwarg in self.kwargs, (
@@ -494,43 +494,59 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
             try:
                 obj = self.queryset.get(id=self.kwargs[lookup_url_kwarg])
             except finance.DoesNotExist:
-                raise InvestError(code=40031)
+                raise InvestError(code=4006)
         if obj.datasource != self.request.user.datasource:
             raise InvestError(code=8888, msg='资源非同源')
         return obj
 
-
+    def get_user(self,pk):
+        obj = read_from_cache('user_%s' % pk)
+        if not obj:
+            try:
+                obj = MyUser.objects.get(id=pk, is_deleted=False)
+            except MyUser.DoesNotExist:
+                raise InvestError(code=2002)
+            else:
+                write_to_cache('user_%s' % pk, obj)
+        if obj.datasource != self.request.user.datasource:
+            raise InvestError(code=8888, msg='资源非同源')
+        if obj.is_deleted:
+            raise InvestError(code=2002,msg='用户已删除')
+        return obj
+    #获取收藏列表，GET参数'user'，'trader'，'favoritetype'
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         page_size = request.GET.get('page_size')
         page_index = request.GET.get('page_index')  # 从第一页开始
         lang = request.GET.get('lang')
         userid = request.GET.get('user')
+        traderid = request.GET.get('trader')
         ftype = request.GET.get('favoritetype')
-        if not ftype:
-            raise InvestError(code=20072,msg='favoritetype cannot be null')
+        if not ftype or not userid or (ftype == 3 and not traderid):
+            raise InvestError(code=20072,msg='favoritetype and user cannot be null')
         if not page_size:
             page_size = 10
         if not page_index:
             page_index = 1
         queryset = self.filter_queryset(self.get_queryset())
-        if not userid:
-            queryset = queryset.filter(user=request.user)
-        if request.user.is_anonymous:
-            queryset = queryset.filter(isHidden=False)
+        user = self.get_user(userid)
+        if request.user == user:
+            pass
+        elif request.user.has_perm('proj.admin_getfavorite'):
+            pass
+        elif request.user.has_perm('proj.user_getfavorite',user):
+            pass
         else:
-            if request.user.has_perm('proj.admin_getproj'):
-                pass
-            else:
-                queryset = queryset.filter(Q(isHidden=False) | Q(createuser=request.user))
+            raise InvestError(code=2009)
         try:
             queryset = Paginator(queryset, page_size)
         except EmptyPage:
             return JSONResponse({'success': True, 'result': [], 'errorcode': 1000, 'errormsg': None})
         queryset = queryset.page(page_index)
-        serializer = ProjCommonSerializer(queryset, many=True)
+        serializer = FavoriteSerializer(queryset, many=True)
         return JSONResponse({'success': True, 'result': returnListChangeToLanguage(serializer.data,lang), 'errorcode': 1000, 'errormsg': None})
 
-    # 批量增加，接受projidlist
+    # 批量增加，接受modeldata，proj=projs=projidlist
     @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
         try:
@@ -541,18 +557,15 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
             data['createuser'] = request.user.id
             data['datasource'] = request.user.datasource.id
             projidlist = data.pop('projs',None)
-            try:
-                user = MyUser.objects.get(id=userid,datasource=request.user.datasource,is_deleted=False)
-            except MyUser.DoesNotExist:
-                raise InvestError(code=2002)
+            user = self.get_user(userid)
             if request.user == user:
-                if ftype not in [1,2]:
+                if ftype not in [4,5]:
                     raise InvestError(code=4005)
             elif request.user.has_perm('proj.admin_addfavorite'):
-                if ftype not in [3,4]:
+                if ftype not in [1,2]:
                     raise InvestError(code=4005)
             elif request.user.has_perm('proj.user_addfavorite',user):
-                if ftype != 5:
+                if ftype != 3:
                     raise InvestError(code=4005)
             else:
                 raise InvestError(code=2009)
@@ -560,7 +573,7 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
                 favoriteProjectList = []
                 for projid in projidlist:
                     data['proj'] = projid
-                    newfavorite = FavoriteSerializer(data=data)
+                    newfavorite = FavoriteCreateSerializer(data=data)
                     if newfavorite.is_valid():
                         if newfavorite.validated_data.user.datasource != request.user.datasource or newfavorite.validated_data.proj.datasource != request.user.datasource or\
                                 (newfavorite.validated_data.trader and newfavorite.validated_data.trader.datasource != request.user.datasource):
@@ -577,15 +590,15 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
                                  'errormsg': traceback.format_exc().split('\n')[-2]})
-    #批量删除
+    #批量删除（参数传收藏model的idlist）
     @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
         try:
-            favoridlist = request.data
-            userlist = []
+            favoridlist = request.data.get('favotiteids')
+            favorlist = []
             lang = request.GET.get('lang')
-            if not favoridlist:
-                raise InvestError(code=20071, msg='except a not null list')
+            if not isinstance(favoridlist,list) or not favoridlist:
+                raise InvestError(code=20071, msg='accept a not null list')
             with transaction.atomic():
                 for favorid in favoridlist:
                     instance = self.get_object(favorid)
@@ -597,8 +610,8 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
                     instance.deleteduser = request.user
                     instance.deletedtime = datetime.datetime.now()
                     instance.save()
-                    userlist.append(FavoriteSerializer(instance).data)
-                response = {'success': True, 'result': returnListChangeToLanguage(userlist, lang), 'errorcode': 1000,
+                    favorlist.append(FavoriteSerializer(instance).data)
+                response = {'success': True, 'result': returnListChangeToLanguage(favorlist, lang), 'errorcode': 1000,
                             'errormsg': None}
                 return JSONResponse(response)
         except InvestError as err:

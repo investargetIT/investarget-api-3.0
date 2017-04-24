@@ -13,10 +13,17 @@ proj_detail = views.ProjectView.as_view({
         'delete': 'destroy'
 })
 
-org_remark = views.ProjectView.as_view({
+proj_finance = views.ProjectView.as_view({
         'get': 'retrieve',
+        'post':'create',
         'put': 'update',
         'delete': 'destroy'
+})
+
+userfavorite_proj = views.ProjectFavoriteView.as_view({
+        'get': 'list',
+        'post': 'create',
+        'delete':'destroy'
 })
 
 
@@ -25,8 +32,6 @@ urlpatterns = [
 
         url(r'^$', proj_list , name='proj_list'),
         url(r'^(?P<pk>\d+)/$', proj_detail, name='proj_detail'),
-        # url(r'^favorite/$' , views.allfavorite),
-        # url(r'^favorite/(?P<pk>\d+)/$' , views.favoritetype),
-
-
+        url(r'^finance/$', proj_finance, name='proj_finance'),
+        url(r'^favorite/$' , userfavorite_proj,name='user_favoriteproj'),
 ]
