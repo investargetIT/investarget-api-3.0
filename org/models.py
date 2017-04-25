@@ -123,6 +123,6 @@ class orgRemarks(models.Model):
         )
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
-        if not self.datasource:
+        if not self.datasource or self.datasource != self.org.datasource:
             raise InvestError(code=8888,msg='机构备注没有datasource')
         super(orgRemarks,self).save(force_insert,force_update,using,update_fields)
