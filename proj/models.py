@@ -85,7 +85,7 @@ class project(models.Model):
         )
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
-        if not self.datasource or self.datasource != self.createuser.datasource:
+        if not self.datasource or not self.createuser or self.datasource != self.createuser.datasource:
             raise InvestError(code=8888,msg='项目datasource不合法')
         super(project,self).save(force_insert,force_update,using,update_fields)
 
@@ -191,7 +191,7 @@ class favoriteProject(models.Model):
         super(favoriteProject,self).save(force_insert,force_update,using,update_fields)
     class Meta:
         ordering = ('proj',)
-        db_table = 'project_favorite'
+        db_table = 'project_favorites'
         permissions = (
             ('user_addfavorite','用户添加favorite(obj级别——给交易师的)'),
             ('user_getfavorite', '用户查看favorite(obj级别——给交易师的)'),

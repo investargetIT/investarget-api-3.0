@@ -279,7 +279,7 @@ class OrgRemarkView(viewsets.ModelViewSet):
             raise InvestError(code=8888, msg='资源非同源')
         return obj
 
-    @loginTokenIsAvailable(['org.admin_getremark','org.user_getremark'])
+    @loginTokenIsAvailable(['org.admin_getorgremark','org.user_getorgremark'])
     def list(self, request, *args, **kwargs):
         page_size = request.GET.get('page_size')
         page_index = request.GET.get('page_index')  # 从第一页开始
@@ -289,7 +289,7 @@ class OrgRemarkView(viewsets.ModelViewSet):
         if not page_index:
             page_index = 1
         queryset = self.filter_queryset(self.get_queryset())
-        if request.user.has_perm('org.admin_getremark'):
+        if request.user.has_perm('org.admin_getorgremark'):
             queryset = queryset
         else:
             queryset = queryset.filter(createuser_id=request.user.id)
@@ -316,9 +316,9 @@ class OrgRemarkView(viewsets.ModelViewSet):
                     raise InvestError(code=20071,
                                       msg='data有误_%s\n%s' % (orgremarkserializer.error_messages, orgremarkserializer.errors))
                 if orgremark.createuser:
-                    assign_perm('org.user_getremark', orgremark.createuser, orgremark)
-                    assign_perm('org.user_changeremark', orgremark.createuser, orgremark)
-                    assign_perm('org.user_deleteremark', orgremark.createuser, orgremark)
+                    assign_perm('org.user_getorgremark', orgremark.createuser, orgremark)
+                    assign_perm('org.user_changeorgremark', orgremark.createuser, orgremark)
+                    assign_perm('org.user_deleteorgremark', orgremark.createuser, orgremark)
                 return JSONResponse(
                     {'success': True, 'result': returnDictChangeToLanguage(OrgSerializer(orgremark).data,lang), 'errorcode': 1000, 'errormsg': None})
         except InvestError as err:
@@ -333,9 +333,9 @@ class OrgRemarkView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             orgremark = self.get_object()
-            if request.user.has_perm('org.admin_getremark'):
+            if request.user.has_perm('org.admin_getorgremark'):
                 orgremarkserializer = OrgRemarkDetailSerializer
-            elif request.user.has_perm('org.user_getremark',orgremark):
+            elif request.user.has_perm('org.user_getorgremark',orgremark):
                 orgremarkserializer = OrgRemarkDetailSerializer
             else:
                 raise InvestError(code=2009)
@@ -350,11 +350,11 @@ class OrgRemarkView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
         try:
-            org = self.get_object()
+            orgremark = self.get_object()
             lang = request.GET.get('lang')
-            if request.user.has_perm('org.admin_changeremark'):
+            if request.user.has_perm('org.admin_changeorgremark'):
                 pass
-            elif request.user.has_perm('org.user_changeremark', org):
+            elif request.user.has_perm('org.user_changeorgremark', orgremark):
                 pass
             else:
                 raise InvestError(code=2009)
@@ -362,16 +362,9 @@ class OrgRemarkView(viewsets.ModelViewSet):
             data['lastmodifyuser'] = request.user.id
             data['lastmodifytime'] = datetime.datetime.now()
             with transaction.atomic():
-                orgTransactionPhases = data.pop('transactionPhases', None)
-                orgserializer = OrgRemarkDetailSerializer(org, data=data)
+                orgserializer = OrgRemarkDetailSerializer(orgremark, data=data)
                 if orgserializer.is_valid():
                     org = orgserializer.save()
-                    if orgTransactionPhases:
-                        orgTransactionPhaselist = []
-                        for transactionPhase in orgTransactionPhases:
-                            orgTransactionPhaselist.append(
-                                orgTransactionPhase(org=org, transactionPhase_id=transactionPhase, ))
-                        org.org_orgTransactionPhases.bulk_create(orgTransactionPhaselist)
                 else:
                     raise InvestError(code=20071,
                                       msg='data有误_%s\n%s' % (orgserializer.error_messages, orgserializer.errors))
@@ -390,9 +383,9 @@ class OrgRemarkView(viewsets.ModelViewSet):
             lang = request.GET.get('lang')
             instance = self.get_object()
 
-            if request.user.has_perm('org.admin_deleteremark'):
+            if request.user.has_perm('org.admin_deleteorgremark'):
                 pass
-            elif request.user.has_perm('org.user_deleteremark', instance):
+            elif request.user.has_perm('org.user_deleteorgremark', instance):
                 pass
             else:
                 raise InvestError(code=2009, msg='没有权限')

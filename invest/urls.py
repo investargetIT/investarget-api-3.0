@@ -20,6 +20,7 @@ from rest_framework_swagger.views import get_swagger_view
 import org.urls
 import proj.urls
 import usersys.urls
+import timeline.urls
 
 schema_view = get_swagger_view(title='investarget-api-3.0')
 
@@ -31,5 +32,5 @@ urlpatterns += [
     url(r'^user/', include(usersys.urls)),
     url(r'^proj/',include(proj.urls)),
     url(r'^org/',include(org.urls)),
-
+    url(r'^timeline/',include(timeline.urls)),
 ]

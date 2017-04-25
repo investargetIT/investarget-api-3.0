@@ -111,15 +111,15 @@ class orgRemarks(models.Model):
     class Meta:
         db_table = "orgremark"
         permissions = (
-            ('admin_getremark','管理员查看机构备注'),
-            ('admin_changeremark', '管理员修改机构备注'),
-            ('admin_addremark', '管理员增加机构备注'),
-            ('admin_deleteremark', '管理员删除机构备注'),
+            ('admin_getorgremark','管理员查看机构备注'),
+            ('admin_changeorgremark', '管理员修改机构备注'),
+            ('admin_addorgremark', '管理员增加机构备注'),
+            ('admin_deleteorgremark', '管理员删除机构备注'),
 
-            ('user_getremark', '用户查看机构备注（obj级别）'),
-            ('user_changeremark', '用户修改机构备注（obj级别）'),
-            ('user_addremark', '用户增加机构备注'),
-            ('user_deleteremark','用户删除机构备注（obj级别）'),
+            ('user_getorgremark', '用户查看机构备注（obj级别）'),
+            ('user_changeorgremark', '用户修改机构备注（obj级别）'),
+            ('user_addorgremark', '用户增加机构备注'),
+            ('user_deleteorgremark','用户删除机构备注（obj级别）'),
         )
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):

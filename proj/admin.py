@@ -2,7 +2,7 @@ from django.contrib import admin
 
 # Register your models here.
 
-from .models import project,finance,favorite
+from .models import project,finance,favoriteProject
 
 
 # class favoriteAdmin(admin.ModelAdmin):
@@ -17,4 +17,4 @@ from .models import project,finance,favorite
 
 admin.site.register(project)
 admin.site.register(finance)
-admin.site.register(favorite)
+admin.site.register(favoriteProject)

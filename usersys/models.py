@@ -81,10 +81,10 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     wechat = models.CharField(max_length=64,blank=True,null=True)
     userstatu = models.ForeignKey(AuditStatus,help_text='作者',blank=True,null=True)
     org = models.ForeignKey('org.organization',help_text='所属机构',blank=True,null=True,related_name='org_users',on_delete=models.SET_NULL)
-    nameC = models.CharField(help_text='姓名',max_length=128,db_index=True,blank=True,null=True)
+    nameC = models.CharField(help_text='姓名',max_length=128,db_index=True,blank=True,null=True,)
     nameE = models.CharField(help_text='name',max_length=128,db_index=True,blank=True,null=True)
     mobileAreaCode = models.CharField(max_length=10,blank=True,null=True,default='86')
-    mobile = models.CharField(help_text='手机',max_length=32,db_index=True,blank=True,null=True)
+    mobile = models.CharField(help_text='手机',max_length=32,db_index=True,blank=True,null=True,)
     company = models.CharField(max_length=64,blank=True,null=True)
     description = models.TextField(help_text='简介',blank=True,default='description')
     tags = models.ManyToManyField(Tag, through='userTags', through_fields=('user', 'tag'), blank=True)
@@ -121,7 +121,6 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
         permissions = (
             ('as_investoruser', u'投资人身份'),
             ('as_traderuser', u'交易师身份'),
-            ('as_supporteruser', u'项目方身份'),
             ('as_adminuser', u'管理员身份'),
 
             ('user_adduser', u'用户新增用户'),

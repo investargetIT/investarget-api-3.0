@@ -2,22 +2,38 @@
 from django.conf.urls import url
 import views
 
-# user_relationshiplist = views.UserRelationView.as_view({
-#         'get': 'list',
-#         'post': 'create',
-#         'put': 'update',         #（批量）
-#         'delete': 'destroy',     #（批量）
+timelines = views.TimelineView.as_view({
+        'get': 'list',
+        # 'post': 'create',
+        'put': 'update',
+        # 'delete': 'destroy',     #（批量）
+})
+timeline_detail = views.TimelineView.as_view({
+
+    'put': 'update',
+})
+
+# user_timeline = views.TimelineView.as_view({
+#         'get': 'usertimelinelist',
+#
 # })
-# detail_relationone = views.UserRelationView.as_view({
-#         'get': 'retrieve',
+# proj_timeline = views.TimelineView.as_view({
+#         'get': 'projtimelinelist',
+#
 # })
+
+
+
+timelineremark = views.TimeLineRemarkView.as_view({
+        'get': 'retrieve',
+})
 
 
 
 
 urlpatterns = [
-    # url(r'^$', user_list,name='user-list',),
-    # url(r'^(?P<pk>\d+)/$', user_detail,name='user-one'),
+    url(r'^$', timelines,name='timeline-list',),
+    url(r'^(?P<pk>\d+)/$', timeline_detail,name='timeline-detail'),
     # url(r'^detail/(?P<pk>\d+)/$', user_detailinfo,name='user-detailinfo'),
     # url(r'^password/$', find_password ,name='find-password'),
     # url(r'^password/(?P<pk>\d+)/$', change_password ,name='change-password'),

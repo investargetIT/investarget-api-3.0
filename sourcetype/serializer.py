@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from sourcetype.models import TransactionType, TransactionPhases, Specialty, School, OrgArea, Tag, Industry, CurrencyType, \
     AuditStatus, ProjectStatus, OrgType, FavoriteType, MessageType, ClientType, TitleType, Continent, Country, \
-    DataSource
+    DataSource, TransactionStatus
 
 
 class AuditStatusSerializer(serializers.ModelSerializer):
@@ -99,6 +99,11 @@ class transactionPhasesSerializer(serializers.ModelSerializer):
 class transactionTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = TransactionType
+        fields = '__all__'
+
+class transactionStatuSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TransactionStatus
         fields = '__all__'
 
 
