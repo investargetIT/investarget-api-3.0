@@ -10,10 +10,8 @@ from django.db import transaction,models
 # Create your views here.
 from django.db.models import Q
 from django.db.models import QuerySet
-from django.db.models.fields.reverse_related import ForeignObjectRel
 from guardian.shortcuts import assign_perm
 from rest_framework import filters
-from rest_framework import status
 from rest_framework import viewsets
 
 from rest_framework.decorators import api_view, detail_route, list_route
@@ -28,6 +26,19 @@ from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable,\
 
 
 class UserView(viewsets.ModelViewSet):
+    """
+    list:用户列表
+    create:注册用户
+    adduser:新增用户
+    retrieve:查看某一用户基本信息
+    getdetailinfo:查看某一用户详细信息
+    findpassword:找回密码
+    changepassword:修改密码
+    resetpassword:重置密码
+    update:修改用户信息
+    destroy:删除用户
+
+    """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = MyUser.objects.filter(is_deleted=False)
     filter_fields = ('mobile','email','nameC','id','groups','org')
@@ -76,6 +87,11 @@ class UserView(viewsets.ModelViewSet):
 
     @loginTokenIsAvailable(['usersys.admin_getuser'])
     def list(self, request, *args, **kwargs):
+        """
+        This text is the description for this API
+        param1 -- A first parameter
+        param2 -- A second parameter
+        """
         page_size = request.GET.get('page_size')
         page_index = request.GET.get('page_index')#从第一页开始
         lang = request.GET.get('lang')
@@ -285,6 +301,7 @@ class UserView(viewsets.ModelViewSet):
                     userserializer = CreatUserSerializer(user, data=data)
                     if userserializer.is_valid():
                         user = userserializer.save()
+                        cache_delete_key(self.redis_key + '_%s' % user.id)
                         if tags:
                             taglist = Tag.objects.in_bulk(tags)
                             addlist = [item for item in taglist if item not in user.tags.all()]
@@ -321,8 +338,7 @@ class UserView(viewsets.ModelViewSet):
                         pass
                     else:
                         raise InvestError(code=2009)
-                    rel_fileds = [f for f in instance._meta.get_fields() if isinstance(f, ForeignObjectRel)]
-                    links = [f.get_accessor_name() for f in rel_fileds]
+                    links = ['investor_relations','trader_relations','investor_timelines','supporter_timelines','trader_timelines']
                     for link in links:
                         manager = getattr(instance, link, None)
                         if not manager:
@@ -343,6 +359,8 @@ class UserView(viewsets.ModelViewSet):
                     instance.deleteduser = request.user
                     instance.deletedtime = datetime.datetime.now()
                     instance.save()
+                    instance.user_usertags.all().update(is_deleted=True)
+                    cache_delete_key(self.redis_key + '_%s' % instance.id)
                     userlist.append(UserSerializer(instance).data)
                 response = {'success': True, 'result': returnListChangeToLanguage(userlist,lang), 'errorcode':1000,'errormsg':None}
                 return JSONResponse(response)
@@ -384,6 +402,7 @@ class UserView(viewsets.ModelViewSet):
             with transaction.atomic():
                 user.set_password(password)
                 user.save(update_fields=['password'])
+                cache_delete_key(self.redis_key + '_%s' % user.id)
                 return JSONResponse({'success': True, 'result': password, 'errorcode':1000,'errormsg':None})
         except InvestError as err:
             return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
@@ -411,6 +430,7 @@ class UserView(viewsets.ModelViewSet):
             with transaction.atomic():
                 user.set_password(password)
                 user.save(update_fields=['password'])
+                cache_delete_key(self.redis_key + '_%s' % user.id)
                 return JSONResponse({'success': True, 'result': password, 'errorcode':1000,'errormsg':None})
         except InvestError as err:
             return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
@@ -427,6 +447,7 @@ class UserView(viewsets.ModelViewSet):
             with transaction.atomic():
                 user.set_password('Aa123456')
                 user.save(update_fields=['password'])
+                cache_delete_key(self.redis_key + '_%s' % user.id)
                 return JSONResponse({'success': True, 'result': 'Aa123456','errorcode':1000,'errormsg':None})
         except InvestError as err:
             return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
@@ -629,6 +650,7 @@ class UserRelationView(viewsets.ModelViewSet):
 
 @api_view(['POST'])
 def login(request):
+    """用户登录 """
     try:
         receive = request.data
         lang = request.GET.get('lang')

@@ -6,8 +6,7 @@ from django.db.models import Q,QuerySet
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models.fields.reverse_related import ForeignObjectRel
 from guardian.shortcuts import assign_perm
-from rest_framework import filters
-from rest_framework import viewsets
+from rest_framework import filters, viewsets
 import datetime
 from proj.models import project, finance, projectTags, projectIndustries, projectTransactionType, favoriteProject
 from proj.serializer import ProjSerializer, FinanceSerializer, ProjCreatSerializer, \
@@ -20,7 +19,7 @@ from utils.myClass import JSONResponse, InvestError
 
 
 class ProjectView(viewsets.ModelViewSet):
-    filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
+    filter_backends = (filters.DjangoFilterBackend,)
     queryset = project.objects.all().filter(is_deleted=False)
     filter_fields = ('titleC', 'titleE','isoverseasproject')
     serializer_class = ProjSerializer

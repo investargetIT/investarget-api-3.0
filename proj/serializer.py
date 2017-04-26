@@ -33,7 +33,7 @@ class ProjFinanceSerializer(serializers.ModelSerializer):
 
 
 
-class ProjSe0rializer(serializers.ModelSerializer):
+class ProjSerializer(serializers.ModelSerializer):
     supportUser = UserCommenSerializer(project.supportUser)
     proj_finances = ProjFinanceSerializer(many=True)
     class Meta:
