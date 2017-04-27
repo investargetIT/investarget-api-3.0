@@ -23,7 +23,6 @@ def read_from_cache(key):
 def write_to_cache(key ,value):
     cache.set(key, value, REDIS_TIMEOUT)
 
-
 #删除
 def cache_clearALL():
     cache.clear()

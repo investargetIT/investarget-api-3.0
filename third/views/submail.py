@@ -1,13 +1,41 @@
 #coding=utf-8
 import json
-from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.app_configs import MAIL_CONFIGS, MESSAGE_CONFIGS
+import traceback
+
+from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.app_configs import MAIL_CONFIGS, MESSAGE_CONFIGS, \
+    INTERNATIONALMESSAGE_CONFIGS
 from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.mail_xsend import MAILXsend
 from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.message_xsend import MESSAGEXsend
+from rest_framework.decorators import api_view
+
+from third.models import MobileAuthCode
+from utils.myClass import JSONResponse, InvestError
+
+'''
+（海拓）注册短信验证码模板
+'''
+SMSCODE_projectsign = 'WzSYg'
 
 
-def sendEmail(destination,content,title):
 
+@api_view(['POST'])
+def sendEmail(request):
+    try:
+        destination = request.data.get('destination')
+        projectsign = 'evsM7'
+        varsdict = {'NameC':'c','NameE':'e'}
+        response = xsendEmail(destination,projectsign,varsdict)
+        if response.get('status'):
+            return JSONResponse({'success': True, 'result': response, 'errorcode': 1000,'errormsg': None})
+        else:
+            raise InvestError(code=3002,msg=response)
+    except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+    except Exception:
+        return JSONResponse(
+            {'success': False, 'result': None, 'errorcode': 9999, 'errormsg': traceback.format_exc().split('\n')[-2]})
 
+def xsendEmail(destination,projectsign,vars=None):
     '''
     init MESSAGEXsend class
     '''
@@ -19,7 +47,7 @@ def sendEmail(destination,content,title):
     The second para: recipient name(optional)
     @Multi-para
     '''
-    submail.add_to('leo@submail.cn', 'leo')
+    submail.add_to(destination,)
 
     '''
     Optional para
@@ -48,28 +76,29 @@ def sendEmail(destination,content,title):
     set email subject
     '''
     # submail.set_subject('test SDK')
-
     '''
     Required para
     set project sign
     '''
-    submail.set_project('uigGk1')
+    submail.set_project(projectsign)
 
     '''
     Optional para
     submail email text content filter
     @Multi-para
     '''
-    submail.add_var('name', 'leo')
-    submail.add_var('age', '32')
+    if vars:
+        submail.vars = vars
+    # submail.add_var('NameC', 'c')
+    # submail.add_var('NameE', 'e')
 
     '''
     Optional para
     submail email link content filter
     @Multi-para
     '''
-    submail.add_link('developer', 'http://submail.cn/chs/developer')
-    submail.add_link('store', 'http://submail.cn/chs/store')
+    # submail.add_link('developer', 'http://submail.cn/chs/developer')
+    # submail.add_link('store', 'http://submail.cn/chs/store')
 
     '''
     Optional para
@@ -78,8 +107,58 @@ def sendEmail(destination,content,title):
     '''
     submail.add_header('X-Accept', 'zh-cn')
     submail.add_header('X-Mailer', 'leo App')
-    submail.xsend()
-def sendSms(destination,content,title):
+    response = submail.xsend()
+    return response
+
+
+@api_view(['POST'])
+def sendSmscode(request):
+    try :
+        destination = request.data.get('destination')
+        mobilecode = MobileAuthCode(mobile=destination)
+        mobilecode.save()
+        varsdict = {'code': mobilecode.code, 'time': '10'}
+        response = xsendSms(destination, SMSCODE_projectsign, varsdict)
+        success = response.get('status',None)
+        if success:
+            response['smstoken'] = mobilecode.token
+            return JSONResponse({'success': True, 'result':response, 'errorcode': 1000,'errormsg': None})
+        else:
+            raise InvestError(code=30011,msg=response)
+    except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+    except Exception:
+        return JSONResponse(
+            {'success': False, 'result': None, 'errorcode': 9999, 'errormsg': traceback.format_exc().split('\n')[-2]})
+
+@api_view(['POST'])
+def checkSmsCode(request):
+    try :
+        data = request.data
+        mobilecode = data.pop('mobilecode', None)
+        mobilecodetoken = data.pop('mobilecodetoken', None)
+        mobile = data.pop('mobile',None)
+        if mobile and mobilecode and mobilecodetoken:
+            try:
+                mobileauthcode = MobileAuthCode.objects.get(mobile=mobile, code=mobilecode, token=mobilecodetoken)
+            except MobileAuthCode.DoesNotExist:
+                raise InvestError(code=2005)
+            else:
+                if mobileauthcode.isexpired():
+                    raise InvestError(code=20051)
+            return JSONResponse({'success': True, 'result':'验证成功', 'errorcode': 1000,'errormsg': None})
+        else:
+            raise InvestError(code=20072)
+    except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+    except Exception:
+        return JSONResponse(
+            {'success': False, 'result': None, 'errorcode': 9999, 'errormsg': traceback.format_exc().split('\n')[-2]})
+
+
+
+
+def xsendSms(destination,projectsign,vars=None):
     submail = MESSAGEXsend(MESSAGE_CONFIGS)
 
     '''
@@ -87,7 +166,7 @@ def sendSms(destination,content,title):
     recipient cell phone number
     @Multi-para
     '''
-    submail.add_to('18616761881')
+    submail.add_to(destination)
 
     '''
     Optional para
@@ -101,15 +180,76 @@ def sendSms(destination,content,title):
     Required para
     set message project sign
     '''
-    submail.set_project('kZ9Ky3')
+    submail.set_project(projectsign)
 
     '''
     Optional para
     submail email text content filter
     @Multi-para
     '''
-    submail.add_var('code', '198276')
-    submail.xsend()
+    if vars:
+        submail.vars = vars
+    # submail.add_var('code', '198276')
 
-def sendInternationalsms(destination,content,title):
-    pass
+    response = submail.xsend()
+    return response
+
+
+@api_view(['POST'])
+def sendInternationalsmscode(request):
+    try :
+        destination = request.data.get('destination')
+        mobilecode = MobileAuthCode(mobile=destination)
+        mobilecode.save()
+        varsdict = {'code': mobilecode.code, 'time': '10'}
+        response = xsendInternationalsms(destination, SMSCODE_projectsign, varsdict)
+        success = response.get('status',None)
+        if success:
+            response['smstoken'] = mobilecode.token
+            return JSONResponse(
+                {'success': True, 'result':response, 'errorcode': 1000,
+                 'errormsg': None})
+        else:
+            raise InvestError(code=30012,msg=response)
+    except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+    except Exception:
+        return JSONResponse(
+            {'success': False, 'result': None, 'errorcode': 9999, 'errormsg': traceback.format_exc().split('\n')[-2]})
+
+
+def xsendInternationalsms(destination, projectsign, vars=None):
+    submail = MESSAGEXsend(INTERNATIONALMESSAGE_CONFIGS)
+
+    '''
+    Optional para
+    recipient cell phone number
+    @Multi-para
+    '''
+    submail.add_to(destination)
+
+    '''
+    Optional para
+    set addressbook sign : Optional
+    add addressbook contacts to Multi-Recipients
+    @Multi-para
+    '''
+    # submail.add_address_book('subscribe')
+
+    '''
+    Required para
+    set message project sign
+    '''
+    submail.set_project(projectsign)
+
+    '''
+    Optional para
+    submail email text content filter
+    @Multi-para
+    '''
+    if vars:
+        submail.vars = vars
+    # submail.add_var('code', '198276')
+
+    response = submail.xsend()
+    return response

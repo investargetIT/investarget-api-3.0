@@ -5,17 +5,25 @@ from django.core.paginator import Paginator, EmptyPage
 from django.db import models
 from django.db import transaction
 from django.db.models import Q,QuerySet, FieldDoesNotExist
+from guardian.shortcuts import assign_perm
 from rest_framework import filters, viewsets
 
 from timeline.models import timeline, timelineTransationStatu, timelineremark
 from timeline.serializer import TimeLineSerializer, TimeLineStatuSerializer, TimeLineCreateSerializer, \
-    TimeLineHeaderListSerializer, TimeLineStatuCreateSerializer
+    TimeLineHeaderListSerializer, TimeLineStatuCreateSerializer, TimeLineRemarkSerializer
 from utils.myClass import InvestError, JSONResponse
 from utils.util import read_from_cache, write_to_cache, returnListChangeToLanguage, loginTokenIsAvailable, \
     returnDictChangeToLanguage, catchexcption, cache_delete_key
 import datetime
 
 class TimelineView(viewsets.ModelViewSet):
+    """
+    list:时间轴列表
+    create:新建时间轴
+    retrieve:查看某一时间轴信息
+    update:修改时间轴信息
+    destroy:删除时间轴
+    """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = timeline.objects.all().filter(is_deleted=False)
     filter_fields = ('proj', 'investor','trader','supporter','isClose')
@@ -23,9 +31,7 @@ class TimelineView(viewsets.ModelViewSet):
     redis_key = 'timeline'
     Model = timeline
 
-    def get_queryset(self):
-        if self.request.user.is_anonymous:
-            raise InvestError(code=8889)
+    def get_queryset(self,datasource=None):
         assert self.queryset is not None, (
             "'%s' should either include a `queryset` attribute, "
             "or override the `get_queryset()` method."
@@ -33,7 +39,7 @@ class TimelineView(viewsets.ModelViewSet):
         )
         queryset = self.queryset
         if isinstance(queryset, QuerySet):
-            queryset = queryset.filter(datasource=self.request.user.datasource)
+            queryset = queryset.filter(datasource=datasource)
         else:
             raise InvestError(code=8890)
         return queryset
@@ -234,15 +240,20 @@ class TimelineView(viewsets.ModelViewSet):
 
 
 class TimeLineRemarkView(viewsets.ModelViewSet):
+    """
+        list:时间轴备注列表
+        create:新建时间轴备注
+        retrieve:查看某一时间轴信息
+        update:修改时间轴信息
+        destroy:删除时间轴
+        """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = timelineremark.objects.all().filter(is_deleted=False)
     filter_fields = ('timeline',)
     serializer_class = TimeLineStatuSerializer
 
 
-    def get_queryset(self):
-        if self.request.user.is_anonymous:
-            raise InvestError(code=8889)
+    def get_queryset(self,datasource=None):
         assert self.queryset is not None, (
             "'%s' should either include a `queryset` attribute, "
             "or override the `get_queryset()` method."
@@ -250,7 +261,7 @@ class TimeLineRemarkView(viewsets.ModelViewSet):
         )
         queryset = self.queryset
         if isinstance(queryset, QuerySet):
-            queryset = queryset.filter(datasource=self.request.user.datasource)
+            queryset = queryset.filter(datasource=datasource)
         else:
             raise InvestError(code=8890)
         return queryset
@@ -273,12 +284,147 @@ class TimeLineRemarkView(viewsets.ModelViewSet):
         if not page_index:
             page_index = 1
         queryset = self.filter_queryset(self.get_queryset())
+        if request.user.has_perm('timeline.admin_getlineremark'):
+            queryset = queryset
+        else:
+            queryset = queryset.filter(createuser_id=request.user.id)
         try:
             queryset = Paginator(queryset, page_size)
         except EmptyPage:
             return JSONResponse({'success': True, 'result': [], 'errorcode': 1000, 'errormsg': None})
         queryset = queryset.page(page_index)
-        serializer = TimeLineHeaderListSerializer(queryset, many=True)
+        serializer = TimeLineRemarkSerializer(queryset, many=True)
         return JSONResponse(
             {'success': True, 'result': returnListChangeToLanguage(serializer.data, lang), 'errorcode': 1000,
              'errormsg': None})
+
+    def get_timeline(self,id):
+        if self.request.user.is_anonymous:
+            raise InvestError(code=8889)
+        try:
+            line = timeline.objects.get(id=id,is_deleted=False,datasource=self.request.user.datasource)
+        except timeline.DoesNotExist:
+            raise InvestError(code=5002)
+        else:
+            return line
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        lang = request.GET.get('lang')
+        timelineid = data.get('timeline', None)
+        if timelineid:
+            line = self.get_timeline(timelineid)
+            if request.user.has_perm('timeline.admin_addlineremark'):
+                pass
+            elif request.user.has_perm('timeline.user_addlineremark', line):
+                pass
+            else:
+                raise InvestError(code=2009)
+        else:
+            raise InvestError(code=20072)
+        data['createuser'] = request.user.id
+        data['datasource'] = request.user.datasource.id
+        try:
+            with transaction.atomic():
+                timeLineremarkserializer = TimeLineRemarkSerializer(data=data)
+                if timeLineremarkserializer.is_valid():
+                    timeLineremark = timeLineremarkserializer.save()
+                else:
+                    raise InvestError(code=20071,
+                                      msg='data有误_%s\n%s' % (
+                                          timeLineremarkserializer.error_messages, timeLineremarkserializer.errors))
+                if timeLineremark.createuser:
+                    assign_perm('timeline.user_getlineremark', timeLineremark.createuser, timeLineremark)
+                    assign_perm('timeline.user_changelineremark', timeLineremark.createuser, timeLineremark)
+                    assign_perm('timeline.user_deletelineremark', timeLineremark.createuser, timeLineremark)
+                return JSONResponse(
+                    {'success': True, 'result': returnDictChangeToLanguage(timeLineremarkserializer.data, lang),
+                     'errorcode': 1000, 'errormsg': None})
+        except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+        except Exception:
+            catchexcption(request)
+            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
+                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+
+    @loginTokenIsAvailable()
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            remark = self.get_object()
+            if request.user.has_perm('timeline.admin_getlineremark'):
+                timeLineremarkserializer = TimeLineRemarkSerializer
+            elif request.user.has_perm('timeline.user_getlineremark', remark):
+                timeLineremarkserializer = TimeLineRemarkSerializer
+            else:
+                raise InvestError(code=2009)
+            serializer = timeLineremarkserializer(remark)
+            return JSONResponse(
+                {'success': True, 'result': returnDictChangeToLanguage(serializer.data, lang), 'errorcode': 1000,
+                 'errormsg': None})
+        except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+        except Exception:
+            catchexcption(request)
+            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
+                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            remark = self.get_object()
+            lang = request.GET.get('lang')
+            if request.user.has_perm('timeline.admin_changelineremark'):
+                pass
+            elif request.user.has_perm('timeline.user_changelineremark', remark):
+                pass
+            else:
+                raise InvestError(code=2009)
+            data = request.data
+            data['lastmodifyuser'] = request.user.id
+            data['lastmodifytime'] = datetime.datetime.now()
+            with transaction.atomic():
+                serializer = TimeLineRemarkSerializer(remark, data=data)
+                if serializer.is_valid():
+                    newremark = serializer.save()
+                else:
+                    raise InvestError(code=20071,
+                                      msg='data有误_%s\n%s' % (serializer.error_messages, serializer.errors))
+                return JSONResponse(
+                    {'success': True, 'result': returnDictChangeToLanguage(TimeLineRemarkSerializer(newremark).data, lang),
+                     'errorcode': 1000, 'errormsg': None})
+        except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+        except Exception:
+            catchexcption(request)
+            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
+                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+
+            if request.user.has_perm('timeline.admin_deletelineremark'):
+                pass
+            elif request.user.has_perm('timeline.user_deletelineremark', instance):
+                pass
+            else:
+                raise InvestError(code=2009, msg='没有权限')
+            with transaction.atomic():
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
+                response = {'success': True,
+                            'result': returnDictChangeToLanguage(TimeLineRemarkSerializer(instance).data, lang),
+                            'errorcode': 1000, 'errormsg': None}
+                return JSONResponse(response)
+        except InvestError as err:
+            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+        except Exception:
+            catchexcption(request)
+            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
+                                 'errormsg': traceback.format_exc().split('\n')[-2]})

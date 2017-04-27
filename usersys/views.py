@@ -3,6 +3,7 @@ import traceback
 
 import datetime
 from django.contrib import auth
+from django.core.cache import cache
 from django.core.exceptions import FieldDoesNotExist
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction,models
@@ -15,7 +16,9 @@ from rest_framework import filters
 from rest_framework import viewsets
 
 from rest_framework.decorators import api_view, detail_route, list_route
-from usersys.models import MyUser, MyToken, UserRelation, userTags, MobileAuthCode
+
+from third.models import MobileAuthCode
+from usersys.models import MyUser, MyToken, UserRelation, userTags
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
     CreatUserSerializer , UserCommenSerializer , UserRelationDetailSerializer
 from sourcetype.models import Tag, DataSource
@@ -41,14 +44,12 @@ class UserView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = MyUser.objects.filter(is_deleted=False)
-    filter_fields = ('mobile','email','nameC','id','groups','org')
+    filter_fields = ('mobile','email','nameC','nameE','id','groups','org')
     serializer_class = UserSerializer
     redis_key = 'user'
     Model = MyUser
 
-    def get_queryset(self):
-        if self.request.user.is_anonymous:
-            raise InvestError(code=8889)
+    def get_queryset(self,datasource=None):
         assert self.queryset is not None, (
             "'%s' should either include a `queryset` attribute, "
             "or override the `get_queryset()` method."
@@ -56,7 +57,7 @@ class UserView(viewsets.ModelViewSet):
         )
         queryset = self.queryset
         if isinstance(queryset, QuerySet):
-            queryset = queryset.all().filter(datasource=self.request.user.datasource)
+            queryset = queryset.filter(datasource=datasource)
         else:
             raise InvestError(code=8890)
         return queryset
@@ -128,6 +129,8 @@ class UserView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(code=8888,msg='source field is required')
                 if mobile:
+                    if not mobilecodetoken or not mobilecode:
+                        raise InvestError(code=20072,msg='验证码缺失')
                     try:
                         mobileauthcode = MobileAuthCode.objects.get(mobile=mobile, code=mobilecode, token=mobilecodetoken)
                     except MobileAuthCode.DoesNotExist:
@@ -463,9 +466,7 @@ class UserRelationView(viewsets.ModelViewSet):
     queryset = UserRelation.objects.filter(is_deleted=False)
     serializer_class = UserRelationSerializer
 
-    def get_queryset(self):
-        if self.request.user.is_anonymous:
-            raise InvestError(code=8889)
+    def get_queryset(self,datasource=None):
         assert self.queryset is not None, (
             "'%s' should either include a `queryset` attribute, "
             "or override the `get_queryset()` method."
@@ -473,7 +474,7 @@ class UserRelationView(viewsets.ModelViewSet):
         )
         queryset = self.queryset
         if isinstance(queryset, QuerySet):
-            queryset = queryset.all().filter(datasource=self.request.user.datasource)
+            queryset = queryset.filter(datasource=datasource)
         else:
             raise InvestError(code=8890)
         return queryset
@@ -685,4 +686,6 @@ def login(request):
     except Exception:
             catchexcption(request)
             return JSONResponse({'success': False, 'result': None,'errorcode':9999, 'errormsg': traceback.format_exc().split('\n')[-2]})
+
+
 
