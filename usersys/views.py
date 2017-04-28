@@ -18,14 +18,15 @@ from rest_framework import viewsets
 from rest_framework.decorators import api_view, detail_route, list_route
 
 from third.models import MobileAuthCode
-from usersys.models import MyUser, MyToken, UserRelation, userTags
+from usersys.models import MyUser, MyToken, UserRelation, userTags, MyUserBackend
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
     CreatUserSerializer , UserCommenSerializer , UserRelationDetailSerializer
 from sourcetype.models import Tag, DataSource
 from utils import perimissionfields
 from utils.myClass import JSONResponse, InvestError
 from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable,\
-    catchexcption, cache_delete_key, maketoken, returnDictChangeToLanguage, returnListChangeToLanguage
+    catchexcption, cache_delete_key, maketoken, returnDictChangeToLanguage, returnListChangeToLanguage, SuccessResponse, \
+    InvestErrorResponse, ExceptionResponse
 
 
 class UserView(viewsets.ModelViewSet):
@@ -104,10 +105,10 @@ class UserView(viewsets.ModelViewSet):
         try:
             queryset = Paginator(queryset, page_size)
         except EmptyPage:
-            return JSONResponse({'success':True,'result':[],'errorcode':1000,'errormsg':None})
+            return JSONResponse(SuccessResponse([],msg='没有符合条件的对象'))
         queryset = queryset.page(page_index)
         serializer = UserListSerializer(queryset, many=True)
-        return JSONResponse({'success':True,'result': returnListChangeToLanguage(serializer.data,lang),'errorcode':1000,'errormsg':None})
+        return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
 
     #注册用户(新注册用户没有交易师)
     def create(self, request, *args, **kwargs):
@@ -165,12 +166,12 @@ class UserView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(code=20071,msg='%s\n%s' % (userserializer.error_messages, userserializer.errors))
                 returndic = UserSerializer(user).data
-                return JSONResponse({'success': True, 'result': returnDictChangeToLanguage(returndic,lang), 'errorcode':1000,'errormsg':None})
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(returndic,lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode':err.code,'errormsg':err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None,'errorcode':9999, 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     # 新增用户
     @loginTokenIsAvailable()
@@ -216,13 +217,12 @@ class UserView(viewsets.ModelViewSet):
                     assign_perm('usersys.user_getuser', user.createuser, user)
                     assign_perm('usersys.user_changeuser', user.createuser, user)
                     assign_perm('usersys.user_deleteuser', user.createuser, user)
-                return JSONResponse({'success': True, 'result': returnDictChangeToLanguage(UserSerializer(user).data), 'errorcode': 1000,'errormsg':None})
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(UserSerializer(user).data)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     #get
     @loginTokenIsAvailable()
@@ -240,12 +240,12 @@ class UserView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(code=2009)
             serializer = userserializer(user)
-            return JSONResponse({'success':True,'result': returnDictChangeToLanguage(serializer.data,lang),'errorcode':1000,'errormsg':None})
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @detail_route(methods=['get'])
     @loginTokenIsAvailable()
@@ -265,14 +265,12 @@ class UserView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(code=2009)
             serializer = userserializer(user)
-            response = {'success': True, 'result': returnDictChangeToLanguage(serializer.data,lang), 'errorcode':1000,'errormsg':None}
-            return JSONResponse(response)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     #put
     @loginTokenIsAvailable()
@@ -317,13 +315,12 @@ class UserView(viewsets.ModelViewSet):
                     else:
                         raise InvestError(code=20071,msg='userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
                     userlist.append(userserializer.data)
-                return JSONResponse({'success': True, 'result': returnListChangeToLanguage(userlist,lang), 'errorcode':1000,'errormsg':None})
+                return JSONResponse(SuccessResponse(returnListChangeToLanguage(userlist,lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     #delete
     @loginTokenIsAvailable()
@@ -365,14 +362,12 @@ class UserView(viewsets.ModelViewSet):
                     instance.user_usertags.all().update(is_deleted=True)
                     cache_delete_key(self.redis_key + '_%s' % instance.id)
                     userlist.append(UserSerializer(instance).data)
-                response = {'success': True, 'result': returnListChangeToLanguage(userlist,lang), 'errorcode':1000,'errormsg':None}
-                return JSONResponse(response)
+                return JSONResponse(SuccessResponse(returnListChangeToLanguage(userlist,lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @list_route(methods=['post'])
     def findpassword(self, request, *args, **kwargs):
@@ -406,13 +401,12 @@ class UserView(viewsets.ModelViewSet):
                 user.set_password(password)
                 user.save(update_fields=['password'])
                 cache_delete_key(self.redis_key + '_%s' % user.id)
-                return JSONResponse({'success': True, 'result': password, 'errorcode':1000,'errormsg':None})
+                return JSONResponse(SuccessResponse(password))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @detail_route(methods=['put'])
     @loginTokenIsAvailable()
@@ -434,13 +428,12 @@ class UserView(viewsets.ModelViewSet):
                 user.set_password(password)
                 user.save(update_fields=['password'])
                 cache_delete_key(self.redis_key + '_%s' % user.id)
-                return JSONResponse({'success': True, 'result': password, 'errorcode':1000,'errormsg':None})
+                return JSONResponse(SuccessResponse(password))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @detail_route(methods=['get'])
     @loginTokenIsAvailable(['usersys.admin_changeuser'])
@@ -451,13 +444,12 @@ class UserView(viewsets.ModelViewSet):
                 user.set_password('Aa123456')
                 user.save(update_fields=['password'])
                 cache_delete_key(self.redis_key + '_%s' % user.id)
-                return JSONResponse({'success': True, 'result': 'Aa123456','errorcode':1000,'errormsg':None})
+                return JSONResponse(SuccessResponse('Aa123456'))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
 class UserRelationView(viewsets.ModelViewSet):
@@ -496,14 +488,14 @@ class UserRelationView(viewsets.ModelViewSet):
         elif request.user.has_perm('usersys.as_investoruser'):
             queryset = queryset.filter(investoruser=request.user)
         else:
-            return JSONResponse({'success':False,'result':None,'errorcode':2009,'errormsg':None})
+            return JSONResponse(InvestErrorResponse(InvestError(2009)))
         try:
             queryset = Paginator(queryset, page_size)
         except EmptyPage:
-            return JSONResponse({'success':True,'result':[],'errorcode':1000,'errormsg':None})
+            return JSONResponse(SuccessResponse([],msg='没有符合条件的对象'))
         queryset = queryset.page(page_index)
         serializer = self.get_serializer(queryset, many=True)
-        return JSONResponse({'success':True,'result':returnListChangeToLanguage(serializer.data,lang),'errorcode':1000,'errormsg':None})
+        return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
 
 
     @loginTokenIsAvailable()
@@ -528,16 +520,14 @@ class UserRelationView(viewsets.ModelViewSet):
                     assign_perm('usersys.user_getuserrelation', relation.traderuser, relation)
                     assign_perm('usersys.user_changeuserrelation', relation.traderuser, relation)
                     assign_perm('usersys.user_deleteuserrelation', relation.traderuser, relation)
-                    response = {'success': True, 'result':returnDictChangeToLanguage(newrelation.data,lang),'errorcode':1000,'errormsg':None}
                 else:
                     raise InvestError(code=20071,msg='%s'%newrelation.errors)
-                return JSONResponse(response)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(newrelation.data,lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     def get_object(self,pk=None):
         if pk:
@@ -580,13 +570,12 @@ class UserRelationView(viewsets.ModelViewSet):
             else:
                 raise InvestError(code=2009)
             serializer = UserRelationSerializer(userrelation)
-            response = {'success':True,'result': returnDictChangeToLanguage(serializer.data,lang),'errorcode':1000,'errormsg':None}
-            return JSONResponse(response)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
@@ -613,13 +602,12 @@ class UserRelationView(viewsets.ModelViewSet):
                         newrelation.save()
                     else:
                         raise InvestError(code=20071,msg=newrelation.errors)
-                return JSONResponse({'success': True, 'result':returnListChangeToLanguage(UserRelationSerializer(relationlist,many=True).data,lang), 'errorcode':1000,'errormsg':None})
+                return JSONResponse(SuccessResponse(returnListChangeToLanguage(UserRelationSerializer(relationlist,many=True).data,lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
@@ -639,14 +627,12 @@ class UserRelationView(viewsets.ModelViewSet):
                     userrelation.deleteduser = request.user
                     userrelation.deletedtime = datetime.datetime.now()
                     userrelation.save()
-                response = {'success': True, 'result': returnListChangeToLanguage(UserRelationSerializer(relationlist,many=True),lang).data,'errorcode':1000,'errormsg':None}
-                return JSONResponse(response)
+                return JSONResponse(SuccessResponse(returnListChangeToLanguage(UserRelationSerializer(relationlist,many=True),lang).data))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
 @api_view(['POST'])
@@ -680,12 +666,12 @@ def login(request):
             user.is_active = True
         user.save()
         response = maketoken(user, clienttype)
-        return JSONResponse({"result": returnDictChangeToLanguage(response,lang), "success": True, 'errorcode':1000,'errormsg':None})
+        return JSONResponse(SuccessResponse(returnDictChangeToLanguage(response,lang)))
     except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode':err.code,'errormsg':err.msg})
-    except Exception:
-            catchexcption(request)
-            return JSONResponse({'success': False, 'result': None,'errorcode':9999, 'errormsg': traceback.format_exc().split('\n')[-2]})
+        return JSONResponse(InvestErrorResponse(err))
+    except Exception as errs:
+        catchexcption(request)
+        return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
 

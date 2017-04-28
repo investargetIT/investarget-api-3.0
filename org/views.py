@@ -14,10 +14,17 @@ from org.serializer import OrgSerializer, OrgCommonSerializer, OrgDetailSerializ
 from sourcetype.models import TransactionPhases
 from utils.myClass import InvestError, JSONResponse
 from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, returnListChangeToLanguage, \
-    returnDictChangeToLanguage
+    returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse
 from django.db import transaction,models
 
 class OrganizationView(viewsets.ModelViewSet):
+    """
+    list:获取机构列表
+    create:新增机构
+    retrieve:查看机构详情
+    update:修改机构信息
+    destroy:删除机构
+    """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = organization.objects.filter(is_deleted=False)
     filter_fields = ('id','nameC','orgcode','auditStatu',)
@@ -80,14 +87,14 @@ class OrganizationView(viewsets.ModelViewSet):
         try:
             queryset = Paginator(queryset, page_size)
         except EmptyPage:
-            return JSONResponse({'success': True, 'result': [], 'errorcode': 1000, 'errormsg': None})
+            return JSONResponse(SuccessResponse([],msg='没有符合条件的结果'))
         queryset = queryset.page(page_index)
         if request.user.has_perm('org.admin_getorg'):
             serializerclass = OrgDetailSerializer
         else:
             serializerclass = OrgCommonSerializer
         serializer = serializerclass(queryset, many=True)
-        return JSONResponse({'success': True, 'result': returnListChangeToLanguage(serializer.data,lang), 'errorcode': 1000, 'errormsg': None})
+        return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
 
     @loginTokenIsAvailable(['org.admin_addorg','org.user_addorg'])
     def create(self, request, *args, **kwargs):
@@ -114,14 +121,13 @@ class OrganizationView(viewsets.ModelViewSet):
                     assign_perm('org.user_getorg', org.createuser, org)
                     assign_perm('org.user_changeorg', org.createuser, org)
                     assign_perm('org.user_deleteorg', org.createuser, org)
-                return JSONResponse(
-                    {'success': True, 'result': returnDictChangeToLanguage(OrgSerializer(org).data,lang), 'errorcode': 1000, 'errormsg': None})
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgSerializer(org).data,lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
     @loginTokenIsAvailable()
     def retrieve(self, request, *args, **kwargs):
         try:
@@ -132,12 +138,12 @@ class OrganizationView(viewsets.ModelViewSet):
             else:
                 orgserializer = OrgCommonSerializer
             serializer = orgserializer(org)
-            return JSONResponse({'success':True,'result': returnDictChangeToLanguage(serializer.data,lang),'errorcode':1000,'errormsg':None})
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
     @loginTokenIsAvailable()
@@ -173,14 +179,12 @@ class OrganizationView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(code=20071,
                                       msg='data有误_%s\n%s' % (orgserializer.error_messages, orgserializer.errors))
-                return JSONResponse(
-                    {'success': True, 'result': returnDictChangeToLanguage(OrgSerializer(org).data,lang), 'errorcode': 1000, 'errormsg': None})
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgSerializer(org).data,lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable(['org.admin_deleteorg',])
     def destroy(self, request, *args, **kwargs):
@@ -216,20 +220,24 @@ class OrganizationView(viewsets.ModelViewSet):
                 instance.deleteduser = request.user
                 instance.deletetime = datetime.datetime.utcnow()
                 instance.save()
-                response = {'success': True, 'result': returnDictChangeToLanguage(OrgDetailSerializer(instance).data,lang), 'errorcode': 1000,
-                            'errormsg': None}
-                return JSONResponse(response)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgDetailSerializer(instance).data,lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 class OrgRemarkView(viewsets.ModelViewSet):
+    """
+    list:获取机构备注列表
+    create:新增机构备注
+    retrieve:查看机构某条备注详情（id）
+    update:修改机构备注信息（id）
+    destroy:删除机构备注 （id）
+    """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = orgRemarks.objects.filter(is_deleted=False)
-    filter_fields = ('id','org','createuser')
+    filter_fields = ('id','org','createtime','createuser')
     serializer_class = OrgRemarkSerializer
     redis_key = 'orgemark'
     def get_queryset(self):
@@ -304,10 +312,10 @@ class OrgRemarkView(viewsets.ModelViewSet):
         try:
             queryset = Paginator(queryset, page_size)
         except EmptyPage:
-            return JSONResponse({'success': True, 'result': [], 'errorcode': 1000, 'errormsg': None})
+            return JSONResponse(SuccessResponse([],msg='没有符合条件的结果'))
         queryset = queryset.page(page_index)
         serializer = OrgRemarkSerializer(queryset, many=True)
-        return JSONResponse({'success': True, 'result': returnListChangeToLanguage(serializer.data,lang), 'errorcode': 1000, 'errormsg': None})
+        return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
 
     @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
@@ -338,14 +346,12 @@ class OrgRemarkView(viewsets.ModelViewSet):
                     assign_perm('org.user_getorgremark', orgremark.createuser, orgremark)
                     assign_perm('org.user_changeorgremark', orgremark.createuser, orgremark)
                     assign_perm('org.user_deleteorgremark', orgremark.createuser, orgremark)
-                return JSONResponse(
-                    {'success': True, 'result': returnDictChangeToLanguage(OrgSerializer(orgremark).data,lang), 'errorcode': 1000, 'errormsg': None})
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgSerializer(orgremark).data,lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable()
     def retrieve(self, request, *args, **kwargs):
@@ -359,12 +365,12 @@ class OrgRemarkView(viewsets.ModelViewSet):
             else:
                 raise InvestError(code=2009)
             serializer = orgremarkserializer(orgremark)
-            return JSONResponse({'success':True,'result': returnDictChangeToLanguage(serializer.data,lang),'errorcode':1000,'errormsg':None})
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
@@ -387,14 +393,12 @@ class OrgRemarkView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(code=20071,
                                       msg='data有误_%s\n%s' % (orgserializer.error_messages, orgserializer.errors))
-                return JSONResponse(
-                    {'success': True, 'result': returnDictChangeToLanguage(OrgSerializer(org).data,lang), 'errorcode': 1000, 'errormsg': None})
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgSerializer(org).data,lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
@@ -413,11 +417,9 @@ class OrgRemarkView(viewsets.ModelViewSet):
                 instance.deleteduser = request.user
                 instance.deletedtime = datetime.datetime.now()
                 instance.save()
-                response = {'success': True, 'result': returnDictChangeToLanguage(OrgRemarkDetailSerializer(instance).data,lang),'errorcode':1000,'errormsg':None}
-                return JSONResponse(response)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgRemarkDetailSerializer(instance).data,lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))

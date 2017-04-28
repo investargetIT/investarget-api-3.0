@@ -10,6 +10,7 @@ from rest_framework.decorators import api_view
 
 from third.models import MobileAuthCode
 from utils.myClass import JSONResponse, InvestError
+from utils.util import SuccessResponse, catchexcption, ExceptionResponse, InvestErrorResponse
 
 '''
 （海拓）注册短信验证码模板
@@ -26,14 +27,15 @@ def sendEmail(request):
         varsdict = {'NameC':'c','NameE':'e'}
         response = xsendEmail(destination,projectsign,varsdict)
         if response.get('status'):
-            return JSONResponse({'success': True, 'result': response, 'errorcode': 1000,'errormsg': None})
+            pass
         else:
             raise InvestError(code=3002,msg=response)
+        return JSONResponse(SuccessResponse(response))
     except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
     except Exception:
-        return JSONResponse(
-            {'success': False, 'result': None, 'errorcode': 9999, 'errormsg': traceback.format_exc().split('\n')[-2]})
+        catchexcption(request)
+        return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 def xsendEmail(destination,projectsign,vars=None):
     '''
@@ -122,14 +124,14 @@ def sendSmscode(request):
         success = response.get('status',None)
         if success:
             response['smstoken'] = mobilecode.token
-            return JSONResponse({'success': True, 'result':response, 'errorcode': 1000,'errormsg': None})
         else:
             raise InvestError(code=30011,msg=response)
+        return JSONResponse(SuccessResponse(response))
     except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+        return JSONResponse(InvestErrorResponse(err))
     except Exception:
-        return JSONResponse(
-            {'success': False, 'result': None, 'errorcode': 9999, 'errormsg': traceback.format_exc().split('\n')[-2]})
+        catchexcption(request)
+        return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 @api_view(['POST'])
 def checkSmsCode(request):
@@ -146,14 +148,14 @@ def checkSmsCode(request):
             else:
                 if mobileauthcode.isexpired():
                     raise InvestError(code=20051)
-            return JSONResponse({'success': True, 'result':'验证成功', 'errorcode': 1000,'errormsg': None})
         else:
             raise InvestError(code=20072)
+        return JSONResponse(SuccessResponse('验证通过'))
     except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
     except Exception:
-        return JSONResponse(
-            {'success': False, 'result': None, 'errorcode': 9999, 'errormsg': traceback.format_exc().split('\n')[-2]})
+        catchexcption(request)
+        return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
 
@@ -206,16 +208,14 @@ def sendInternationalsmscode(request):
         success = response.get('status',None)
         if success:
             response['smstoken'] = mobilecode.token
-            return JSONResponse(
-                {'success': True, 'result':response, 'errorcode': 1000,
-                 'errormsg': None})
         else:
             raise InvestError(code=30012,msg=response)
+        return JSONResponse(SuccessResponse(response))
     except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+        return JSONResponse(InvestErrorResponse(err))
     except Exception:
-        return JSONResponse(
-            {'success': False, 'result': None, 'errorcode': 9999, 'errormsg': traceback.format_exc().split('\n')[-2]})
+        catchexcption(request)
+        return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
 def xsendInternationalsms(destination, projectsign, vars=None):

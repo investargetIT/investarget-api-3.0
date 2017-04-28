@@ -13,17 +13,9 @@ class JSONResponse(HttpResponse):
         super(JSONResponse, self).__init__(content , **kwargs)
 
 class InvestError(Exception):
-    def __init__(self, code, msg=None):
-        Exception.__init__(self)
+    def __init__(self, code,msg=None):
         self.code = code
-        if not msg:
-           self.msg = responsecode[self.code]
+        if msg:
+            self.msg = msg
         else:
-           self.msg = msg
-
-
-# class DataSourceFilter(filters.BaseFilterBackend):
-#     def filter_queryset(self, request, queryset, view):
-#         if hasattr(request.user,'datasource') and request.user.datasource:
-#             queryset = queryset.all().filter(datasource=request.user.datasource)
-#         return queryset
+            self.msg = responsecode[str(code)]

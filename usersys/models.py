@@ -16,7 +16,7 @@ from utils.myClass import InvestError
 
 
 class MyUserBackend(ModelBackend):
-    def authenticate(self, username=None, password=None, **kwargs):
+    def authenticate(self, username=None, password=None, datasource=None):
         try:
             if '@' not in username:
                 user = MyUser.objects.get(mobile=username,is_deleted=False,)
@@ -39,8 +39,7 @@ class MyUserBackend(ModelBackend):
         else:
             if user.check_password(password):
                 return user
-            else:
-                raise InvestError(code=2001)
+        return None
 
     def get_user(self, user_id):
         try:

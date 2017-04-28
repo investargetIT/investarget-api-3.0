@@ -13,7 +13,7 @@ from timeline.serializer import TimeLineSerializer, TimeLineStatuSerializer, Tim
     TimeLineHeaderListSerializer, TimeLineStatuCreateSerializer, TimeLineRemarkSerializer
 from utils.myClass import InvestError, JSONResponse
 from utils.util import read_from_cache, write_to_cache, returnListChangeToLanguage, loginTokenIsAvailable, \
-    returnDictChangeToLanguage, catchexcption, cache_delete_key
+    returnDictChangeToLanguage, catchexcption, cache_delete_key, SuccessResponse, InvestErrorResponse, ExceptionResponse
 import datetime
 
 class TimelineView(viewsets.ModelViewSet):
@@ -81,12 +81,10 @@ class TimelineView(viewsets.ModelViewSet):
         try:
             queryset = Paginator(queryset, page_size)
         except EmptyPage:
-            return JSONResponse({'success': True, 'result': [], 'errorcode': 1000, 'errormsg': None})
+            return JSONResponse(SuccessResponse([], msg='没有符合条件的对象'))
         queryset = queryset.page(page_index)
         serializer = TimeLineHeaderListSerializer(queryset, many=True)
-        return JSONResponse(
-            {'success': True, 'result': returnListChangeToLanguage(serializer.data, lang), 'errorcode': 1000,
-             'errormsg': None})
+        return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data, lang)))
 
     @loginTokenIsAvailable(['timeline.admin_addline','timeline.user_addline'])
     def create(self, request, *args, **kwargs):
@@ -107,15 +105,12 @@ class TimelineView(viewsets.ModelViewSet):
                         raise InvestError(code=20071,msg=timelinestatu.errors)
                 else:
                     raise InvestError(code=20071,msg=timelineserializer.errors)
-                return JSONResponse(
-                    {'success': True, 'result': returnDictChangeToLanguage(TimeLineSerializer(timeline).data, lang),
-                     'errorcode': 1000, 'errormsg': None})
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(TimeLineSerializer(timeline).data, lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+                return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable()
     def retrieve(self, request, *args, **kwargs):
@@ -129,15 +124,12 @@ class TimelineView(viewsets.ModelViewSet):
             else:
                 raise InvestError(code=2009)
             serializer = serializerclass(instance)
-            return JSONResponse(
-                {'success': True, 'result': returnDictChangeToLanguage(serializer.data, lang), 'errorcode': 1000,
-                 'errormsg': None})
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data, lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
@@ -178,15 +170,12 @@ class TimelineView(viewsets.ModelViewSet):
                         timelineseria.save()
                     else:
                         raise InvestError(code=20071, msg=timelineseria.errors)
-            return JSONResponse(
-                    {'success': True, 'result': returnDictChangeToLanguage(TimeLineSerializer(timeline).data, lang),
-                     'errorcode': 1000, 'errormsg': None})
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(TimeLineSerializer(timeline).data, lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     # delete
     @loginTokenIsAvailable(['timeline.admin_deleteline'])
@@ -225,15 +214,12 @@ class TimelineView(viewsets.ModelViewSet):
                     instance.timeline_remarks.all().update(is_deleted=True)
                     cache_delete_key(self.redis_key + '_%s' % instance.id)
                     timelinelist.append(TimeLineSerializer(instance).data)
-                response = {'success': True, 'result': returnListChangeToLanguage(timelinelist, lang),
-                            'errorcode': 1000, 'errormsg': None}
-                return JSONResponse(response)
+                return JSONResponse(SuccessResponse(returnListChangeToLanguage(timelinelist, lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
 
@@ -291,12 +277,10 @@ class TimeLineRemarkView(viewsets.ModelViewSet):
         try:
             queryset = Paginator(queryset, page_size)
         except EmptyPage:
-            return JSONResponse({'success': True, 'result': [], 'errorcode': 1000, 'errormsg': None})
+            return JSONResponse(SuccessResponse([],msg='没有符合条件的结果'))
         queryset = queryset.page(page_index)
         serializer = TimeLineRemarkSerializer(queryset, many=True)
-        return JSONResponse(
-            {'success': True, 'result': returnListChangeToLanguage(serializer.data, lang), 'errorcode': 1000,
-             'errormsg': None})
+        return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data, lang)))
 
     def get_timeline(self,id):
         if self.request.user.is_anonymous:
@@ -338,15 +322,12 @@ class TimeLineRemarkView(viewsets.ModelViewSet):
                     assign_perm('timeline.user_getlineremark', timeLineremark.createuser, timeLineremark)
                     assign_perm('timeline.user_changelineremark', timeLineremark.createuser, timeLineremark)
                     assign_perm('timeline.user_deletelineremark', timeLineremark.createuser, timeLineremark)
-                return JSONResponse(
-                    {'success': True, 'result': returnDictChangeToLanguage(timeLineremarkserializer.data, lang),
-                     'errorcode': 1000, 'errormsg': None})
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(timeLineremarkserializer.data, lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable()
     def retrieve(self, request, *args, **kwargs):
@@ -360,15 +341,12 @@ class TimeLineRemarkView(viewsets.ModelViewSet):
             else:
                 raise InvestError(code=2009)
             serializer = timeLineremarkserializer(remark)
-            return JSONResponse(
-                {'success': True, 'result': returnDictChangeToLanguage(serializer.data, lang), 'errorcode': 1000,
-                 'errormsg': None})
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data, lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
@@ -391,15 +369,12 @@ class TimeLineRemarkView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(code=20071,
                                       msg='data有误_%s\n%s' % (serializer.error_messages, serializer.errors))
-                return JSONResponse(
-                    {'success': True, 'result': returnDictChangeToLanguage(TimeLineRemarkSerializer(newremark).data, lang),
-                     'errorcode': 1000, 'errormsg': None})
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(TimeLineRemarkSerializer(newremark).data, lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
@@ -418,13 +393,9 @@ class TimeLineRemarkView(viewsets.ModelViewSet):
                 instance.deleteduser = request.user
                 instance.deletedtime = datetime.datetime.now()
                 instance.save()
-                response = {'success': True,
-                            'result': returnDictChangeToLanguage(TimeLineRemarkSerializer(instance).data, lang),
-                            'errorcode': 1000, 'errormsg': None}
-                return JSONResponse(response)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(TimeLineRemarkSerializer(instance).data, lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))

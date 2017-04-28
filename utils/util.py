@@ -13,7 +13,15 @@ weixinfilepath = '/Users/investarget/Desktop/django_server/third_header/weixin'
 linkedinfilepath = '/Users/investarget/Desktop/django_server/third_header/Linkedin'
 excptionlogpath = '/Users/investarget/Desktop/django_server/excption_log'
 
-
+def SuccessResponse(data,msg=None):
+    response = {'code':1000,'errormsg':msg,'result':data}
+    return response
+def InvestErrorResponse(err):
+    response = {'code': err.code, 'errormsg': err.msg, 'result': None}
+    return response
+def ExceptionResponse(msg):
+    response = {'code':9999, 'errormsg': msg, 'result': None}
+    return response
 
 #读
 def read_from_cache(key):
