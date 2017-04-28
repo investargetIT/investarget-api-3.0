@@ -214,13 +214,18 @@ class ShareToken(models.Model):
     is_deleted = models.BooleanField(help_text='是否已被删除', blank=True, default=False)
 
     class Meta:
-        db_table = 'sharetoken'
+        db_table = 'project_sharetoken'
+        permissions = (
+            ('shareproj','分享项目权限'),
+        )
     def timeout(self):
         return datetime.timedelta(hours=24 * 1) - (datetime.datetime.now() - self.created)
 
     def save(self, *args, **kwargs):
         if not self.key:
             self.key = self.generate_key()
+        if self.user.datasource != self.proj.datasource:
+            raise InvestError(code=8888,msg='来源不匹配')
         return super(ShareToken, self).save(*args, **kwargs)
 
     def generate_key(self):

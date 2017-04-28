@@ -13,8 +13,8 @@ proj_detail = views.ProjectView.as_view({
         'delete': 'destroy'
 })
 
-proj_finance = views.ProjectView.as_view({
-        'get': 'retrieve',
+proj_finance = views.ProjFinanceView.as_view({
+        'get': 'list',
         'post':'create',
         'put': 'update',
         'delete': 'destroy'
@@ -26,12 +26,15 @@ userfavorite_proj = views.ProjectFavoriteView.as_view({
         'delete':'destroy'
 })
 
+getshareprojtoken = views.ProjectView.as_view({
+        'get':'getshareprojtoken'
+})
 
 
 urlpatterns = [
-
         url(r'^$', proj_list , name='proj_list'),
         url(r'^(?P<pk>\d+)/$', proj_detail, name='proj_detail'),
         url(r'^finance/$', proj_finance, name='proj_finance'),
         url(r'^favorite/$' , userfavorite_proj,name='user_favoriteproj'),
+        url(r'^share/(?P<pk>\d+)/$',getshareprojtoken,name='getshareprojtoken')
 ]

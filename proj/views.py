@@ -8,17 +8,29 @@ from django.db.models.fields.reverse_related import ForeignObjectRel
 from guardian.shortcuts import assign_perm
 from rest_framework import filters, viewsets
 import datetime
-from proj.models import project, finance, projectTags, projectIndustries, projectTransactionType, favoriteProject
+
+from rest_framework.decorators import detail_route
+
+from proj.models import project, finance, projectTags, projectIndustries, projectTransactionType, favoriteProject, \
+    ShareToken
 from proj.serializer import ProjSerializer, FinanceSerializer, ProjCreatSerializer, \
     ProjCommonSerializer, FinanceChangeSerializer, FinanceCreateSerializer, FavoriteSerializer, FavoriteCreateSerializer
 from sourcetype.models import Tag, Industry, TransactionType
 from usersys.models import MyUser
 from utils.util import catchexcption, read_from_cache, write_to_cache, loginTokenIsAvailable, returnListChangeToLanguage, \
-    returnDictChangeToLanguage
+    returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse
 from utils.myClass import JSONResponse, InvestError
 
 
 class ProjectView(viewsets.ModelViewSet):
+    """
+    list:获取项目列表
+    create:创建项目
+    retrieve:获取项目详情
+    update:修改项目
+    destroy:删除项目
+    getshareprojtoken:获取分享项目token
+    """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = project.objects.all().filter(is_deleted=False)
     filter_fields = ('titleC', 'titleE','isoverseasproject')
@@ -78,7 +90,7 @@ class ProjectView(viewsets.ModelViewSet):
         try:
             queryset = Paginator(queryset, page_size)
         except EmptyPage:
-            return JSONResponse({'success': True, 'result': [], 'errorcode': 1000, 'errormsg': None})
+            return JSONResponse(SuccessResponse([],msg='没有符合条件的结果'))
         queryset = queryset.page(page_index)
         serializer = ProjCommonSerializer(queryset, many=True)
         return JSONResponse({'success': True, 'result': returnListChangeToLanguage(serializer.data,lang), 'errorcode': 1000, 'errormsg': None})
@@ -119,13 +131,12 @@ class ProjectView(viewsets.ModelViewSet):
                 assign_perm('proj.user_changeproj', request.user, pro)
                 assign_perm('proj.user_deleteproj', request.user, pro)
                 assign_perm('proj.user_getproj', request.user, pro)
-                return JSONResponse({'success':True,'result': returnDictChangeToLanguage(ProjSerializer(pro).data,lang),'errorcode':1000,'errormsg':None})
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(ProjSerializer(pro).data,lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable()
     def retrieve(self, request, *args, **kwargs):
@@ -141,13 +152,12 @@ class ProjectView(viewsets.ModelViewSet):
                         'proj.admin_getproj'):
                     raise InvestError(code=4004, msg='没有权限查看隐藏项目')
             serializer = serializerclass(instance)
-            return JSONResponse({'success': True, 'result': returnDictChangeToLanguage(serializer.data,lang), 'errorcode': 1000, 'errormsg': None})
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
     @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
         try:
@@ -206,16 +216,13 @@ class ProjectView(viewsets.ModelViewSet):
                         pro.project_TransactionTypes.bulk_create(projtransactiontypelist)
 
                 else:
-                    raise InvestError(code=4001,
-                                      msg='data有误_%s\n%s' % (proj.error_messages, proj.errors))
-                return JSONResponse(
-                    {'success': True, 'result': returnDictChangeToLanguage(ProjSerializer(pro).data,lang), 'errorcode': 1000, 'errormsg': None})
+                    raise InvestError(code=4001,msg='data有误_%s\n%s' % (proj.error_messages, proj.errors))
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(ProjSerializer(pro).data,lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+                return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
@@ -251,21 +258,41 @@ class ProjectView(viewsets.ModelViewSet):
                 instance.deleteduser = request.user
                 instance.deletetime = datetime.datetime.now()
                 instance.save()
-                response = {'success': True, 'result': returnDictChangeToLanguage(ProjSerializer(instance).data,lang), 'errorcode': 1000,
-                            'errormsg': None}
-                return JSONResponse(response)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(ProjSerializer(instance).data,lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
+    @detail_route(methods=['get'])
+    @loginTokenIsAvailable()
+    def getshareprojtoken(self, request, *args, **kwargs):
+        try:
+            proj = self.get_object()
+            with transaction.atomic():
+                sharetokenset = ShareToken.objects.filter(user=request.user,proj=proj,created__gt=(datetime.datetime.now()-datetime.timedelta(hours=1 * 1)))
+                if sharetokenset.exists():
+                    sharetoken = sharetokenset.last()
+                else:
+                    sharetoken = ShareToken(user=request.user,proj=proj)
+                    sharetoken.save()
+                return JSONResponse(SuccessResponse(sharetoken.key))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 class ProjFinanceView(viewsets.ModelViewSet):
-
-    filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
+    """
+    list:获取财务信息
+    create:创建财务信息 （projid+data）
+    update:修改财务信息（批量idlist+data）
+    destroy:删除财务信息 （批量idlist）
+    """
+    filter_backends = (filters.DjangoFilterBackend,)
     queryset = finance.objects.all().filter(is_deleted=False)
     filter_fields = ('proj', 'netIncome',)
     serializer_class = FinanceSerializer
@@ -335,30 +362,30 @@ class ProjFinanceView(viewsets.ModelViewSet):
         try:
             queryset = Paginator(queryset, page_size)
         except EmptyPage:
-            return JSONResponse({'success': True, 'result': [], 'errorcode': 1000, 'errormsg': None})
+            return JSONResponse(SuccessResponse([],msg='没有符合的结果'))
         queryset = queryset.page(page_index)
         serializer = FinanceSerializer(queryset, many=True)
-        return JSONResponse({'success': True, 'result': returnListChangeToLanguage(serializer.data,lang), 'errorcode': 1000, 'errormsg': None})
+        return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
 
     @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
-        data = request.data
-        projid = request.GET.get('project')
         try:
-            proj = project.objects.get(id=projid,is_deleted=False,datasource=request.user.datasource)
-        except project.DoesNotExist:
-            raise InvestError(code=4002,msg='指定内容不存在')
-        if request.user.datasource != proj.datasource:
-            raise InvestError(code=8888,msg='数据不同源')
-        elif request.user.has_perm('proj.admin_changeproj'):
-            pass
-        elif request.user.has_perm('proj.user_changeproj',proj):
-            pass
-        else:
-            raise InvestError(code=2009,msg='没有增加该项目财务信息的权限')
-        lang = request.GET.get('lang')
-        financedata = data.get('finances')
-        try:
+            data = request.data
+            projid = request.GET.get('project')
+            try:
+                proj = project.objects.get(id=projid,is_deleted=False,datasource=request.user.datasource)
+            except project.DoesNotExist:
+                raise InvestError(code=4002,msg='指定内容不存在')
+            if request.user.datasource != proj.datasource:
+                raise InvestError(code=8888,msg='数据不同源')
+            elif request.user.has_perm('proj.admin_changeproj'):
+                pass
+            elif request.user.has_perm('proj.user_changeproj',proj):
+                pass
+            else:
+                raise InvestError(code=2009,msg='没有增加该项目财务信息的权限')
+            lang = request.GET.get('lang')
+            financedata = data.get('finances')
             with transaction.atomic():
                 if financedata:
                     for f in financedata:
@@ -369,18 +396,15 @@ class ProjFinanceView(viewsets.ModelViewSet):
                     if finances.is_valid():
                        finances.save()
                     else:
-                        raise InvestError(code=4001,
-                                          msg='财务信息有误_%s\n%s' % (finances.error_messages, finances.errors))
+                        raise InvestError(code=4001,msg='财务信息有误_%s\n%s' % (finances.error_messages, finances.errors))
                 else:
                     raise InvestError(code=20071,msg='finances field cannot be null')
-                return JSONResponse(
-                    {'success': True, 'result': returnListChangeToLanguage(finances.data,lang), 'errorcode': 1000, 'errormsg': None})
+                return JSONResponse(SuccessResponse(returnListChangeToLanguage(finances.data,lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+                return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
@@ -411,15 +435,12 @@ class ProjFinanceView(viewsets.ModelViewSet):
                         newfinances.append(finance.data)
                 else:
                     raise InvestError(code=20071, msg='finances field cannot be null')
-                return JSONResponse(
-                    {'success': True, 'result': returnListChangeToLanguage(newfinances, lang), 'errorcode': 1000,
-                     'errormsg': None})
+                return JSONResponse(SuccessResponse(returnListChangeToLanguage(newfinances, lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
@@ -443,16 +464,20 @@ class ProjFinanceView(viewsets.ModelViewSet):
                     projfinance.deletedtime = datetime.datetime.now()
                     projfinance.save()
                     returnlist.append(FinanceSerializer(projfinance).data)
-                response = {'success': True,'result': returnListChangeToLanguage(returnlist,lang).data, 'errorcode': 1000, 'errormsg': None}
-                return JSONResponse(response)
+                return JSONResponse(SuccessResponse(returnListChangeToLanguage(returnlist,lang).data))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
 
 class ProjectFavoriteView(viewsets.ModelViewSet):
+    """
+    list:获取收藏
+    create:增加收藏
+    destroy:删除收藏
+    """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = favoriteProject.objects.all().filter(is_deleted=False)
     filter_fields = ('user','trader','favoritetype')
@@ -536,10 +561,10 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
         try:
             queryset = Paginator(queryset, page_size)
         except EmptyPage:
-            return JSONResponse({'success': True, 'result': [], 'errorcode': 1000, 'errormsg': None})
+            return JSONResponse(SuccessResponse([],msg='没有符合条件的结果'))
         queryset = queryset.page(page_index)
         serializer = FavoriteSerializer(queryset, many=True)
-        return JSONResponse({'success': True, 'result': returnListChangeToLanguage(serializer.data,lang), 'errorcode': 1000, 'errormsg': None})
+        return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
 
     # 批量增加，接受modeldata，proj=projs=projidlist
     @loginTokenIsAvailable()
@@ -575,16 +600,14 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
                             raise InvestError(code=8888)
                         newfavorite.save()
                         favoriteProjectList.append(newfavorite.data)
-                        response = {'success': True, 'result':returnDictChangeToLanguage(newfavorite.data,lang),'errorcode':1000,'errormsg':None}
                     else:
                         raise InvestError(code=20071,msg='%s'%newfavorite.errors)
-                    return JSONResponse(response)
+                    return JSONResponse(SuccessResponse(returnDictChangeToLanguage(newfavorite.data,lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
     #批量删除（参数传收藏model的idlist）
     @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
@@ -606,12 +629,9 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
                     instance.deletedtime = datetime.datetime.now()
                     instance.save()
                     favorlist.append(FavoriteSerializer(instance).data)
-                response = {'success': True, 'result': returnListChangeToLanguage(favorlist, lang), 'errorcode': 1000,
-                            'errormsg': None}
-                return JSONResponse(response)
+                return JSONResponse(SuccessResponse(returnListChangeToLanguage(favorlist, lang)))
         except InvestError as err:
-            return JSONResponse({'success': False, 'result': None, 'errorcode': err.code, 'errormsg': err.msg})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'success': False, 'result': None, 'errorcode': 9999,
-                                 'errormsg': traceback.format_exc().split('\n')[-2]})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
