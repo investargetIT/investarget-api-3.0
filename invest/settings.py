@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'usersys',
     'rest_framework',
     'org',
@@ -64,12 +65,31 @@ REST_FRAMEWORK = {
 }
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_HEADERS = (
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'clienttype',
+    'token',
+)
+
+
+
+
 
 ROOT_URLCONF = 'invest.urls'
 
@@ -141,7 +161,9 @@ CACHES = {
         "LOCATION": "redis://192.168.1.201:6379",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "PICKLE_VERSION": -1  # Use the latest protocol version
+            "PICKLE_VERSION": -1,  # Use the latest protocol version
+            'SOCKET_TIMEOUT': 60,  # in seconds
+            'IGNORE_EXCEPTIONS': True,
         }
     }
 }

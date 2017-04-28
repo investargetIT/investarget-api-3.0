@@ -3,6 +3,8 @@ from django.http import HttpResponse
 from rest_framework import filters
 from rest_framework.renderers import JSONRenderer
 
+from utils.responsecode import responsecode
+
 
 class JSONResponse(HttpResponse):
     def __init__(self,data, **kwargs):
@@ -11,16 +13,17 @@ class JSONResponse(HttpResponse):
         super(JSONResponse, self).__init__(content , **kwargs)
 
 class InvestError(Exception):
-    def __init__(self, code=None, msg=None):
+    def __init__(self, code, msg=None):
         Exception.__init__(self)
         self.code = code
-        self.msg = msg
+        if not msg:
+           self.msg = responsecode[self.code]
+        else:
+           self.msg = msg
 
-class DataSourceFilter(filters.BaseFilterBackend):
 
-    def filter_queryset(self, request, queryset, view):
-        if request.user.is_anonymous:
-            raise InvestError(code=8889)
-        if hasattr(request.user,'datasource') and request.user.datasource:
-            queryset = queryset.all().filter(datasource=request.user.datasource)
-        return queryset
+# class DataSourceFilter(filters.BaseFilterBackend):
+#     def filter_queryset(self, request, queryset, view):
+#         if hasattr(request.user,'datasource') and request.user.datasource:
+#             queryset = queryset.all().filter(datasource=request.user.datasource)
+#         return queryset

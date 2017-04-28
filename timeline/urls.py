@@ -4,28 +4,25 @@ import views
 
 timelines = views.TimelineView.as_view({
         'get': 'list',
-        # 'post': 'create',
-        'put': 'update',
-        # 'delete': 'destroy',     #（批量）
+        'post': 'create',
+
 })
 timeline_detail = views.TimelineView.as_view({
-
-    'put': 'update',
+        'get':'retrieve',
+        'put': 'update',
+        'delete': 'destroy',
 })
 
-# user_timeline = views.TimelineView.as_view({
-#         'get': 'usertimelinelist',
-#
-# })
-# proj_timeline = views.TimelineView.as_view({
-#         'get': 'projtimelinelist',
-#
-# })
-
-
-
 timelineremark = views.TimeLineRemarkView.as_view({
-        'get': 'retrieve',
+        'get': 'list',
+        'post': 'create',
+})
+
+
+timelineremark_detail = views.TimeLineRemarkView.as_view({
+        'get':'retrieve',
+        'put': 'update',
+        'delete': 'destroy',
 })
 
 
@@ -34,11 +31,7 @@ timelineremark = views.TimeLineRemarkView.as_view({
 urlpatterns = [
     url(r'^$', timelines,name='timeline-list',),
     url(r'^(?P<pk>\d+)/$', timeline_detail,name='timeline-detail'),
-    # url(r'^detail/(?P<pk>\d+)/$', user_detailinfo,name='user-detailinfo'),
-    # url(r'^password/$', find_password ,name='find-password'),
-    # url(r'^password/(?P<pk>\d+)/$', change_password ,name='change-password'),
-    # url(r'^relationship/$', user_relationshiplist, name='user-relationshiplist'),
-    # url(r'^relationship/(?P<pk>\d+)/$', detail_relationone, name='user-relationshipone'),
-    # url(r'^register/$', regist_user),
-    # url(r'^login/$', views.login),
+    url(r'^remark/$', timelineremark, name='timelineremark-list'),
+    url(r'^remark/(?P<pk>\d+)/$', timelineremark_detail, name='timelineremark-detail'),
+
 ]

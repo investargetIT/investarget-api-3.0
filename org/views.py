@@ -25,18 +25,16 @@ class OrganizationView(viewsets.ModelViewSet):
     redis_key = 'organization'
 
     def get_queryset(self):
-        if self.request.user.is_anonymous:
-            raise InvestError(code=8889)
         assert self.queryset is not None, (
             "'%s' should either include a `queryset` attribute, "
             "or override the `get_queryset()` method."
             % self.__class__.__name__
         )
         queryset = self.queryset
-        if isinstance(queryset, QuerySet):
-            queryset = queryset.all().filter(datasource=self.request.user.datasource)
-        else:
-            raise InvestError(code=8890)
+        # if isinstance(queryset, QuerySet):
+        #     queryset = queryset.all().filter(datasource=self.request.user.datasource)
+        # else:
+        #     raise InvestError(code=8890)
         return queryset
 
     def get_object(self, pk=None):
@@ -279,6 +277,16 @@ class OrgRemarkView(viewsets.ModelViewSet):
             raise InvestError(code=8888, msg='资源非同源')
         return obj
 
+    def get_org(self,orgid):
+        if self.request.user.is_anonymous:
+            raise InvestError(code=8889)
+        try:
+            org = organization.objects.get(id=orgid,is_deleted=False,datasource=self.request.user.datasource)
+        except organization.DoesNotExist:
+            raise InvestError(code=5002)
+        else:
+            return org
+
     @loginTokenIsAvailable(['org.admin_getorgremark','org.user_getorgremark'])
     def list(self, request, *args, **kwargs):
         page_size = request.GET.get('page_size')
@@ -305,6 +313,17 @@ class OrgRemarkView(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         data = request.data
         lang = request.GET.get('lang')
+        orgid = data.get('org',None)
+        if orgid:
+            org = self.get_org(orgid=orgid)
+            if request.user.has_perm('org.admin_addorgremark'):
+                pass
+            elif request.user.has_perm('org.user_addorgremark',org):
+                pass
+            else:
+                raise InvestError(code=2009)
+        else:
+            raise InvestError(code=20072)
         data['createuser'] = request.user.id
         data['datasource'] = request.user.datasource.id
         try:

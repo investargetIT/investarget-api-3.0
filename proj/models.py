@@ -2,6 +2,10 @@
 from __future__ import unicode_literals
 
 import datetime
+
+import binascii
+import os
+
 from django.db import models
 
 # Create your models here.
@@ -200,3 +204,27 @@ class favoriteProject(models.Model):
             ('admin_getfavorite', '管理员查看favorite'),
             ('admin_deletefavorite','管理员删除favorite'),
         )
+
+
+class ShareToken(models.Model):
+    key = models.CharField(max_length=50, primary_key=True,help_text='sharetoken')
+    user = models.ForeignKey(MyUser, related_name='user_sharetoken',help_text='用户的分享token')
+    proj = models.ForeignKey(project,related_name='proj_sharetoken',help_text='项目的分享token')
+    created = models.DateTimeField(help_text="CreatedTime", auto_now_add=True)
+    is_deleted = models.BooleanField(help_text='是否已被删除', blank=True, default=False)
+
+    class Meta:
+        db_table = 'sharetoken'
+    def timeout(self):
+        return datetime.timedelta(hours=24 * 1) - (datetime.datetime.now() - self.created)
+
+    def save(self, *args, **kwargs):
+        if not self.key:
+            self.key = self.generate_key()
+        return super(ShareToken, self).save(*args, **kwargs)
+
+    def generate_key(self):
+        return binascii.hexlify(os.urandom(25)).decode()
+
+    def __str__(self):
+        return self.key

@@ -5,36 +5,42 @@ import binascii
 import os
 
 import datetime
-import random
-from time import timezone
-
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin, Group
 from django.db import models
 from django.db.models import Q
 from guardian.shortcuts import remove_perm, assign_perm
-
 from sourcetype.models import AuditStatus, ClientType, TitleType,School,Specialty,Tag, DataSource
 from utils.myClass import InvestError
 
 
 class MyUserBackend(ModelBackend):
     def authenticate(self, username=None, password=None, **kwargs):
-        datasource = kwargs['datasource']
-        if not datasource:
-            raise InvestError(code=8888,msg='没有datasource')
         try:
             if '@' not in username:
-                user = MyUser.objects.get(mobile=username,is_deleted=False,datasource=datasource)
+                user = MyUser.objects.get(mobile=username,is_deleted=False,)
             else:
-                user = MyUser.objects.get(email=username,is_deleted=False,datasource=datasource)
+                user = MyUser.objects.get(email=username,is_deleted=False,)
         except MyUser.DoesNotExist:
             raise InvestError(code=2002)
+        # datasource = kwargs.pop('datasource',None)
+        # if not datasource:
+        #     raise InvestError(code=8888, msg='没有datasource')
+        # try:
+        #     if '@' not in username:
+        #         user = MyUser.objects.get(mobile=username, is_deleted=False, datasource=datasource)
+        #     else:
+        #         user = MyUser.objects.get(email=username, is_deleted=False, datasource=datasource)
+        # except MyUser.DoesNotExist:
+        #     raise InvestError(code=2002)
+        except Exception:
+            raise InvestError(code=9999,msg='MyUserBackend/authenticate模块验证失败')
         else:
             if user.check_password(password):
                 return user
-        return None
+            else:
+                raise InvestError(code=2001)
 
     def get_user(self, user_id):
         try:
@@ -136,9 +142,11 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     def save(self, *args, **kwargs):
         if not self.usercode:
             self.usercode = str(datetime.datetime.now())
+        if not self.datasource:
+            raise InvestError(code=8888,msg='datasource有误')
+        if self.groups.filter(datasource__exact=self.datasource).exists():
+            raise InvestError(code=8888,msg='group 与 user datasource不同')
         try:
-            if not self.datasource:
-                raise InvestError(code=8888,msg='datasource有误')
             if not self.email and not self.mobile:
                 raise InvestError(code=2007)
             if self.email:
@@ -192,23 +200,21 @@ class userTags(models.Model):
 
 class MyToken(models.Model):
     key = models.CharField('Key', max_length=48, primary_key=True)
-    user = models.ForeignKey(MyUser, related_name='user_token',on_delete=models.CASCADE, verbose_name=("MyUser"))
+    user = models.ForeignKey(MyUser, related_name='user_token',verbose_name=("MyUser"))
     created = models.DateTimeField(help_text="CreatedTime", auto_now_add=True)
     clienttype = models.ForeignKey(ClientType)
     is_deleted = models.BooleanField(help_text='是否已被删除',blank=True,default=False)
     class Meta:
         db_table = 'user_token'
     def timeout(self):
-        return datetime.timedelta(hours=24 * 1) - (datetime.datetime.utcnow() - self.created.replace(tzinfo=None))
+        return datetime.timedelta(hours=24 * 1) - (datetime.datetime.now() - self.created)
 
     def save(self, *args, **kwargs):
         if not self.key:
             self.key = self.generate_key()
         return super(MyToken, self).save(*args, **kwargs)
-
     def generate_key(self):
         return binascii.hexlify(os.urandom(24)).decode()
-
     def __str__(self):
         return self.key
 
@@ -292,25 +298,5 @@ class UserRelation(models.Model):
             ('user_getuserrelation', u'用户查看用户联系（obj/class级别）'),
         )
 
-
-class MobileAuthCode(models.Model):
-    mobile = models.CharField(help_text='手机号',max_length=32)
-    token = models.CharField(help_text='验证码token',max_length=32)
-    code = models.CharField(help_text='验证码',max_length=32)
-    createTime = models.DateTimeField(auto_now_add=True)
-    def isexpired(self):
-        return timezone.now() - self.created >= 600
-    def __str__(self):
-        return self.code
-    class Meta:
-        db_table = "mobileAuthCode"
-    def save(self, *args, **kwargs):
-        if not self.token:
-            self.token = binascii.hexlify(os.urandom(16)).decode()
-        return super(MobileAuthCode, self).save(*args, **kwargs)
-    def getRandomCode(self):
-        code_list = [0,1,2,3,4,5,6,7,8,9]
-        myslice = random.sample(code_list, 6)
-        self.code = ''.join(myslice)
 
 

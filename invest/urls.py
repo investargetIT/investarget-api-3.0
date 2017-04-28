@@ -21,6 +21,7 @@ import org.urls
 import proj.urls
 import usersys.urls
 import timeline.urls
+import third.urls
 
 schema_view = get_swagger_view(title='investarget-api-3.0')
 
@@ -33,4 +34,5 @@ urlpatterns += [
     url(r'^proj/',include(proj.urls)),
     url(r'^org/',include(org.urls)),
     url(r'^timeline/',include(timeline.urls)),
+    url(r'^util/',include(third.urls)),
 ]

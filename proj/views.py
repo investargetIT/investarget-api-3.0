@@ -26,9 +26,7 @@ class ProjectView(viewsets.ModelViewSet):
     redis_key = 'project'
     Model = project
 
-    def get_queryset(self):
-        if self.request.user.is_anonymous:
-            raise InvestError(code=8889)
+    def get_queryset(self,datasource=None):
         assert self.queryset is not None, (
             "'%s' should either include a `queryset` attribute, "
             "or override the `get_queryset()` method."
@@ -36,7 +34,7 @@ class ProjectView(viewsets.ModelViewSet):
         )
         queryset = self.queryset
         if isinstance(queryset, QuerySet):
-            queryset = queryset.filter(datasource=self.request.user.datasource)
+            queryset = queryset.filter(datasource=datasource)
         else:
             raise InvestError(code=8890)
         return queryset
@@ -461,9 +459,7 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
     serializer_class = FavoriteSerializer
     Model = favoriteProject
 
-    def get_queryset(self):
-        if self.request.user.is_anonymous:
-            raise InvestError(code=8889)
+    def get_queryset(self,datasource=None):
         assert self.queryset is not None, (
             "'%s' should either include a `queryset` attribute, "
             "or override the `get_queryset()` method."
@@ -471,7 +467,7 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
         )
         queryset = self.queryset
         if isinstance(queryset, QuerySet):
-            queryset = queryset.filter(datasource=self.request.user.datasource)
+            queryset = queryset.filter(datasource=datasource)
         else:
             raise InvestError(code=8890)
         return queryset

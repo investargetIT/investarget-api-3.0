@@ -78,8 +78,8 @@ class timelineremark(models.Model):
             ('admin_changelineremark', '管理员修改时间轴备注'),
             ('admin_deletelineremark', '管理员删除时间轴备注'),
 
-            ('user_addlineremark', '用户添加时间轴备注（obj级别/相对timeline）'),
-            ('user_getlineremark', '用户查看时间轴备注（obj级别/相对timeline）'),
-            ('user_changelineremark', '用户修改时间轴备注（obj级别/相对timeline）'),
-            ('user_deletelineremark','用户删除时间轴备注（obj级别/相对timeline）'),
+            ('user_addlineremark', '用户添加时间轴备注（obj级别/相对timeline)'),
+            ('user_getlineremark', '用户查看时间轴备注（obj级别)'),
+            ('user_changelineremark', '用户修改时间轴备注（obj级别)'),
+            ('user_deletelineremark','用户删除时间轴备注（obj级别)'),
         )
