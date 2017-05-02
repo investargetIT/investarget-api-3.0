@@ -9,6 +9,29 @@ from sourcetype.models import DataSource
 from usersys.models import MyUser
 
 
+class publicdirectorytemplate(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=64,blank=True,null=True)
+    parent = models.ForeignKey('self',blank=True,null=True)
+    orderNO = models.PositiveSmallIntegerField()
+    is_deleted = models.BooleanField(blank=True, default=False)
+    deleteduser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_publicdirectorytemplate')
+    deletedtime = models.DateTimeField(blank=True, null=True)
+    createdtime = models.DateTimeField(auto_now_add=True)
+    createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_publicdirectorytemplate')
+    lastmodifytime = models.DateTimeField(blank=True, null=True)
+    lastmodifyuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usermodify_publicdirectorytemplate')
+    datasource = models.ForeignKey(DataSource, help_text='数据源')
+    class Meta:
+        db_table = 'dataroompublicdirectorytemplate'
+        permissions = (
+            # ('admin_getdataroomtemplate','管理员查看dataroomtemplate'),
+            # ('admin_changedataroomtemplate', '管理员修改dataroomtemplate'),
+            # ('admin_deletedataroomtemplate', '管理员删除dataroomtemplate'),
+            # ('admin_adddataroomtemplate', '管理员添加dataroomtemplate'),
+
+        )
+
 class dataroom(models.Model):
     id = models.AutoField(primary_key=True)
     proj = models.ForeignKey(project,related_name='proj_datarooms',help_text='dataroom关联项目')
@@ -38,17 +61,18 @@ class dataroom(models.Model):
             # ('user_getdataroom','用户查看dataroom(obj级别)'),
         )
 
-class dataroomdirectory(models.Model):
+class dataroomdirectoryorfile(models.Model):
     id = models.AutoField(primary_key=True)
     dataroom = models.ForeignKey(dataroom,related_name='dataroom_directories',help_text='目录或文件所属dataroom')
     parent = models.ForeignKey('self',related_name='directory_directories',help_text='目录或文件所属目录id')
-    orderNO = models.SmallIntegerField(help_text='目录或文件在所属目录下的排序位置')
+    orderNO = models.PositiveSmallIntegerField(help_text='目录或文件在所属目录下的排序位置')
     isShadow = models.BooleanField(blank=True,default=False)
     shadowdirectory = models.ForeignKey('self',related_name='shadowdirectory_directory',blank=True,null=True,)
     size = models.IntegerField(blank=True,null=True,help_text='文件大小')
-    filename = models.CharField(max_length=128,blank=True,null=True,help_text='文件名')
+    name = models.CharField(max_length=128,blank=True,null=True,help_text='文件名或目录名')
     key = models.CharField(max_length=16,blank=True,null=True,help_text='文件路径')
     bucket = models.CharField(max_length=128,blank=True,null=True,help_text='文件所在空间')
+    isFile = models.BooleanField(blank=True,default=False,help_text='true/文件，false/目录')
     isRead = models.BooleanField(blank=True,default=False)
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_dataroomdirectories')
@@ -59,7 +83,7 @@ class dataroomdirectory(models.Model):
     lastmodifyuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usermodify_dataroomdirectories')
     datasource = models.ForeignKey(DataSource, help_text='数据源')
     class Meta:
-        db_table = 'dataroomdirectory'
+        db_table = 'dataroomdirectoryorfile'
         permissions = (
             # ('admin_getdataroomdirectory','管理员查看dataroom'),
             # ('admin_changedataroomdirectory', '管理员修改dataroom'),
