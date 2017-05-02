@@ -80,9 +80,9 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     id = models.AutoField(primary_key=True)
     usercode = models.CharField(max_length=128,blank=True, unique=True)
     photoBucket = models.CharField(max_length=32,blank=True,null=True)
-    photoKey = models.CharField(max_length=64,blank=True,null=True)
+    photoKey = models.CharField(max_length=128,blank=True,null=True)
     cardBucket = models.CharField(max_length=32,blank=True,null=True)
-    cardKey = models.CharField(max_length=64,blank=True,null=True)
+    cardKey = models.CharField(max_length=128,blank=True,null=True)
     wechat = models.CharField(max_length=64,blank=True,null=True)
     userstatu = models.ForeignKey(AuditStatus,help_text='作者',blank=True,null=True)
     org = models.ForeignKey('org.organization',help_text='所属机构',blank=True,null=True,related_name='org_users',on_delete=models.SET_NULL)
@@ -100,7 +100,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     school = models.ForeignKey(School,help_text='院校',blank=True,null=True,related_name='school_users',on_delete=models.SET_NULL)
     specialty = models.ForeignKey(Specialty,help_text='专业',blank=True,null=True,related_name='profession_users',on_delete=models.SET_NULL)
     registersource = models.SmallIntegerField(help_text='注册来源',choices=((1,'pc'),(2,'ios'),(3,'android'),(4,'mobileweb')),default=1)
-    lastmodifytime = models.DateTimeField(auto_now=True)
+    lastmodifytime = models.DateTimeField(blank=True,null=True)
     lastmodifyuser = models.ForeignKey('self',help_text='修改者',blank=True,null=True,related_name='usermodify_users',related_query_name='user_modifyuser',on_delete=models.SET_NULL)
     is_staff = models.BooleanField(help_text='登录admin', default=False, blank=True,)
     is_active = models.BooleanField(help_text='是否活跃', default=True, blank=True,)
@@ -181,7 +181,6 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
                     remove_perm('usersys.user_getuser', olduser.createuser, self)
                     remove_perm('usersys.user_changeuser', olduser.createuser, self)
                     remove_perm('usersys.user_deleteuser', olduser.createuser, self)
-
         super(MyUser,self).save(*args,**kwargs)
 
 class userTags(models.Model):

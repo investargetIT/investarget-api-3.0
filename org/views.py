@@ -38,10 +38,13 @@ class OrganizationView(viewsets.ModelViewSet):
             % self.__class__.__name__
         )
         queryset = self.queryset
-        # if isinstance(queryset, QuerySet):
-        #     queryset = queryset.all().filter(datasource=self.request.user.datasource)
-        # else:
-        #     raise InvestError(code=8890)
+        if isinstance(queryset, QuerySet):
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource=self.request.user.datasource)
+            else:
+                queryset = queryset.all()
+        else:
+            raise InvestError(code=8890)
         return queryset
 
     def get_object(self, pk=None):
@@ -49,23 +52,17 @@ class OrganizationView(viewsets.ModelViewSet):
             obj = read_from_cache(self.redis_key + '_%s' % pk)
             if not obj:
                 try:
-                    obj = self.queryset.get(id=pk)
+                    obj = self.get_queryset().get(id=pk)
                 except organization.DoesNotExist:
                     raise InvestError(code=5002)
                 else:
                     write_to_cache(self.redis_key + '_%s' % pk, obj)
         else:
-            lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-            assert lookup_url_kwarg in self.kwargs, (
-                'Expected view %s to be called with a URL keyword argument '
-                'named "%s". Fix your URL conf, or set the `.lookup_field` '
-                'attribute on the view correctly.' %
-                (self.__class__.__name__, lookup_url_kwarg)
-            )
+            lookup_url_kwarg = 'pk'
             obj = read_from_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg])
             if not obj:
                 try:
-                    obj = self.queryset.get(id=self.kwargs[lookup_url_kwarg])
+                    obj = self.get_queryset().get(id=self.kwargs[lookup_url_kwarg])
                 except organization.DoesNotExist:
                     raise InvestError(code=5002)
                 else:
@@ -76,25 +73,30 @@ class OrganizationView(viewsets.ModelViewSet):
 
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
-        page_size = request.GET.get('page_size')
-        page_index = request.GET.get('page_index')  # 从第一页开始
-        lang = request.GET.get('lang')
-        if not page_size:
-            page_size = 10
-        if not page_index:
-            page_index = 1
-        queryset = self.filter_queryset(self.get_queryset())
         try:
-            queryset = Paginator(queryset, page_size)
-        except EmptyPage:
-            return JSONResponse(SuccessResponse([],msg='没有符合条件的结果'))
-        queryset = queryset.page(page_index)
-        if request.user.has_perm('org.admin_getorg'):
-            serializerclass = OrgDetailSerializer
-        else:
-            serializerclass = OrgCommonSerializer
-        serializer = serializerclass(queryset, many=True)
-        return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            lang = request.GET.get('lang')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            try:
+                queryset = Paginator(queryset, page_size)
+            except EmptyPage:
+                raise InvestError(1001)
+            queryset = queryset.page(page_index)
+            if request.user.has_perm('org.admin_getorg'):
+                serializerclass = OrgDetailSerializer
+            else:
+                serializerclass = OrgCommonSerializer
+            serializer = serializerclass(queryset, many=True)
+            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable(['org.admin_addorg','org.user_addorg'])
     def create(self, request, *args, **kwargs):
@@ -240,9 +242,8 @@ class OrgRemarkView(viewsets.ModelViewSet):
     filter_fields = ('id','org','createtime','createuser')
     serializer_class = OrgRemarkSerializer
     redis_key = 'orgemark'
+
     def get_queryset(self):
-        if self.request.user.is_anonymous:
-            raise InvestError(code=8889)
         assert self.queryset is not None, (
             "'%s' should either include a `queryset` attribute, "
             "or override the `get_queryset()` method."
@@ -250,7 +251,10 @@ class OrgRemarkView(viewsets.ModelViewSet):
         )
         queryset = self.queryset
         if isinstance(queryset, QuerySet):
-            queryset = queryset.all().filter(datasource=self.request.user.datasource)
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource=self.request.user.datasource)
+            else:
+                queryset = queryset.all()
         else:
             raise InvestError(code=8890)
         return queryset
@@ -266,13 +270,7 @@ class OrgRemarkView(viewsets.ModelViewSet):
                 else:
                     write_to_cache(self.redis_key + '_%s' % pk, obj)
         else:
-            lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-            assert lookup_url_kwarg in self.kwargs, (
-                'Expected view %s to be called with a URL keyword argument '
-                'named "%s". Fix your URL conf, or set the `.lookup_field` '
-                'attribute on the view correctly.' %
-                (self.__class__.__name__, lookup_url_kwarg)
-            )
+            lookup_url_kwarg = 'pk'
             obj = read_from_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg])
             if not obj:
                 try:
@@ -297,25 +295,30 @@ class OrgRemarkView(viewsets.ModelViewSet):
 
     @loginTokenIsAvailable(['org.admin_getorgremark','org.user_getorgremark'])
     def list(self, request, *args, **kwargs):
-        page_size = request.GET.get('page_size')
-        page_index = request.GET.get('page_index')  # 从第一页开始
-        lang = request.GET.get('lang')
-        if not page_size:
-            page_size = 10
-        if not page_index:
-            page_index = 1
-        queryset = self.filter_queryset(self.get_queryset())
-        if request.user.has_perm('org.admin_getorgremark'):
-            queryset = queryset
-        else:
-            queryset = queryset.filter(createuser_id=request.user.id)
         try:
-            queryset = Paginator(queryset, page_size)
-        except EmptyPage:
-            return JSONResponse(SuccessResponse([],msg='没有符合条件的结果'))
-        queryset = queryset.page(page_index)
-        serializer = OrgRemarkSerializer(queryset, many=True)
-        return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            lang = request.GET.get('lang')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            if request.user.has_perm('org.admin_getorgremark'):
+                queryset = queryset
+            else:
+                queryset = queryset.filter(createuser_id=request.user.id)
+            try:
+                queryset = Paginator(queryset, page_size)
+            except EmptyPage:
+                raise InvestError(1001)
+            queryset = queryset.page(page_index)
+            serializer = OrgRemarkSerializer(queryset, many=True)
+            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):

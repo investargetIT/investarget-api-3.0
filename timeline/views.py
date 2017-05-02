@@ -31,7 +31,7 @@ class TimelineView(viewsets.ModelViewSet):
     redis_key = 'timeline'
     Model = timeline
 
-    def get_queryset(self,datasource=None):
+    def get_queryset(self):
         assert self.queryset is not None, (
             "'%s' should either include a `queryset` attribute, "
             "or override the `get_queryset()` method."
@@ -39,7 +39,10 @@ class TimelineView(viewsets.ModelViewSet):
         )
         queryset = self.queryset
         if isinstance(queryset, QuerySet):
-            queryset = queryset.filter(datasource=datasource)
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource=self.request.user.datasource)
+            else:
+                queryset = queryset.all()
         else:
             raise InvestError(code=8890)
         return queryset
@@ -70,21 +73,26 @@ class TimelineView(viewsets.ModelViewSet):
 
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
-        page_size = request.GET.get('page_size')
-        page_index = request.GET.get('page_index')  # 从第一页开始
-        lang = request.GET.get('lang')
-        if not page_size:
-            page_size = 10
-        if not page_index:
-            page_index = 1
-        queryset = self.filter_queryset(self.get_queryset())
         try:
-            queryset = Paginator(queryset, page_size)
-        except EmptyPage:
-            return JSONResponse(SuccessResponse([], msg='没有符合条件的对象'))
-        queryset = queryset.page(page_index)
-        serializer = TimeLineHeaderListSerializer(queryset, many=True)
-        return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data, lang)))
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            lang = request.GET.get('lang')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            try:
+                queryset = Paginator(queryset, page_size)
+            except EmptyPage:
+                raise InvestError(code=1001)
+            queryset = queryset.page(page_index)
+            serializer = TimeLineHeaderListSerializer(queryset, many=True)
+            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable(['timeline.admin_addline','timeline.user_addline'])
     def create(self, request, *args, **kwargs):
@@ -239,7 +247,7 @@ class TimeLineRemarkView(viewsets.ModelViewSet):
     serializer_class = TimeLineStatuSerializer
 
 
-    def get_queryset(self,datasource=None):
+    def get_queryset(self):
         assert self.queryset is not None, (
             "'%s' should either include a `queryset` attribute, "
             "or override the `get_queryset()` method."
@@ -247,7 +255,10 @@ class TimeLineRemarkView(viewsets.ModelViewSet):
         )
         queryset = self.queryset
         if isinstance(queryset, QuerySet):
-            queryset = queryset.filter(datasource=datasource)
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource=self.request.user.datasource)
+            else:
+                queryset = queryset.all()
         else:
             raise InvestError(code=8890)
         return queryset
@@ -262,25 +273,30 @@ class TimeLineRemarkView(viewsets.ModelViewSet):
 
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
-        page_size = request.GET.get('page_size')
-        page_index = request.GET.get('page_index')  # 从第一页开始
-        lang = request.GET.get('lang')
-        if not page_size:
-            page_size = 10
-        if not page_index:
-            page_index = 1
-        queryset = self.filter_queryset(self.get_queryset())
-        if request.user.has_perm('timeline.admin_getlineremark'):
-            queryset = queryset
-        else:
-            queryset = queryset.filter(createuser_id=request.user.id)
         try:
-            queryset = Paginator(queryset, page_size)
-        except EmptyPage:
-            return JSONResponse(SuccessResponse([],msg='没有符合条件的结果'))
-        queryset = queryset.page(page_index)
-        serializer = TimeLineRemarkSerializer(queryset, many=True)
-        return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data, lang)))
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            lang = request.GET.get('lang')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            if request.user.has_perm('timeline.admin_getlineremark'):
+                queryset = queryset
+            else:
+                queryset = queryset.filter(createuser_id=request.user.id)
+            try:
+                queryset = Paginator(queryset, page_size)
+            except EmptyPage:
+                raise InvestError(code=1001)
+            queryset = queryset.page(page_index)
+            serializer = TimeLineRemarkSerializer(queryset, many=True)
+            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     def get_timeline(self,id):
         if self.request.user.is_anonymous:

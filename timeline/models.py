@@ -4,14 +4,15 @@ from django.db import models
 from proj.models import project
 from usersys.models import MyUser
 from sourcetype.models import TransactionStatus, DataSource
+from utils.myClass import InvestError
 
 
 class timeline(models.Model):
     id = models.AutoField(primary_key=True)
-    proj = models.ForeignKey(project,blank=True,null=True,related_name='proj_timelines')
-    investor = models.ForeignKey(MyUser,blank=True,null=True,related_name='investor_timelines')
-    supporter = models.ForeignKey(MyUser,blank=True,null=True,related_name='supporter_timelines')
-    trader = models.ForeignKey(MyUser,blank=True,null=True,related_name='trader_timelines')
+    proj = models.ForeignKey(project,related_name='proj_timelines')
+    investor = models.ForeignKey(MyUser,related_name='investor_timelines')
+    supporter = models.ForeignKey(MyUser,related_name='supporter_timelines')
+    trader = models.ForeignKey(MyUser,related_name='trader_timelines')
     isClose = models.BooleanField(blank=True,default=False)
     closeDate = models.DateTimeField(blank=True,null=True,)
     contractedServiceTime = models.DateTimeField(blank=True,null=True)
@@ -21,9 +22,9 @@ class timeline(models.Model):
     deletedtime = models.DateTimeField(blank=True, null=True)
     createdtime = models.DateTimeField(auto_now_add=True)
     createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_timelines',on_delete=models.SET_NULL)
-    lastmodifytime = models.DateTimeField(auto_now=True)
+    lastmodifytime = models.DateTimeField(blank=True,null=True)
     lastmodifyuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usermodify_timelines',on_delete=models.SET_NULL)
-    datasource = models.ForeignKey(DataSource, help_text='数据源',default=1)
+    datasource = models.ForeignKey(DataSource, help_text='数据源')
     class Meta:
         db_table = 'timeline'
         permissions = (
@@ -38,6 +39,18 @@ class timeline(models.Model):
         )
     def get_timelinestatu(self):
         return self.timeline_transationStatus.all().filter(isActive=True,is_deleted=False)
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        try:
+            if self.pk:
+                timeline.objects.exclude(pk=self.pk).get(is_deleted=False,datasource=self.datasource,proj=self.proj,investor=self.investor,trader=self.trader)
+            else:
+                timeline.objects.get(is_deleted=False,datasource=self.datasource,proj=self.proj,investor=self.investor,trader=self.trader)
+        except timeline.DoesNotExist:
+            pass
+        else:
+            raise InvestError(code=6003)
+        super(timeline,self).save(force_insert, force_update, using, update_fields)
 
 
 class timelineTransationStatu(models.Model):

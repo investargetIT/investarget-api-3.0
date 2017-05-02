@@ -38,7 +38,7 @@ class ProjectView(viewsets.ModelViewSet):
     redis_key = 'project'
     Model = project
 
-    def get_queryset(self,datasource=None):
+    def get_queryset(self):
         assert self.queryset is not None, (
             "'%s' should either include a `queryset` attribute, "
             "or override the `get_queryset()` method."
@@ -46,7 +46,10 @@ class ProjectView(viewsets.ModelViewSet):
         )
         queryset = self.queryset
         if isinstance(queryset, QuerySet):
-            queryset = queryset.filter(datasource=datasource)
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource=self.request.user.datasource)
+            else:
+                queryset = queryset.all()
         else:
             raise InvestError(code=8890)
         return queryset
@@ -72,29 +75,33 @@ class ProjectView(viewsets.ModelViewSet):
         return obj
 
     def list(self, request, *args, **kwargs):
-        page_size = request.GET.get('page_size')
-        page_index = request.GET.get('page_index')  # 从第一页开始
-        lang = request.GET.get('lang')
-        if not page_size:
-            page_size = 10
-        if not page_index:
-            page_index = 1
-        queryset = self.filter_queryset(self.get_queryset())
-        if request.user.is_anonymous:
-            queryset = queryset.filter(isHidden=False)
-        else:
-            if request.user.has_perm('proj.admin_getproj'):
-                queryset = queryset
-            else:
-                queryset = queryset.filter(Q(isHidden=False) | Q(createuser=request.user))
         try:
-            queryset = Paginator(queryset, page_size)
-        except EmptyPage:
-            return JSONResponse(SuccessResponse([],msg='没有符合条件的结果'))
-        queryset = queryset.page(page_index)
-        serializer = ProjCommonSerializer(queryset, many=True)
-        return JSONResponse({'success': True, 'result': returnListChangeToLanguage(serializer.data,lang), 'errorcode': 1000, 'errormsg': None})
-
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            lang = request.GET.get('lang')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            if request.user.is_anonymous:
+                    queryset = queryset.filter(isHidden=False)
+            else:
+                if request.user.has_perm('proj.admin_getproj'):
+                    queryset = queryset
+                else:
+                    queryset = queryset.filter(Q(isHidden=False) | Q(createuser=request.user))
+            try:
+                queryset = Paginator(queryset, page_size)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse([],msg='没有符合条件的结果'))
+            queryset = queryset.page(page_index)
+            serializer = ProjCommonSerializer(queryset, many=True)
+            return JSONResponse({'success': True, 'result': returnListChangeToLanguage(serializer.data,lang), 'errorcode': 1000, 'errormsg': None})
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable(['proj.admin_addproj','proj.user_addproj'])
     def create(self, request, *args, **kwargs):
@@ -301,8 +308,6 @@ class ProjFinanceView(viewsets.ModelViewSet):
 
 
     def get_queryset(self):
-        if self.request.user.is_anonymous:
-            raise InvestError(code=8889)
         assert self.queryset is not None, (
             "'%s' should either include a `queryset` attribute, "
             "or override the `get_queryset()` method."
@@ -310,7 +315,10 @@ class ProjFinanceView(viewsets.ModelViewSet):
         )
         queryset = self.queryset
         if isinstance(queryset, QuerySet):
-            queryset = queryset.all().filter(datasource=self.request.user.datasource)
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource=self.request.user.datasource)
+            else:
+                queryset = queryset.all()
         else:
             raise InvestError(code=8890)
         return queryset
@@ -347,25 +355,30 @@ class ProjFinanceView(viewsets.ModelViewSet):
 
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
-        page_size = request.GET.get('page_size')
-        page_index = request.GET.get('page_index')  # 从第一页开始
-        lang = request.GET.get('lang')
-        if not page_size:
-            page_size = 10
-        if not page_index:
-            page_index = 1
-        queryset = self.filter_queryset(self.get_queryset())
-        if not request.user.has_perm('proj.admin_getproj'):
-            queryset = queryset
-        else:
-            queryset = queryset.filter(proj__createuser__id=request.user.id)
         try:
-            queryset = Paginator(queryset, page_size)
-        except EmptyPage:
-            return JSONResponse(SuccessResponse([],msg='没有符合的结果'))
-        queryset = queryset.page(page_index)
-        serializer = FinanceSerializer(queryset, many=True)
-        return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            lang = request.GET.get('lang')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            if not request.user.has_perm('proj.admin_getproj'):
+                queryset = queryset
+            else:
+                queryset = queryset.filter(proj__createuser__id=request.user.id)
+            try:
+                queryset = Paginator(queryset, page_size)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse([],msg='没有符合的结果'))
+            queryset = queryset.page(page_index)
+            serializer = FinanceSerializer(queryset, many=True)
+            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
@@ -492,7 +505,10 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
         )
         queryset = self.queryset
         if isinstance(queryset, QuerySet):
-            queryset = queryset.filter(datasource=datasource)
+            if datasource:
+                queryset = queryset.filter(datasource=datasource)
+            else:
+                queryset = queryset.all()
         else:
             raise InvestError(code=8890)
         return queryset
@@ -536,35 +552,40 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
     #获取收藏列表，GET参数'user'，'trader'，'favoritetype'
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
-        page_size = request.GET.get('page_size')
-        page_index = request.GET.get('page_index')  # 从第一页开始
-        lang = request.GET.get('lang')
-        userid = request.GET.get('user')
-        traderid = request.GET.get('trader')
-        ftype = request.GET.get('favoritetype')
-        if not ftype or not userid or (ftype == 3 and not traderid):
-            raise InvestError(code=20072,msg='favoritetype and user cannot be null')
-        if not page_size:
-            page_size = 10
-        if not page_index:
-            page_index = 1
-        queryset = self.filter_queryset(self.get_queryset())
-        user = self.get_user(userid)
-        if request.user == user:
-            pass
-        elif request.user.has_perm('proj.admin_getfavorite'):
-            pass
-        elif request.user.has_perm('proj.user_getfavorite',user):
-            pass
-        else:
-            raise InvestError(code=2009)
         try:
-            queryset = Paginator(queryset, page_size)
-        except EmptyPage:
-            return JSONResponse(SuccessResponse([],msg='没有符合条件的结果'))
-        queryset = queryset.page(page_index)
-        serializer = FavoriteSerializer(queryset, many=True)
-        return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            lang = request.GET.get('lang')
+            userid = request.GET.get('user')
+            traderid = request.GET.get('trader')
+            ftype = request.GET.get('favoritetype')
+            if not ftype or not userid or (ftype == 3 and not traderid):
+                raise InvestError(code=20072,msg='favoritetype and user cannot be null')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            user = self.get_user(userid)
+            if request.user == user:
+                pass
+            elif request.user.has_perm('proj.admin_getfavorite'):
+                pass
+            elif request.user.has_perm('proj.user_getfavorite',user):
+                pass
+            else:
+                raise InvestError(code=2009)
+            try:
+                queryset = Paginator(queryset, page_size)
+            except EmptyPage:
+                raise InvestError(1001)
+            queryset = queryset.page(page_index)
+            serializer = FavoriteSerializer(queryset, many=True)
+            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     # 批量增加，接受modeldata，proj=projs=projidlist
     @loginTokenIsAvailable()

@@ -6,7 +6,7 @@ import traceback
 
 from usersys.models import MyToken
 from usersys.serializer import UserListSerializer
-from utils.myClass import JSONResponse
+from utils.myClass import JSONResponse, InvestError
 
 REDIS_TIMEOUT = 1 * 24 * 60 * 60
 weixinfilepath = '/Users/investarget/Desktop/django_server/third_header/weixin'
@@ -63,22 +63,22 @@ def loginTokenIsAvailable(permissions=None):#判断model级别权限
                 if tokenkey:
                     token = MyToken.objects.get(key=tokenkey,is_deleted=False)
                 else:
-                    return JSONResponse({'result': None, 'success': False, 'errorcode':3000,'errormsg':None})
+                    return JSONResponse(InvestErrorResponse(InvestError(3000)))
             except Exception as exc:
-                return JSONResponse({'success':False,'result': None,'errorcode': 3000,'errormsg':repr(exc)})
+                return JSONResponse(InvestErrorResponse(InvestError(code=3000,msg=repr(exc))))
             else:
                 if token.created < datetime.datetime.now() - datetime.timedelta(hours=24 * 1):
-                    return JSONResponse({'result': None, 'success': False, 'errorcode':3000,'errormsg':None})
+                    return JSONResponse(InvestErrorResponse(InvestError(3000,msg='token过期')))
                 request.user = token.user
                 if token.user.is_deleted:
-                    return JSONResponse({'success': False, 'result': None, 'errorcode': 2002, 'errormsg':'用户已被删除'})
+                    return JSONResponse(InvestErrorResponse(InvestError(3000,msg='用户不存在')))
                 user_has_permissions = []
                 if permissions:
                     for permission in permissions:
                         if request.user.has_perm(permission):
                             user_has_permissions.append(permission)
                     if not user_has_permissions:
-                        return JSONResponse({'result': None, 'success': False, 'errorcode':2009,'errormsg':None})
+                        return JSONResponse(InvestErrorResponse(InvestError(2009)))
                 kwargs['permissions'] = user_has_permissions
                 return func(self,request, *args, **kwargs)
 
