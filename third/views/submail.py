@@ -6,7 +6,8 @@ from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.app_configs import MAI
     INTERNATIONALMESSAGE_CONFIGS
 from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.mail_xsend import MAILXsend
 from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.message_xsend import MESSAGEXsend
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, throttle_classes
+from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 
 from third.models import MobileAuthCode
 from utils.myClass import JSONResponse, InvestError
@@ -114,6 +115,7 @@ def xsendEmail(destination,projectsign,vars=None):
 
 
 @api_view(['POST'])
+@throttle_classes([AnonRateThrottle])
 def sendSmscode(request):
     try :
         destination = request.data.get('destination')

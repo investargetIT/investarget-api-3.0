@@ -11,6 +11,7 @@ from django.db import transaction,models
 # Create your views here.
 from django.db.models import Q
 from django.db.models import QuerySet
+from django.db.models.fields.reverse_related import ForeignObjectRel
 from guardian.shortcuts import assign_perm
 from rest_framework import filters
 from rest_framework import viewsets
@@ -50,7 +51,7 @@ class UserView(viewsets.ModelViewSet):
     redis_key = 'user'
     Model = MyUser
 
-    def get_queryset(self,datasource=None):
+    def get_queryset(self):
         assert self.queryset is not None, (
             "'%s' should either include a `queryset` attribute, "
             "or override the `get_queryset()` method."
@@ -58,7 +59,10 @@ class UserView(viewsets.ModelViewSet):
         )
         queryset = self.queryset
         if isinstance(queryset, QuerySet):
-            queryset = queryset.filter(datasource=datasource)
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource=self.request.user.datasource)
+            else:
+                queryset = queryset.all()
         else:
             raise InvestError(code=8890)
         return queryset
@@ -89,26 +93,26 @@ class UserView(viewsets.ModelViewSet):
 
     @loginTokenIsAvailable(['usersys.admin_getuser'])
     def list(self, request, *args, **kwargs):
-        """
-        This text is the description for this API
-        param1 -- A first parameter
-        param2 -- A second parameter
-        """
-        page_size = request.GET.get('page_size')
-        page_index = request.GET.get('page_index')#从第一页开始
-        lang = request.GET.get('lang')
-        if not page_size:
-            page_size = 10
-        if not page_index:
-            page_index = 1
-        queryset = self.filter_queryset(self.get_queryset())
         try:
-            queryset = Paginator(queryset, page_size)
-        except EmptyPage:
-            return JSONResponse(SuccessResponse([],msg='没有符合条件的对象'))
-        queryset = queryset.page(page_index)
-        serializer = UserListSerializer(queryset, many=True)
-        return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')#从第一页开始
+            lang = request.GET.get('lang')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            try:
+                queryset = Paginator(queryset, page_size)
+            except EmptyPage:
+                raise InvestError(code=1001)
+            queryset = queryset.page(page_index)
+            serializer = UserListSerializer(queryset, many=True)
+            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     #注册用户(新注册用户没有交易师)
     def create(self, request, *args, **kwargs):
@@ -332,29 +336,48 @@ class UserView(viewsets.ModelViewSet):
             if not useridlist:
                 raise InvestError(code=20071,msg='except a not null list')
             with transaction.atomic():
+                rel_fileds = [f for f in MyUser._meta.get_fields() if isinstance(f, ForeignObjectRel)]
+                links = [f.get_accessor_name() for f in rel_fileds]
                 for userid in useridlist:
                     instance = self.get_object(userid)
                     if request.user.has_perm('usersys.admin_deleteuser') or request.user.has_perm('usersys.user_deleteuser',instance):
                         pass
                     else:
                         raise InvestError(code=2009)
-                    links = ['investor_relations','trader_relations','investor_timelines','supporter_timelines','trader_timelines']
                     for link in links:
-                        manager = getattr(instance, link, None)
-                        if not manager:
-                            continue
-                        # one to one
-                        if isinstance(manager, models.Model):
-                            if hasattr(manager, 'is_deleted') and not manager.is_deleted:
-                                raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
-                        else:
-                            try:
-                                manager.model._meta.get_field('is_deleted')
-                                if manager.all().filter(is_deleted=False).count():
+                        if link in ['investor_relations','trader_relations','investor_timelines','supporter_timelines','trader_timelines']:
+                            manager = getattr(instance, link, None)
+                            if not manager:
+                                continue
+                            # one to one
+                            if isinstance(manager, models.Model):
+                                if hasattr(manager, 'is_deleted') and not manager.is_deleted:
                                     raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
-                            except FieldDoesNotExist as ex:
-                                if manager.all().count():
-                                    raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
+                            else:
+                                try:
+                                    manager.model._meta.get_field('is_deleted')
+                                    if manager.all().filter(is_deleted=False).count():
+                                        raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
+                                except FieldDoesNotExist:
+                                    if manager.all().count():
+                                        raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
+                        # else:
+                        #     manager = getattr(instance, link, None)
+                        #     if not manager:
+                        #         continue
+                        #     # one to one
+                        #     if isinstance(manager, models.Model):
+                        #         if hasattr(manager, 'is_deleted') and not manager.is_deleted:
+                        #             manager.is_deleted = True
+                        #             manager.save()
+                        #     else:
+                        #         try:
+                        #             manager.model._meta.get_field('is_deleted')
+                        #             if manager.all().filter(is_deleted=False).count():
+                        #                 manager.all().update(is_deleted=True)
+                        #         except FieldDoesNotExist:
+                        #             if manager.all().count():
+                        #                 raise InvestError(code=2010, msg=u'{} 上有关联数据，且没有is_deleted字段'.format(link))
                     instance.is_deleted = True
                     instance.deleteduser = request.user
                     instance.deletedtime = datetime.datetime.now()
@@ -387,7 +410,7 @@ class UserView(viewsets.ModelViewSet):
             else:
                 raise InvestError(code=8888, msg='source field is required')
             try:
-                user = self.queryset.get(mobile=mobile, datasource=userdatasource)
+                user = self.get_queryset().get(mobile=mobile, datasource=userdatasource)
             except MyUser.DoesNotExist:
                 raise InvestError(code=2002,msg='用户不存在——%s'%source)
             try:
@@ -458,7 +481,7 @@ class UserRelationView(viewsets.ModelViewSet):
     queryset = UserRelation.objects.filter(is_deleted=False)
     serializer_class = UserRelationSerializer
 
-    def get_queryset(self,datasource=None):
+    def get_queryset(self):
         assert self.queryset is not None, (
             "'%s' should either include a `queryset` attribute, "
             "or override the `get_queryset()` method."
@@ -466,36 +489,44 @@ class UserRelationView(viewsets.ModelViewSet):
         )
         queryset = self.queryset
         if isinstance(queryset, QuerySet):
-            queryset = queryset.filter(datasource=datasource)
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource=self.request.user.datasource)
+            else:
+                queryset = queryset.all()
         else:
             raise InvestError(code=8890)
         return queryset
 
     @loginTokenIsAvailable(['usersys.admin_getuserrelation','usersys.user_getuserrelation'])
     def list(self, request, *args, **kwargs):
-        page_size = request.GET.get('page_size')
-        page_index = request.GET.get('page_index')  #从第一页开始
-        lang = request.GET.get('lang')
-        if not page_size:
-            page_size = 10
-        if not page_index:
-            page_index = 1
-        queryset = self.filter_queryset(self.get_queryset())
-        if request.user.has_perm('usersys.as_adminuser'):
-            queryset = queryset
-        elif request.user.has_perm('usersys.as_traderuser'):
-            queryset = queryset.filter(traderuser=request.user)
-        elif request.user.has_perm('usersys.as_investoruser'):
-            queryset = queryset.filter(investoruser=request.user)
-        else:
-            return JSONResponse(InvestErrorResponse(InvestError(2009)))
         try:
-            queryset = Paginator(queryset, page_size)
-        except EmptyPage:
-            return JSONResponse(SuccessResponse([],msg='没有符合条件的对象'))
-        queryset = queryset.page(page_index)
-        serializer = self.get_serializer(queryset, many=True)
-        return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  #从第一页开始
+            lang = request.GET.get('lang')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            if request.user.has_perm('usersys.as_adminuser'):
+                queryset = queryset
+            elif request.user.has_perm('usersys.as_traderuser'):
+                queryset = queryset.filter(traderuser=request.user)
+            elif request.user.has_perm('usersys.as_investoruser'):
+                queryset = queryset.filter(investoruser=request.user)
+            else:
+                raise InvestError(code=2009)
+            try:
+                queryset = Paginator(queryset, page_size)
+            except EmptyPage:
+                raise InvestError(code=1001)
+            queryset = queryset.page(page_index)
+            serializer = self.get_serializer(queryset, many=True)
+            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
     @loginTokenIsAvailable()
@@ -660,7 +691,7 @@ def login(request):
             if not clienttype:
                 raise InvestError(code=2003,msg='登录类型不可用')
             else:
-                raise InvestError(code=2001,msg='0密码错误0')
+                raise InvestError(code=2001,msg='密码错误')
         user.last_login = datetime.datetime.now()
         if user.is_active:
             user.is_active = True
@@ -669,7 +700,7 @@ def login(request):
         return JSONResponse(SuccessResponse(returnDictChangeToLanguage(response,lang)))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
-    except Exception as errs:
+    except Exception:
         catchexcption(request)
         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 

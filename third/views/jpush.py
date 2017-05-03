@@ -39,7 +39,6 @@ apps = {
        "message": "Rate limit exceeded"
    }
 }
-
 '''
 
 
@@ -65,7 +64,6 @@ def https_request(app_key, body, url, content_type=None, version=None, params=No
     jpush v3 params
     支持离线消息，在线通知同时发送
 '''
-
 
 def push_params_v3(content, receiver_value, platform, bdage, n_extras):
     global apns_production_boolean
