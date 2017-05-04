@@ -8,10 +8,9 @@ from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.mail_xsend import MAIL
 from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.message_xsend import MESSAGEXsend
 from rest_framework.decorators import api_view, throttle_classes
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
-
 from third.models import MobileAuthCode
 from utils.myClass import JSONResponse, InvestError
-from utils.util import SuccessResponse, catchexcption, ExceptionResponse, InvestErrorResponse
+from utils.util import SuccessResponse, catchexcption, ExceptionResponse, InvestErrorResponse, checkIPAddress
 
 '''
 （海拓）注册短信验证码模板
@@ -118,6 +117,16 @@ def xsendEmail(destination,projectsign,vars=None):
 @throttle_classes([AnonRateThrottle])
 def sendSmscode(request):
     try :
+        if request.META.has_key('HTTP_X_FORWARDED_FOR'):
+            ip = request.META['HTTP_X_FORWARDED_FOR']
+        else:
+            ip = request.META['REMOTE_ADDR']
+        if ip:
+            times = checkIPAddress(ip)
+            if times > 3:
+                raise InvestError(code=3004)
+        else:
+            raise InvestError(code=3003)
         destination = request.data.get('destination')
         mobilecode = MobileAuthCode(mobile=destination)
         mobilecode.save()
@@ -255,3 +264,10 @@ def xsendInternationalsms(destination, projectsign, vars=None):
 
     response = submail.xsend()
     return response
+
+
+
+# if request.META.has_key('HTTP_X_FORWARDED_FOR'):
+#     ip =  request.META['HTTP_X_FORWARDED_FOR']
+# else:
+#     ip = request.META['REMOTE_ADDR']

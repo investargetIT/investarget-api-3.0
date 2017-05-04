@@ -41,9 +41,13 @@ def cache_delete_key(key):
 #记录request error
 def catchexcption(request):
     now = datetime.datetime.now()
+    if request.META.has_key('HTTP_X_FORWARDED_FOR'):
+        ip = request.META['HTTP_X_FORWARDED_FOR']
+    else:
+        ip = request.META['REMOTE_ADDR']
     filepath = excptionlogpath + '/' + now.strftime('%Y-%m-%d')
     f = open(filepath, 'a')
-    f.writelines(now.strftime('%H:%M:%S')+'  user_agent:'+request.META['HTTP_USER_AGENT']+ '  请求发起用户id:'+str(request.user.id)+'  path: '+request.path+ '\n'+ traceback.format_exc()+'\n\n')
+    f.writelines(now.strftime('%H:%M:%S') + '请求用户ip:%s'%ip +'  user_agent:'+request.META['HTTP_USER_AGENT']+ '  请求发起用户id:'+str(request.user.id)+'  path: '+request.path+ '\n'+ traceback.format_exc()+'\n\n')
     f.close()
 
 #记录error
@@ -54,6 +58,15 @@ def logexcption():
     f.writelines(now.strftime('%H:%M:%S')+'\n'+ traceback.format_exc()+'\n\n')
     f.close()
 
+def checkIPAddress(ip):
+    key = 'ip_%s'%str(ip)
+    times = cache.get(key)
+    if times:
+        times = times + 1
+    else:
+        times = 1
+    cache.set(key, times, 60 * 60 * 1)
+    return times
 
 def loginTokenIsAvailable(permissions=None):#判断model级别权限
     def token_available(func):
@@ -61,7 +74,10 @@ def loginTokenIsAvailable(permissions=None):#判断model级别权限
             try:
                 tokenkey = request.META.get('HTTP_TOKEN')
                 if tokenkey:
-                    token = MyToken.objects.get(key=tokenkey,is_deleted=False)
+                    try:
+                        token = MyToken.objects.get(key=tokenkey,is_deleted=False)
+                    except MyToken.DoesNotExist:
+                        return JSONResponse(InvestErrorResponse(InvestError(3000)))
                 else:
                     return JSONResponse(InvestErrorResponse(InvestError(3000)))
             except Exception as exc:
