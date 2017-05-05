@@ -38,3 +38,21 @@
     管理员删除 （所有）
     交易师删除 （只限于自身的联系）
     }
+
+
+dataroom（管理员/用户）
+    {
+    新建   管理员/用户 class
+    删除   管理员 class 用户 obj
+    修改   管理员 class 用户 obj
+    关闭   管理员 class 用户 obj
+    查看   管理员 class 用户 obj
+    }
+dataroomfile（管理员/用户）
+    {
+    新建  管理员/用户 class
+    删除  管理员 class 用户obj(对dataroom)
+    移动  管理员 class 用户obj(对dataroom)
+    复制  管理员 class 用户obj(对dataroom)
+    查看  管理员 class 用户obj(对dataroom)
+    }

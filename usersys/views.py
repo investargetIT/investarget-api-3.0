@@ -27,7 +27,7 @@ from utils import perimissionfields
 from utils.myClass import JSONResponse, InvestError
 from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable,\
     catchexcption, cache_delete_key, maketoken, returnDictChangeToLanguage, returnListChangeToLanguage, SuccessResponse, \
-    InvestErrorResponse, ExceptionResponse
+    InvestErrorResponse, ExceptionResponse, checkIPAddress
 
 
 class UserView(viewsets.ModelViewSet):
@@ -670,6 +670,16 @@ class UserRelationView(viewsets.ModelViewSet):
 def login(request):
     """用户登录 """
     try:
+        if request.META.has_key('HTTP_X_FORWARDED_FOR'):
+            ip = request.META['HTTP_X_FORWARDED_FOR']
+        else:
+            ip = request.META['REMOTE_ADDR']
+        if ip:
+            times = checkIPAddress(ip)
+            if times > 100:
+                raise InvestError(code=3004)
+        else:
+            raise InvestError(code=3003)
         receive = request.data
         lang = request.GET.get('lang')
         clienttype = request.META.get('HTTP_CLIENTTYPE')

@@ -7,6 +7,7 @@ from django.db import models
 from proj.models import project
 from sourcetype.models import DataSource
 from usersys.models import MyUser
+from utils.myClass import InvestError
 
 
 class publicdirectorytemplate(models.Model):
@@ -54,17 +55,31 @@ class dataroom(models.Model):
         db_table = 'dataroom'
         permissions = (
             ('admin_getdataroom','管理员查看dataroom'),
-            ('admin_changedataroom', '管理员修改dataroom'),
+            ('admin_changedataroom', '管理员修改dataroom里的文件'),
             ('admin_deletedataroom', '管理员删除dataroom'),
             ('admin_adddataroom', '管理员添加dataroom'),
+            ('admin_closedataroom', '管理员关闭dataroom'),
 
-            # ('user_getdataroom','用户查看dataroom(obj级别)'),
+            ('user_closedataroom', '用户关闭dataroom(obj级别)'),
+            ('user_getdataroom','用户查看dataroom内的文件内容(obj级别)'), #obj级别权限针对dataroom内的文件内容
+            ('user_changedataroom', '用户修改dataroom内的文件内容(obj级别)'),
+            ('user_adddataroom', '用户添加dataroom(obj/class级别)'),#obj级别权限针对 添加dataroom内的文件 / class级别针对能否新建dataroom
+            ('user_deletedataroom', '用户删除dataroom内的文件内容(obj/class级别)'),#obj级别权限针对dataroom 内的文件内容 / class级别针对能否删除dataroom
         )
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if not self.proj or not self.supportor:
+            raise InvestError(code=7004,msg='proj缺失或proj.supportor缺失')
+        if self.supportor == self.investor or self.supportor == self.trader:
+            raise InvestError(code=7003)
+
+        super(dataroom, self).save(force_insert, force_update, using, update_fields)
 
 class dataroomdirectoryorfile(models.Model):
     id = models.AutoField(primary_key=True)
     dataroom = models.ForeignKey(dataroom,related_name='dataroom_directories',help_text='目录或文件所属dataroom')
-    parent = models.ForeignKey('self',related_name='directory_directories',help_text='目录或文件所属目录id')
+    parent = models.ForeignKey('self',blank=True,null=True,related_name='directory_directories',help_text='目录或文件所属目录id')
     orderNO = models.PositiveSmallIntegerField(help_text='目录或文件在所属目录下的排序位置')
     isShadow = models.BooleanField(blank=True,default=False)
     shadowdirectory = models.ForeignKey('self',related_name='shadowdirectory_directory',blank=True,null=True,)
@@ -84,12 +99,4 @@ class dataroomdirectoryorfile(models.Model):
     datasource = models.ForeignKey(DataSource, help_text='数据源')
     class Meta:
         db_table = 'dataroomdirectoryorfile'
-        permissions = (
-            # ('admin_getdataroomdirectory','管理员查看dataroom'),
-            # ('admin_changedataroomdirectory', '管理员修改dataroom'),
-            # ('admin_deletedataroomdirectory', '管理员删除dataroom'),
-            # ('admin_adddataroomdirectory', '管理员添加dataroom'),
-
-            # ('user_getdataroom','用户查看dataroom(obj级别)'),
-        )
 
