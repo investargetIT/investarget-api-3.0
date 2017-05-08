@@ -21,7 +21,7 @@ class organization(models.Model):
     investoverseasproject = models.BooleanField(blank=True, default=True, help_text='是否投海外项目')
     orgtransactionphase = models.ManyToManyField(TransactionPhases, through='orgTransactionPhase',through_fields=('org', 'transactionPhase'), blank=True)
     currency = models.ForeignKey(CurrencyType,blank=True,null=True,related_name='currency_orgs',on_delete=models.SET_NULL)
-    decisionCycle = models.SmallIntegerField(default=180)
+    decisionCycle = models.SmallIntegerField(blank=True,null=True)
     decisionMakingProcess = models.TextField(blank=True,null=True)
     nameC = models.CharField(max_length=128,blank=True,null=True)
     nameE = models.CharField(max_length=128,blank=True,null=True)
@@ -55,6 +55,7 @@ class organization(models.Model):
     def __str__(self):
         return self.nameC
     class Meta:
+        db_table = "org"
         permissions = (
             ('admin_addorg','管理员新增机构'),
             ('admin_changeorg','管理员修改机构'),
@@ -96,6 +97,7 @@ class orgTransactionPhase(models.Model):
 
     class Meta:
         db_table = "org_TransactionPhase"
+
 class orgRemarks(models.Model):
     id = models.AutoField(primary_key=True)
     org = models.ForeignKey(organization,null=True,blank=True,related_name='org_remarks')

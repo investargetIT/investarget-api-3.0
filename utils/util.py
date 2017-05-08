@@ -68,7 +68,7 @@ def checkIPAddress(ip):
     cache.set(key, times, 60 * 60 * 1)
     return times
 
-def loginTokenIsAvailable(permissions=None):#判断model级别权限
+def loginTokenIsAvailable(permissions=None):#判断class级别权限
     def token_available(func):
         def _token_available(self,request, *args, **kwargs):
             try:

@@ -25,9 +25,10 @@ class OrganizationView(viewsets.ModelViewSet):
     update:修改机构信息
     destroy:删除机构
     """
-    filter_backends = (filters.DjangoFilterBackend,)
+    filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
     queryset = organization.objects.filter(is_deleted=False)
     filter_fields = ('id','nameC','orgcode','auditStatu',)
+    search_fields = ('nameC','orgcode',)
     serializer_class = OrgDetailSerializer
     redis_key = 'organization'
 

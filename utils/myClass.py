@@ -1,6 +1,7 @@
 
 from django.http import HttpResponse
 from rest_framework import filters
+from rest_framework.permissions import BasePermission
 from rest_framework.renderers import JSONRenderer
 
 from utils.responsecode import responsecode
@@ -19,3 +20,15 @@ class InvestError(Exception):
             self.msg = msg
         else:
             self.msg = responsecode[str(code)]
+
+class IsSuperUser(BasePermission):
+    """
+    Allows access only to admin users.
+    """
+
+    def has_permission(self, request, view):
+        return (
+            request.method in ('GET', 'HEAD', 'OPTIONS') or
+            request.user and
+            request.user.is_superuser
+        )

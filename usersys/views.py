@@ -19,9 +19,10 @@ from rest_framework import viewsets
 from rest_framework.decorators import api_view, detail_route, list_route
 
 from third.models import MobileAuthCode
-from usersys.models import MyUser, MyToken, UserRelation, userTags, MyUserBackend
+from usersys.models import MyUser, MyToken, UserRelation, userTags, MyUserBackend, UserFriendship
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
-    CreatUserSerializer , UserCommenSerializer , UserRelationDetailSerializer
+    CreatUserSerializer , UserCommenSerializer , UserRelationDetailSerializer, UserFriendshipSerializer, \
+    UserFriendshipDetailSerializer, UserFriendshipUpdateSerializer
 from sourcetype.models import Tag, DataSource
 from utils import perimissionfields
 from utils.myClass import JSONResponse, InvestError
@@ -46,7 +47,7 @@ class UserView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = MyUser.objects.filter(is_deleted=False)
-    filter_fields = ('mobile','email','nameC','nameE','id','groups','org')
+    filter_fields = ('mobile','email','nameC','nameE','groups','org')
     serializer_class = UserSerializer
     redis_key = 'user'
     Model = MyUser
@@ -91,23 +92,27 @@ class UserView(viewsets.ModelViewSet):
             raise InvestError(code=8888,msg='资源非同源')
         return obj
 
-    @loginTokenIsAvailable(['usersys.admin_getuser'])
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')#从第一页开始
+            page_index = request.GET.get('page_index') #从第一页开始
             lang = request.GET.get('lang')
             if not page_size:
                 page_size = 10
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
+            if request.user.has_perm('usersys.admin_getuser'):
+                serializer_class = UserListSerializer
+            else:
+                serializer_class = UserCommenSerializer
             try:
                 queryset = Paginator(queryset, page_size)
             except EmptyPage:
                 raise InvestError(code=1001)
             queryset = queryset.page(page_index)
-            serializer = UserListSerializer(queryset, many=True)
+            serializer = serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -234,16 +239,7 @@ class UserView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             user = self.get_object()
-            if request.user == user:
-                userserializer = UserListSerializer
-            else:
-                if request.user.has_perm('usersys.admin_getuser'):
-                    userserializer = UserListSerializer
-                elif request.user.has_perm('usersys.user_getuser',user):
-                    userserializer = UserListSerializer
-                else:
-                    raise InvestError(code=2009)
-            serializer = userserializer(user)
+            serializer = UserCommenSerializer(user)
             return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -476,6 +472,13 @@ class UserView(viewsets.ModelViewSet):
 
 
 class UserRelationView(viewsets.ModelViewSet):
+    """
+    list:获取用户业务关系联系人
+    create:添加业务关系联系人
+    retrieve:查看业务关系联系人详情
+    update:修改业务关系联系人(批量)
+    destroy:删除业务关系联系人(批量)
+    """
     filter_backends = (filters.DjangoFilterBackend,)
     filter_fields = ('id','investoruser', 'traderuser', 'relationtype')
     queryset = UserRelation.objects.filter(is_deleted=False)
@@ -534,7 +537,7 @@ class UserRelationView(viewsets.ModelViewSet):
         try:
             data = request.data
             data['createduser'] = request.user.id
-            data['datasource'] = 1
+            data['datasource'] = request.user.datasource.id
             lang = request.GET.get('lang')
             if request.user.has_perm('usersys.admin_adduserrelation'):
                 pass
@@ -545,8 +548,6 @@ class UserRelationView(viewsets.ModelViewSet):
             with transaction.atomic():
                 newrelation = UserRelationDetailSerializer(data=data)
                 if newrelation.is_valid():
-                    if newrelation.validated_data.investoruser.datasource != request.user.datasource or newrelation.validated_data.traderuser.datasource != request.user.datasource:
-                        raise InvestError(code=8888)
                     relation = newrelation.save()
                     assign_perm('usersys.user_getuserrelation', relation.traderuser, relation)
                     assign_perm('usersys.user_changeuserrelation', relation.traderuser, relation)
@@ -666,20 +667,155 @@ class UserRelationView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
+class UserFriendshipView(viewsets.ModelViewSet):
+    """
+    list:获取用户好友列表
+    create:添加好友 (管理员权限可以直接确认关系，非管理员权限需对方确认)
+    update:同意添加好友、修改查看项目收藏权限
+    destroy:删除好友关系
+    """
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_fields = ('user', 'friend', 'isaccept')
+    queryset = UserFriendship.objects.filter(is_deleted=False)
+    serializer_class = UserFriendshipSerializer
+
+    def get_queryset(self):
+        assert self.queryset is not None, (
+            "'%s' should either include a `queryset` attribute, "
+            "or override the `get_queryset()` method."
+            % self.__class__.__name__
+        )
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource=self.request.user.datasource)
+            else:
+                queryset = queryset.all()
+        else:
+            raise InvestError(code=8890)
+        return queryset
+
+    def get_object(self,pk=None):
+        if pk:
+            try:
+                obj = self.queryset.get(id=pk)
+            except UserFriendship.DoesNotExist:
+                raise InvestError(code=2002)
+        else:
+            try:
+                obj = self.queryset.get(id=self.kwargs['pk'])
+            except UserFriendship.DoesNotExist:
+                raise InvestError(code=2002)
+        if obj.datasource != self.request.user.datasource:
+            raise InvestError(code=8888,msg='资源非同源')
+        return obj
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')
+            lang = request.GET.get('lang')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            if request.user.has_perm('usersys.admin_getfriend'):
+                queryset = queryset
+            else:
+                queryset = queryset.filter(Q(user=request.user) | Q(friend=request.user))
+            try:
+                queryset = Paginator(queryset, page_size)
+            except EmptyPage:
+                raise InvestError(code=1001)
+            queryset = queryset.page(page_index)
+            serializer = UserFriendshipSerializer(queryset, many=True)
+            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            data['createduser'] = request.user.id
+            data['datasource'] = 1
+            lang = request.GET.get('lang')
+            if request.user.has_perm('usersys.admin_addfriend'):
+                pass
+            else:
+                data['user'] = request.user.id
+                data['isaccept'] = False
+                data['accepttime'] = None
+            with transaction.atomic():
+                newfriendship = UserFriendshipDetailSerializer(data=data)
+                if newfriendship.is_valid():
+                    newfriendship.save()
+                else:
+                    raise InvestError(code=20071,msg='%s'%newfriendship.errors)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(newfriendship.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            if request.user.has_perm('usersys.admin_changefriend'):
+                pass
+            elif request.user == instance.user or request.user == instance.friend:
+                pass
+            else:
+                raise InvestError(code=2009)
+            with transaction.atomic():
+                newfriendship = UserFriendshipUpdateSerializer(instance,data=data)
+                if newfriendship.is_valid():
+                    newfriendship.save()
+                else:
+                    raise InvestError(code=20071, msg='%s' % newfriendship.errors)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(newfriendship.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            if request.user.has_perm('usersys.admin_deletefriend'):
+                pass
+            elif request.user == instance.user or request.user == instance.friend:
+                pass
+            else:
+                raise InvestError(code=2009)
+            with transaction.atomic():
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(UserFriendshipUpdateSerializer(instance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+
 @api_view(['POST'])
 def login(request):
     """用户登录 """
     try:
-        if request.META.has_key('HTTP_X_FORWARDED_FOR'):
-            ip = request.META['HTTP_X_FORWARDED_FOR']
-        else:
-            ip = request.META['REMOTE_ADDR']
-        if ip:
-            times = checkIPAddress(ip)
-            if times > 100:
-                raise InvestError(code=3004)
-        else:
-            raise InvestError(code=3003)
         receive = request.data
         lang = request.GET.get('lang')
         clienttype = request.META.get('HTTP_CLIENTTYPE')
