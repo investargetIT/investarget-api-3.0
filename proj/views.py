@@ -31,9 +31,10 @@ class ProjectView(viewsets.ModelViewSet):
     destroy:删除项目
     getshareprojtoken:获取分享项目token
     """
-    filter_backends = (filters.DjangoFilterBackend,)
+    filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
     queryset = project.objects.all().filter(is_deleted=False)
     filter_fields = ('titleC', 'titleE','isoverseasproject')
+    search_fields = ('titleC', 'titleE',)
     serializer_class = ProjSerializer
     redis_key = 'project'
     Model = project
@@ -389,9 +390,7 @@ class ProjFinanceView(viewsets.ModelViewSet):
                 proj = project.objects.get(id=projid,is_deleted=False,datasource=request.user.datasource)
             except project.DoesNotExist:
                 raise InvestError(code=4002,msg='指定内容不存在')
-            if request.user.datasource != proj.datasource:
-                raise InvestError(code=8888,msg='数据不同源')
-            elif request.user.has_perm('proj.admin_changeproj'):
+            if request.user.has_perm('proj.admin_changeproj'):
                 pass
             elif request.user.has_perm('proj.user_changeproj',proj):
                 pass
@@ -466,9 +465,9 @@ class ProjFinanceView(viewsets.ModelViewSet):
                 returnlist = []
                 for projfinanceid in financeidlist:
                     projfinance = self.get_object(projfinanceid)
-                    if request.user.has_perm('proj.user_deleteproj', projfinance.proj):
+                    if request.user.has_perm('proj.user_changeproj', projfinance.proj):
                         pass
-                    elif request.user.has_perm('proj.admin_deleteproj'):
+                    elif request.user.has_perm('proj.admin_changeproj'):
                         pass
                     else:
                         raise InvestError(code=2009, msg='没有权限')

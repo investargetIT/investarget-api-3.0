@@ -43,6 +43,16 @@ detail_relationone = views.UserRelationView.as_view({
 })
 
 
+user_friendship = views.UserFriendshipView.as_view({
+        'get': 'list',
+        'post': 'create',
+})
+
+user_friendship_detail = views.UserFriendshipView.as_view({
+        'put': 'update',
+        'delete': 'destroy',
+})
+
 
 
 urlpatterns = [
@@ -55,4 +65,6 @@ urlpatterns = [
     url(r'^relationship/(?P<pk>\d+)/$', detail_relationone, name='user-relationshipone'),
     url(r'^register/$', regist_user),
     url(r'^login/$', views.login),
+    url(r'^friend/$', user_friendship, name='user-friendship'),
+    url(r'^friend/(?P<pk>\d+)/$', user_friendship_detail, name='user-friendship-detail'),
 ]

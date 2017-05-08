@@ -3,9 +3,10 @@ from django.contrib.auth.models import Group
 from rest_framework import serializers
 
 from org.serializer import OrgCommonSerializer
-from .models import MyUser, UserRelation
+from .models import MyUser, UserRelation, UserFriendship
 
-#用户关系基本信息
+
+#投资人交易师关系基本信息
 class UserRelationSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserRelation
@@ -18,6 +19,26 @@ class UserRelationDetailSerializer(serializers.ModelSerializer):
         model = UserRelation
         fields = '__all__'
 
+# 用户好友关系基本信息
+class UserFriendshipSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserFriendship
+        fields = ('id', 'user', 'friend', 'isaccept','datasource')
+        read_only_fields = ('datasource',)
+
+# 用户好友关系全部信息
+class UserFriendshipDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserFriendship
+        fields = '__all__'
+
+# 用户好友关系修改信息
+class UserFriendshipUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserFriendship
+        fields = '__all__'
+        read_only_fields = ('datasource','user','friend','createtime','createuser','is_deleted')
+
 #权限组基本信息
 class GroupSerializer(serializers.ModelSerializer):
     class Meta:
@@ -28,7 +49,7 @@ class GroupSerializer(serializers.ModelSerializer):
 class UserCommenSerializer(serializers.ModelSerializer):
     class Meta:
         model = MyUser
-        fields = ('id', 'groups', 'nameC','nameE','email','mobile','company',)
+        fields = ('id', 'nameC','nameE','org','photoKey','tags','title','gender')
 
 #用户全部信息
 class UserSerializer(serializers.ModelSerializer):

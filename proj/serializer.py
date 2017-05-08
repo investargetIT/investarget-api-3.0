@@ -68,5 +68,5 @@ class FavoriteSerializer(serializers.ModelSerializer):
         model = favoriteProject
         fields = '__all__'
         # fields = ('id','proj','user','trader','favoritetype')
-        depth = 1
+        # depth = 1
 

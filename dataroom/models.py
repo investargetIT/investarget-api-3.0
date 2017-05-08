@@ -79,7 +79,7 @@ class dataroom(models.Model):
 class dataroomdirectoryorfile(models.Model):
     id = models.AutoField(primary_key=True)
     dataroom = models.ForeignKey(dataroom,related_name='dataroom_directories',help_text='目录或文件所属dataroom')
-    parent = models.ForeignKey('self',blank=True,null=True,related_name='directory_directories',help_text='目录或文件所属目录id')
+    parent = models.ForeignKey('self',blank=True,null=True,related_name='asparent_directories',help_text='目录或文件所属目录id')
     orderNO = models.PositiveSmallIntegerField(help_text='目录或文件在所属目录下的排序位置')
     isShadow = models.BooleanField(blank=True,default=False)
     shadowdirectory = models.ForeignKey('self',related_name='shadowdirectory_directory',blank=True,null=True,)
@@ -100,3 +100,27 @@ class dataroomdirectoryorfile(models.Model):
     class Meta:
         db_table = 'dataroomdirectoryorfile'
 
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if (not self.parent and self.isShadow) or self.shadowdirectory == self.parent:
+            raise InvestError(code=7005)
+
+
+        super(dataroomdirectoryorfile, self).save(force_insert, force_update, using, update_fields)
+
+    def checkDirectoryHasFile(self):
+        if self.is_deleted:
+            raise InvestError(code=7002)
+        if self.isFile:
+            raise True
+        else:
+            filequery = self.asparent_directories.filter(is_deleted=False)
+            if filequery.count():
+                res = False
+                for fileordirectoriey in filequery:
+                   res = fileordirectoriey.checkDirectoryHasFile()
+                   if res:
+                       break
+                return res
+            else:
+                return False

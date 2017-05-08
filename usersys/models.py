@@ -187,10 +187,10 @@ class userTags(models.Model):
     user = models.ForeignKey(MyUser,related_name='user_usertags',null=True,blank=True)
     tag = models.ForeignKey(Tag, related_name='tag_usertags',null=True, blank=True)
     is_deleted = models.BooleanField(blank=True,default=False)
-    deleteduser = models.ForeignKey(MyUser,blank=True, null=True,related_name='userdelete_usertags',on_delete=models.SET_NULL)
+    deleteduser = models.ForeignKey(MyUser,blank=True, null=True,related_name='userdelete_usertags')
     deletedtime = models.DateTimeField(blank=True, null=True)
     createdtime = models.DateTimeField(auto_created=True,blank=True)
-    createuser = models.ForeignKey(MyUser,blank=True, null=True,related_name='usercreate_usertags',on_delete=models.SET_NULL)
+    createuser = models.ForeignKey(MyUser,blank=True, null=True,related_name='usercreate_usertags')
     class Meta:
         db_table = "user_tags"
 
@@ -228,11 +228,13 @@ class UserRelation(models.Model):
     createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_relations',
                                    on_delete=models.SET_NULL)
     lastmodifytime = models.DateTimeField(blank=True, null=True)
-    lastmodifyuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usermodify_relations', )
+    lastmodifyuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usermodify_relations',)
     datasource = models.ForeignKey(DataSource, help_text='数据源')
     def save(self, *args, **kwargs):
         if not self.datasource:
             raise InvestError(code=8888,msg='datasource有误')
+        if self.datasource !=self.traderuser.datasource or self.datasource !=self.investoruser.datasource:
+            raise InvestError(code=8888,msg='requestuser.datasource不匹配')
         if self.pk:
             userrelation = UserRelation.objects.exclude(pk=self.pk).filter(is_deleted=False,datasource=self.datasource,investoruser=self.investoruser)
         else:
@@ -297,4 +299,39 @@ class UserRelation(models.Model):
         )
 
 
+
+class UserFriendship(models.Model):
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(MyUser,related_name='user_friends',help_text='发起人')
+    friend = models.ForeignKey(MyUser,related_name='friend_users',help_text='接收人')
+    isaccept = models.BooleanField(blank=True,default=False)
+    accepttime = models.DateTimeField(blank=True,null=True)
+    userallowgetfavoriteproj = models.BooleanField(blank=True,default=True,help_text='发起人允许好友查看自己的项目收藏')
+    friendallowgetfavoriteproj = models.BooleanField(blank=True, default=True,help_text='接收人允许好友查看自己的项目收藏')
+    is_deleted = models.BooleanField(blank=True, default=False)
+    deleteduser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_userfriends',)
+    deletedtime = models.DateTimeField(blank=True, null=True)
+    createdtime = models.DateTimeField(auto_created=True, blank=True)
+    createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_userfriends',)
+    datasource = models.ForeignKey(DataSource, help_text='数据源')
+    class Meta:
+        db_table = "user_friendship"
+        permissions =  (
+            ('admin_addfriend', u'管理员建立用户好友关系'),
+            ('admin_changefriend', u'管理员修改用户好友关系'),
+            ('admin_deletefriend', u'管理员删除用户好友关系'),
+            ('admin_getfriend', u'管理员查看用户好友关系'),
+        )
+
+    def save(self, *args, **kwargs):
+        if not self.datasource:
+            raise InvestError(code=8888,msg='datasource有误')
+        if self.datasource !=self.traderuser.datasource or self.datasource !=self.investoruser.datasource:
+            raise InvestError(code=8888,msg='requestuser.datasource不匹配')
+        if self.user == self.friend:
+            raise InvestError(2016)
+        if not self.pk:
+            if UserFriendship.objects.filter(Q(user=self.user,friend=self.friend,is_deleted=False) | Q(friend=self.user,user=self.friend,is_deleted=False)).exists():
+                raise InvestError(2017)
+        super(UserFriendship,self).save(*args, **kwargs)
 
