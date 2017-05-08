@@ -135,7 +135,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
 
             ('admin_adduser', u'管理员新增用户'),
             ('admin_deleteuser', u'管理员删除'),
-            ('admin_changeuser', u'管理员修改用户(包含重置密码)'),
+            ('admin_changeuser', u'管理员修改用户基本信息(包含重置密码)'),
             ('admin_getuser', u'管理员查看用户'),
         )
     def save(self, *args, **kwargs):
