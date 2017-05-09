@@ -67,4 +67,5 @@ urlpatterns = [
     url(r'^login/$', views.login),
     url(r'^friend/$', user_friendship, name='user-friendship'),
     url(r'^friend/(?P<pk>\d+)/$', user_friendship_detail, name='user-friendship-detail'),
+    url(r'^test$',views.testsendmsg)
 ]

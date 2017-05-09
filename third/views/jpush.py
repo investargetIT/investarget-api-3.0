@@ -2,8 +2,6 @@
 # encoding=utf-8
 import time, random, json,  sys, os
 
-from utils.util import JSONResponse
-
 sys.path.insert(0, os.path.dirname(sys.path[0]))
 reload(sys)
 sys.setdefaultencoding('utf8')
@@ -57,7 +55,7 @@ def https_request(app_key, body, url, content_type=None, version=None, params=No
         raise LookupError("Connection to api.jpush.cn timed out.")
     except:
         raise LookupError("Connection to api.jpush.cn error.")
-    return JSONResponse(response)
+    return response
 
 
 '''''
@@ -105,9 +103,10 @@ def pushnotification(data_dict):
     content = data_dict.get('content')
     platform = data_dict.get('platform')   #"ios,android,winphone"
     bdage = data_dict.get('bdage')
-    n_extras = {
-        # 'ass':'sss',
-    }
+    n_extras = data_dict.get('n_extras',{})
+    # n_extras = {
+    #     # 'ass':'sss',
+    # }
     payload = push_params_v3(content=content,receiver_value=receiver_alias,platform=platform,bdage=bdage,n_extras=n_extras)
     return jpush_v3(apps['product'],payload)
 

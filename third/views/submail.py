@@ -204,8 +204,8 @@ def xsendSms(destination,projectsign,vars=None):
         submail.vars = vars
     # submail.add_var('code', '198276')
 
-    response = submail.xsend()
-    return response
+    submail.xsend()
+
 
 
 @api_view(['POST'])

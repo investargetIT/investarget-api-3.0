@@ -14,24 +14,14 @@ def saveMessage(content,type,title,receiver,sender=None):
         msg = message()
         msg.content = content
         msg.title = title
-        msg.type = type
-        msg.receiver_id = receiver
+        msg.type_id = type
+        msg.receiver = receiver
         if sender:
-            msg.sender_id = sender
+            msg.sender = sender
         msg.save()
         return message
     except:
         logexcption()
         return None
 
-
-def sendmessage(message,paths):
-    receiveruser = message.receiver
-    for path in paths:
-        if path == 'email':
-            pass
-        if path == 'message':
-            pass
-        if path == 'notification':
-            pass
 

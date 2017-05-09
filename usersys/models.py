@@ -84,7 +84,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     cardBucket = models.CharField(max_length=32,blank=True,null=True)
     cardKey = models.CharField(max_length=128,blank=True,null=True)
     wechat = models.CharField(max_length=64,blank=True,null=True)
-    userstatu = models.ForeignKey(AuditStatus,help_text='作者',blank=True,null=True)
+    userstatu = models.ForeignKey(AuditStatus,help_text='审核状态',blank=True,null=True)
     org = models.ForeignKey('org.organization',help_text='所属机构',blank=True,null=True,related_name='org_users',on_delete=models.SET_NULL)
     nameC = models.CharField(help_text='姓名',max_length=128,db_index=True,blank=True,null=True,)
     nameE = models.CharField(help_text='name',max_length=128,db_index=True,blank=True,null=True)
