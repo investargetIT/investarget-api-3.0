@@ -98,12 +98,12 @@ def jpush_v3(app_key, payload):
     return https_request(app_key, body, "https://api.jpush.cn/v3/push", 'application/json', version=1)
 
 
-def pushnotification(data_dict):
-    receiver_alias = data_dict.get('receiver_alias')
-    content = data_dict.get('content')
-    platform = data_dict.get('platform')   #"ios,android,winphone"
-    bdage = data_dict.get('bdage')
-    n_extras = data_dict.get('n_extras',{})
+def pushnotification(receiver_alias,content,platform,bdage,n_extras):
+    # receiver_alias = data_dict.get('receiver_alias')
+    # content = data_dict.get('content')
+    # platform = data_dict.get('platform')   #"ios,android,winphone"
+    # bdage = data_dict.get('bdage')
+    # n_extras = data_dict.get('n_extras',{})
     # n_extras = {
     #     # 'ass':'sss',
     # }
