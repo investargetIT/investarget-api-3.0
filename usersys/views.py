@@ -26,7 +26,7 @@ from usersys.serializer import UserSerializer, UserListSerializer, UserRelationS
 from sourcetype.models import Tag, DataSource
 from utils import perimissionfields
 from utils.myClass import JSONResponse, InvestError
-from utils.myFunc import sendmessage_auditstatuchange
+from utils.sendMessage import sendmessage_userauditstatuchange
 from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable,\
     catchexcption, cache_delete_key, maketoken, returnDictChangeToLanguage, returnListChangeToLanguage, SuccessResponse, \
     InvestErrorResponse, ExceptionResponse, checkIPAddress
@@ -853,7 +853,5 @@ def login(request):
 
 
 def testsendmsg(request):
-    print datetime.datetime.now()
-    sendmessage_auditstatuchange(MyUser.objects.get(id=8),MyUser.objects.get(id=8),['sms'])
-    print datetime.datetime.now()
+    sendmessage_userauditstatuchange(MyUser.objects.get(id=8),MyUser.objects.get(id=8),[])
     return JSONResponse({'xxx':'sss'})
