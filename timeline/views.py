@@ -12,6 +12,7 @@ from timeline.models import timeline, timelineTransationStatu, timelineremark
 from timeline.serializer import TimeLineSerializer, TimeLineStatuSerializer, TimeLineCreateSerializer, \
     TimeLineHeaderListSerializer, TimeLineStatuCreateSerializer, TimeLineRemarkSerializer
 from utils.myClass import InvestError, JSONResponse
+from utils.sendMessage import sendmessage_timelineauditstatuchange
 from utils.util import read_from_cache, write_to_cache, returnListChangeToLanguage, loginTokenIsAvailable, \
     returnDictChangeToLanguage, catchexcption, cache_delete_key, SuccessResponse, InvestErrorResponse, ExceptionResponse
 import datetime
@@ -147,38 +148,41 @@ class TimelineView(viewsets.ModelViewSet):
             lang = request.GET.get('lang')
             timelinedata = data.pop('timelinedata',None)
             statudata = data.pop('statudata',None)
-            if statudata:
-                timelinetransationStatus = statudata.get('transationStatus')
-                if timelinetransationStatus:
-                    statudata['lastmodifyuser'] = request.user.id
-                    statudata['lastmodifytime'] = datetime.datetime.now()
-                    statudata['timeline'] = timeline.id
-                    statudata['isActive'] = True
-                    timelinestatus = timeline.timeline_transationStatus.all().filter(transationStatus__id=timelinetransationStatus,is_deleted=False)
-                    if timelinestatus.exists():
-                        if timelinestatus.count() > 1:
-                            raise InvestError(code=6001)
-                        else:
+            sendmessage = False
+            with transaction.atomic():
+                newactivetimelinestatu,newtimeline = None,None
+                if statudata:
+                    timelinetransationStatus = statudata.get('transationStatus')
+                    if timelinetransationStatus:
+                        statudata['lastmodifyuser'] = request.user.id
+                        statudata['lastmodifytime'] = datetime.datetime.now()
+                        statudata['timeline'] = timeline.id
+                        statudata['isActive'] = True
+                        timelinestatus = timeline.timeline_transationStatus.all().filter(transationStatus__id=timelinetransationStatus,is_deleted=False)
+                        if timelinestatus.exists():
                             activetimelinestatu = timelinestatus.first()
-                    else:
-                        activetimelinestatu = None
-                    with transaction.atomic():
+                            if not activetimelinestatu.isActive:
+                                sendmessage = True
+                        else:
+                            activetimelinestatu = None
+                            sendmessage = True
                         timeline.timeline_transationStatus.all().update(isActive=False)
                         timelinestatu = TimeLineStatuCreateSerializer(activetimelinestatu,data=statudata)
                         if timelinestatu.is_valid():
-                            timelinestatu.save()
+                            newactivetimelinestatu = timelinestatu.save()
                         else:
                             raise InvestError(code=20071, msg=timelinestatu.errors)
-            if timelinedata:
-                timelinedata['lastmodifyuser'] = request.user.id
-                timelinedata['lastmodifytime'] = datetime.datetime.now()
-                with transaction.atomic():
+                if timelinedata:
+                    timelinedata['lastmodifyuser'] = request.user.id
+                    timelinedata['lastmodifytime'] = datetime.datetime.now()
                     timelineseria = TimeLineCreateSerializer(timeline,data=timelinedata)
                     if timelineseria.is_valid():
-                        timelineseria.save()
+                        newtimeline = timelineseria.save()
                     else:
                         raise InvestError(code=20071, msg=timelineseria.errors)
-            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(TimeLineSerializer(timeline).data, lang)))
+                if sendmessage:
+                    sendmessage_timelineauditstatuchange(newactivetimelinestatu,newtimeline.trader,['app','email','webmsg'])
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(TimeLineSerializer(timeline).data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:

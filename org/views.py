@@ -72,7 +72,7 @@ class OrganizationView(viewsets.ModelViewSet):
             raise InvestError(code=8888, msg='资源非同源')
         return obj
 
-    @loginTokenIsAvailable()
+
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')

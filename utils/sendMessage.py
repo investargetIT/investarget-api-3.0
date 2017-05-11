@@ -4,7 +4,7 @@ import threading
 from dataroom.models import dataroomdirectoryorfile
 from proj.models import project, favoriteProject
 from timeline.models import timelineTransationStatu
-from usersys.models import MyUser, UserRelation
+from usersys.models import MyUser, UserRelation, UserFriendship
 from org.models import organization
 from msg.views import saveMessage
 from third.views.jpush import pushnotification
@@ -20,8 +20,7 @@ def sendmessage_favoriteproject(model,receiver,types,sender=None):
     :param sender: myuser type
     :return: None
     """
-
-    class sendmessage_auditstatuchangeThread(threading.Thread):
+    class sendmessage_favoriteprojectThread(threading.Thread):
         def __init__(self, model, receiver, types, sender=None):
             self.model = model
             self.receiver = receiver
@@ -58,7 +57,7 @@ def sendmessage_favoriteproject(model,receiver,types,sender=None):
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
 
-    sendmessage_auditstatuchangeThread(model,receiver,types,sender).start()
+    sendmessage_favoriteprojectThread(model,receiver,types,sender).start()
 
 def sendmessage_traderchange(model,receiver,types,sender=None):
     """
@@ -68,7 +67,7 @@ def sendmessage_traderchange(model,receiver,types,sender=None):
     :param sender: myuser type
     :return: None
     """
-    class sendmessage_auditstatuchangeThread(threading.Thread):
+    class sendmessage_traderchangeThread(threading.Thread):
         def __init__(self, model, receiver, types, sender=None):
             self.model = model
             self.receiver = receiver
@@ -83,7 +82,7 @@ def sendmessage_traderchange(model,receiver,types,sender=None):
             sender = self.sender
             if isinstance(model, UserRelation):
                 if 'app' in types:
-                    content = ''
+                    content = '交易师已更换'
                     receiver_alias = receiver.usercode
                     platform = 'ios'
                     bdage = 1
@@ -105,7 +104,7 @@ def sendmessage_traderchange(model,receiver,types,sender=None):
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
 
-    sendmessage_auditstatuchangeThread(model,receiver,types,sender).start()
+    sendmessage_traderchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
     """
@@ -130,12 +129,12 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
             sender = self.sender
             if isinstance(model, MyUser):
                 if 'app' in types:
-                    content = ''
-                    receiver_alias = receiver.usercode
+                    content = '您的账号状态已经改为\'%s\''%model.userstatu.nameC
+                    receiver_alias = receiver.mobile
                     platform = 'ios'
                     bdage = 1
                     n_extras = {}
-                    pushnotification(content, receiver_alias, platform, bdage, n_extras)
+                    pushnotification(content=content, receiver_alias=receiver_alias, platform=platform, bdage=bdage, n_extras=n_extras)
                 if 'email' in types:
                     destination = receiver.email
                     projectsign = ''
@@ -147,12 +146,59 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                     vars = {'code': 'sss', 'time': '10'}
                     xsendSms(destination, projectsign, vars)
                 if 'webmsg' in types:
-                    content = ''
-                    title = ''
+                    content = '您的账号状态已经改为\'%s\'，如有疑问，请咨询相关工作人员。'%model.userstatu.nameC
+                    title = '您的账号状态已经改为\'%s\''%model.userstatu.nameC
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
 
     sendmessage_auditstatuchangeThread(model,receiver,types,sender).start()
+
+def sendmessage_userregister(model,receiver,types,sender=None):
+    """
+    :param model: MyUser type
+    :param receiver: myuser type
+    :param types: list
+    :param sender: myuser type
+    :return: None
+    """
+    class sendmessage_userregisterThread(threading.Thread):
+        def __init__(self, model, receiver, types, sender=None):
+            self.model = model
+            self.receiver = receiver
+            self.types = types
+            self.sender = sender
+            threading.Thread.__init__(self)
+
+        def run(self):
+            types = self.types
+            receiver = self.receiver
+            model = self.model
+            sender = self.sender
+            if isinstance(model, MyUser):
+                if 'app' in types:
+                    content = '我们已收到您提交的注册申请。我们将在24小时内与您取得联系，进行用户信息审核，并明确您的意向和需求。请您耐心等待！审核结果将通过邮件和短信通知您。感谢您对多维海拓的关注！'
+                    receiver_alias = receiver.mobile
+                    platform = 'ios'
+                    bdage = 1
+                    n_extras = {}
+                    pushnotification(content=content, receiver_alias=receiver_alias, platform=platform, bdage=bdage, n_extras=n_extras)
+                if 'email' in types:
+                    destination = receiver.email
+                    projectsign = 'J6VK41'
+                    vars = {}
+                    xsendEmail(destination, projectsign, vars)
+                if 'sms' in types:
+                    destination = receiver.mobile
+                    projectsign = 'WzSYg'
+                    vars = {'code': 'sss', 'time': '10'}
+                    xsendSms(destination, projectsign, vars)
+                if 'webmsg' in types:
+                    content = '您的账号状态已经改为\'%s\'，如有疑问，请咨询相关工作人员。'%model.userstatu.nameC
+                    title = '您的账号状态已经改为\'%s\''%model.userstatu.nameC
+                    messagetype = 1
+                    saveMessage(content, messagetype, title, receiver, sender)
+
+    sendmessage_userregisterThread(model,receiver,types,sender).start()
 
 def sendmessage_projectauditstatuchange(model,receiver,types,sender=None):
     """
@@ -162,7 +208,7 @@ def sendmessage_projectauditstatuchange(model,receiver,types,sender=None):
     :param sender: myuser type
     :return: None
     """
-    class sendmessage_auditstatuchangeThread(threading.Thread):
+    class sendmessage_projectauditstatuchangeThread(threading.Thread):
         def __init__(self, model, receiver, types, sender=None):
             self.model = model
             self.receiver = receiver
@@ -198,7 +244,7 @@ def sendmessage_projectauditstatuchange(model,receiver,types,sender=None):
                     title = ''
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
-    sendmessage_auditstatuchangeThread(model,receiver,types,sender).start()
+    sendmessage_projectauditstatuchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_orgauditstatuchange(model,receiver,types,sender=None):
     """
@@ -208,7 +254,7 @@ def sendmessage_orgauditstatuchange(model,receiver,types,sender=None):
     :param sender: myuser type
     :return: None
     """
-    class sendmessage_auditstatuchangeThread(threading.Thread):
+    class sendmessage_orgauditstatuchangeThread(threading.Thread):
         def __init__(self, model, receiver, types, sender=None):
             self.model = model
             self.receiver = receiver
@@ -244,7 +290,7 @@ def sendmessage_orgauditstatuchange(model,receiver,types,sender=None):
                     title = ''
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
-    sendmessage_auditstatuchangeThread(model,receiver,types,sender).start()
+    sendmessage_orgauditstatuchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_timelineauditstatuchange(model,receiver,types,sender=None):
     """
@@ -254,7 +300,7 @@ def sendmessage_timelineauditstatuchange(model,receiver,types,sender=None):
     :param sender: myuser type
     :return: None
     """
-    class sendmessage_auditstatuchangeThread(threading.Thread):
+    class sendmessage_timelineauditstatuchangeThread(threading.Thread):
         def __init__(self, model, receiver, types, sender=None):
             self.model = model
             self.receiver = receiver
@@ -290,7 +336,7 @@ def sendmessage_timelineauditstatuchange(model,receiver,types,sender=None):
                     title = ''
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
-    sendmessage_auditstatuchangeThread(model,receiver,types,sender).start()
+    sendmessage_timelineauditstatuchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
     """
@@ -300,7 +346,7 @@ def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
     :param sender: myuser type
     :return: None
     """
-    class sendmessage_auditstatuchangeThread(threading.Thread):
+    class sendmessage_timelinealertcycleexpireThread(threading.Thread):
         def __init__(self, model, receiver, types, sender=None):
             self.model = model
             self.receiver = receiver
@@ -337,7 +383,7 @@ def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
 
-    sendmessage_auditstatuchangeThread(model,receiver,types,sender).start()
+    sendmessage_timelinealertcycleexpireThread(model,receiver,types,sender).start()
 
 def sendmessage_dataroomfileupdate(model,receiver,types,sender=None):
     """
@@ -347,7 +393,7 @@ def sendmessage_dataroomfileupdate(model,receiver,types,sender=None):
     :param sender: myuser type
     :return: None
     """
-    class sendmessage_auditstatuchangeThread(threading.Thread):
+    class sendmessage_dataroomfileupdateThread(threading.Thread):
         def __init__(self, model, receiver, types, sender=None):
             self.model = model
             self.receiver = receiver
@@ -384,5 +430,50 @@ def sendmessage_dataroomfileupdate(model,receiver,types,sender=None):
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
 
-    sendmessage_auditstatuchangeThread(model,receiver,types,sender).start()
+    sendmessage_dataroomfileupdateThread(model,receiver,types,sender).start()
 
+def sendmessage_usermakefriends(model,receiver,types,sender=None):
+    """
+    :param model: dataroomdirectoryorfile type
+    :param receiver: myuser type
+    :param types: list
+    :param sender: myuser type
+    :return: None
+    """
+    class sendmessage_usermakefriendsThread(threading.Thread):
+        def __init__(self, model, receiver, types, sender=None):
+            self.model = model
+            self.receiver = receiver
+            self.types = types
+            self.sender = sender
+            threading.Thread.__init__(self)
+
+        def run(self):
+            types = self.types
+            receiver = self.receiver
+            model = self.model
+            sender = self.sender
+            if isinstance(model, UserFriendship):
+                if 'app' in types:
+                    content = 'test 3.0'
+                    receiver_alias = receiver.mobile
+                    platform = 'ios'
+                    bdage = 1
+                    n_extras = {}
+                    pushnotification(content, receiver_alias, platform, bdage, n_extras)
+                if 'email' in types:
+                    destination = receiver.email
+                    projectsign = 'J6VK41'
+                    vars = {}
+                    xsendEmail(destination, projectsign, vars)
+                if 'sms' in types:
+                    destination = receiver.mobile
+                    projectsign = 'WzSYg'
+                    vars = {'code': 'sss', 'time': '10'}
+                    xsendSms(destination, projectsign, vars)
+                if 'webmsg' in types:
+                    content = 'test 3.0 content'
+                    title = 'test 3.0'
+                    messagetype = 1
+                    saveMessage(content, messagetype, title, receiver, sender)
+    sendmessage_usermakefriendsThread(model,receiver,types,sender).start()

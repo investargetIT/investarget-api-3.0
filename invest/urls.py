@@ -36,6 +36,6 @@ urlpatterns += [
     url(r'^org/',include(org.urls)),
     url(r'^timeline/',include(timeline.urls)),
     url(r'^dataroom/',include(dataroom.urls)),
-    url(r'^util/',include(third.urls)),
+    url(r'^service/',include(third.urls)),
     url(r'^source/', include(sourcetype.urls)),
 ]

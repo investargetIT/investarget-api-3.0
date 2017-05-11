@@ -17,6 +17,7 @@ from proj.serializer import ProjSerializer, FinanceSerializer, ProjCreatSerializ
     ProjCommonSerializer, FinanceChangeSerializer, FinanceCreateSerializer, FavoriteSerializer, FavoriteCreateSerializer
 from sourcetype.models import Tag, Industry, TransactionType
 from usersys.models import MyUser
+from utils.sendMessage import sendmessage_projectauditstatuchange
 from utils.util import catchexcption, read_from_cache, write_to_cache, loginTokenIsAvailable, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse
 from utils.myClass import JSONResponse, InvestError
@@ -33,7 +34,7 @@ class ProjectView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
     queryset = project.objects.all().filter(is_deleted=False)
-    filter_fields = ('titleC', 'titleE','isoverseasproject')
+    filter_fields = ('titleC', 'titleE','isoverseasproject','industries','tags')
     search_fields = ('titleC', 'titleE',)
     serializer_class = ProjSerializer
     redis_key = 'project'
@@ -98,7 +99,7 @@ class ProjectView(viewsets.ModelViewSet):
                 return JSONResponse(SuccessResponse([],msg='没有符合条件的结果'))
             queryset = queryset.page(page_index)
             serializer = ProjCommonSerializer(queryset, many=True)
-            return JSONResponse({'success': True, 'result': returnListChangeToLanguage(serializer.data,lang), 'errorcode': 1000, 'errormsg': None})
+            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -181,10 +182,14 @@ class ProjectView(viewsets.ModelViewSet):
             projdata['lastmodifyuser'] = request.user.id
             projdata['lastmodifytime'] = datetime.datetime.now()
             tagsdata = projdata.pop('tags', None)
+            sendmessage = False
+            oldstatu = pro.statu_id
+            if projdata.get('statu',None) and projdata.get('statu',None) != pro.statu_id:
+                sendmessage = True
             industrydata = projdata.pop('industries', None)
             transactiontypedata = projdata.pop('transactionType', None)
             with transaction.atomic():
-                proj = ProjCreatSerializer(data=projdata)
+                proj = ProjCreatSerializer(pro,data=projdata)
                 if proj.is_valid():
                     pro = proj.save()
                     if tagsdata:
@@ -224,7 +229,9 @@ class ProjectView(viewsets.ModelViewSet):
                         pro.project_TransactionTypes.bulk_create(projtransactiontypelist)
 
                 else:
-                    raise InvestError(code=4001,msg='data有误_%s\n%s' % (proj.error_messages, proj.errors))
+                    raise InvestError(code=4001,msg='data有误_%s' %  proj.errors)
+                if sendmessage:
+                    sendmessage_projectauditstatuchange(pro,pro.supportUser,['app','email','webmsg'],sender=request.user)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(ProjSerializer(pro).data,lang)))
         except InvestError as err:
                 return JSONResponse(InvestErrorResponse(err))

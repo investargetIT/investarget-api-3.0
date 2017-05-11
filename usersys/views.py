@@ -3,7 +3,7 @@ import traceback
 
 import datetime
 from django.contrib import auth
-from django.core.cache import cache
+from django.contrib.auth.models import Group
 from django.core.exceptions import FieldDoesNotExist
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction,models
@@ -18,18 +18,20 @@ from rest_framework import viewsets
 
 from rest_framework.decorators import api_view, detail_route, list_route
 
+from org.models import organization
 from third.models import MobileAuthCode
-from usersys.models import MyUser, MyToken, UserRelation, userTags, MyUserBackend, UserFriendship
+from usersys.models import MyUser,UserRelation, userTags, UserFriendship
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
     CreatUserSerializer , UserCommenSerializer , UserRelationDetailSerializer, UserFriendshipSerializer, \
     UserFriendshipDetailSerializer, UserFriendshipUpdateSerializer
 from sourcetype.models import Tag, DataSource
 from utils import perimissionfields
 from utils.myClass import JSONResponse, InvestError
-from utils.sendMessage import sendmessage_userauditstatuchange
+from utils.sendMessage import sendmessage_userauditstatuchange, sendmessage_userregister, sendmessage_traderchange, \
+    sendmessage_usermakefriends
 from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable,\
     catchexcption, cache_delete_key, maketoken, returnDictChangeToLanguage, returnListChangeToLanguage, SuccessResponse, \
-    InvestErrorResponse, ExceptionResponse, checkIPAddress
+    InvestErrorResponse, ExceptionResponse
 
 
 class UserView(viewsets.ModelViewSet):
@@ -159,11 +161,23 @@ class UserView(viewsets.ModelViewSet):
                     raise InvestError(code=2007,msg='mobile、email cannot all be null')
                 if self.queryset.filter(filterQ,datasource=userdatasource).exists():
                     raise InvestError(code=2004)
+                groupid = data.pop('groups', None)
+                if not groupid:
+                    raise InvestError(code=2007,msg='groups cannot be null')
+                try:
+                    Group.objects.get(id=groupid,datasource=userdatasource)
+                except Exception:
+                    raise InvestError(code=2007,msg='groups bust be an available GroupID')
+                data['groups'] = [groupid]
+                orgname = data.pop('orgname', None)
+                data.pop('org',None)
+                if orgname:
+                    org = organization(nameC=orgname,datasource=userdatasource).save()
+                    data['org'] = org.id
                 user = MyUser(email=email,mobile=mobile,datasource=userdatasource)
                 password = data.pop('password', None)
                 user.set_password(password)
                 user.save()
-
                 tags = data.pop('tags', None)
                 userserializer = CreatUserSerializer(user, data=data)
                 if userserializer.is_valid():
@@ -175,7 +189,8 @@ class UserView(viewsets.ModelViewSet):
                         user.user_usertags.bulk_create(usertaglist)
                 else:
                     raise InvestError(code=20071,msg='%s\n%s' % (userserializer.error_messages, userserializer.errors))
-                returndic = UserSerializer(user).data
+                returndic = CreatUserSerializer(user).data
+                sendmessage_userregister(user,user,['email'])
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(returndic,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -259,8 +274,6 @@ class UserView(viewsets.ModelViewSet):
             else:
                 if request.user.has_perm('usersys.admin_getuser'):
                     userserializer = UserSerializer
-                elif request.user.has_perm('usersys.user_getuser'):
-                    userserializer = UserListSerializer
                 elif request.user.has_perm('usersys.user_getuser', user):
                     userserializer = UserSerializer
                 else:
@@ -278,11 +291,16 @@ class UserView(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
-            useridlist = request.data
+            useridlist = request.data.get('userlist')
+            data = request.data.get('userdata')
+            data['lastmodifyuser'] = request.user.id
+            data['lastmodifytime'] = datetime.datetime.now()
             userlist = []
+            messgaelist = []
             with transaction.atomic():
                 for userid in useridlist:
                     user = self.get_object(userid)
+                    sendmsg = False
                     if request.user == user:
                         canChangeField = perimissionfields.userpermfield['changeself']
                     else:
@@ -292,14 +310,13 @@ class UserView(viewsets.ModelViewSet):
                             canChangeField = perimissionfields.userpermfield['usersys.trader_changeuser']
                         else:
                             raise InvestError(code=2009)
-                    data = request.data
-                    data['lastmodifyuser'] = request.user.id
-                    data['lastmodifytime'] = datetime.datetime.now()
                     keylist = data.keys()
                     cannoteditlist = [key for key in keylist if key not in canChangeField]
                     if cannoteditlist:
                         raise InvestError(code=2009,msg='没有权限修改_%s' % cannoteditlist)
                     tags = data.pop('tags', None)
+                    if data.get('userstatu',None) and user.userstatu_id != data.get('userstatu',None):
+                        sendmsg = True
                     userserializer = CreatUserSerializer(user, data=data)
                     if userserializer.is_valid():
                         user = userserializer.save()
@@ -315,8 +332,12 @@ class UserView(viewsets.ModelViewSet):
                             user.user_usertags.bulk_create(usertaglist)
                     else:
                         raise InvestError(code=20071,msg='userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
-                    userlist.append(userserializer.data)
-                return JSONResponse(SuccessResponse(returnListChangeToLanguage(userlist,lang)))
+                    userlist.append(user)
+                    messgaelist.append((user,sendmsg))
+                for user,sendmsg in messgaelist:
+                    if sendmsg:
+                        sendmessage_userauditstatuchange(user,user,['app','email','webmsg'],sender=request.user)
+                return JSONResponse(SuccessResponse(returnListChangeToLanguage(CreatUserSerializer(userlist,many=True),lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -358,23 +379,24 @@ class UserView(viewsets.ModelViewSet):
                                 except FieldDoesNotExist:
                                     if manager.all().count():
                                         raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
-                        # else:
-                        #     manager = getattr(instance, link, None)
-                        #     if not manager:
-                        #         continue
-                        #     # one to one
-                        #     if isinstance(manager, models.Model):
-                        #         if hasattr(manager, 'is_deleted') and not manager.is_deleted:
-                        #             manager.is_deleted = True
-                        #             manager.save()
-                        #     else:
-                        #         try:
-                        #             manager.model._meta.get_field('is_deleted')
-                        #             if manager.all().filter(is_deleted=False).count():
-                        #                 manager.all().update(is_deleted=True)
-                        #         except FieldDoesNotExist:
-                        #             if manager.all().count():
-                        #                 raise InvestError(code=2010, msg=u'{} 上有关联数据，且没有is_deleted字段'.format(link))
+                        else:
+                            manager = getattr(instance, link, None)
+                            if not manager:
+                                continue
+                            # one to one
+                            if isinstance(manager, models.Model):
+                                if hasattr(manager, 'is_deleted') and not manager.is_deleted:
+                                    manager.is_deleted = True
+                                    manager.save()
+                            else:
+                                try:
+                                    manager.model._meta.get_field('is_deleted')
+                                    if manager.all().filter(is_deleted=False).count():
+                                        manager.all().update(is_deleted=True)
+                                except FieldDoesNotExist:
+                                    if manager.all().count():
+                                        raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
+
                     instance.is_deleted = True
                     instance.deleteduser = request.user
                     instance.deletedtime = datetime.datetime.now()
@@ -618,8 +640,14 @@ class UserRelationView(viewsets.ModelViewSet):
                 lang = request.GET.get('lang')
                 relationidlist = parmdict['relationlist']
                 relationlist = self.get_queryset().in_bulk(relationidlist)
+                newlist = []
+                sendmessagelist = []
                 for relation in relationlist:
+                    sendmsg = False
                     data = parmdict['newdata']
+                    data.pop('investoruser')
+                    if data.get('traderuser',None) and data.get('traderuser') != relation.traderuser_id:
+                        sendmsg = True
                     if request.user.has_perm('usersys.admin_changeuserrelation'):
                         pass
                     elif request.user.has_perm('usersys.user_changeuserrelation', relation):
@@ -629,13 +657,17 @@ class UserRelationView(viewsets.ModelViewSet):
                         raise InvestError(code=2009,msg='没有权限')
                     data['lastmodifyuser'] = request.user.id
                     data['lastmodifytime'] = datetime.datetime.now()
-
-                    newrelation = UserRelationSerializer(relation,data=data)
-                    if newrelation.is_valid():
-                        newrelation.save()
+                    newrelationseria = UserRelationSerializer(relation,data=data)
+                    if newrelationseria.is_valid():
+                        newrelation = newrelationseria.save()
                     else:
-                        raise InvestError(code=20071,msg=newrelation.errors)
-                return JSONResponse(SuccessResponse(returnListChangeToLanguage(UserRelationSerializer(relationlist,many=True).data,lang)))
+                        raise InvestError(code=20071,msg=newrelationseria.errors)
+                    newlist.append(newrelationseria.data)
+                    sendmessagelist.append((newrelation,sendmsg))
+                for newrelation, sendmsg in sendmessagelist:
+                    if sendmsg:
+                        sendmessage_traderchange(newrelation, newrelation.investoruser,['email', 'app', 'sms', 'webmsg'], sender=request.user)
+                return JSONResponse(SuccessResponse(returnListChangeToLanguage(newlist,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -678,7 +710,7 @@ class UserFriendshipView(viewsets.ModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,)
     filter_fields = ('user', 'friend', 'isaccept')
     queryset = UserFriendship.objects.filter(is_deleted=False)
-    serializer_class = UserFriendshipSerializer
+    serializer_class = UserFriendshipDetailSerializer
 
     def get_queryset(self):
         assert self.queryset is not None, (
@@ -738,11 +770,15 @@ class UserFriendshipView(viewsets.ModelViewSet):
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+    @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
-            data['createduser'] = request.user.id
+            data['createuser'] = request.user.id
             data['datasource'] = 1
+            friendlist = data.pop('friend',None)
+            if not friendlist:
+                raise InvestError(code=20071,msg='\'friends\' need a not null list')
             lang = request.GET.get('lang')
             if request.user.has_perm('usersys.admin_addfriend'):
                 pass
@@ -751,12 +787,20 @@ class UserFriendshipView(viewsets.ModelViewSet):
                 data['isaccept'] = False
                 data['accepttime'] = None
             with transaction.atomic():
-                newfriendship = UserFriendshipDetailSerializer(data=data)
-                if newfriendship.is_valid():
-                    newfriendship.save()
-                else:
-                    raise InvestError(code=20071,msg='%s'%newfriendship.errors)
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(newfriendship.data,lang)))
+                newfriendlist = []
+                sendmessagelist = []
+                for friendid in friendlist:
+                    data['friend'] = friendid
+                    newfriendship = UserFriendshipDetailSerializer(data=data)
+                    if newfriendship.is_valid():
+                        newfriend = newfriendship.save()
+                    else:
+                        raise InvestError(code=20071,msg='%s'%newfriendship.errors)
+                    newfriendlist.append(newfriendship.data)
+                    sendmessagelist.append(newfriend)
+                for friendship in sendmessagelist:
+                    sendmessage_usermakefriends(friendship,friendship.friend,['app','webmsg','sms','email'],sender=request.user)
+                return JSONResponse(SuccessResponse(returnListChangeToLanguage(newfriendlist,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -770,17 +814,28 @@ class UserFriendshipView(viewsets.ModelViewSet):
             lang = request.GET.get('lang')
             instance = self.get_object()
             if request.user.has_perm('usersys.admin_changefriend'):
-                pass
-            elif request.user == instance.user or request.user == instance.friend:
-                pass
+                canChangeField = ['userallowgetfavoriteproj','friendallowgetfavoriteproj','isaccept']
+            elif request.user == instance.user:
+                canChangeField = ['userallowgetfavoriteproj']
+            elif request.user == instance.friend:
+                canChangeField = ['friendallowgetfavoriteproj']
             else:
                 raise InvestError(code=2009)
+            keylist = data.keys()
+            cannoteditlist = [key for key in keylist if key not in canChangeField]
+            if cannoteditlist:
+                raise InvestError(code=2009, msg='没有权限修改_%s' % cannoteditlist)
             with transaction.atomic():
+                sendmessage = False
+                if instance.isaccept == False and bool(data.get('isaccept',None)):
+                    sendmessage = True
                 newfriendship = UserFriendshipUpdateSerializer(instance,data=data)
                 if newfriendship.is_valid():
-                    newfriendship.save()
+                    friendship = newfriendship.save()
                 else:
                     raise InvestError(code=20071, msg='%s' % newfriendship.errors)
+                if sendmessage:
+                    sendmessage_usermakefriends(friendship, friendship.user, ['app', 'webmsg'], sender=request.user)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(newfriendship.data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -853,5 +908,7 @@ def login(request):
 
 
 def testsendmsg(request):
-    sendmessage_userauditstatuchange(MyUser.objects.get(id=8),MyUser.objects.get(id=8),[])
+    print datetime.datetime.now()
+    sendmessage_userauditstatuchange(MyUser.objects.get(id=8),MyUser.objects.get(id=8),['app'])
+    print datetime.datetime.now()
     return JSONResponse({'xxx':'sss'})

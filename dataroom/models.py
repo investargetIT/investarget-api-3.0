@@ -61,10 +61,10 @@ class dataroom(models.Model):
             ('admin_closedataroom', '管理员关闭dataroom'),
 
             ('user_closedataroom', '用户关闭dataroom(obj级别)'),
-            ('user_getdataroom','用户查看dataroom内的文件内容(obj级别)'), #obj级别权限针对dataroom内的文件内容
+            ('user_getdataroom','用户查看dataroom内的文件内容(obj级别)'),
             ('user_changedataroom', '用户修改dataroom内的文件内容(obj级别)'),
             ('user_adddataroom', '用户添加dataroom(obj/class级别)'),#obj级别权限针对 添加dataroom内的文件 / class级别针对能否新建dataroom
-            ('user_deletedataroom', '用户删除dataroom内的文件内容(obj/class级别)'),#obj级别权限针对dataroom 内的文件内容 / class级别针对能否删除dataroom
+            ('user_deletedataroom', '用户删除dataroom内的文件内容(obj级别)'),#obj级别权限针对能否删除dataroom内的文件内容/能否删除dataroom
         )
 
     def save(self, force_insert=False, force_update=False, using=None,

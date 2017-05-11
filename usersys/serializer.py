@@ -45,6 +45,12 @@ class GroupSerializer(serializers.ModelSerializer):
         model = Group
         fields = ('id','name',)
 
+# 权限组全部权限信息
+class GroupDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Group
+        fields = ('id', 'name','permissions')
+
 #用户基本信息
 class UserCommenSerializer(serializers.ModelSerializer):
     class Meta:
@@ -69,7 +75,7 @@ class CreatUserSerializer(serializers.ModelSerializer):
 
 # 用户列表显示信息
 class UserListSerializer(serializers.ModelSerializer):
-    groups = GroupSerializer(MyUser.groups,many=True)
+    groups = GroupDetailSerializer(MyUser.groups,many=True)
     org = OrgCommonSerializer(MyUser.org)
     investor_relations = UserRelationSerializer(MyUser.investor_relations, many=True)
     class Meta:

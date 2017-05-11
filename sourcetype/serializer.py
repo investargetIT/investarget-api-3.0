@@ -50,9 +50,12 @@ class continentSerializer(serializers.ModelSerializer):
 
 
 class countrySerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
     class Meta:
         model = Country
         fields = '__all__'
+    def get_url(self, obj):
+        return 'https://o79atf82v.qnssl.com/' + obj.key
 
 
 class currencyTypeSerializer(serializers.ModelSerializer):

@@ -38,15 +38,21 @@ apps = {
    }
 }
 '''
+import base64
 
+my_secret = '%s:%s'%(apps['product']['app_key'],apps['product']['master_secret'])
+#加密
+encode_secret = base64.b64encode(my_secret)
 
 def https_request(app_key, body, url, content_type=None, version=None, params=None):
     https = requests.Session()
     https.auth = (app_key['app_key'], app_key['master_secret'])
     headers = {}
     headers['user-agent'] = 'jpush-api-python-client'
+    # headers['Authorization'] = 'Basic ' + str(encode_secret)
+
     headers['connection'] = 'keep-alive'
-    headers['content-type'] = 'application/json;charset:utf-8'
+    headers['content-type'] = 'application/json'
     # print url,body
     try:
         response = https.request('POST', url, data=body, params=params, headers=headers)
@@ -70,7 +76,7 @@ def push_params_v3(content, receiver_value, platform, bdage, n_extras):
     payload['platform'] = platform
 
     payload['audience'] = {
-        "alias": receiver_value
+        "alias": [receiver_value]
     }
     # 离线消息
     payload['message'] = {
@@ -98,7 +104,7 @@ def jpush_v3(app_key, payload):
     return https_request(app_key, body, "https://api.jpush.cn/v3/push", 'application/json', version=1)
 
 
-def pushnotification(receiver_alias,content,platform,bdage,n_extras):
+def pushnotification(receiver_alias,content,platform,bdage,n_extras=None):
     # receiver_alias = data_dict.get('receiver_alias')
     # content = data_dict.get('content')
     # platform = data_dict.get('platform')   #"ios,android,winphone"

@@ -84,7 +84,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     cardBucket = models.CharField(max_length=32,blank=True,null=True)
     cardKey = models.CharField(max_length=128,blank=True,null=True)
     wechat = models.CharField(max_length=64,blank=True,null=True)
-    userstatu = models.ForeignKey(AuditStatus,help_text='审核状态',blank=True,null=True)
+    userstatu = models.ForeignKey(AuditStatus,help_text='审核状态',blank=True,default=1)
     org = models.ForeignKey('org.organization',help_text='所属机构',blank=True,null=True,related_name='org_users',on_delete=models.SET_NULL)
     nameC = models.CharField(help_text='姓名',max_length=128,db_index=True,blank=True,null=True,)
     nameE = models.CharField(help_text='name',max_length=128,db_index=True,blank=True,null=True)
@@ -143,7 +143,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
             self.usercode = str(datetime.datetime.now())
         if not self.datasource:
             raise InvestError(code=8888,msg='datasource有误')
-        if self.groups.filter(datasource__exact=self.datasource).exists():
+        if self.pk and self.groups.exists() and self.groups.first().datasource != self.datasource:
             raise InvestError(code=8888,msg='group 与 user datasource不同')
         try:
             if not self.email and not self.mobile:
@@ -321,17 +321,24 @@ class UserFriendship(models.Model):
             ('admin_changefriend', u'管理员修改用户好友关系'),
             ('admin_deletefriend', u'管理员删除用户好友关系'),
             ('admin_getfriend', u'管理员查看用户好友关系'),
+
+            ('user_addfriend', u'用户建立用户好友关系（未审核用户不知道给不给）'),
+
         )
 
     def save(self, *args, **kwargs):
         if not self.datasource:
             raise InvestError(code=8888,msg='datasource有误')
-        if self.datasource !=self.traderuser.datasource or self.datasource !=self.investoruser.datasource:
+        if self.datasource !=self.user.datasource or self.datasource !=self.friend.datasource:
             raise InvestError(code=8888,msg='requestuser.datasource不匹配')
         if self.user == self.friend:
             raise InvestError(2016)
+        if not self.accepttime and self.isaccept:
+            self.accepttime = datetime.datetime.now()
         if not self.pk:
             if UserFriendship.objects.filter(Q(user=self.user,friend=self.friend,is_deleted=False) | Q(friend=self.user,user=self.friend,is_deleted=False)).exists():
                 raise InvestError(2017)
+        if not self.createdtime:
+            self.createdtime = datetime.datetime.now()
         super(UserFriendship,self).save(*args, **kwargs)
 
