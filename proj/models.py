@@ -178,7 +178,7 @@ class favoriteProject(models.Model):
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_favoriteproj')
     deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_created=True)
+    createdtime = models.DateTimeField(auto_now_add=True, blank=True,null=True)
     createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_favoriteproj')
     datasource = models.ForeignKey(DataSource, help_text='数据源')
     def __str__(self):
@@ -189,9 +189,9 @@ class favoriteProject(models.Model):
         if not self.datasource or self.datasource != self.proj.datasource:
             raise InvestError(code=8888,msg='项目收藏datasource与项目不符')
         if not self.pk: #交易师不能自己主动删除推荐，再次推荐同一个项目时删除旧的添加新的(暂定)
-            deletedata = {'is_deleted':True,'deleteduser':self.createuser.id,'deletedtime':datetime.datetime.now()}
+            # deletedata = {'is_deleted':True,'deleteduser':self.createuser.id,'deletedtime':datetime.datetime.now()}
             favoriteProject.objects.filter(proj=self.proj,user=self.user,trader=self.trader,favoritetype=self.favoritetype,is_deleted=False,
-                                              datasource=self.datasource,createuser=self.createuser).update(deletedata)
+                                              datasource=self.datasource,createuser=self.createuser).update(is_deleted=True,deleteduser=self.createuser,deletedtime=datetime.datetime.now())
         super(favoriteProject,self).save(force_insert,force_update,using,update_fields)
     class Meta:
         ordering = ('proj',)
@@ -210,7 +210,7 @@ class ShareToken(models.Model):
     key = models.CharField(max_length=50, primary_key=True,help_text='sharetoken')
     user = models.ForeignKey(MyUser, related_name='user_sharetoken',help_text='用户的分享token')
     proj = models.ForeignKey(project,related_name='proj_sharetoken',help_text='项目的分享token')
-    created = models.DateTimeField(help_text="CreatedTime", auto_now_add=True)
+    created = models.DateTimeField(help_text="CreatedTime", auto_now_add=True,blank=True)
     is_deleted = models.BooleanField(help_text='是否已被删除', blank=True, default=False)
 
     class Meta:

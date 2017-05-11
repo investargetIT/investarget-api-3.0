@@ -110,13 +110,14 @@ class UserView(viewsets.ModelViewSet):
                 serializer_class = UserListSerializer
             else:
                 serializer_class = UserCommenSerializer
+            count = queryset.count()
             try:
                 queryset = Paginator(queryset, page_size)
             except EmptyPage:
                 raise InvestError(code=1001)
             queryset = queryset.page(page_index)
             serializer = serializer_class(queryset, many=True)
-            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -348,11 +349,11 @@ class UserView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
         try:
-            useridlist = request.data
+            useridlist = request.data.get('users')
             userlist = []
             lang = request.GET.get('lang')
-            if not useridlist:
-                raise InvestError(code=20071,msg='except a not null list')
+            if not useridlist or not isinstance(useridlist,list):
+                raise InvestError(code=20071,msg='except a not null user id list')
             with transaction.atomic():
                 rel_fileds = [f for f in MyUser._meta.get_fields() if isinstance(f, ForeignObjectRel)]
                 links = [f.get_accessor_name() for f in rel_fileds]
@@ -542,13 +543,14 @@ class UserRelationView(viewsets.ModelViewSet):
                 queryset = queryset.filter(investoruser=request.user)
             else:
                 raise InvestError(code=2009)
+            count = queryset.count()
             try:
                 queryset = Paginator(queryset, page_size)
             except EmptyPage:
                 raise InvestError(code=1001)
             queryset = queryset.page(page_index)
             serializer = self.get_serializer(queryset, many=True)
-            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -636,15 +638,16 @@ class UserRelationView(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         try:
             with transaction.atomic():
-                parmdict = request.data
                 lang = request.GET.get('lang')
-                relationidlist = parmdict['relationlist']
+                relationidlist =  request.data['relationlist']
+                if not isinstance(relationidlist,list):
+                    raise InvestError(2007,msg='expect a relation id list')
                 relationlist = self.get_queryset().in_bulk(relationidlist)
                 newlist = []
                 sendmessagelist = []
                 for relation in relationlist:
                     sendmsg = False
-                    data = parmdict['newdata']
+                    data =  request.data['newdata']
                     data.pop('investoruser')
                     if data.get('traderuser',None) and data.get('traderuser') != relation.traderuser_id:
                         sendmsg = True
@@ -678,7 +681,9 @@ class UserRelationView(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         try:
             with transaction.atomic():
-                relationidlist = request.data
+                relationidlist = request.data.get('relationlist',None)
+                if not isinstance(relationidlist,list):
+                    raise InvestError(2007,msg='expect a relation id list')
                 lang = request.GET.get('lang')
                 relationlist = self.get_queryset().in_bulk(relationidlist)
                 for userrelation in relationlist:
@@ -759,12 +764,13 @@ class UserFriendshipView(viewsets.ModelViewSet):
             else:
                 queryset = queryset.filter(Q(user=request.user) | Q(friend=request.user))
             try:
+                count = queryset.count()
                 queryset = Paginator(queryset, page_size)
             except EmptyPage:
                 raise InvestError(code=1001)
             queryset = queryset.page(page_index)
             serializer = UserFriendshipSerializer(queryset, many=True)
-            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:

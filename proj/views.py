@@ -622,10 +622,10 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
                     data['proj'] = projid
                     newfavorite = FavoriteCreateSerializer(data=data)
                     if newfavorite.is_valid():
-                        if newfavorite.validated_data.user.datasource != request.user.datasource or newfavorite.validated_data.proj.datasource != request.user.datasource or\
-                                (newfavorite.validated_data.trader and newfavorite.validated_data.trader.datasource != request.user.datasource):
+                        newfavoriteproj = newfavorite.save()
+                        if newfavoriteproj.user.datasource != request.user.datasource or newfavoriteproj.proj.datasource != request.user.datasource or\
+                                (newfavoriteproj.trader and newfavoriteproj.trader.datasource != request.user.datasource):
                             raise InvestError(code=8888)
-                        newfavorite.save()
                         favoriteProjectList.append(newfavorite.data)
                     else:
                         raise InvestError(code=20071,msg='%s'%newfavorite.errors)

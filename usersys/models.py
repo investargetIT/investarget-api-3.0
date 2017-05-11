@@ -14,6 +14,12 @@ from guardian.shortcuts import remove_perm, assign_perm
 from sourcetype.models import AuditStatus, ClientType, TitleType,School,Specialty,Tag, DataSource
 from utils.myClass import InvestError
 
+registersourcechoice = (
+    (1,'pc'),
+    (2,'ios'),
+    (3,'android'),
+    (4,'mobileweb')
+)
 
 class MyUserBackend(ModelBackend):
     def authenticate(self, username=None, password=None, datasource=None):
@@ -99,7 +105,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     remark = models.TextField(help_text='备注',blank=True,null=True)
     school = models.ForeignKey(School,help_text='院校',blank=True,null=True,related_name='school_users',on_delete=models.SET_NULL)
     specialty = models.ForeignKey(Specialty,help_text='专业',blank=True,null=True,related_name='profession_users',on_delete=models.SET_NULL)
-    registersource = models.SmallIntegerField(help_text='注册来源',choices=((1,'pc'),(2,'ios'),(3,'android'),(4,'mobileweb')),default=1)
+    registersource = models.SmallIntegerField(help_text='注册来源',choices=registersourcechoice,default=1)
     lastmodifytime = models.DateTimeField(blank=True,null=True)
     lastmodifyuser = models.ForeignKey('self',help_text='修改者',blank=True,null=True,related_name='usermodify_users',related_query_name='user_modifyuser',on_delete=models.SET_NULL)
     is_staff = models.BooleanField(help_text='登录admin', default=False, blank=True,)
