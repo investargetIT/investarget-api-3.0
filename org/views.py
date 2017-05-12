@@ -27,8 +27,8 @@ class OrganizationView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
     queryset = organization.objects.filter(is_deleted=False)
-    filter_fields = ('id','nameC','orgcode','auditStatu',)
-    search_fields = ('nameC','orgcode',)
+    filter_fields = ('id','nameC','nameE','orgcode','orgstatus',)
+    search_fields = ('nameC','nameE','orgcode',)
     serializer_class = OrgDetailSerializer
     redis_key = 'organization'
 
@@ -84,6 +84,7 @@ class OrganizationView(viewsets.ModelViewSet):
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
             try:
+                count = queryset.count()
                 queryset = Paginator(queryset, page_size)
             except EmptyPage:
                 raise InvestError(1001)
@@ -93,7 +94,7 @@ class OrganizationView(viewsets.ModelViewSet):
             else:
                 serializerclass = OrgCommonSerializer
             serializer = serializerclass(queryset, many=True)
-            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -310,12 +311,13 @@ class OrgRemarkView(viewsets.ModelViewSet):
             else:
                 queryset = queryset.filter(createuser_id=request.user.id)
             try:
+                count = queryset.count()
                 queryset = Paginator(queryset, page_size)
             except EmptyPage:
                 raise InvestError(1001)
             queryset = queryset.page(page_index)
             serializer = OrgRemarkSerializer(queryset, many=True)
-            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:

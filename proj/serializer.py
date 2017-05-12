@@ -44,7 +44,7 @@ class ProjSerializer(serializers.ModelSerializer):
 class ProjCommonSerializer(serializers.ModelSerializer):
     class Meta:
         model = project
-        fields = ('id','industries','titleC','titleE','tags','financeAmount','financeAmount_USD','country','statu','isHidden')
+        fields = ('id','industries','titleC','titleE','tags','financeAmount','financeAmount_USD','country','projstatus','isHidden')
         depth = 1
 
 class ProjCreatSerializer(serializers.ModelSerializer):

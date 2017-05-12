@@ -34,7 +34,7 @@ class ProjectView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
     queryset = project.objects.all().filter(is_deleted=False)
-    filter_fields = ('titleC', 'titleE','isoverseasproject','industries','tags')
+    filter_fields = ('titleC', 'titleE','isoverseasproject','industries','tags','projstatus')
     search_fields = ('titleC', 'titleE',)
     serializer_class = ProjSerializer
     redis_key = 'project'
@@ -94,12 +94,13 @@ class ProjectView(viewsets.ModelViewSet):
                 else:
                     queryset = queryset.filter(Q(isHidden=False) | Q(createuser=request.user))
             try:
+                count = queryset.count()
                 queryset = Paginator(queryset, page_size)
             except EmptyPage:
                 return JSONResponse(SuccessResponse([],msg='没有符合条件的结果'))
             queryset = queryset.page(page_index)
             serializer = ProjCommonSerializer(queryset, many=True)
-            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -377,12 +378,13 @@ class ProjFinanceView(viewsets.ModelViewSet):
             else:
                 queryset = queryset.filter(proj__createuser__id=request.user.id)
             try:
+                count = queryset.count()
                 queryset = Paginator(queryset, page_size)
             except EmptyPage:
                 return JSONResponse(SuccessResponse([],msg='没有符合的结果'))
             queryset = queryset.page(page_index)
             serializer = FinanceSerializer(queryset, many=True)
-            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -582,12 +584,13 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
             else:
                 raise InvestError(code=2009)
             try:
+                count = queryset.count()
                 queryset = Paginator(queryset, page_size)
             except EmptyPage:
                 raise InvestError(1001)
             queryset = queryset.page(page_index)
             serializer = FavoriteSerializer(queryset, many=True)
-            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:

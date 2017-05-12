@@ -90,7 +90,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     cardBucket = models.CharField(max_length=32,blank=True,null=True)
     cardKey = models.CharField(max_length=128,blank=True,null=True)
     wechat = models.CharField(max_length=64,blank=True,null=True)
-    userstatu = models.ForeignKey(AuditStatus,help_text='审核状态',blank=True,default=1)
+    userstatus = models.ForeignKey(AuditStatus,help_text='审核状态',blank=True,default=1)
     org = models.ForeignKey('org.organization',help_text='所属机构',blank=True,null=True,related_name='org_users',on_delete=models.SET_NULL)
     nameC = models.CharField(help_text='姓名',max_length=128,db_index=True,blank=True,null=True,)
     nameE = models.CharField(help_text='name',max_length=128,db_index=True,blank=True,null=True)
@@ -115,7 +115,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     deletedtime = models.DateTimeField(blank=True,null=True)
     createdtime = models.DateTimeField(auto_now_add=True,blank=True)
     createuser = models.ForeignKey('self',help_text='创建者',blank=True,null=True,related_name='usercreate_users',related_query_name='user_createuser',on_delete=models.SET_NULL)
-    datasource = models.ForeignKey(DataSource,help_text='数据源')
+    datasource = models.ForeignKey(DataSource,help_text='数据源',blank=True,null=True)
     USERNAME_FIELD = 'usercode'
     REQUIRED_FIELDS = ['email']
 

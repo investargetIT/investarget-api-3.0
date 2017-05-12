@@ -42,7 +42,7 @@ class organization(models.Model):
     industry = models.ForeignKey(Industry,help_text='机构行业',blank=True,null=True)
     webSite = models.URLField(blank=True,null=True)
     companyEmail = models.EmailField(blank=True,null=True,max_length=32)
-    auditStatu = models.ForeignKey(AuditStatus, blank=True, default=1)
+    orgstatus = models.ForeignKey(AuditStatus, blank=True, default=1)
     auditUser = models.ForeignKey(MyUser, blank=True, null=True, related_name='useraudit_orgs')
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteuser = models.ForeignKey(MyUser, blank=True, null=True,related_name='userdelete_orgs')

@@ -67,12 +67,13 @@ class DataroomView(viewsets.ModelViewSet):
             else:
                 queryset = queryset.filter(user=request.user)
             try:
+                count = queryset.count()
                 queryset = Paginator(queryset, page_size)
             except EmptyPage:
                 raise InvestError(code=1001)
             queryset = queryset.page(page_index)
             serializer = DataroomSerializer(queryset, many=True)
-            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data, lang)))
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data, lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -297,12 +298,13 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             else:
                 raise InvestError(code=20072,msg='dataroom 不能空')
             try:
+                count = queryset.count()
                 queryset = Paginator(queryset, page_size)
             except EmptyPage:
                 raise InvestError(code=1001)
             queryset = queryset.page(page_index)
             serializer = DataroomdirectoryorfileSerializer(queryset, many=True)
-            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data, lang)))
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data, lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
