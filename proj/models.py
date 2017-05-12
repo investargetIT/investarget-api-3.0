@@ -181,8 +181,7 @@ class favoriteProject(models.Model):
     createdtime = models.DateTimeField(auto_now_add=True, blank=True,null=True)
     createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_favoriteproj')
     datasource = models.ForeignKey(DataSource, help_text='数据源')
-    def __str__(self):
-        return self.favoritetype.__str__() + self.proj.title + self.user.name
+
     #只用于create和delete，没有update
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):

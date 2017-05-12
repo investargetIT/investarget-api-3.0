@@ -48,9 +48,9 @@ class organization(models.Model):
     deleteuser = models.ForeignKey(MyUser, blank=True, null=True,related_name='userdelete_orgs')
     deletetime = models.DateTimeField(blank=True, null=True)
     createuser = models.ForeignKey(MyUser, blank=True, null=True,related_name='usercreate_orgs')
-    createtime = models.DateTimeField(auto_now_add=True)
+    createtime = models.DateTimeField(auto_now_add=True,blank=True,null=True)
     lastmodifyuser = models.ForeignKey(MyUser, blank=True, null=True,related_name='usermodify_orgs')
-    lastmodifytime = models.DateTimeField(auto_now=True)
+    lastmodifytime = models.DateTimeField(auto_now=True,blank=True,null=True)
     datasource = models.ForeignKey(DataSource,help_text='数据源')
     def __str__(self):
         return self.nameC
@@ -92,7 +92,7 @@ class orgTransactionPhase(models.Model):
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_orgTransactionPhases',on_delete=models.SET_NULL)
     deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_created=True)
+    createdtime = models.DateTimeField(auto_created=True,blank=True,null=True)
     createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_orgTransactionPhase',on_delete=models.SET_NULL)
 
     class Meta:
@@ -105,9 +105,9 @@ class orgRemarks(models.Model):
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_orgremarks',on_delete=models.SET_NULL)
     deletedtime = models.DateTimeField(blank=True, null=True)
-    createtime = models.DateTimeField(auto_created=True)
+    createtime = models.DateTimeField(auto_now_add=True,blank=True,null=True)
     createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_orgremarks',on_delete=models.SET_NULL)
-    lastmodifytime = models.DateTimeField(auto_now=True)
+    lastmodifytime = models.DateTimeField(auto_now=True,blank=True,null=True)
     lastmodifyuser = models.ForeignKey(MyUser,  blank=True, null=True,related_name='usermodify_orgremarks', related_query_name='orgremark_modifyuser',on_delete=models.SET_NULL)
     datasource = models.ForeignKey(DataSource, help_text='数据源')
     class Meta:

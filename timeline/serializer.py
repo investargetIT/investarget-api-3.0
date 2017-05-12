@@ -16,13 +16,13 @@ class TimeLineStatuSerializer(serializers.ModelSerializer):
         fields = ('transationStatus','timeline','isActive','id')
 
 class TimeLineSerializer(serializers.ModelSerializer):
-    transationStatu = TimeLineStatuSerializer(source='get_timelinestatu',many=True)
+    transationStatu = TimeLineStatuSerializer(source='get_timelinestatus',many=True)
     class Meta:
         model = timeline
-        fields = ('id', 'proj', 'investor','supporter','trader','isClose','closeDate','transationStatu')
+        fields = ('id', 'proj', 'investor','supportor','trader','isClose','closeDate','transationStatu')
 
 class TimeLineHeaderListSerializer(serializers.ModelSerializer):
-    transationStatu = TimeLineStatuSerializer(source='get_timelinestatu',many=True)
+    transationStatu = TimeLineStatuSerializer(source='get_timelinestatus',many=True)
     class Meta:
         model = timeline
         fields = ('id', 'proj', 'investor','transationStatu')

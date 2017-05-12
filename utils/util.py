@@ -77,9 +77,9 @@ def loginTokenIsAvailable(permissions=None):#判断class级别权限
                     try:
                         token = MyToken.objects.get(key=tokenkey,is_deleted=False)
                     except MyToken.DoesNotExist:
-                        return JSONResponse(InvestErrorResponse(InvestError(3000)))
+                        return JSONResponse(InvestErrorResponse(InvestError(3000,msg='token不存在')))
                 else:
-                    return JSONResponse(InvestErrorResponse(InvestError(3000)))
+                    return JSONResponse(InvestErrorResponse(InvestError(3000,msg='server error')))
             except Exception as exc:
                 return JSONResponse(InvestErrorResponse(InvestError(code=3000,msg=repr(exc))))
             else:

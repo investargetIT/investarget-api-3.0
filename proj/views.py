@@ -34,7 +34,7 @@ class ProjectView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
     queryset = project.objects.all().filter(is_deleted=False)
-    filter_fields = ('titleC', 'titleE','isoverseasproject','industries','tags','projstatus')
+    filter_fields = ('titleC', 'titleE','isoverseasproject','industries','tags','projstatus','country')
     search_fields = ('titleC', 'titleE',)
     serializer_class = ProjSerializer
     redis_key = 'project'
@@ -121,16 +121,22 @@ class ProjectView(viewsets.ModelViewSet):
                     pro = proj.save()
                     if tagsdata:
                         tagslist = []
+                        if not isinstance(tagslist,list):
+                            raise InvestError(2007,msg='tags must be a not null list')
                         for transactionPhase in tagsdata:
                             tagslist.append(projectTags(proj=pro, tag_id=transactionPhase,createuser=request.user))
                         pro.project_tags.bulk_create(tagslist)
                     if industrydata:
                         industrylist = []
+                        if not isinstance(industrydata,list):
+                            raise InvestError(2007,msg='industries must be a not null list')
                         for transactionPhase in industrydata:
                             industrylist.append(projectIndustries(proj=pro, industry_id=transactionPhase,createuser=request.user))
                         pro.project_industries.bulk_create(industrylist)
                     if transactiontypedata:
                         transactiontypelist = []
+                        if not isinstance(transactiontypedata,list):
+                            raise InvestError(2007,msg='transactionType must be a not null list')
                         for transactionPhase in tagsdata:
                             transactiontypelist.append(projectTransactionType(proj=pro, transactionType_id=transactionPhase,createuser=request.user))
                         pro.project_TransactionTypes.bulk_create(transactiontypelist)
@@ -183,12 +189,11 @@ class ProjectView(viewsets.ModelViewSet):
             projdata['lastmodifyuser'] = request.user.id
             projdata['lastmodifytime'] = datetime.datetime.now()
             tagsdata = projdata.pop('tags', None)
-            sendmessage = False
-            oldstatu = pro.statu_id
-            if projdata.get('statu',None) and projdata.get('statu',None) != pro.statu_id:
-                sendmessage = True
             industrydata = projdata.pop('industries', None)
             transactiontypedata = projdata.pop('transactionType', None)
+            sendmessage = False
+            if projdata.get('projstatus', None) and projdata.get('projstatus', None) != pro.projstatus_id:
+                sendmessage = True
             with transaction.atomic():
                 proj = ProjCreatSerializer(pro,data=projdata)
                 if proj.is_valid():
@@ -310,7 +315,7 @@ class ProjFinanceView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = finance.objects.all().filter(is_deleted=False)
-    filter_fields = ('proj', 'netIncome',)
+    filter_fields = ('proj',)
     serializer_class = FinanceSerializer
     redis_key = 'projectFinanace'
     Model = finance
@@ -394,7 +399,7 @@ class ProjFinanceView(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
-            projid = request.GET.get('project')
+            projid = data.get('proj')
             try:
                 proj = project.objects.get(id=projid,is_deleted=False,datasource=request.user.datasource)
             except project.DoesNotExist:
@@ -438,6 +443,8 @@ class ProjFinanceView(viewsets.ModelViewSet):
                     newfinances = []
                     for f in financedata:
                         fid = f['id']
+                        if not isinstance(fid,(int,str)):
+                            raise InvestError(2007,msg='finances[\'id\'] need be a int/str type')
                         projfinance = self.get_object(fid)
                         if request.user.has_perm('proj.admin_changeproj'):
                             pass
@@ -467,9 +474,9 @@ class ProjFinanceView(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         try:
             with transaction.atomic():
-                financeidlist = request.data
-                if not isinstance(finance,list):
-                    raise InvestError(code=20071,msg='expect an list')
+                financeidlist = request.data.get('finances',None)
+                if not isinstance(finance,list) or not financeidlist:
+                    raise InvestError(code=20071,msg='\'finances\' expect an not null list')
                 lang = request.GET.get('lang')
                 returnlist = []
                 for projfinanceid in financeidlist:
@@ -602,8 +609,10 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
         try:
             data = request.data
             lang = request.GET.get('lang')
-            userid = data.get('user')
-            ftype = data.get('favoritetype')
+            userid = data.get('user',None)
+            ftype = data.get('favoritetype',None)
+            if not userid or not ftype:
+                raise InvestError(20071,msg='user/favoritetype cannot be null')
             data['createuser'] = request.user.id
             data['datasource'] = request.user.datasource.id
             projidlist = data.pop('projs',None)

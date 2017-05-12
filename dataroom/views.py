@@ -85,8 +85,10 @@ class DataroomView(viewsets.ModelViewSet):
             data = request.data
             lang = request.GET.get('lang')
             projid = data.get('proj',None)
-            if not projid:
-                raise InvestError(code=20072,msg='proj is required')
+            investorid = data.get('investor', None)
+            traderid = data.get('trader', None)
+            if not projid or not traderid or not investorid:
+                raise InvestError(code=20072,msg='proj/investor/trader is required')
             try:
                 proj = project.objects.get(id=projid,datasource=request.user.datasource,is_deleted=False)
             except project.DoesNotExist:
@@ -224,7 +226,7 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
         """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = dataroomdirectoryorfile.objects.all().filter(is_deleted=False)
-    filter_fields = ('dataroom', 'parent',)
+    filter_fields = ('dataroom', 'parent','isFile')
     serializer_class = DataroomdirectoryorfileCreateSerializer
     redis_key = 'dataroomdirectoryorfile'
     Model = dataroomdirectoryorfile
@@ -383,8 +385,8 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
         try:
-            filelist = request.data
-            if not isinstance(filelist,list):
+            filelist = request.data.get('filelist',None)
+            if not isinstance(filelist,list) or not filelist:
                 raise InvestError(code=20071,msg='need an id list')
             with transaction.atomic():
                 for fileid in filelist:

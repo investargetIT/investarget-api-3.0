@@ -206,6 +206,7 @@ class UserView(viewsets.ModelViewSet):
         data['createduser'] = request.user.id
         data['createdtime'] = datetime.datetime.now()
         data['datasource'] = request.user.datasource.id
+        lang = request.GET.get('lang')
         if request.user.has_perm('usersys.admin_adduser'):
             canCreateField = perimissionfields.userpermfield['usersys.admin_adduser']
         elif request.user.has_perm('usersys.user_adduser'):
@@ -243,7 +244,7 @@ class UserView(viewsets.ModelViewSet):
                     assign_perm('usersys.user_getuser', user.createuser, user)
                     assign_perm('usersys.user_changeuser', user.createuser, user)
                     assign_perm('usersys.user_deleteuser', user.createuser, user)
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(UserSerializer(user).data)))
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(UserSerializer(user).data,lang=lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -298,6 +299,8 @@ class UserView(viewsets.ModelViewSet):
             data['lastmodifytime'] = datetime.datetime.now()
             userlist = []
             messgaelist = []
+            if not useridlist or not isinstance(useridlist,list):
+                raise InvestError(2007,msg='expect a not null id list')
             with transaction.atomic():
                 for userid in useridlist:
                     user = self.get_object(userid)
@@ -316,7 +319,7 @@ class UserView(viewsets.ModelViewSet):
                     if cannoteditlist:
                         raise InvestError(code=2009,msg='没有权限修改_%s' % cannoteditlist)
                     tags = data.pop('tags', None)
-                    if data.get('userstatu',None) and user.userstatu_id != data.get('userstatu',None):
+                    if data.get('userstatus',None) and user.userstatus_id != data.get('userstatus',None):
                         sendmsg = True
                     userserializer = CreatUserSerializer(user, data=data)
                     if userserializer.is_valid():
@@ -364,7 +367,7 @@ class UserView(viewsets.ModelViewSet):
                     else:
                         raise InvestError(code=2009)
                     for link in links:
-                        if link in ['investor_relations','trader_relations','investor_timelines','supporter_timelines','trader_timelines']:
+                        if link in ['investor_relations','trader_relations','investor_timelines','supportor_timelines','trader_timelines']:
                             manager = getattr(instance, link, None)
                             if not manager:
                                 continue
@@ -640,8 +643,8 @@ class UserRelationView(viewsets.ModelViewSet):
             with transaction.atomic():
                 lang = request.GET.get('lang')
                 relationidlist =  request.data['relationlist']
-                if not isinstance(relationidlist,list):
-                    raise InvestError(2007,msg='expect a relation id list')
+                if not isinstance(relationidlist,list) or not relationidlist:
+                    raise InvestError(2007,msg='expect a not null relation id list')
                 relationlist = self.get_queryset().in_bulk(relationidlist)
                 newlist = []
                 sendmessagelist = []
@@ -682,8 +685,8 @@ class UserRelationView(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 relationidlist = request.data.get('relationlist',None)
-                if not isinstance(relationidlist,list):
-                    raise InvestError(2007,msg='expect a relation id list')
+                if not isinstance(relationidlist,list) or not relationidlist:
+                    raise InvestError(2007,msg='expect a not null relation id list')
                 lang = request.GET.get('lang')
                 relationlist = self.get_queryset().in_bulk(relationidlist)
                 for userrelation in relationlist:
@@ -783,7 +786,7 @@ class UserFriendshipView(viewsets.ModelViewSet):
             data['createuser'] = request.user.id
             data['datasource'] = 1
             friendlist = data.pop('friend',None)
-            if not friendlist:
+            if not friendlist or not isinstance(friendlist,list):
                 raise InvestError(code=20071,msg='\'friends\' need a not null list')
             lang = request.GET.get('lang')
             if request.user.has_perm('usersys.admin_addfriend'):
@@ -901,10 +904,12 @@ def login(request):
             else:
                 raise InvestError(code=2001,msg='密码错误')
         user.last_login = datetime.datetime.now()
-        if user.is_active:
+        if not user.is_active:
             user.is_active = True
         user.save()
+        perimissions = user.get_all_permissions()
         response = maketoken(user, clienttype)
+        response['permissions'] = perimissions
         return JSONResponse(SuccessResponse(returnDictChangeToLanguage(response,lang)))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))

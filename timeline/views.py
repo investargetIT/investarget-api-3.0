@@ -27,7 +27,7 @@ class TimelineView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = timeline.objects.all().filter(is_deleted=False)
-    filter_fields = ('proj', 'investor','trader','supporter','isClose')
+    filter_fields = ('proj', 'investor','trader','supportor','isClose')
     serializer_class = TimeLineSerializer
     redis_key = 'timeline'
     Model = timeline
@@ -129,7 +129,7 @@ class TimelineView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user.has_perm('timeline.admin_getline'):
                 serializerclass = TimeLineSerializer
-            elif request.user == instance.investor or request.user == instance.trader or request.user == instance.supporter:
+            elif request.user == instance.investor or request.user == instance.trader or request.user == instance.supportor:
                 serializerclass = TimeLineSerializer
             else:
                 raise InvestError(code=2009)
@@ -148,7 +148,7 @@ class TimelineView(viewsets.ModelViewSet):
             data = request.data
             lang = request.GET.get('lang')
             timelinedata = data.pop('timelinedata',None)
-            statudata = data.pop('statudata',None)
+            statudata = data.pop('statusdata',None)
             sendmessage = False
             with transaction.atomic():
                 newactivetimelinestatu,newtimeline = None,None
@@ -194,10 +194,10 @@ class TimelineView(viewsets.ModelViewSet):
     @loginTokenIsAvailable(['timeline.admin_deleteline'])
     def destroy(self, request, *args, **kwargs):
         try:
-            timelineidlist = request.data
+            timelineidlist = request.data.get('timelines')
             timelinelist = []
             lang = request.GET.get('lang')
-            if not timelineidlist:
+            if not timelineidlist or not  isinstance(timelineidlist,list):
                 raise InvestError(code=20071, msg='except a not null list')
             with transaction.atomic():
                 for timelineid in timelineidlist:

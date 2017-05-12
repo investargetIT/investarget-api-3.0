@@ -11,7 +11,7 @@ class timeline(models.Model):
     id = models.AutoField(primary_key=True)
     proj = models.ForeignKey(project,related_name='proj_timelines')
     investor = models.ForeignKey(MyUser,related_name='investor_timelines')
-    supporter = models.ForeignKey(MyUser,related_name='supporter_timelines')
+    supportor = models.ForeignKey(MyUser,related_name='supportor_timelines')
     trader = models.ForeignKey(MyUser,related_name='trader_timelines')
     isClose = models.BooleanField(blank=True,default=False)
     closeDate = models.DateTimeField(blank=True,null=True,)
@@ -37,7 +37,7 @@ class timeline(models.Model):
             ('user_changeline', '用户修改时间轴(obj级别)'),
             ('user_deleteline','用户删除时间轴(obj级别)'),
         )
-    def get_timelinestatu(self):
+    def get_timelinestatus(self):
         return self.timeline_transationStatus.all().filter(isActive=True,is_deleted=False)
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):

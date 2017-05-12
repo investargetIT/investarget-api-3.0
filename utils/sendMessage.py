@@ -57,7 +57,7 @@ def sendmessage_favoriteproject(model,receiver,types,sender=None):
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
 
-    sendmessage_favoriteprojectThread(model,receiver,types,sender).start()
+    # sendmessage_favoriteprojectThread(model,receiver,types,sender).start()
 
 def sendmessage_traderchange(model,receiver,types,sender=None):
     """
@@ -104,7 +104,7 @@ def sendmessage_traderchange(model,receiver,types,sender=None):
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
 
-    sendmessage_traderchangeThread(model,receiver,types,sender).start()
+    # sendmessage_traderchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
     """
@@ -151,7 +151,7 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
 
-    sendmessage_auditstatuchangeThread(model,receiver,types,sender).start()
+    # sendmessage_auditstatuchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_userregister(model,receiver,types,sender=None):
     """
@@ -198,7 +198,7 @@ def sendmessage_userregister(model,receiver,types,sender=None):
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
 
-    sendmessage_userregisterThread(model,receiver,types,sender).start()
+    # sendmessage_userregisterThread(model,receiver,types,sender).start()
 
 def sendmessage_projectauditstatuchange(model,receiver,types,sender=None):
     """
@@ -244,7 +244,7 @@ def sendmessage_projectauditstatuchange(model,receiver,types,sender=None):
                     title = ''
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
-    sendmessage_projectauditstatuchangeThread(model,receiver,types,sender).start()
+    # sendmessage_projectauditstatuchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_orgauditstatuchange(model,receiver,types,sender=None):
     """
@@ -290,7 +290,7 @@ def sendmessage_orgauditstatuchange(model,receiver,types,sender=None):
                     title = ''
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
-    sendmessage_orgauditstatuchangeThread(model,receiver,types,sender).start()
+    # sendmessage_orgauditstatuchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_timelineauditstatuchange(model,receiver,types,sender=None):
     """
@@ -336,7 +336,7 @@ def sendmessage_timelineauditstatuchange(model,receiver,types,sender=None):
                     title = ''
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
-    sendmessage_timelineauditstatuchangeThread(model,receiver,types,sender).start()
+    # sendmessage_timelineauditstatuchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
     """
@@ -383,7 +383,7 @@ def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
 
-    sendmessage_timelinealertcycleexpireThread(model,receiver,types,sender).start()
+    # sendmessage_timelinealertcycleexpireThread(model,receiver,types,sender).start()
 
 def sendmessage_dataroomfileupdate(model,receiver,types,sender=None):
     """
@@ -430,7 +430,7 @@ def sendmessage_dataroomfileupdate(model,receiver,types,sender=None):
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
 
-    sendmessage_dataroomfileupdateThread(model,receiver,types,sender).start()
+    # sendmessage_dataroomfileupdateThread(model,receiver,types,sender).start()
 
 def sendmessage_usermakefriends(model,receiver,types,sender=None):
     """
@@ -476,4 +476,4 @@ def sendmessage_usermakefriends(model,receiver,types,sender=None):
                     title = 'test 3.0'
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
-    sendmessage_usermakefriendsThread(model,receiver,types,sender).start()
+    # sendmessage_usermakefriendsThread(model,receiver,types,sender).start()

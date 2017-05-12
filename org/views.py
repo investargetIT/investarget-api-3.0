@@ -105,7 +105,7 @@ class OrganizationView(viewsets.ModelViewSet):
         data = request.data
         lang = request.GET.get('lang')
         data['createuser'] = request.user.id
-        data['auditStatu'] = 1
+        data['orgstatus'] = 1
         data['datasource'] = request.user.datasource.id
         try:
             with transaction.atomic():
@@ -241,7 +241,7 @@ class OrgRemarkView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = orgRemarks.objects.filter(is_deleted=False)
-    filter_fields = ('id','org','createtime','createuser')
+    filter_fields = ('id','org','createuser')
     serializer_class = OrgRemarkSerializer
     redis_key = 'orgemark'
 
