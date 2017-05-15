@@ -203,23 +203,41 @@ class OrganizationView(viewsets.ModelViewSet):
                 raise InvestError(code=2009)
             rel_fileds = [f for f in instance._meta.get_fields() if isinstance(f, ForeignObjectRel)]
             links = [f.get_accessor_name() for f in rel_fileds]
-            for link in links:
-                manager = getattr(instance, link, None)
-                if not manager:
-                    continue
-                # one to one
-                if isinstance(manager, models.Model):
-                    if hasattr(manager, 'is_deleted') and not manager.is_deleted:
-                        raise InvestError(code=2010, msg=u'{} 上有关联数据'.format(link))
-                else:
-                    try:
-                        manager.model._meta.get_field('is_deleted')
-                        if manager.all().filter(is_deleted=False).count():
-                            raise InvestError(code=2010, msg=u'{} 上有关联数据'.format(link))
-                    except FieldDoesNotExist as ex:
-                        if manager.all().count():
-                            raise InvestError(code=2010, msg=u'{} 上有关联数据'.format(link))
             with transaction.atomic():
+                for link in links:
+                    if link in []:
+                        manager = getattr(instance, link, None)
+                        if not manager:
+                            continue
+                        # one to one
+                        if isinstance(manager, models.Model):
+                            if hasattr(manager, 'is_deleted') and not manager.is_deleted:
+                                raise InvestError(code=2010, msg=u'{} 上有关联数据'.format(link))
+                        else:
+                            try:
+                                manager.model._meta.get_field('is_deleted')
+                                if manager.all().filter(is_deleted=False).count():
+                                    raise InvestError(code=2010, msg=u'{} 上有关联数据'.format(link))
+                            except FieldDoesNotExist:
+                                if manager.all().count():
+                                    raise InvestError(code=2010, msg=u'{} 上有关联数据，且没有is_deleted字段'.format(link))
+                    else:
+                        manager = getattr(instance, link, None)
+                        if not manager:
+                            continue
+                        # one to one
+                        if isinstance(manager, models.Model):
+                            if hasattr(manager, 'is_deleted') and not manager.is_deleted:
+                                manager.is_deleted = True
+                                manager.save()
+                        else:
+                            try:
+                                manager.model._meta.get_field('is_deleted')
+                                if manager.all().filter(is_deleted=False).count():
+                                    manager.all().update(is_deleted=True)
+                            except FieldDoesNotExist:
+                                if manager.all().count():
+                                    raise InvestError(code=2010, msg=u'{} 上有关联数据，且没有is_deleted字段'.format(link))
                 instance.is_deleted = True
                 instance.deleteduser = request.user
                 instance.deletetime = datetime.datetime.utcnow()
@@ -243,7 +261,6 @@ class OrgRemarkView(viewsets.ModelViewSet):
     queryset = orgRemarks.objects.filter(is_deleted=False)
     filter_fields = ('id','org','createuser')
     serializer_class = OrgRemarkSerializer
-    redis_key = 'orgemark'
 
     def get_queryset(self):
         assert self.queryset is not None, (
@@ -263,24 +280,16 @@ class OrgRemarkView(viewsets.ModelViewSet):
 
     def get_object(self, pk=None):
         if pk:
-            obj = read_from_cache(self.redis_key + '_%s' % pk)
-            if not obj:
-                try:
-                    obj = self.queryset.get(id=pk)
-                except organization.DoesNotExist:
-                    raise InvestError(code=5002)
-                else:
-                    write_to_cache(self.redis_key + '_%s' % pk, obj)
+
+            try:
+                obj = self.queryset.get(id=pk)
+            except organization.DoesNotExist:
+                raise InvestError(code=5002)
         else:
-            lookup_url_kwarg = 'pk'
-            obj = read_from_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg])
-            if not obj:
-                try:
-                    obj = self.queryset.get(id=self.kwargs[lookup_url_kwarg])
-                except organization.DoesNotExist:
-                    raise InvestError(code=5002)
-                else:
-                    write_to_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg], obj)
+            try:
+                obj = self.queryset.get(id=self.kwargs['pk'])
+            except organization.DoesNotExist:
+                raise InvestError(code=5002)
         if obj.datasource != self.request.user.datasource:
             raise InvestError(code=8888, msg='资源非同源')
         return obj

@@ -252,7 +252,7 @@ class UserView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     #get
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['usersys.admin_getuser','usersys.user_getuser'])
     def retrieve(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')

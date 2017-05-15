@@ -34,6 +34,7 @@ class timeline(models.Model):
             ('admin_addline', '管理员添加时间轴'),
 
             ('user_addline', '用户添加时间轴'),
+            # ('user_getline','用户查看时间轴'),
             ('user_changeline', '用户修改时间轴(obj级别)'),
             ('user_deleteline','用户删除时间轴(obj级别)'),
         )

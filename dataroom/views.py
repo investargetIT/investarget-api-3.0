@@ -10,7 +10,7 @@ from django.db.models.fields.reverse_related import ForeignObjectRel
 from guardian.shortcuts import assign_perm
 from rest_framework import filters, viewsets
 
-from dataroom.models import dataroom, dataroomdirectoryorfile
+from dataroom.models import dataroom, dataroomdirectoryorfile, publicdirectorytemplate
 from dataroom.serializer import DataroomSerializer, DataroomCreateSerializer, DataroomdirectoryorfileCreateSerializer, \
     DataroomdirectoryorfileSerializer, DataroomdirectoryorfileUpdateSerializer
 from proj.models import project
@@ -96,7 +96,7 @@ class DataroomView(viewsets.ModelViewSet):
             with transaction.atomic():
                 responselist = []
                 dataroomdata = {'proj':projid,'datasource':request.user.datasource.id,'supportor':proj.supportUser_id}
-                projdataroom = self.get_queryset().filter(proj=proj, isPublic=False)
+                projdataroom = self.get_queryset().filter(proj=proj, isPublic=False,user_id=proj.supportUser_id,supportor_id=proj.supportUser_id)
                 publicdataroom = self.get_queryset().filter(proj=proj, isPublic=True)
                 if projdataroom.exists():
                     responselist.append(DataroomCreateSerializer(projdataroom.first()).data)
@@ -193,17 +193,39 @@ class DataroomView(viewsets.ModelViewSet):
                     rel_fileds = [f for f in dataroom._meta.get_fields() if isinstance(f, ForeignObjectRel)]
                     links = [f.get_accessor_name() for f in rel_fileds]
                     for link in links:
-                        if link in ['dataroom_directories',]:
+                        if link in []:
                             manager = getattr(instance, link, None)
                             if not manager:
                                 continue
+                                # one to one
+                            if isinstance(manager, models.Model):
+                                if hasattr(manager, 'is_deleted') and not manager.is_deleted:
+                                    raise InvestError(code=2010, msg=u'{} 上有关联数据'.format(link))
+                            else:
+                                try:
+                                    manager.model._meta.get_field('is_deleted')
+                                    if manager.all().filter(is_deleted=False).count():
+                                        raise InvestError(code=2010, msg=u'{} 上有关联数据'.format(link))
+                                except FieldDoesNotExist:
+                                    if manager.all().count():
+                                        raise InvestError(code=2010, msg=u'{} 上有关联数据，且没有is_deleted字段'.format(link))
+                        else:
+                            manager = getattr(instance, link, None)
+                            if not manager:
+                                continue
+                            # one to one
                             if isinstance(manager, models.Model):
                                 if hasattr(manager, 'is_deleted') and not manager.is_deleted:
                                     manager.is_deleted = True
                                     manager.save()
                             else:
-                                if manager.all().filter(is_deleted=False).count():
-                                    manager.update(is_deleted=True)
+                                try:
+                                    manager.model._meta.get_field('is_deleted')
+                                    if manager.all().filter(is_deleted=False).count():
+                                        manager.all().update(is_deleted=True)
+                                except FieldDoesNotExist:
+                                    if manager.all().count():
+                                        raise InvestError(code=2010, msg=u'{} 上有关联数据,且没有is_deleted字段'.format(link))
                     instance.is_deleted = True
                     instance.deleteduser = request.user
                     instance.deletedtime = datetime.datetime.now()
@@ -217,6 +239,22 @@ class DataroomView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+
+    def creatpublicdataroomdirectorywithtemplate(self,publicdataroomid):
+        templatequery = publicdirectorytemplate.objects.all()
+        topdirectories = templatequery.filter(parent=None)
+        if topdirectories.exists():
+            for directory in topdirectories:
+                self.create_diractory(directoryname=directory.name,dataroom=publicdataroomid,templatedirectoryID=directory.id,orderNO=directory.orderNO,parent=None)
+
+    def create_diractory(self,directoryname,dataroom,templatedirectoryID,orderNO,parent=None):
+        directoryobj = dataroomdirectoryorfile(name=directoryname, dataroom_id=dataroom,orderNO=orderNO,parent_id=parent,createdtime=datetime.datetime.now(),createuser=self.request.user.id).save()
+        sondirectoryquery = publicdirectorytemplate.objects.filter(parent=templatedirectoryID)
+        if sondirectoryquery.exists():
+            for sondirectory in sondirectoryquery:
+                self.create_diractory(directoryname=sondirectory.name,dataroom=dataroom,templatedirectoryID=sondirectory.id,orderNO=sondirectory.orderNO,parent=directoryobj.id)
+
+
 class DataroomdirectoryorfileView(viewsets.ModelViewSet):
     """
            list:dataroom文件或目录列表
@@ -228,7 +266,6 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
     queryset = dataroomdirectoryorfile.objects.all().filter(is_deleted=False)
     filter_fields = ('dataroom', 'parent','isFile')
     serializer_class = DataroomdirectoryorfileCreateSerializer
-    redis_key = 'dataroomdirectoryorfile'
     Model = dataroomdirectoryorfile
 
 
@@ -245,24 +282,15 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
 
     def get_object(self,pk=None):
         if pk:
-            obj = read_from_cache(self.redis_key + '_%s' % pk)
-            if not obj:
-                try:
-                    obj = self.Model.objects.get(id=pk, is_deleted=False)
-                except self.Model.DoesNotExist:
-                    raise InvestError(code=7002, msg='dataroom with this "%s" is not exist' % pk)
-                else:
-                    write_to_cache(self.redis_key + '_%s' % pk, obj)
+            try:
+                obj = self.Model.objects.get(id=pk, is_deleted=False)
+            except self.Model.DoesNotExist:
+                raise InvestError(code=7002, msg='dataroom with this "%s" is not exist' % pk)
         else:
-            lookup_url_kwarg = 'pk'
-            obj = read_from_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg])
-            if not obj:
-                try:
-                    obj = self.Model.objects.get(id=self.kwargs[lookup_url_kwarg], is_deleted=False)
-                except self.Model.DoesNotExist:
-                    raise InvestError(code=7002,msg='dataroom with this （"%s"） is not exist' % self.kwargs[lookup_url_kwarg])
-                else:
-                    write_to_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg], obj)
+            try:
+                obj = self.Model.objects.get(id=self.kwargs['pk'], is_deleted=False)
+            except self.Model.DoesNotExist:
+                raise InvestError(code=7002,msg='dataroom with this （"%s"） is not exist' % self.kwargs['pk'])
         if obj.datasource != self.request.user.datasource:
             raise InvestError(code=8888,msg='资源非同源')
         return obj

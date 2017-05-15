@@ -5,6 +5,7 @@ from django.core.paginator import Paginator, EmptyPage
 from django.db import models
 from django.db import transaction
 from django.db.models import Q,QuerySet, FieldDoesNotExist
+from django.db.models.fields.reverse_related import ForeignObjectRel
 from guardian.shortcuts import assign_perm
 from rest_framework import filters, viewsets
 
@@ -200,25 +201,44 @@ class TimelineView(viewsets.ModelViewSet):
             if not timelineidlist or not  isinstance(timelineidlist,list):
                 raise InvestError(code=20071, msg='except a not null list')
             with transaction.atomic():
+                rel_fileds = [f for f in timeline._meta.get_fields() if isinstance(f, ForeignObjectRel)]
+                links = [f.get_accessor_name() for f in rel_fileds]
                 for timelineid in timelineidlist:
                     instance = self.get_object(timelineid)
-                    links = []
                     for link in links:
-                        manager = getattr(instance, link, None)
-                        if not manager:
-                            continue
-                        # one to one
-                        if isinstance(manager, models.Model):
-                            if hasattr(manager, 'is_deleted') and not manager.is_deleted:
-                                raise InvestError(code=2010, msg=u'{} 上有关联数据'.format(link))
+                        if link in []:
+                            manager = getattr(instance, link, None)
+                            if not manager:
+                                continue
+                            # one to one
+                            if isinstance(manager, models.Model):
+                                if hasattr(manager, 'is_deleted') and not manager.is_deleted:
+                                    raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
+                            else:
+                                try:
+                                    manager.model._meta.get_field('is_deleted')
+                                    if manager.all().filter(is_deleted=False).count():
+                                        raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
+                                except FieldDoesNotExist:
+                                    if manager.all().count():
+                                        raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
                         else:
-                            try:
-                                manager.model._meta.get_field('is_deleted')
-                                if manager.all().filter(is_deleted=False).count():
-                                    raise InvestError(code=2010, msg=u'{} 上有关联数据'.format(link))
-                            except FieldDoesNotExist as ex:
-                                if manager.all().count():
-                                    raise InvestError(code=2010, msg=u'{} 上有关联数据'.format(link))
+                            manager = getattr(instance, link, None)
+                            if not manager:
+                                continue
+                            # one to one
+                            if isinstance(manager, models.Model):
+                                if hasattr(manager, 'is_deleted') and not manager.is_deleted:
+                                    manager.is_deleted = True
+                                    manager.save()
+                            else:
+                                try:
+                                    manager.model._meta.get_field('is_deleted')
+                                    if manager.all().filter(is_deleted=False).count():
+                                        manager.all().update(is_deleted=True)
+                                except FieldDoesNotExist:
+                                    if manager.all().count():
+                                        raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
                     instance.is_deleted = True
                     instance.deleteduser = request.user
                     instance.deletedtime = datetime.datetime.now()

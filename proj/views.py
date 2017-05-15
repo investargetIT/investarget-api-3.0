@@ -256,25 +256,43 @@ class ProjectView(viewsets.ModelViewSet):
                 pass
             else:
                 raise InvestError(code=2009)
-            rel_fileds = [f for f in instance._meta.get_fields() if isinstance(f, ForeignObjectRel)]
-            links = [f.get_accessor_name() for f in rel_fileds]
-            for link in links:
-                manager = getattr(instance, link, None)
-                if not manager:
-                    continue
-                # one to one
-                if isinstance(manager, models.Model):
-                    if hasattr(manager, 'is_deleted') and not manager.is_deleted:
-                        raise InvestError(code=2010, msg=u'{} 上有关联数据'.format(link))
-                else:
-                    try:
-                        manager.model._meta.get_field('is_deleted')
-                        if manager.all().filter(is_deleted=False).count():
-                            raise InvestError(code=2010, msg=u'{} 上有关联数据'.format(link))
-                    except FieldDoesNotExist as ex:
-                        if manager.all().count():
-                            raise InvestError(code=2010, msg=u'{} 上有关联数据'.format(link))
             with transaction.atomic():
+                rel_fileds = [f for f in instance._meta.get_fields() if isinstance(f, ForeignObjectRel)]
+                links = [f.get_accessor_name() for f in rel_fileds]
+                for link in links:
+                    if link in []:
+                        manager = getattr(instance, link, None)
+                        if not manager:
+                            continue
+                        # one to one
+                        if isinstance(manager, models.Model):
+                            if hasattr(manager, 'is_deleted') and not manager.is_deleted:
+                                raise InvestError(code=2010, msg=u'{} 上有关联数据'.format(link))
+                        else:
+                            try:
+                                manager.model._meta.get_field('is_deleted')
+                                if manager.all().filter(is_deleted=False).count():
+                                    raise InvestError(code=2010, msg=u'{} 上有关联数据'.format(link))
+                            except FieldDoesNotExist:
+                                if manager.all().count():
+                                    raise InvestError(code=2010, msg=u'{} 上有关联数据'.format(link))
+                    else:
+                        manager = getattr(instance, link, None)
+                        if not manager:
+                            continue
+                        # one to one
+                        if isinstance(manager, models.Model):
+                            if hasattr(manager, 'is_deleted') and not manager.is_deleted:
+                                manager.is_deleted = True
+                                manager.save()
+                        else:
+                            try:
+                                manager.model._meta.get_field('is_deleted')
+                                if manager.all().filter(is_deleted=False).count():
+                                    manager.all().update(is_deleted=True)
+                            except FieldDoesNotExist:
+                                if manager.all().count():
+                                    raise InvestError(code=2010, msg=u'{} 上有关联数据'.format(link))
                 instance.is_deleted = True
                 instance.deleteduser = request.user
                 instance.deletetime = datetime.datetime.now()

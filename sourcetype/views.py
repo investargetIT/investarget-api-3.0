@@ -4,9 +4,10 @@ import traceback
 from rest_framework import filters
 from rest_framework import viewsets
 
-from sourcetype.models import Tag, TitleType, DataSource,Continent,Country,Industry
+from sourcetype.models import Tag, TitleType, DataSource,Continent,Country,Industry, TransactionType, \
+    TransactionPhases, OrgArea
 from sourcetype.serializer import tagSerializer, countrySerializer, industrySerializer, continentSerializer, \
-    titleTypeSerializer, DataSourceSerializer
+    titleTypeSerializer, DataSourceSerializer, orgAreaSerializer, transactionTypeSerializer, transactionPhasesSerializer
 from utils.myClass import IsSuperUser, JSONResponse, InvestError
 from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, returnListChangeToLanguage
 
@@ -144,3 +145,64 @@ class DatasourceView(viewsets.ModelViewSet):
 
 
 
+class OrgAreaView(viewsets.ModelViewSet):
+    """
+        list:获取所有机构地区
+        create:新增机构地区
+        update:修改机构地区
+        destroy:删除机构地区
+    """
+    # permission_classes = (IsSuperUser,)
+    queryset = OrgArea.objects.all().filter(is_deleted=False)
+    serializer_class = orgAreaSerializer
+    def list(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = orgAreaSerializer(queryset, many=True)
+            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+class TransactionTypeView(viewsets.ModelViewSet):
+    """
+        list:获取所有交易类型
+        create:新增交易类型
+        update:修改交易类型
+        destroy:删除交易类型
+    """
+    # permission_classes = (IsSuperUser,)
+    queryset = TransactionType.objects.all().filter(is_deleted=False)
+    serializer_class = transactionTypeSerializer
+    def list(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = transactionTypeSerializer(queryset, many=True)
+            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+class TransactionPhasesView(viewsets.ModelViewSet):
+    """
+        list:获取所有机构类型
+        create:新增机构类型
+        update:修改机构类型
+        destroy:删除机构类型
+    """
+    # permission_classes = (IsSuperUser,)
+    queryset = TransactionPhases.objects.all().filter(is_deleted=False)
+    serializer_class = transactionPhasesSerializer
+    def list(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = transactionPhasesSerializer(queryset, many=True)
+            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))

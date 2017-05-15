@@ -134,7 +134,7 @@ class Industry(models.Model):
     isPindustry = models.BooleanField(blank=True,default=False,help_text='是否是父级行业')
     Pindustry = models.ForeignKey('self',blank=True,null=True,related_name='Pindustry_Sindustries',help_text='父级行业')
     industryC = models.CharField(max_length=16)
-    industryE = models.CharField(max_length=32)
+    industryE = models.CharField(max_length=128)
     bucket = models.CharField(max_length=16,blank=True,default='image')
     key = models.CharField(max_length=64,blank=True,null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
@@ -162,7 +162,7 @@ class OrgArea(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.CharField(max_length=20)
     nameE = models.CharField(max_length=128)
-    isdeleted = models.BooleanField(blank=True, default=False)
+    is_deleted = models.BooleanField(blank=True, default=False)
     def __str__(self):
         return self.nameC
 
