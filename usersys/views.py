@@ -924,6 +924,7 @@ def testsendmsg(request):
     # print datetime.datetime.now()
     # sendmessage_userauditstatuchange(MyUser.objects.get(id=8),MyUser.objects.get(id=8),['app'])
     # print datetime.datetime.now()
-
-
+    tag1 = Tag.objects.all()
+    qs = organization.objects.all()
+    org = qs.filter(org_users__tags__in=tag1).distinct()
     return JSONResponse({'xxx':'sss'})

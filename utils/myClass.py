@@ -6,7 +6,7 @@ from rest_framework.renderers import JSONRenderer
 
 
 from utils.responsecode import responsecode
-
+from django_filters import Filter
 
 class JSONResponse(HttpResponse):
     def __init__(self,data, **kwargs):
@@ -33,3 +33,14 @@ class IsSuperUser(BasePermission):
             request.user and
             request.user.is_superuser
         )
+class RelationFilter(Filter):
+    def __init__(self, filterstr,lookup_method, **kwargs):
+        self.filterstr = filterstr
+        self.lookup_method = lookup_method
+        super(RelationFilter,self).__init__(**kwargs)
+    def filter(self, qs, value):
+        if not value:
+            return qs
+        if self.lookup_method == 'in':
+            value = value.split(',')
+        return qs.filter(**{'%s__%s' % (self.filterstr,self.lookup_method): value}).distinct()
