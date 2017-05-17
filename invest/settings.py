@@ -1,3 +1,4 @@
+#coding=utf-8
 """
 Django settings for Invest project.
 
@@ -49,7 +50,8 @@ INSTALLED_APPS = [
     'third',
     'msg',
     'guardian',
-    'rest_framework_swagger'
+    'rest_framework_swagger',
+    'APIlog',
 ]
 REST_FRAMEWORK = {
     'PAGINATE_BY': 10,
@@ -90,7 +92,51 @@ CORS_ALLOW_HEADERS = (
 )
 
 
-
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'filters': {
+#         'require_debug_true': {
+#             '()': 'django.utils.log.RequireDebugTrue',
+#         }, # 针对 DEBUG = True 的情况
+#     },
+#     'formatters': {
+#         'standard': {
+#             'format': '%(asctime)s %(funcName)s %(message)s'
+#         },
+#     },
+#     'handlers': {
+#         'mail_admins': {
+#             'level': 'ERROR',
+#             'class': 'django.utils.log.AdminEmailHandler',
+#              'formatter':'standard'
+#         },
+#         'file_handler': {
+#              'level': 'DEBUG',
+#              'class': 'logging.handlers.TimedRotatingFileHandler',
+#              'filename': '/Users/investarget/Desktop/django_server/excption_log/2017-05-12',
+#              'formatter':'standard'
+#         }, # 用于文件输出
+#         'console':{
+#             'level': 'INFO',
+#             'filters': ['require_debug_true'],
+#             'class': 'logging.StreamHandler',
+#             'formatter': 'standard'
+#         },
+#     },
+#     'loggers': {
+#         'django': {
+#             'handlers' :['file_handler', 'console'],
+#             'level':'DEBUG',
+#             'propagate': True # 是否继承父类的log信息
+#         }, # handlers 来自于上面的 handlers 定义的内容
+#         'django.request': {
+#             'handlers': ['mail_admins'],
+#             'level': 'ERROR',
+#             'propagate': False,
+#         },
+#     }
+# }
 
 
 ROOT_URLCONF = 'invest.urls'
@@ -160,7 +206,7 @@ AUTH_PASSWORD_VALIDATORS = [
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://192.168.1.201:6379",
+        "LOCATION": "redis://127.0.0.1:6379",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "PICKLE_VERSION": -1,  # Use the latest protocol version

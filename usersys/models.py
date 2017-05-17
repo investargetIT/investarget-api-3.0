@@ -1,6 +1,6 @@
 #coding=utf-8
 from __future__ import unicode_literals
-
+from pypinyin import slug as hanzizhuanpinpin
 import binascii
 import os
 
@@ -187,6 +187,10 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
                     remove_perm('usersys.user_getuser', olduser.createuser, self)
                     remove_perm('usersys.user_changeuser', olduser.createuser, self)
                     remove_perm('usersys.user_deleteuser', olduser.createuser, self)
+        if not self.nameC and self.nameE:
+            self.nameC = self.nameE
+        if not self.nameE and self.nameC:
+            self.nameE = hanzizhuanpinpin(hans=self.nameC,separator='')
         super(MyUser,self).save(*args,**kwargs)
 
 class userTags(models.Model):
@@ -206,7 +210,7 @@ class MyToken(models.Model):
     key = models.CharField('Key', max_length=48, primary_key=True)
     user = models.ForeignKey(MyUser, related_name='user_token',verbose_name=("MyUser"))
     created = models.DateTimeField(help_text="CreatedTime", auto_now_add=True)
-    clienttype = models.ForeignKey(ClientType)
+    clienttype = models.ForeignKey(ClientType,help_text='登录类型')
     is_deleted = models.BooleanField(help_text='是否已被删除',blank=True,default=False)
     class Meta:
         db_table = 'user_token'

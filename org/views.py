@@ -113,7 +113,7 @@ class OrganizationView(viewsets.ModelViewSet):
                 orgserializer = OrgDetailSerializer(data=data)
                 if orgserializer.is_valid():
                     org = orgserializer.save()
-                    if orgTransactionPhases:
+                    if orgTransactionPhases and isinstance(orgTransactionPhases,list):
                         orgTransactionPhaselist = []
                         for transactionPhase in orgTransactionPhases:
                             orgTransactionPhaselist.append(orgTransactionPhase(org=org, transactionPhase_id=transactionPhase,))

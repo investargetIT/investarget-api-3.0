@@ -5,9 +5,10 @@ from rest_framework import filters
 from rest_framework import viewsets
 
 from sourcetype.models import Tag, TitleType, DataSource,Continent,Country,Industry, TransactionType, \
-    TransactionPhases, OrgArea
+    TransactionPhases, OrgArea, CurrencyType
 from sourcetype.serializer import tagSerializer, countrySerializer, industrySerializer, continentSerializer, \
-    titleTypeSerializer, DataSourceSerializer, orgAreaSerializer, transactionTypeSerializer, transactionPhasesSerializer
+    titleTypeSerializer, DataSourceSerializer, orgAreaSerializer, transactionTypeSerializer, transactionPhasesSerializer, \
+    currencyTypeSerializer
 from utils.myClass import IsSuperUser, JSONResponse, InvestError
 from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, returnListChangeToLanguage
 
@@ -188,10 +189,10 @@ class TransactionTypeView(viewsets.ModelViewSet):
 
 class TransactionPhasesView(viewsets.ModelViewSet):
     """
-        list:获取所有机构类型
-        create:新增机构类型
-        update:修改机构类型
-        destroy:删除机构类型
+        list:获取所有机构轮次
+        create:新增机构轮次
+        update:修改机构轮次
+        destroy:删除机构轮次
     """
     # permission_classes = (IsSuperUser,)
     queryset = TransactionPhases.objects.all().filter(is_deleted=False)
@@ -206,3 +207,27 @@ class TransactionPhasesView(viewsets.ModelViewSet):
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+class CurrencyTypeView(viewsets.ModelViewSet):
+    """
+        list:获取所有货币类型
+        create:新增货币类型
+        update:修改货币类型
+        destroy:删除货币类型
+    """
+    # permission_classes = (IsSuperUser,)
+    queryset = CurrencyType.objects.all().filter(is_deleted=False)
+    serializer_class = currencyTypeSerializer
+    def list(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = currencyTypeSerializer(queryset, many=True)
+            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+

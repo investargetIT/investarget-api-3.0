@@ -67,6 +67,9 @@ class organization(models.Model):
             ('user_deleteorg', '用户删除机构(obj级别权限)'),
             ('user_getorg', '用户查看机构'),
         )
+    def get_transactionPhases(self):
+        return self.orgtransactionphase
+
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
         if not self.datasource:

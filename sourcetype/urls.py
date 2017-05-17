@@ -87,7 +87,14 @@ transactionPhasesdetail = views.TransactionPhasesView.as_view({
 })
 
 
-
+currencyType = views.CurrencyTypeView.as_view({
+        'get': 'list',
+        'post':'create',
+})
+currencyTypedetail = views.CurrencyTypeView.as_view({
+        'put': 'update',
+        'delete': 'destroy'
+})
 
 urlpatterns = [
     url(r'^tag$', tag,name='tagsource',),
@@ -108,4 +115,6 @@ urlpatterns = [
     url(r'^transactionType/(?P<pk>\d+)$',transactionTypedetail,name='transactionTypedetail',),
     url(r'^transactionPhases', transactionPhases,name='transactionPhasessource',),
     url(r'^transactionPhases/(?P<pk>\d+)$', transactionPhasesdetail,name='transactionPhasesdetail',),
+    url(r'^currencyType', currencyType,name='currencyTypesource',),
+    url(r'^currencyType/(?P<pk>\d+)$', currencyTypedetail,name='currencyTypedetail',),
 ]

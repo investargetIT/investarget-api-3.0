@@ -4,6 +4,7 @@ from org.models import organization, orgRemarks
 
 
 # from usersys.serializer import UserCommenSerializer
+from sourcetype.serializer import transactionPhasesSerializer
 
 
 class OrgCommonSerializer(serializers.ModelSerializer):
@@ -18,6 +19,7 @@ class OrgSerializer(serializers.ModelSerializer):
         fileds = ('id','nameC','nameE','orgcode','orgstatus','org_users')
 
 class OrgDetailSerializer(serializers.ModelSerializer):
+    transactionPhases = transactionPhasesSerializer(source='get_transactionPhases', many=True)
     class Meta:
         model = organization
         # exclude = ('id',)

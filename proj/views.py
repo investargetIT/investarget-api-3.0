@@ -11,6 +11,7 @@ import datetime
 
 from rest_framework.decorators import detail_route
 
+from APIlog.views import viewprojlog
 from proj.models import project, finance, projectTags, projectIndustries, projectTransactionType, favoriteProject, \
     ShareToken
 from proj.serializer import ProjSerializer, FinanceSerializer, ProjCreatSerializer, \
@@ -158,6 +159,7 @@ class ProjectView(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
+            clienttype = request.META.get('HTTP_CLIENTTYPE')
             if request.user.has_perm('proj.admin_getproj'):
                 serializerclass = ProjSerializer
             else:
@@ -168,6 +170,7 @@ class ProjectView(viewsets.ModelViewSet):
                         'proj.admin_getproj'):
                     raise InvestError(code=4004, msg='没有权限查看隐藏项目')
             serializer = serializerclass(instance)
+            viewprojlog(userid=request.user.id,projid=instance.id,sourceid=clienttype)
             return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))

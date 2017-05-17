@@ -18,6 +18,7 @@ from rest_framework import viewsets
 
 from rest_framework.decorators import api_view, detail_route, list_route
 
+from APIlog.views import logininlog
 from org.models import organization
 from third.models import MobileAuthCode
 from usersys.models import MyUser,UserRelation, userTags, UserFriendship
@@ -178,7 +179,7 @@ class UserView(viewsets.ModelViewSet):
                 user = MyUser(email=email,mobile=mobile,datasource=userdatasource)
                 password = data.pop('password', None)
                 user.set_password(password)
-                user.save()
+                user.save(nameC=data['nameC'],nameE=data['nameE'])
                 tags = data.pop('tags', None)
                 userserializer = CreatUserSerializer(user, data=data)
                 if userserializer.is_valid():
@@ -222,7 +223,7 @@ class UserView(viewsets.ModelViewSet):
                     raise InvestError(code=2007)
                 if self.get_queryset().filter(Q(mobile=mobile) | Q(email=email)).exists():
                     raise InvestError(code=2004)
-                user = MyUser()
+                user = MyUser(nameC=data['nameC'],nameE=data['nameE'])
                 user.set_password(password)
                 user.save()
                 keylist = data.keys()
@@ -910,6 +911,7 @@ def login(request):
         perimissions = user.get_all_permissions()
         response = maketoken(user, clienttype)
         response['permissions'] = perimissions
+        logininlog(loginaccount=username, loginsource=source, userid=user.id)
         return JSONResponse(SuccessResponse(returnDictChangeToLanguage(response,lang)))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))

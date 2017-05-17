@@ -219,6 +219,7 @@ class TransactionStatus(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.CharField(max_length=16)
     nameE = models.CharField(max_length=32)
+    index = models.PositiveSmallIntegerField(blank=True,default=0)
     is_deleted = models.BooleanField(blank=True, default=False)
     def __str__(self):
         return self.nameC
