@@ -96,7 +96,6 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     nameE = models.CharField(help_text='name',max_length=128,db_index=True,blank=True,null=True)
     mobileAreaCode = models.CharField(max_length=10,blank=True,null=True,default='86')
     mobile = models.CharField(help_text='手机',max_length=32,db_index=True,blank=True,null=True,)
-    company = models.CharField(max_length=64,blank=True,null=True)
     description = models.TextField(help_text='简介',blank=True,default='description')
     tags = models.ManyToManyField(Tag, through='userTags', through_fields=('user', 'tag'), blank=True,related_name='tag_users')
     email = models.EmailField(help_text='邮箱', max_length=48,db_index=True,blank=True,null=True)

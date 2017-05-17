@@ -27,12 +27,27 @@ from usersys.serializer import UserSerializer, UserListSerializer, UserRelationS
     UserFriendshipDetailSerializer, UserFriendshipUpdateSerializer
 from sourcetype.models import Tag, DataSource
 from utils import perimissionfields
-from utils.myClass import JSONResponse, InvestError
+from utils.myClass import JSONResponse, InvestError, RelationFilter
 from utils.sendMessage import sendmessage_userauditstatuchange, sendmessage_userregister, sendmessage_traderchange, \
     sendmessage_usermakefriends
 from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable,\
     catchexcption, cache_delete_key, maketoken, returnDictChangeToLanguage, returnListChangeToLanguage, SuccessResponse, \
     InvestErrorResponse, ExceptionResponse
+from django_filters import FilterSet
+
+
+# class UserFilter(FilterSet):
+#     # industrys = RelationFilter(filterstr='industry',lookup_method='in')
+#     # tags = RelationFilter(filterstr='tags',lookup_method='in')
+#     # projstatus = RelationFilter(filterstr='projstatus',lookup_method='in')
+#     # country = RelationFilter(filterstr='country',lookup_method='in')
+#     # netIncome_USD_F = RelationFilter(filterstr='proj_finances__netIncome_USD',lookup_method='gte')
+#     # netIncome_USD_T = RelationFilter(filterstr='proj_finances__netIncome_USD', lookup_method='lte')
+#     # grossProfit_F = RelationFilter(filterstr='proj_finances__grossProfit', lookup_method='gte')
+#     # grossProfit_T = RelationFilter(filterstr='proj_finances__grossProfit', lookup_method='lte')
+#     class Meta:
+#         model = MyUser
+#         fields = ('mobile','email','nameC','nameE','groups','org')
 
 
 class UserView(viewsets.ModelViewSet):
@@ -51,8 +66,9 @@ class UserView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = MyUser.objects.filter(is_deleted=False)
-    filter_fields = ('mobile','email','nameC','nameE','groups','org')
+    filter_fields = ('mobile','email','nameC','nameE','groups','org','tags')
     serializer_class = UserSerializer
+    # filter_class = UserFilter
     redis_key = 'user'
     Model = MyUser
 

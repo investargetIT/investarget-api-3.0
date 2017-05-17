@@ -96,7 +96,7 @@ class project(models.Model):
 
 class finance(models.Model):
     id = models.AutoField(primary_key=True)
-    proj = models.ForeignKey(project, blank=True, null=True, related_name='proj_finances', related_query_name='finance')
+    proj = models.ForeignKey(project, blank=True, null=True, related_name='proj_finances')
     revenue = models.BigIntegerField(blank=True, null=True, )
     netIncome = models.BigIntegerField(blank=True, null=True, )
     revenue_USD = models.BigIntegerField(blank=True, null=True, )

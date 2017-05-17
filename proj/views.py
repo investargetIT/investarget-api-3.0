@@ -21,7 +21,23 @@ from usersys.models import MyUser
 from utils.sendMessage import sendmessage_projectauditstatuchange
 from utils.util import catchexcption, read_from_cache, write_to_cache, loginTokenIsAvailable, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse
-from utils.myClass import JSONResponse, InvestError
+from utils.myClass import JSONResponse, InvestError, RelationFilter
+
+from django_filters import FilterSet
+
+
+class ProjectFilter(FilterSet):
+    industrys = RelationFilter(filterstr='industry',lookup_method='in')
+    tags = RelationFilter(filterstr='tags',lookup_method='in')
+    projstatus = RelationFilter(filterstr='projstatus',lookup_method='in')
+    country = RelationFilter(filterstr='country',lookup_method='in')
+    netIncome_USD_F = RelationFilter(filterstr='proj_finances__netIncome_USD',lookup_method='gte')
+    netIncome_USD_T = RelationFilter(filterstr='proj_finances__netIncome_USD', lookup_method='lte')
+    grossProfit_F = RelationFilter(filterstr='proj_finances__grossProfit', lookup_method='gte')
+    grossProfit_T = RelationFilter(filterstr='proj_finances__grossProfit', lookup_method='lte')
+    class Meta:
+        model = project
+        fields = ('titleC', 'titleE','isoverseasproject','industries','tags','projstatus','country','netIncome_USD_F','netIncome_USD_T','grossProfit_F','grossProfit_T')
 
 
 class ProjectView(viewsets.ModelViewSet):
@@ -35,7 +51,8 @@ class ProjectView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
     queryset = project.objects.all().filter(is_deleted=False)
-    filter_fields = ('titleC', 'titleE','isoverseasproject','industries','tags','projstatus','country')
+    filter_class = ProjectFilter
+    # filter_fields = ('titleC', 'titleE','isoverseasproject','industries','tags','projstatus','country')
     search_fields = ('titleC', 'titleE',)
     serializer_class = ProjSerializer
     redis_key = 'project'

@@ -16,16 +16,7 @@ from utils.myClass import InvestError, JSONResponse, RelationFilter
 from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse
 from django.db import transaction,models
-
-
-
 from django_filters import FilterSet
-
-
-
-
-
-
 
 
 class OrganizationFilter(FilterSet):

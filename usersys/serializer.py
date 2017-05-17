@@ -70,7 +70,7 @@ class UserSerializer(serializers.ModelSerializer):
 class CreatUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = MyUser
-        # fields = ('groups','photoBucket','photoKey','cardBucket','cardKey','wechat','org','name','nameE','mobileAreaCode','mobile','company','description','tags','email','title','gender','school','specialty','registersource','remark',)
+        # fields = ('groups','photoBucket','photoKey','cardBucket','cardKey','wechat','org','name','nameE','mobileAreaCode','mobile','description','tags','email','title','gender','school','specialty','registersource','remark',)
         exclude = ('password','datasource')
 
 # 用户列表显示信息
@@ -80,7 +80,7 @@ class UserListSerializer(serializers.ModelSerializer):
     investor_relations = UserRelationSerializer(MyUser.investor_relations, many=True)
     class Meta:
         model = MyUser
-        fields = ('id','groups','tags','nameC','nameE','mobile','email','title','company','org','investor_relations')
+        fields = ('id','groups','tags','nameC','nameE','mobile','email','title','org','investor_relations')
         depth = 1
 
 
