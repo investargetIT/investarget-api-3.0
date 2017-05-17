@@ -110,7 +110,9 @@ def checkrequesttoken(request):#判断token是否有效
             except MyToken.DoesNotExist:
                 raise InvestError(3000, msg='token不存在')
         else:
-            raise InvestError(3000, msg='server error')
+            raise InvestError(3000, msg='NO TOKEN')
+    except InvestError as err:
+        raise err
     except Exception as exc:
         raise InvestError(code=3000, msg=repr(exc))
     else:

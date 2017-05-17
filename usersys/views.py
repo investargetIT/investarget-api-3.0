@@ -921,7 +921,9 @@ def login(request):
 
 
 def testsendmsg(request):
-    print datetime.datetime.now()
-    sendmessage_userauditstatuchange(MyUser.objects.get(id=8),MyUser.objects.get(id=8),['app'])
-    print datetime.datetime.now()
+    # print datetime.datetime.now()
+    # sendmessage_userauditstatuchange(MyUser.objects.get(id=8),MyUser.objects.get(id=8),['app'])
+    # print datetime.datetime.now()
+
+
     return JSONResponse({'xxx':'sss'})

@@ -17,6 +17,40 @@ from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, wr
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse
 from django.db import transaction,models
 
+
+
+from django_filters import Filter, FilterSet
+
+
+class ListFilter(Filter):
+    def filter(self, qs, value):
+        if not value:
+            return qs
+        self.lookup_expr = 'in'
+        values = value.split(',')
+        return super(ListFilter, self).filter(qs, values)
+class RelationFilter(Filter):
+    def __init__(self, relationname=None, **kwargs):
+        self.relationname = relationname
+        super(RelationFilter,self).__init__(**kwargs)
+    def filter(self, qs, value):
+        if not value:
+            return qs
+        qs.annotate(users=self.relationname)
+        qs.filter(**{'%s__%s__in' % ('users',self.name): value})
+
+
+class OrganizationFilter(FilterSet):
+    industrys = ListFilter(name='industry')
+    currencys = ListFilter(name='currency')
+    orgtransactionphases = ListFilter(name='orgtransactionphase')
+    orgtypes = ListFilter(name='orgtype')
+    orgstatus = ListFilter(name='orgstatus')
+    tags =  RelationFilter(relationname='org_users',name='nameC')
+    class Meta:
+        model = organization
+        fields = ['id','nameC','nameE','orgcode','orgstatus','currencys','industrys','orgtransactionphases','orgtypes','tags']
+
 class OrganizationView(viewsets.ModelViewSet):
     """
     list:获取机构列表
@@ -27,7 +61,8 @@ class OrganizationView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
     queryset = organization.objects.filter(is_deleted=False)
-    filter_fields = ('id','nameC','nameE','orgcode','orgstatus',)
+    # filter_fields = ('id','nameC','nameE','orgcode','orgstatus','currency','industry')
+    filter_class = OrganizationFilter
     search_fields = ('nameC','nameE','orgcode',)
     serializer_class = OrgDetailSerializer
     redis_key = 'organization'

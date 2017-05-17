@@ -98,7 +98,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     mobile = models.CharField(help_text='手机',max_length=32,db_index=True,blank=True,null=True,)
     company = models.CharField(max_length=64,blank=True,null=True)
     description = models.TextField(help_text='简介',blank=True,default='description')
-    tags = models.ManyToManyField(Tag, through='userTags', through_fields=('user', 'tag'), blank=True)
+    tags = models.ManyToManyField(Tag, through='userTags', through_fields=('user', 'tag'), blank=True,related_name='tag_users')
     email = models.EmailField(help_text='邮箱', max_length=48,db_index=True,blank=True,null=True)
     title = models.ForeignKey(TitleType,blank=True,null=True,related_name='title_users',related_query_name='user_title',on_delete=models.SET_NULL)
     gender = models.BooleanField(blank=True,default=0,help_text=('0=男，1=女'))
@@ -190,7 +190,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
         if not self.nameC and self.nameE:
             self.nameC = self.nameE
         if not self.nameE and self.nameC:
-            self.nameE = hanzizhuanpinpin(hans=self.nameC,separator='')
+            self.nameE = hanzizhuanpinpin(self.nameC,separator='')
         super(MyUser,self).save(*args,**kwargs)
 
 class userTags(models.Model):
