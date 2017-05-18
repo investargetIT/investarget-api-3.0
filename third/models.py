@@ -11,10 +11,12 @@ from django.db import models
 
 # Create your models here.
 class MobileAuthCode(models.Model):
+    mobileareacode = models.CharField(max_length=8,blank=True,default=86)
     mobile = models.CharField(help_text='手机号',max_length=32)
     token = models.CharField(help_text='验证码token',max_length=32)
     code = models.CharField(help_text='验证码',max_length=32)
     createTime = models.DateTimeField(auto_now_add=True)
+    is_deleted = models.BooleanField(blank=True,default=False)
     def isexpired(self):
         return datetime.datetime.now() - self.createTime >=  datetime.timedelta(minutes=10 * 1)
     def __str__(self):

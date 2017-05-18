@@ -15,7 +15,7 @@ from dataroom.serializer import DataroomSerializer, DataroomCreateSerializer, Da
     DataroomdirectoryorfileSerializer, DataroomdirectoryorfileUpdateSerializer
 from proj.models import project
 from usersys.models import MyUser
-from utils.myClass import InvestError, JSONResponse
+from utils.customClass import InvestError, JSONResponse
 from utils.util import read_from_cache, write_to_cache, returnListChangeToLanguage, loginTokenIsAvailable, \
     returnDictChangeToLanguage, catchexcption, cache_delete_key, SuccessResponse, InvestErrorResponse, ExceptionResponse
 import datetime

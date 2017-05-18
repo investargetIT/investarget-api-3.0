@@ -4,7 +4,7 @@ from django.db import models
 from proj.models import project
 from usersys.models import MyUser
 from sourcetype.models import TransactionStatus, DataSource
-from utils.myClass import InvestError
+from utils.customClass import InvestError
 
 
 class timeline(models.Model):

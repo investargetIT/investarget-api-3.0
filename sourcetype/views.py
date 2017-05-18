@@ -9,7 +9,7 @@ from sourcetype.models import Tag, TitleType, DataSource,Continent,Country,Indus
 from sourcetype.serializer import tagSerializer, countrySerializer, industrySerializer, continentSerializer, \
     titleTypeSerializer, DataSourceSerializer, orgAreaSerializer, transactionTypeSerializer, transactionPhasesSerializer, \
     currencyTypeSerializer
-from utils.myClass import IsSuperUser, JSONResponse, InvestError
+from utils.customClass import IsSuperUser, JSONResponse, InvestError
 from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, returnListChangeToLanguage
 
 

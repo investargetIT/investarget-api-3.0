@@ -21,7 +21,7 @@ from usersys.models import MyUser
 from utils.sendMessage import sendmessage_projectauditstatuchange
 from utils.util import catchexcption, read_from_cache, write_to_cache, loginTokenIsAvailable, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse
-from utils.myClass import JSONResponse, InvestError, RelationFilter
+from utils.customClass import JSONResponse, InvestError, RelationFilter
 
 from django_filters import FilterSet
 

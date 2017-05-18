@@ -12,7 +12,7 @@ from django.db import models
 from django.db.models import Q
 from guardian.shortcuts import remove_perm, assign_perm
 from sourcetype.models import AuditStatus, ClientType, TitleType,School,Specialty,Tag, DataSource
-from utils.myClass import InvestError
+from utils.customClass import InvestError
 
 registersourcechoice = (
     (1,'pc'),

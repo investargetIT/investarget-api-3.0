@@ -6,7 +6,7 @@ import traceback
 
 from usersys.models import MyToken
 from usersys.serializer import UserListSerializer
-from utils.myClass import JSONResponse, InvestError
+from utils.customClass import JSONResponse, InvestError
 
 REDIS_TIMEOUT = 1 * 24 * 60 * 60
 weixinfilepath = '/Users/investarget/Desktop/django_server/third_header/weixin'

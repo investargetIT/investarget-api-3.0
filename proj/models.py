@@ -13,7 +13,7 @@ from sourcetype.models import FavoriteType, ProjectStatus,CurrencyType,Tag,Count
 from usersys.models import MyUser
 import sys
 
-from utils.myClass import InvestError
+from utils.customClass import InvestError
 
 reload(sys)
 sys.setdefaultencoding('utf-8')

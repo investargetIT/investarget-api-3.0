@@ -8,7 +8,7 @@ from sourcetype.models import MessageType, DataSource
 from usersys.models import MyUser
 
 #站内信
-from utils.myClass import InvestError
+from utils.customClass import InvestError
 
 
 class message(models.Model):

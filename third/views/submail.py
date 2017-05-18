@@ -2,6 +2,7 @@
 import json
 import traceback
 
+import datetime
 from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.app_configs import MAIL_CONFIGS, MESSAGE_CONFIGS, \
     INTERNATIONALMESSAGE_CONFIGS
 from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.mail_xsend import MAILXsend
@@ -9,7 +10,7 @@ from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.message_xsend import M
 from rest_framework.decorators import api_view, throttle_classes
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 from third.models import MobileAuthCode
-from utils.myClass import JSONResponse, InvestError
+from utils.customClass import JSONResponse, InvestError
 from utils.util import SuccessResponse, catchexcption, ExceptionResponse, InvestErrorResponse, checkIPAddress
 
 '''
@@ -124,10 +125,14 @@ def sendSmscode(request):
         if ip:
             times = checkIPAddress(ip)
             if times > 3:
-                raise InvestError(code=3004)
+                raise InvestError(code=3004,msg='单位时间内只能获取三次验证码')
         else:
             raise InvestError(code=3003)
         destination = request.data.get('destination')
+        now = datetime.datetime.now()
+        start = now - datetime.timedelta(minutes=1)
+        if MobileAuthCode.objects.filter(createTime_gt=start,is_deleted=False).exists():
+            raise InvestError(code=3004)
         mobilecode = MobileAuthCode(mobile=destination)
         mobilecode.save()
         varsdict = {'code': mobilecode.code, 'time': '10'}

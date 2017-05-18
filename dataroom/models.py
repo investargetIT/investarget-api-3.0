@@ -7,7 +7,7 @@ from django.db import models
 from proj.models import project
 from sourcetype.models import DataSource
 from usersys.models import MyUser
-from utils.myClass import InvestError
+from utils.customClass import InvestError
 
 
 class publicdirectorytemplate(models.Model):

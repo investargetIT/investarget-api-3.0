@@ -12,7 +12,7 @@ from rest_framework import filters, viewsets
 from timeline.models import timeline, timelineTransationStatu, timelineremark
 from timeline.serializer import TimeLineSerializer, TimeLineStatuSerializer, TimeLineCreateSerializer, \
     TimeLineHeaderListSerializer, TimeLineStatuCreateSerializer, TimeLineRemarkSerializer
-from utils.myClass import InvestError, JSONResponse
+from utils.customClass import InvestError, JSONResponse
 from utils.sendMessage import sendmessage_timelineauditstatuchange
 from utils.util import read_from_cache, write_to_cache, returnListChangeToLanguage, loginTokenIsAvailable, \
     returnDictChangeToLanguage, catchexcption, cache_delete_key, SuccessResponse, InvestErrorResponse, ExceptionResponse

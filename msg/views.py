@@ -3,7 +3,7 @@ from django.shortcuts import render
 # Create your views here.
 from msg.models import message
 from msg.serializer import MsgSerializer
-from utils.myClass import InvestError
+from utils.customClass import InvestError
 from utils.util import logexcption
 
 

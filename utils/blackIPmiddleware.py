@@ -1,4 +1,4 @@
-from utils.myClass import JSONResponse, InvestError
+from utils.customClass import JSONResponse, InvestError
 from utils.util import InvestErrorResponse
 
 try:

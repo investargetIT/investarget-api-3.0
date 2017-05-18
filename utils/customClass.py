@@ -26,7 +26,6 @@ class IsSuperUser(BasePermission):
     """
     Allows access only to admin users.
     """
-
     def has_permission(self, request, view):
         return (
             request.method in ('GET', 'HEAD', 'OPTIONS') or
@@ -39,7 +38,7 @@ class RelationFilter(Filter):
         self.lookup_method = lookup_method
         super(RelationFilter,self).__init__(**kwargs)
     def filter(self, qs, value):
-        if not value:
+        if value in ([], (), {}, '', None):
             return qs
         if self.lookup_method == 'in':
             value = value.split(',')

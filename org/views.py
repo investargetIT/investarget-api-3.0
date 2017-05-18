@@ -12,7 +12,7 @@ from org.models import organization, orgTransactionPhase, orgRemarks
 from org.serializer import OrgSerializer, OrgCommonSerializer, OrgDetailSerializer, \
     OrgRemarkSerializer, OrgRemarkDetailSerializer
 from sourcetype.models import TransactionPhases, Tag
-from utils.myClass import InvestError, JSONResponse, RelationFilter
+from utils.customClass import InvestError, JSONResponse, RelationFilter
 from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse
 from django.db import transaction,models

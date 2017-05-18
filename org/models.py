@@ -8,7 +8,7 @@ from guardian.shortcuts import assign_perm, remove_perm
 
 from sourcetype.models import AuditStatus, OrgType , TransactionPhases,CurrencyType, Industry, DataSource
 from usersys.models import MyUser
-from utils.myClass import InvestError
+from utils.customClass import InvestError
 
 reload(sys)
 sys.setdefaultencoding('utf-8')

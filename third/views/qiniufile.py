@@ -10,7 +10,7 @@ from qiniu import put_data
 from qiniu.services.storage.uploader import _Resume, put_file
 from rest_framework.decorators import api_view
 
-from utils.myClass import JSONResponse
+from utils.customClass import JSONResponse
 
 ACCESS_KEY = 'NJkzgfMrIi-wL_gJyeLfU4dSqXyk5eeGrI7COPPu'
 SECRET_KEY = '6hWJqsm9xdAcGFPyr-MHwVKpdrQ25eJbf2JsaQ8U'
