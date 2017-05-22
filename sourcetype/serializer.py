@@ -55,6 +55,8 @@ class countrySerializer(serializers.ModelSerializer):
         model = Country
         fields = '__all__'
     def get_url(self, obj):
+        if not obj.key:
+            return 'https://o79atf82v.qnssl.com/' + '040.jpg'
         return 'https://o79atf82v.qnssl.com/' + obj.key
 
 
@@ -113,4 +115,4 @@ class transactionStatuSerializer(serializers.ModelSerializer):
 class DataSourceSerializer(serializers.ModelSerializer):
     class Meta:
         model = DataSource
-        fields = '__all__'
+        fields = ('id',)

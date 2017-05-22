@@ -104,7 +104,7 @@ class Country(models.Model):
     国家
     '''
     id = models.AutoField(primary_key=True)
-    continent = models.ForeignKey(Continent,related_name='countries',related_query_name='continent')
+    continent = models.ForeignKey(Continent,related_name='countries',related_query_name='continent',blank=True,null=True)
     countryC = models.CharField(max_length=20)
     countryE = models.CharField(max_length=128)
     areaCode = models.CharField(max_length=8)
@@ -234,3 +234,32 @@ class DataSource(models.Model):
     is_deleted = models.BooleanField(blank=True, default=False)
     def __str__(self):
         return self.nameC
+
+class webmenu(models.Model):
+    """
+    菜单
+    """
+    id = models.AutoField(primary_key=True)
+    namekey = models.CharField(max_length=32,blank=True,null=True)
+    uri = models.CharField(max_length=200,blank=True,null=True)
+    icon = models.CharField(max_length=64,blank=True,null=True,help_text='图标链接')
+    parentmenu = models.ForeignKey('self',blank=True,null=True)
+    # class Meta:
+    #     permissions = (
+    #         # ('orgmanage','显示机构管理菜单'),
+    #         # ('emailmanage','显示邮件管理菜单'),
+    #         # ('timelinemanage','显示时间轴管理菜单'),
+    #         # ('usermanage','显示会员管理菜单'),
+    #         # ('dataroommanage','显示dataroom管理菜单'),
+    #         # ('myinvestor','显示我的投资人菜单'),
+    #         # ('mytrader','显示我的交易师菜单'),
+    #         # ('msgcenter','显示消息中心菜单'),
+    #         # ('usercenter','显示个人中心菜单'),
+    #         # ('changepwd','显示修改密码菜单'),
+    #         # ('personalinfo','显示个人信息菜单'),
+    #         # ('logcheck','显示日志查询菜单'),
+    #         # ('projmanage','显示项目管理菜单'),
+    #         # ('postproj', '显示发布项目菜单'),
+    #         # ('projlist', '显示平台项目菜单'),
+    #         # ('groupmanage','显示group管理菜单'),
+    #     )

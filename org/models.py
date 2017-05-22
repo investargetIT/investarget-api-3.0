@@ -40,7 +40,7 @@ class organization(models.Model):
     mobile = models.CharField(max_length=16,blank=True,null=True)
     mobileAreaCode = models.CharField(max_length=10, blank=True, null=True, default='86',help_text='电话区号')
     industry = models.ForeignKey(Industry,help_text='机构行业',blank=True,null=True)
-    webSite = models.URLField(blank=True,null=True)
+    webSite = models.CharField(max_length=64,blank=True,null=True)
     companyEmail = models.EmailField(blank=True,null=True,max_length=32)
     orgstatus = models.ForeignKey(AuditStatus, blank=True, default=1)
     auditUser = models.ForeignKey(MyUser, blank=True, null=True, related_name='useraudit_orgs')
@@ -79,6 +79,12 @@ class organization(models.Model):
             if self.orgcode:
                 if organization.objects.exclude(pk=self.pk).filter(is_deleted=False,orgcode=self.orgcode,datasource=self.datasource).exists():
                     raise InvestError(code=5001,msg='orgcode已存在')
+            if self.nameC:
+                if organization.objects.exclude(pk=self.pk).filter(is_deleted=False,nameC=self.nameC,datasource=self.datasource).exists():
+                    raise InvestError(code=5001,msg='同名机构已存在')
+            if self.nameE:
+                if organization.objects.exclude(pk=self.pk).filter(is_deleted=False,nameE=self.nameE,datasource=self.datasource).exists():
+                    raise InvestError(code=5001,msg='同名机构已存在')
             if self.is_deleted and oldorg.createuser:
                 remove_perm('org.user_getorg', oldorg.createuser, self)
                 remove_perm('org.user_changeorg', oldorg.createuser, self)
@@ -121,7 +127,7 @@ class orgRemarks(models.Model):
             ('admin_addorgremark', '管理员增加机构备注'),
             ('admin_deleteorgremark', '管理员删除机构备注'),
 
-            ('user_getorgremark', '用户查看机构备注（obj级别）'),
+            ('user_getorgremark', '用户查看机构备注（obj/class级别）'),
             ('user_changeorgremark', '用户修改机构备注（obj级别）'),
             ('user_addorgremark', '用户增加机构备注'),
             ('user_deleteorgremark','用户删除机构备注（obj级别）'),

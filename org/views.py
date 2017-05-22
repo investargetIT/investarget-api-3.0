@@ -11,10 +11,10 @@ from rest_framework import filters , viewsets
 from org.models import organization, orgTransactionPhase, orgRemarks
 from org.serializer import OrgSerializer, OrgCommonSerializer, OrgDetailSerializer, \
     OrgRemarkSerializer, OrgRemarkDetailSerializer
-from sourcetype.models import TransactionPhases, Tag
+from sourcetype.models import TransactionPhases, Tag, DataSource
 from utils.customClass import InvestError, JSONResponse, RelationFilter
 from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, returnListChangeToLanguage, \
-    returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse
+    returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser
 from django.db import transaction,models
 from django_filters import FilterSet
 
@@ -91,21 +91,35 @@ class OrganizationView(viewsets.ModelViewSet):
             page_size = request.GET.get('page_size')
             page_index = request.GET.get('page_index')  # 从第一页开始
             lang = request.GET.get('lang')
+            source = request.GET.get('source')
+            if source:
+                datasource = DataSource.objects.filter(id=source, is_deleted=False)
+                if datasource.exists():
+                    userdatasource = datasource.first()
+                    queryset = self.get_queryset().filter(datasource=userdatasource)
+                else:
+                    raise InvestError(code=8888)
+            else:
+                raise InvestError(code=8888, msg='source field is required')
             if not page_size:
                 page_size = 10
             if not page_index:
                 page_index = 1
-            queryset = self.filter_queryset(self.get_queryset())
+            queryset = self.filter_queryset(queryset)
+            setrequestuser(request)
+            if request.user.is_anonymous:
+                serializerclass = OrgCommonSerializer
+            else:
+                if request.user.has_perm('org.admin_getorg'):
+                    serializerclass = OrgDetailSerializer
+                else:
+                    serializerclass = OrgCommonSerializer  # warning
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
             except EmptyPage:
                 raise InvestError(1001)
             queryset = queryset.page(page_index)
-            if request.user.has_perm('org.admin_getorg'):
-                serializerclass = OrgDetailSerializer
-            else:
-                serializerclass = OrgCommonSerializer
             serializer = serializerclass(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
@@ -118,22 +132,20 @@ class OrganizationView(viewsets.ModelViewSet):
         data = request.data
         lang = request.GET.get('lang')
         data['createuser'] = request.user.id
-        data['orgstatus'] = 1
         data['datasource'] = request.user.datasource.id
         try:
             with transaction.atomic():
-                orgTransactionPhases = data.pop('transactionPhases', None)
+                orgTransactionPhases = data.pop('orgtransactionphase', None)
                 orgserializer = OrgDetailSerializer(data=data)
                 if orgserializer.is_valid():
                     org = orgserializer.save()
                     if orgTransactionPhases and isinstance(orgTransactionPhases,list):
                         orgTransactionPhaselist = []
                         for transactionPhase in orgTransactionPhases:
-                            orgTransactionPhaselist.append(orgTransactionPhase(org=org, transactionPhase_id=transactionPhase,))
+                            orgTransactionPhaselist.append(orgTransactionPhase(org=org, transactionPhase_id=transactionPhase,createuser=request.user,createdtime=datetime.datetime.now()))
                         org.org_orgTransactionPhases.bulk_create(orgTransactionPhaselist)
                 else:
-                    raise InvestError(code=20071,
-                                      msg='data有误_%s\n%s' % (orgserializer.error_messages, orgserializer.errors))
+                    raise InvestError(code=20071, msg='data有误_%s' % orgserializer.errors)
                 if org.createuser:
                     assign_perm('org.user_getorg', org.createuser, org)
                     assign_perm('org.user_changeorg', org.createuser, org)
@@ -243,6 +255,8 @@ class OrganizationView(viewsets.ModelViewSet):
                             if hasattr(manager, 'is_deleted') and not manager.is_deleted:
                                 manager.is_deleted = True
                                 manager.save()
+                            else:
+                                manager.delete()
                         else:
                             try:
                                 manager.model._meta.get_field('is_deleted')
@@ -250,7 +264,7 @@ class OrganizationView(viewsets.ModelViewSet):
                                     manager.all().update(is_deleted=True)
                             except FieldDoesNotExist:
                                 if manager.all().count():
-                                    raise InvestError(code=2010, msg=u'{} 上有关联数据，且没有is_deleted字段'.format(link))
+                                    manager.all().delete()
                 instance.is_deleted = True
                 instance.deleteduser = request.user
                 instance.deletetime = datetime.datetime.utcnow()
@@ -329,7 +343,7 @@ class OrgRemarkView(viewsets.ModelViewSet):
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
             if request.user.has_perm('org.admin_getorgremark'):
-                queryset = queryset
+                queryset = queryset.filter(datasource=request.user.datasource)
             else:
                 queryset = queryset.filter(createuser_id=request.user.id)
             try:

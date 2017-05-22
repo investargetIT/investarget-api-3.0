@@ -11,7 +11,7 @@ from django.contrib.auth.models import PermissionsMixin, Group
 from django.db import models
 from django.db.models import Q
 from guardian.shortcuts import remove_perm, assign_perm
-from sourcetype.models import AuditStatus, ClientType, TitleType,School,Specialty,Tag, DataSource
+from sourcetype.models import AuditStatus, ClientType, TitleType,School,Specialty,Tag, DataSource, Country
 from utils.customClass import InvestError
 
 registersourcechoice = (
@@ -40,8 +40,8 @@ class MyUserBackend(ModelBackend):
         #         user = MyUser.objects.get(email=username, is_deleted=False, datasource=datasource)
         # except MyUser.DoesNotExist:
         #     raise InvestError(code=2002)
-        except Exception:
-            raise InvestError(code=9999,msg='MyUserBackend/authenticate模块验证失败')
+        except Exception as err:
+            raise InvestError(code=9999,msg='MyUserBackend/authenticate模块验证失败\n,%s'%err)
         else:
             if user.check_password(password):
                 return user
@@ -90,6 +90,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     cardBucket = models.CharField(max_length=32,blank=True,null=True)
     cardKey = models.CharField(max_length=128,blank=True,null=True)
     wechat = models.CharField(max_length=64,blank=True,null=True)
+    country = models.ForeignKey(Country,blank=True,null=True)
     userstatus = models.ForeignKey(AuditStatus,help_text='审核状态',blank=True,default=1)
     org = models.ForeignKey('org.organization',help_text='所属机构',blank=True,null=True,related_name='org_users',on_delete=models.SET_NULL)
     nameC = models.CharField(help_text='姓名',max_length=128,db_index=True,blank=True,null=True,)

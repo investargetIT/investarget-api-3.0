@@ -8,6 +8,7 @@ from rest_framework.renderers import JSONRenderer
 from utils.responsecode import responsecode
 from django_filters import Filter
 
+
 class JSONResponse(HttpResponse):
     def __init__(self,data, **kwargs):
         content = JSONRenderer().render(data=data)

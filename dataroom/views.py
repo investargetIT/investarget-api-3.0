@@ -241,6 +241,8 @@ class DataroomView(viewsets.ModelViewSet):
                                 if hasattr(manager, 'is_deleted') and not manager.is_deleted:
                                     manager.is_deleted = True
                                     manager.save()
+                                else:
+                                    manager.delete()
                             else:
                                 try:
                                     manager.model._meta.get_field('is_deleted')
@@ -248,7 +250,7 @@ class DataroomView(viewsets.ModelViewSet):
                                         manager.all().update(is_deleted=True)
                                 except FieldDoesNotExist:
                                     if manager.all().count():
-                                        raise InvestError(code=2010, msg=u'{} 上有关联数据,且没有is_deleted字段'.format(link))
+                                        manager.all().delete()
                     instance.is_deleted = True
                     instance.deleteduser = request.user
                     instance.deletedtime = datetime.datetime.now()

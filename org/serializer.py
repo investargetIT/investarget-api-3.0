@@ -14,18 +14,22 @@ class OrgCommonSerializer(serializers.ModelSerializer):
         fields = ('id','nameC','nameE',)
 
 class OrgSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = organization
-        fileds = ('id','nameC','nameE','orgcode','orgstatus','org_users')
+        fields = ('id','nameC','nameE','orgcode','orgstatus','org_users')
 
 class OrgDetailSerializer(serializers.ModelSerializer):
-    transactionPhases = transactionPhasesSerializer(source='get_transactionPhases', many=True)
+
     class Meta:
         model = organization
-        # exclude = ('id',)
         fields = '__all__'
 
-
+    # def get_transactionPhases(self, obj):
+    #     usertrader = obj.orgtransactionphase
+    #     if usertrader.exists():
+    #         return transactionPhasesSerializer(usertrader,many=True).data
+    #     return None
 class OrgRemarkSerializer(serializers.ModelSerializer):
     class Meta:
         model = orgRemarks

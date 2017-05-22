@@ -32,22 +32,20 @@ from utils.sendMessage import sendmessage_userauditstatuchange, sendmessage_user
     sendmessage_usermakefriends
 from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable,\
     catchexcption, cache_delete_key, maketoken, returnDictChangeToLanguage, returnListChangeToLanguage, SuccessResponse, \
-    InvestErrorResponse, ExceptionResponse
+    InvestErrorResponse, ExceptionResponse, setrequestuser
 from django_filters import FilterSet
 
 
-# class UserFilter(FilterSet):
-    # industrys = RelationFilter(filterstr='industry',lookup_method='in')
-    # tags = RelationFilter(filterstr='tags',lookup_method='in')
-    # projstatus = RelationFilter(filterstr='projstatus',lookup_method='in')
-    # country = RelationFilter(filterstr='country',lookup_method='in')
-    # netIncome_USD_F = RelationFilter(filterstr='proj_finances__netIncome_USD',lookup_method='gte')
-    # netIncome_USD_T = RelationFilter(filterstr='proj_finances__netIncome_USD', lookup_method='lte')
-    # grossProfit_F = RelationFilter(filterstr='proj_finances__grossProfit', lookup_method='gte')
-    # grossProfit_T = RelationFilter(filterstr='proj_finances__grossProfit', lookup_method='lte')
-    # class Meta:、
-        # model = MyUser
-        # fields = ('mobile','email','nameC','nameE','groups','org','tranphrase')
+class UserFilter(FilterSet):
+    groups = RelationFilter(filterstr='groups', lookup_method='in')
+    org = RelationFilter(filterstr='org',lookup_method='in')
+    tags = RelationFilter(filterstr='tags',lookup_method='in')
+    userstatus = RelationFilter(filterstr='userstatus',lookup_method='in')
+    currency = RelationFilter(filterstr='org__currency', lookup_method='in')
+    orgtransactionphases = RelationFilter(filterstr='org__orgtransactionphase', lookup_method='in')
+    class Meta:
+        model = MyUser
+        fields = ('groups','org','tags','userstatus','currency','orgtransactionphases')
 
 
 class UserView(viewsets.ModelViewSet):
@@ -66,9 +64,9 @@ class UserView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = MyUser.objects.filter(is_deleted=False)
-    filter_fields = ('mobile','email','nameC','nameE','groups','org','tags')
+    # filter_fields = ('mobile','email','nameC','nameE','groups','org','tags')
     serializer_class = UserSerializer
-    # filter_class = UserFilter
+    filter_class = UserFilter
     redis_key = 'user'
     Model = MyUser
 
@@ -188,14 +186,26 @@ class UserView(viewsets.ModelViewSet):
                     raise InvestError(code=2007,msg='groups bust be an available GroupID')
                 data['groups'] = [groupid]
                 orgname = data.pop('orgname', None)
-                data.pop('org',None)
                 if orgname:
-                    org = organization(nameC=orgname,datasource=userdatasource).save()
+                    if lang == 'en':
+                        field = 'nameE'
+                        filters = Q(nameE=orgname)
+                    else:
+                        field = 'nameC'
+                        filters = Q(nameC=orgname)
+                    orgset = organization.objects.filter(filters,is_deleted=False,datasource=userdatasource)
+                    if orgset.exists():
+                        org = orgset.first()
+                    else:
+                        org = organization()
+                        setattr(org,field,orgname)
+                        org.datasource= userdatasource
+                        org.save()
                     data['org'] = org.id
                 user = MyUser(email=email,mobile=mobile,datasource=userdatasource)
                 password = data.pop('password', None)
                 user.set_password(password)
-                user.save(nameC=data['nameC'],nameE=data['nameE'])
+                user.save()
                 tags = data.pop('tags', None)
                 userserializer = CreatUserSerializer(user, data=data)
                 if userserializer.is_valid():
@@ -409,6 +419,8 @@ class UserView(viewsets.ModelViewSet):
                                 if hasattr(manager, 'is_deleted') and not manager.is_deleted:
                                     manager.is_deleted = True
                                     manager.save()
+                                else:
+                                    manager.delete()
                             else:
                                 try:
                                     manager.model._meta.get_field('is_deleted')
@@ -416,8 +428,7 @@ class UserView(viewsets.ModelViewSet):
                                         manager.all().update(is_deleted=True)
                                 except FieldDoesNotExist:
                                     if manager.all().count():
-                                        raise InvestError(code=2010,msg=u'{} 上有关联数据'.format(link))
-
+                                        manager.all().delete()
                     instance.is_deleted = True
                     instance.deleteduser = request.user
                     instance.deletedtime = datetime.datetime.now()

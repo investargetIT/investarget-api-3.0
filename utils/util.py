@@ -4,6 +4,9 @@ from django.core.cache import cache
 import datetime
 import traceback
 
+from django.db.models import QuerySet
+
+from sourcetype.models import webmenu
 from usersys.models import MyToken
 from usersys.serializer import UserListSerializer
 from utils.customClass import JSONResponse, InvestError
@@ -101,7 +104,7 @@ def loginTokenIsAvailable(permissions=None):#判断class级别权限
         return _token_available
     return token_available
 
-def checkrequesttoken(request):#判断token是否有效
+def checkrequesttoken(request):#验证token有效
     try:
         tokenkey = request.META.get('HTTP_TOKEN')
         if tokenkey:
@@ -123,7 +126,38 @@ def checkrequesttoken(request):#判断token是否有效
             raise InvestError(3000, msg='用户不存在')
 
 
+def setrequestuser(request):#根据token设置request.user
+    tokenkey = request.META.get('HTTP_TOKEN', None)
+    if tokenkey:
+        try:
+            token = MyToken.objects.get(key=tokenkey, is_deleted=False)
+            if token.created > datetime.datetime.now() - datetime.timedelta(hours=24 * 1) and token.is_deleted == False:
+                request.user = token.user
+        except MyToken.DoesNotExist:
+            pass
+        except Exception as err:
+            raise InvestError(3000,msg=repr(err))
+    else:
+        pass
 
+
+
+
+def getmenulist(user):
+    qslist = []
+    allmenuobj = webmenu.objects.all()
+    if user.has_perm('usersys.admin_getuser'):
+        qslist.append(allmenuobj.filter(id__in=[5]))
+    if user.has_perm('usersys.user_getuserrelation'):
+        if user.has_perm('usersys.as_traderuser'):
+            qslist.append(allmenuobj.filter(id__in=[12]))
+        if user.has_perm('usersys.as_investoruser'):
+            qslist.append(allmenuobj.filter(id__in=[13]))
+
+
+
+    qsres = reduce(lambda x,y:x|y,qslist).distinct()
+    return qsres
 
 def maketoken(user,clienttype):
     try:
@@ -193,3 +227,25 @@ def returnListChangeToLanguage(listdata,lang=None):
         else:
             newlist.append(listone)
     return newlist
+
+
+def requestDictChangeToLanguage(model,dictdata,lang=None):
+    modelfields = model._meta.fields
+    if not isinstance(modelfields,list):
+        return  dictdata
+    newdict = {}
+    if lang == 'en':
+        for key, value in dictdata.items():
+            if (key + 'E') in modelfields and (key + 'C') in modelfields:
+                newdict[key[0:-1] + 'E'] = value
+            else:
+                newdict[key] = value
+    else:
+        for key, value in dictdata.items():
+            if dictdata.has_key(key + 'E') and dictdata.has_key(key + 'C'):
+                newdict[key[0:-1] + 'E'] = value
+            else:
+                newdict[key] = value
+    return newdict
+
+

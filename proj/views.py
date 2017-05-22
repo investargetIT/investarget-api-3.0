@@ -16,11 +16,11 @@ from proj.models import project, finance, projectTags, projectIndustries, projec
     ShareToken
 from proj.serializer import ProjSerializer, FinanceSerializer, ProjCreatSerializer, \
     ProjCommonSerializer, FinanceChangeSerializer, FinanceCreateSerializer, FavoriteSerializer, FavoriteCreateSerializer
-from sourcetype.models import Tag, Industry, TransactionType
+from sourcetype.models import Tag, Industry, TransactionType, DataSource
 from usersys.models import MyUser
 from utils.sendMessage import sendmessage_projectauditstatuchange
 from utils.util import catchexcption, read_from_cache, write_to_cache, loginTokenIsAvailable, returnListChangeToLanguage, \
-    returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse
+    returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser
 from utils.customClass import JSONResponse, InvestError, RelationFilter
 
 from django_filters import FilterSet
@@ -99,25 +99,39 @@ class ProjectView(viewsets.ModelViewSet):
             page_size = request.GET.get('page_size')
             page_index = request.GET.get('page_index')  # 从第一页开始
             lang = request.GET.get('lang')
+            source = request.GET.get('source')
+            if source:
+                datasource = DataSource.objects.filter(id=source, is_deleted=False)
+                if datasource.exists():
+                    userdatasource = datasource.first()
+                    queryset = self.get_queryset().filter(datasource=userdatasource)
+                else:
+                    raise InvestError(code=8888)
+            else:
+                raise InvestError(code=8888, msg='source field is required')
             if not page_size:
                 page_size = 10
             if not page_index:
                 page_index = 1
-            queryset = self.filter_queryset(self.get_queryset())
+            setrequestuser(request)
+            queryset = self.filter_queryset(queryset)
             if request.user.is_anonymous:
-                    queryset = queryset.filter(isHidden=False)
+                queryset = queryset.filter(isHidden=False)
+                serializerclass = ProjCommonSerializer
             else:
                 if request.user.has_perm('proj.admin_getproj'):
                     queryset = queryset
+                    serializerclass = ProjCreatSerializer
                 else:
                     queryset = queryset.filter(Q(isHidden=False) | Q(createuser=request.user))
+                    serializerclass = ProjCommonSerializer
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
             except EmptyPage:
                 return JSONResponse(SuccessResponse([],msg='没有符合条件的结果'))
             queryset = queryset.page(page_index)
-            serializer = ProjCommonSerializer(queryset, many=True)
+            serializer = serializerclass(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -305,6 +319,8 @@ class ProjectView(viewsets.ModelViewSet):
                             if hasattr(manager, 'is_deleted') and not manager.is_deleted:
                                 manager.is_deleted = True
                                 manager.save()
+                            else:
+                                manager.delete()
                         else:
                             try:
                                 manager.model._meta.get_field('is_deleted')
@@ -312,7 +328,7 @@ class ProjectView(viewsets.ModelViewSet):
                                     manager.all().update(is_deleted=True)
                             except FieldDoesNotExist:
                                 if manager.all().count():
-                                    raise InvestError(code=2010, msg=u'{} 上有关联数据'.format(link))
+                                    manager.all().delete()
                 instance.is_deleted = True
                 instance.deleteduser = request.user
                 instance.deletetime = datetime.datetime.now()
