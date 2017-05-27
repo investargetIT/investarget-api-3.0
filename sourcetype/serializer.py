@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from sourcetype.models import TransactionType, TransactionPhases, Specialty, School, OrgArea, Tag, Industry, CurrencyType, \
     AuditStatus, ProjectStatus, OrgType, FavoriteType, MessageType, ClientType, TitleType, Continent, Country, \
-    DataSource, TransactionStatus
+    DataSource, TransactionStatus, webmenu
 
 
 class AuditStatusSerializer(serializers.ModelSerializer):
@@ -116,3 +116,9 @@ class DataSourceSerializer(serializers.ModelSerializer):
     class Meta:
         model = DataSource
         fields = ('id',)
+
+
+class WebMenuSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = webmenu
+        fields = '__all__'

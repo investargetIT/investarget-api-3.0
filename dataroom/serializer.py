@@ -23,6 +23,7 @@ class DataroomdirectoryorfileUpdateSerializer(serializers.ModelSerializer):
         model = dataroomdirectoryorfile
         fields = '__all__'
         read_only_fields = ('datasource','createuser','createtime','isFile','isShadow','shadowdirectory','dataroom')
+
 class DataroomdirectoryorfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = dataroomdirectoryorfile

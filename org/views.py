@@ -10,7 +10,7 @@ from guardian.shortcuts import assign_perm
 from rest_framework import filters , viewsets
 from org.models import organization, orgTransactionPhase, orgRemarks
 from org.serializer import OrgSerializer, OrgCommonSerializer, OrgDetailSerializer, \
-    OrgRemarkSerializer, OrgRemarkDetailSerializer
+    OrgRemarkSerializer, OrgRemarkDetailSerializer, OrgCreateSerializer
 from sourcetype.models import TransactionPhases, Tag, DataSource
 from utils.customClass import InvestError, JSONResponse, RelationFilter
 from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, returnListChangeToLanguage, \
@@ -28,7 +28,7 @@ class OrganizationFilter(FilterSet):
     tags =  RelationFilter(filterstr='org_users__tags',lookup_method='in')
     class Meta:
         model = organization
-        fields = ['id','nameC','nameE','orgcode','orgstatus','currencys','industrys','orgtransactionphases','orgtypes','tags']
+        fields = ['orgstatus','currencys','industrys','orgtransactionphases','orgtypes','tags']
 
 class OrganizationView(viewsets.ModelViewSet):
     """
@@ -41,7 +41,7 @@ class OrganizationView(viewsets.ModelViewSet):
     filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
     queryset = organization.objects.filter(is_deleted=False)
     filter_class = OrganizationFilter
-    search_fields = ('nameC','nameE','orgcode',)
+    search_fields = ('orgnameC','orgnameE','orgcode',)
     serializer_class = OrgDetailSerializer
     redis_key = 'organization'
 
@@ -91,7 +91,7 @@ class OrganizationView(viewsets.ModelViewSet):
             page_size = request.GET.get('page_size')
             page_index = request.GET.get('page_index')  # 从第一页开始
             lang = request.GET.get('lang')
-            source = request.GET.get('source')
+            source = request.META.get('HTTP_SOURCE')
             if source:
                 datasource = DataSource.objects.filter(id=source, is_deleted=False)
                 if datasource.exists():
@@ -120,11 +120,27 @@ class OrganizationView(viewsets.ModelViewSet):
             except EmptyPage:
                 raise InvestError(1001)
             queryset = queryset.page(page_index)
-            serializer = serializerclass(queryset, many=True)
-            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
+            actionlist = {'get':False,'change':False,'delete':False}
+            responselist = []
+            for instance in queryset:
+                if request.user.is_anonymous:
+                    pass
+                else:
+                    if request.user.has_perm('org.admin_getorg') or request.user.has_perm('org.user_getorg'):
+                        actionlist['get'] = True
+                    if request.user.has_perm('org.admin_changeorg') or request.user.has_perm('org.user_changeorg',instance):
+                        actionlist['change'] = True
+                    if request.user.has_perm('org.admin_deleteorg') or request.user.has_perm('org.user_deleteorg',instance):
+                        actionlist['delete'] = True
+                instancedata = serializerclass(instance).data
+                instancedata['action'] = actionlist
+                responselist.append(instancedata)
+            print repr(OrgDetailSerializer())
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(responselist,lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
+            catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable(['org.admin_addorg','org.user_addorg'])
@@ -136,7 +152,7 @@ class OrganizationView(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 orgTransactionPhases = data.pop('orgtransactionphase', None)
-                orgserializer = OrgDetailSerializer(data=data)
+                orgserializer = OrgCreateSerializer(data=data)
                 if orgserializer.is_valid():
                     org = orgserializer.save()
                     if orgTransactionPhases and isinstance(orgTransactionPhases,list):
@@ -162,10 +178,10 @@ class OrganizationView(viewsets.ModelViewSet):
         try:
             org = self.get_object()
             lang = request.GET.get('lang')
-            if request.user.has_perm('org.admin_getorg'):
+            if request.user.has_perm('org.admin_getorg') or request.user == org.createuser:
                 orgserializer = OrgDetailSerializer
             else:
-                orgserializer = OrgCommonSerializer
+                orgserializer = OrgDetailSerializer
             serializer = orgserializer(org)
             return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))
         except InvestError as err:

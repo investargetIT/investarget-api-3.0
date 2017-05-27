@@ -34,7 +34,7 @@ class loginlog(models.Model):
     user = models.IntegerField(blank=True,null=True)
     loginaccount = models.CharField(max_length=40,blank=True,null=True)
     logintime = models.DateTimeField(auto_now_add=True,blank=True,null=True)
-    loginsource = models.PositiveSmallIntegerField(blank=True,null=True)
+    logintype = models.PositiveSmallIntegerField(blank=True,null=True)
     is_deleted = models.BooleanField(blank=True,default=False)
     datasource = models.PositiveSmallIntegerField(blank=True, default=1)
     class Meta:

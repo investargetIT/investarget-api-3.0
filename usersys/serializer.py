@@ -9,7 +9,8 @@ from .models import MyUser, UserRelation, UserFriendship
 class UserCommenSerializer(serializers.ModelSerializer):
     class Meta:
         model = MyUser
-        fields = ('id', 'nameC','nameE','org','photoKey','tags','title','gender')
+        fields = ('id', 'usernameC','usernameE','tags')
+        depth = 1
 #权限组基本信息
 class GroupSerializer(serializers.ModelSerializer):
     class Meta:
@@ -24,6 +25,22 @@ class UserRelationSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserRelation
         fields = ('investoruser','traderuser','relationtype','score')
+        depth = 1
+
+# 投资人的交易师
+class UserTraderRelationSerializer(serializers.ModelSerializer):
+    traderuser = UserCommenSerializer()
+    class Meta:
+        model = UserRelation
+        fields = ('traderuser', 'relationtype', 'score')
+        depth = 1
+
+# 交易师的投资人
+class UserInvestorRelationSerializer(serializers.ModelSerializer):
+    investoruser = UserCommenSerializer()
+    class Meta:
+        model = UserRelation
+        fields = ('investoruser', 'relationtype', 'score')
         depth = 1
 
 
@@ -72,7 +89,7 @@ class UserSerializer(serializers.ModelSerializer):
 class CreatUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = MyUser
-        # fields = ('groups','photoBucket','photoKey','cardBucket','cardKey','wechat','org','name','nameE',
+        # fields = ('groups','photoBucket','photoKey','cardBucket','cardKey','wechat','org','username','usernameE',
         # 'mobileAreaCode','mobile','description','tags','email','title','gender','school','specialty','registersource','remark',)
         exclude = ('password','datasource')
 
@@ -84,7 +101,7 @@ class UserListSerializer(serializers.ModelSerializer):
     # trader_relations = UserRelationSerializer(MyUser.trader_relations, many=True)
     class Meta:
         model = MyUser
-        fields = ('id','groups','tags','nameC','nameE','mobile','email','title','userstatus','org','trader_relation','investor_relation')
+        fields = ('id','groups','tags','usernameC','usernameE','mobile','email','title','userstatus','org','trader_relation','investor_relation')
         depth = 1
 
     trader_relation = serializers.SerializerMethodField()

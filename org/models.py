@@ -1,5 +1,8 @@
 #coding=utf-8
 from __future__ import unicode_literals
+
+from Tkinter import Entry
+
 from django.db import models
 import sys
 
@@ -19,12 +22,12 @@ class organization(models.Model):
     id = models.AutoField(primary_key=True)
     description = models.TextField(blank=True,null=True)
     investoverseasproject = models.BooleanField(blank=True, default=True, help_text='是否投海外项目')
-    orgtransactionphase = models.ManyToManyField(TransactionPhases, through='orgTransactionPhase',through_fields=('org', 'transactionPhase'), blank=True)
-    currency = models.ForeignKey(CurrencyType,blank=True,null=True,related_name='currency_orgs',on_delete=models.SET_NULL)
+    orgtransactionphase = models.ManyToManyField(TransactionPhases, through='orgTransactionPhase',through_fields=('org','transactionPhase'), blank=True)
+    currency = models.ForeignKey(CurrencyType,blank=True,default=1)
     decisionCycle = models.SmallIntegerField(blank=True,null=True)
     decisionMakingProcess = models.TextField(blank=True,null=True)
-    nameC = models.CharField(max_length=128,blank=True,null=True)
-    nameE = models.CharField(max_length=128,blank=True,null=True)
+    orgnameC = models.CharField(max_length=128,blank=True,null=True)
+    orgnameE = models.CharField(max_length=128,blank=True,null=True)
     orgcode = models.CharField(max_length=128,blank=True,null=True)
     orgtype = models.ForeignKey(OrgType,blank=True,null=True)
     transactionAmountF = models.BigIntegerField(blank=True,null=True)
@@ -52,8 +55,9 @@ class organization(models.Model):
     lastmodifyuser = models.ForeignKey(MyUser, blank=True, null=True,related_name='usermodify_orgs')
     lastmodifytime = models.DateTimeField(auto_now=True,blank=True,null=True)
     datasource = models.ForeignKey(DataSource,help_text='数据源')
+    # CurrencyType.objects.filter(currencyC__in='人民币')
     def __str__(self):
-        return self.nameC
+        return self.orgnameC
     class Meta:
         db_table = "org"
         permissions = (
@@ -67,8 +71,15 @@ class organization(models.Model):
             ('user_deleteorg', '用户删除机构(obj级别权限)'),
             ('user_getorg', '用户查看机构'),
         )
-    def get_transactionPhases(self):
-        return self.orgtransactionphase
+
+    # def __init__(self,*args,**kwargs):
+    #     super(organization,self).__init__(*args,**kwargs)
+    #     print 'aaaaa'
+    #     print self.orgtransactionphase.all()
+    #     print self.currency.id
+    #     print self.orgtransactionphase.filter(transactionPhase_orgs__is_deleted=False)
+
+
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
@@ -79,11 +90,11 @@ class organization(models.Model):
             if self.orgcode:
                 if organization.objects.exclude(pk=self.pk).filter(is_deleted=False,orgcode=self.orgcode,datasource=self.datasource).exists():
                     raise InvestError(code=5001,msg='orgcode已存在')
-            if self.nameC:
-                if organization.objects.exclude(pk=self.pk).filter(is_deleted=False,nameC=self.nameC,datasource=self.datasource).exists():
+            if self.orgnameC:
+                if organization.objects.exclude(pk=self.pk).filter(is_deleted=False,orgnameC=self.orgnameC,datasource=self.datasource).exists():
                     raise InvestError(code=5001,msg='同名机构已存在')
-            if self.nameE:
-                if organization.objects.exclude(pk=self.pk).filter(is_deleted=False,nameE=self.nameE,datasource=self.datasource).exists():
+            if self.orgnameE:
+                if organization.objects.exclude(pk=self.pk).filter(is_deleted=False,orgnameE=self.orgnameE,datasource=self.datasource).exists():
                     raise InvestError(code=5001,msg='同名机构已存在')
             if self.is_deleted and oldorg.createuser:
                 remove_perm('org.user_getorg', oldorg.createuser, self)

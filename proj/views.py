@@ -37,7 +37,7 @@ class ProjectFilter(FilterSet):
     grossProfit_T = RelationFilter(filterstr='proj_finances__grossProfit', lookup_method='lte')
     class Meta:
         model = project
-        fields = ('titleC', 'titleE','isoverseasproject','industries','tags','projstatus','country','netIncome_USD_F','netIncome_USD_T','grossProfit_F','grossProfit_T')
+        fields = ('isoverseasproject','industries','tags','projstatus','country','netIncome_USD_F','netIncome_USD_T','grossProfit_F','grossProfit_T')
 
 
 class ProjectView(viewsets.ModelViewSet):
@@ -52,8 +52,7 @@ class ProjectView(viewsets.ModelViewSet):
     filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
     queryset = project.objects.all().filter(is_deleted=False)
     filter_class = ProjectFilter
-    # filter_fields = ('titleC', 'titleE','isoverseasproject','industries','tags','projstatus','country')
-    search_fields = ('titleC', 'titleE',)
+    search_fields = ('projtitleC', 'projtitleE',)
     serializer_class = ProjSerializer
     redis_key = 'project'
     Model = project
@@ -99,7 +98,7 @@ class ProjectView(viewsets.ModelViewSet):
             page_size = request.GET.get('page_size')
             page_index = request.GET.get('page_index')  # 从第一页开始
             lang = request.GET.get('lang')
-            source = request.GET.get('source')
+            source = request.META.get('HTTP_SOURCE')
             if source:
                 datasource = DataSource.objects.filter(id=source, is_deleted=False)
                 if datasource.exists():
@@ -131,8 +130,24 @@ class ProjectView(viewsets.ModelViewSet):
             except EmptyPage:
                 return JSONResponse(SuccessResponse([],msg='没有符合条件的结果'))
             queryset = queryset.page(page_index)
-            serializer = serializerclass(queryset, many=True)
-            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
+            actionlist = {'get': False, 'change': False, 'delete': False}
+            responselist = []
+            for instance in queryset:
+                if request.user.is_anonymous:
+                    pass
+                else:
+                    if request.user.has_perm('proj.admin_getproj') or request.user.has_perm('proj.user_getproj'):
+                        actionlist['get'] = True
+                    if request.user.has_perm('proj.admin_changeproj') or request.user.has_perm('proj.user_changeproj',
+                                                                                             instance):
+                        actionlist['change'] = True
+                    if request.user.has_perm('proj.admin_deleteproj') or request.user.has_perm('proj.user_deleteproj',
+                                                                                             instance):
+                        actionlist['delete'] = True
+                instancedata = serializerclass(instance).data
+                instancedata['action'] = actionlist
+                responselist.append(instancedata)
+            return JSONResponse(SuccessResponse({'count': count, 'data': returnListChangeToLanguage(responselist, lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -618,6 +633,7 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
         if obj.is_deleted:
             raise InvestError(code=2002,msg='用户已删除')
         return obj
+
     #获取收藏列表，GET参数'user'，'trader'，'favoritetype'
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):

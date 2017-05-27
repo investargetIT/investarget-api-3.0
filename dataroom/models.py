@@ -30,7 +30,6 @@ class publicdirectorytemplate(models.Model):
             # ('admin_changedataroomtemplate', '管理员修改dataroomtemplate'),
             # ('admin_deletedataroomtemplate', '管理员删除dataroomtemplate'),
             # ('admin_adddataroomtemplate', '管理员添加dataroomtemplate'),
-
         )
 
 class dataroom(models.Model):
@@ -84,7 +83,7 @@ class dataroomdirectoryorfile(models.Model):
     isShadow = models.BooleanField(blank=True,default=False)
     shadowdirectory = models.ForeignKey('self',related_name='shadowdirectory_directory',blank=True,null=True,)
     size = models.IntegerField(blank=True,null=True,help_text='文件大小')
-    name = models.CharField(max_length=128,blank=True,null=True,help_text='文件名或目录名')
+    filename = models.CharField(max_length=128,blank=True,null=True,help_text='文件名或目录名')
     key = models.CharField(max_length=16,blank=True,null=True,help_text='文件路径')
     bucket = models.CharField(max_length=128,blank=True,null=True,help_text='文件所在空间')
     isFile = models.BooleanField(blank=True,default=False,help_text='true/文件，false/目录')

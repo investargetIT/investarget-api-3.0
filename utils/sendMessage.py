@@ -12,6 +12,289 @@ from third.views.submail import xsendSms, xsendEmail
 
 typelist = ['sms','app','email','webmsg']
 
+
+messageconfig = {
+    'favoriteproject':{
+        'modeltype':favoriteProject,
+        'app':{
+            'content' : '',
+            'platform' : 'ios',
+            'bdage' : '1',
+            'n_extras' : {},
+        },
+        'sms':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+        'webmsg':{
+            'content' : '',
+            'title' : '',
+            'messagetype' : 1,
+        },
+        'email':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+    },
+    'traderchange':{
+        'modeltype':UserRelation,
+        'app':{
+            'content' : '',
+            'platform' : 'ios',
+            'bdage' : '1',
+            'n_extras' : {},
+        },
+        'sms':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+        'webmsg':{
+            'content' : '',
+            'title' : '',
+            'messagetype' : 1,
+        },
+        'email':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+    },
+    'userauditstatuschange':{
+    'modeltype':MyUser,
+        'app':{
+            'content' : '',
+            'platform' : 'ios',
+            'bdage' : '1',
+            'n_extras' : {},
+        },
+        'sms':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+        'webmsg':{
+            'content' : '',
+            'title' : '',
+            'messagetype' : 1,
+        },
+        'email':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+    },
+    'userregister':{
+        'modeltype':MyUser,
+        'app':{
+            'content' : '',
+            'platform' : 'ios',
+            'bdage' : '1',
+            'n_extras' : {},
+        },
+        'sms':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+        'webmsg':{
+            'content' : '',
+            'title' : '',
+            'messagetype' : 1,
+        },
+        'email':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+    },
+    'projectauditstatuschange':{
+        'modeltype':project,
+        'app':{
+            'content' : '',
+            'platform' : 'ios',
+            'bdage' : '1',
+            'n_extras' : {},
+        },
+        'sms':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+        'webmsg':{
+            'content' : '',
+            'title' : '',
+            'messagetype' : 1,
+        },
+        'email':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+    },
+    'orgauditstatuschange':{
+        'modeltype':organization,
+        'app':{
+            'content' : '',
+            'platform' : 'ios',
+            'bdage' : '1',
+            'n_extras' : {},
+        },
+        'sms':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+        'webmsg':{
+            'content' : '',
+            'title' : '',
+            'messagetype' : 1,
+        },
+        'email':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+    },
+    'timelinestatuschange':{
+        'modeltype':timelineTransationStatu,
+        'app':{
+            'content' : '',
+            'platform' : 'ios',
+            'bdage' : '1',
+            'n_extras' : {},
+        },
+        'sms':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+        'webmsg':{
+            'content' : '',
+            'title' : '',
+            'messagetype' : 1,
+        },
+        'email':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+    },
+    'timelinealertcycleexpire':{
+        'modeltype':timelineTransationStatu,
+        'app':{
+            'content' : '',
+            'platform' : 'ios',
+            'bdage' : '1',
+            'n_extras' : {},
+        },
+        'sms':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+        'webmsg':{
+            'content' : '',
+            'title' : '',
+            'messagetype' : 1,
+        },
+        'email':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+    },
+    'dataroomfileupdate':{
+        'modeltype':dataroomdirectoryorfile,
+        'app':{
+            'content' : '',
+            'platform' : 'ios',
+            'bdage' : '1',
+            'n_extras' : {},
+        },
+        'sms':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+        'webmsg':{
+            'content' : '',
+            'title' : '',
+            'messagetype' : 1,
+        },
+        'email':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+    },
+    'usermakefriend':{
+        'modeltype':UserFriendship,
+        'app':{
+            'content' : '',
+            'platform' : 'ios',
+            'bdage' : '1',
+            'n_extras' : {},
+        },
+        'sms':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+        'webmsg':{
+            'content' : '',
+            'title' : '',
+            'messagetype' : 1,
+        },
+        'email':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+    },
+}
+
+def sendmessage_withtypes(configtype,model,receiver,types,sender=None):
+    """
+    :param configtype: messageconfig
+    :param model: favoriteProject type
+    :param receiver: myuser type
+    :param types: list
+    :param sender: myuser type
+    :return: None
+    """
+    class sendmessageThread(threading.Thread):
+        def __init__(self, configtype, model, receiver, types, sender=None):
+            self.configtype = configtype
+            self.model = model
+            self.receiver = receiver
+            self.types = types
+            self.sender = sender
+            threading.Thread.__init__(self)
+        def run(self):
+            types = self.types
+            receiver = self.receiver
+            model = self.model
+            sender = self.sender
+            if hasattr(messageconfig,configtype):
+                data = messageconfig[configtype]
+                if isinstance(model, data['modeltype']):
+                    if 'app' in types:
+                        appdata = data['app']
+                        content = appdata['content']
+                        receiver_alias = receiver.usercode
+                        platform = appdata['platform']
+                        bdage = appdata['bdage']
+                        n_extras = appdata['n_extras']
+                        pushnotification(content, receiver_alias, platform, bdage, n_extras)
+                    if 'email' in types:
+                        emaildata = data['email']
+                        destination = receiver.email
+                        projectsign = emaildata['projectsign']
+                        vars = emaildata['vars']
+                        xsendEmail(destination, projectsign, vars)
+                    if 'sms' in types:
+                        smsdata = data['sms']
+                        destination = receiver.email
+                        projectsign = smsdata['projectsign']
+                        vars = smsdata['vars']
+                        xsendSms(destination, projectsign, vars)
+                    if 'webmsg' in types:
+                        webmsgdata = data['webmsg']
+                        content = webmsgdata['content']
+                        title = webmsgdata['title']
+                        messagetype = webmsgdata['messagetype']
+                        saveMessage(content, messagetype, title, receiver, sender)
+            else:
+                print u'%s not found'%configtype
+                pass
+    sendmessageThread(model,receiver,types,sender).start()
+
+
+
+
 def sendmessage_favoriteproject(model,receiver,types,sender=None):
     """
     :param model: favoriteProject type

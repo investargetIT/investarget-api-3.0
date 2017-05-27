@@ -7,6 +7,7 @@ import traceback
 from django.db.models import QuerySet
 
 from sourcetype.models import webmenu
+from sourcetype.serializer import WebMenuSerializer
 from usersys.models import MyToken
 from usersys.serializer import UserListSerializer
 from utils.customClass import JSONResponse, InvestError
@@ -141,23 +142,25 @@ def setrequestuser(request):#根据token设置request.user
         pass
 
 
-
-
 def getmenulist(user):
     qslist = []
     allmenuobj = webmenu.objects.all()
     if user.has_perm('usersys.admin_getuser'):
         qslist.append(allmenuobj.filter(id__in=[5]))
-    if user.has_perm('usersys.user_getuserrelation'):
+    if user.has_perm('usersys.admin_getuserrelation'):
+        qslist.append(allmenuobj.filter(id__in=[12, 13]))
+    elif user.has_perm('usersys.user_getuserrelation'):
         if user.has_perm('usersys.as_traderuser'):
             qslist.append(allmenuobj.filter(id__in=[12]))
         if user.has_perm('usersys.as_investoruser'):
             qslist.append(allmenuobj.filter(id__in=[13]))
-
-
-
-    qsres = reduce(lambda x,y:x|y,qslist).distinct()
-    return qsres
+    if user.has_perm('org.admin_getorg'):
+        qslist.append(allmenuobj.filter(id__in=[2, 3]))
+    if user.has_perm('org.admin_getorg'):
+        qslist.append(allmenuobj.filter(id__in=[9]))
+    qslist.append(allmenuobj.filter(id__in=[1, 4, 6, 7, 8, 10, 11, 14, 15, 16]))
+    qsres = reduce(lambda x,y:x|y,qslist).distinct().order_by('index')
+    return WebMenuSerializer(qsres,many=True).data
 
 def maketoken(user,clienttype):
     try:

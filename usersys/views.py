@@ -18,13 +18,14 @@ from rest_framework import viewsets
 
 from rest_framework.decorators import api_view, detail_route, list_route
 
-from APIlog.views import logininlog
+from APIlog.views import logininlog, apilog
 from org.models import organization
 from third.models import MobileAuthCode
 from usersys.models import MyUser,UserRelation, userTags, UserFriendship
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
     CreatUserSerializer , UserCommenSerializer , UserRelationDetailSerializer, UserFriendshipSerializer, \
-    UserFriendshipDetailSerializer, UserFriendshipUpdateSerializer
+    UserFriendshipDetailSerializer, UserFriendshipUpdateSerializer, UserInvestorRelationSerializer, \
+    UserTraderRelationSerializer
 from sourcetype.models import Tag, DataSource
 from utils import perimissionfields
 from utils.customClass import JSONResponse, InvestError, RelationFilter
@@ -32,7 +33,7 @@ from utils.sendMessage import sendmessage_userauditstatuchange, sendmessage_user
     sendmessage_usermakefriends
 from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable,\
     catchexcption, cache_delete_key, maketoken, returnDictChangeToLanguage, returnListChangeToLanguage, SuccessResponse, \
-    InvestErrorResponse, ExceptionResponse, setrequestuser
+    InvestErrorResponse, ExceptionResponse, setrequestuser, getmenulist
 from django_filters import FilterSet
 
 
@@ -62,9 +63,9 @@ class UserView(viewsets.ModelViewSet):
     destroy:删除用户
 
     """
-    filter_backends = (filters.DjangoFilterBackend,)
+    filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
     queryset = MyUser.objects.filter(is_deleted=False)
-    # filter_fields = ('mobile','email','nameC','nameE','groups','org','tags')
+    search_fields = ('mobile','email','usernameC','usernameE','org__orgnameC')
     serializer_class = UserSerializer
     filter_class = UserFilter
     redis_key = 'user'
@@ -122,17 +123,35 @@ class UserView(viewsets.ModelViewSet):
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
             if request.user.has_perm('usersys.admin_getuser'):
-                serializer_class = UserListSerializer
+                serializerclass = UserListSerializer
             else:
-                serializer_class = UserCommenSerializer
+                serializerclass = UserCommenSerializer
             count = queryset.count()
             try:
                 queryset = Paginator(queryset, page_size)
             except EmptyPage:
                 raise InvestError(code=1001)
             queryset = queryset.page(page_index)
-            serializer = serializer_class(queryset, many=True)
-            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
+            actionlist = {'get': False, 'change': False, 'delete': False}
+            responselist = []
+            for instance in queryset:
+                if request.user.is_anonymous:
+                    pass
+                else:
+                    if request.user.has_perm('usersys.admin_getuser') or request.user.has_perm('usersys.user_getuser'):
+                        actionlist['get'] = True
+                    if request.user.has_perm('usersys.admin_changeuser') or request.user.has_perm('usersys.user_changeuser',
+                                                                                             instance):
+                        actionlist['change'] = True
+                    if request.user.has_perm('usersys.admin_deleteuser') or request.user.has_perm('usersys.user_deleteuser',
+                                                                                             instance):
+                        actionlist['delete'] = True
+                instancedata = serializerclass(instance).data
+                instancedata['action'] = actionlist
+                responselist.append(instancedata)
+            apilog(request,'MyUser',None,None,datasource=request.user.datasource_id)
+            return JSONResponse(
+                SuccessResponse({'count': count, 'data': returnListChangeToLanguage(responselist, lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -148,7 +167,7 @@ class UserView(viewsets.ModelViewSet):
                 mobilecodetoken = data.pop('mobilecodetoken', None)
                 mobile = data.get('mobile')
                 email = data.get('email')
-                source = data.pop('datasource',None)
+                source = request.META.get('HTTP_SOURCE')
                 if source:
                     datasource = DataSource.objects.filter(id=source,is_deleted=False)
                     if datasource.exists():
@@ -156,7 +175,7 @@ class UserView(viewsets.ModelViewSet):
                     else:
                         raise  InvestError(code=8888)
                 else:
-                    raise InvestError(code=8888,msg='source field is required')
+                    raise InvestError(code=8888,msg='source field is required,//forbidden')
                 if mobile:
                     if not mobilecodetoken or not mobilecode:
                         raise InvestError(code=20072,msg='验证码缺失')
@@ -188,11 +207,11 @@ class UserView(viewsets.ModelViewSet):
                 orgname = data.pop('orgname', None)
                 if orgname:
                     if lang == 'en':
-                        field = 'nameE'
-                        filters = Q(nameE=orgname)
+                        field = 'orgnameE'
+                        filters = Q(orgnameE=orgname)
                     else:
-                        field = 'nameC'
-                        filters = Q(nameC=orgname)
+                        field = 'orgnameC'
+                        filters = Q(orgnameC=orgname)
                     orgset = organization.objects.filter(filters,is_deleted=False,datasource=userdatasource)
                     if orgset.exists():
                         org = orgset.first()
@@ -249,7 +268,7 @@ class UserView(viewsets.ModelViewSet):
                     raise InvestError(code=2007)
                 if self.get_queryset().filter(Q(mobile=mobile) | Q(email=email)).exists():
                     raise InvestError(code=2004)
-                user = MyUser(nameC=data['nameC'],nameE=data['nameE'])
+                user = MyUser(usernameC=data['usernameC'],usernameE=data['usernameE'])
                 user.set_password(password)
                 user.save()
                 keylist = data.keys()
@@ -535,7 +554,8 @@ class UserRelationView(viewsets.ModelViewSet):
     destroy:删除业务关系联系人(批量)
     """
     filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('id','investoruser', 'traderuser', 'relationtype')
+    filter_fields = ('investoruser', 'traderuser', 'relationtype')
+    search_fields = ('investoruser__usernameC', 'investoruser__usernameE', 'traderuser__usernameC', 'traderuser__usernameE')
     queryset = UserRelation.objects.filter(is_deleted=False)
     serializer_class = UserRelationSerializer
 
@@ -568,10 +588,13 @@ class UserRelationView(viewsets.ModelViewSet):
             queryset = self.filter_queryset(self.get_queryset())
             if request.user.has_perm('usersys.as_adminuser'):
                 queryset = queryset
+                serializerclass = UserRelationSerializer
             elif request.user.has_perm('usersys.as_traderuser'):
                 queryset = queryset.filter(traderuser=request.user)
+                serializerclass = UserInvestorRelationSerializer
             elif request.user.has_perm('usersys.as_investoruser'):
                 queryset = queryset.filter(investoruser=request.user)
+                serializerclass = UserTraderRelationSerializer
             else:
                 raise InvestError(code=2009)
             count = queryset.count()
@@ -580,7 +603,7 @@ class UserRelationView(viewsets.ModelViewSet):
             except EmptyPage:
                 raise InvestError(code=1001)
             queryset = queryset.page(page_index)
-            serializer = self.get_serializer(queryset, many=True)
+            serializer = serializerclass(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -836,7 +859,7 @@ class UserFriendshipView(viewsets.ModelViewSet):
                     newfriendlist.append(newfriendship.data)
                     sendmessagelist.append(newfriend)
                 for friendship in sendmessagelist:
-                    sendmessage_usermakefriends(friendship,friendship.friend,['app','webmsg','sms','email'],sender=request.user)
+                    sendmessage_usermakefriends(friendship,friendship.friend,['app', 'webmsg', 'sms', 'email'],sender=request.user)
                 return JSONResponse(SuccessResponse(returnListChangeToLanguage(newfriendlist,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -851,7 +874,7 @@ class UserFriendshipView(viewsets.ModelViewSet):
             lang = request.GET.get('lang')
             instance = self.get_object()
             if request.user.has_perm('usersys.admin_changefriend'):
-                canChangeField = ['userallowgetfavoriteproj','friendallowgetfavoriteproj','isaccept']
+                canChangeField = ['userallowgetfavoriteproj', 'friendallowgetfavoriteproj', 'isaccept']
             elif request.user == instance.user:
                 canChangeField = ['userallowgetfavoriteproj']
             elif request.user == instance.friend:
@@ -864,7 +887,7 @@ class UserFriendshipView(viewsets.ModelViewSet):
                 raise InvestError(code=2009, msg='没有权限修改_%s' % cannoteditlist)
             with transaction.atomic():
                 sendmessage = False
-                if instance.isaccept == False and bool(data.get('isaccept',None)):
+                if instance.isaccept == False and bool(data.get('isaccept', None)):
                     sendmessage = True
                 newfriendship = UserFriendshipUpdateSerializer(instance,data=data)
                 if newfriendship.is_valid():
@@ -914,7 +937,7 @@ def login(request):
         clienttype = request.META.get('HTTP_CLIENTTYPE')
         username = receive['account']
         password = receive['password']
-        source = receive.pop('datasource', None)
+        source = request.META.get('HTTP_SOURCE')
         if source:
             datasource = DataSource.objects.filter(id=source, is_deleted=False)
             if datasource.exists():
@@ -936,9 +959,11 @@ def login(request):
             user.is_active = True
         user.save()
         perimissions = user.get_all_permissions()
+        menulist = getmenulist(user)
         response = maketoken(user, clienttype)
         response['permissions'] = perimissions
-        logininlog(loginaccount=username, loginsource=source, userid=user.id)
+        response['menulist'] = menulist
+        logininlog(loginaccount=username, logintypeid=clienttype, datasourceid=source,userid=user.id)
         return JSONResponse(SuccessResponse(returnDictChangeToLanguage(response,lang)))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))

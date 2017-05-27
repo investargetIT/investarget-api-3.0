@@ -21,8 +21,8 @@ sys.setdefaultencoding('utf-8')
 
 class project(models.Model):
     id = models.AutoField(primary_key=True)
-    titleC = models.CharField(max_length=128,db_index=True,default='标题')
-    titleE = models.CharField(max_length=256,blank=True,null=True,db_index=True)
+    projtitleC = models.CharField(max_length=128,db_index=True,default='标题')
+    projtitleE = models.CharField(max_length=256,blank=True,null=True,db_index=True)
     projstatus = models.ForeignKey(ProjectStatus,help_text='项目状态',default=1)
     c_descriptionC = models.TextField(blank=True, default='公司介绍')
     c_descriptionE = models.TextField(blank=True, default='company description')
@@ -73,7 +73,7 @@ class project(models.Model):
     lastmodifytime = models.DateTimeField(auto_now=True)
     datasource = models.ForeignKey(DataSource, help_text='数据源')
     def __str__(self):
-        return self.titleC
+        return self.projtitleC
     class Meta:
         db_table = 'project'
         permissions = (
@@ -118,7 +118,7 @@ class finance(models.Model):
     datasource = models.ForeignKey(DataSource, help_text='数据源')
     def __str__(self):
         if self.proj:
-            return self.proj.titleC
+            return self.proj.projtitleC
         return self.id.__str__()
 
     class Meta:

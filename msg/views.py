@@ -15,7 +15,7 @@ def saveMessage(content,type,title,receiver,sender=None):
     try:
         data = {}
         data['content'] = content
-        data['title'] = title
+        data['messagetitle'] = title
         data['type'] = type.id
         data['receiver'] = receiver.id
         data['datasource'] = receiver.datasource_id

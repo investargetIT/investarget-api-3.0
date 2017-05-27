@@ -93,8 +93,8 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     country = models.ForeignKey(Country,blank=True,null=True)
     userstatus = models.ForeignKey(AuditStatus,help_text='审核状态',blank=True,default=1)
     org = models.ForeignKey('org.organization',help_text='所属机构',blank=True,null=True,related_name='org_users',on_delete=models.SET_NULL)
-    nameC = models.CharField(help_text='姓名',max_length=128,db_index=True,blank=True,null=True,)
-    nameE = models.CharField(help_text='name',max_length=128,db_index=True,blank=True,null=True)
+    usernameC = models.CharField(help_text='姓名',max_length=128,db_index=True,blank=True,null=True,)
+    usernameE = models.CharField(help_text='name',max_length=128,db_index=True,blank=True,null=True)
     mobileAreaCode = models.CharField(max_length=10,blank=True,null=True,default='86')
     mobile = models.CharField(help_text='手机',max_length=32,db_index=True,blank=True,null=True,)
     description = models.TextField(help_text='简介',blank=True,default='description')
@@ -122,11 +122,11 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
 
     objects = MyUserManager()  # 在这里关联自定义的UserManager
     def get_full_name(self):
-        return self.nameC
+        return self.usernameC
     def get_short_name(self):
-        return self.nameC
+        return self.usernameC
     def __str__(self):
-        return self.nameC
+        return self.usernameC
     class Meta:
         db_table = "user"
         permissions = (
@@ -187,10 +187,10 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
                     remove_perm('usersys.user_getuser', olduser.createuser, self)
                     remove_perm('usersys.user_changeuser', olduser.createuser, self)
                     remove_perm('usersys.user_deleteuser', olduser.createuser, self)
-        if not self.nameC and self.nameE:
-            self.nameC = self.nameE
-        if not self.nameE and self.nameC:
-            self.nameE = hanzizhuanpinpin(self.nameC,separator='')
+        if not self.usernameC and self.usernameE:
+            self.usernameC = self.usernameE
+        if not self.usernameE and self.usernameC:
+            self.usernameE = hanzizhuanpinpin(self.usernameC,separator='')
         super(MyUser,self).save(*args,**kwargs)
 
 class userTags(models.Model):

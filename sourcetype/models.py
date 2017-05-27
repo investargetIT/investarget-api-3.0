@@ -114,6 +114,7 @@ class Country(models.Model):
     def __str__(self):
         return self.countryC
 
+
 class CurrencyType(models.Model):
     '''
     货币类型
@@ -121,7 +122,8 @@ class CurrencyType(models.Model):
     id = models.AutoField(primary_key=True)
     currencyC = models.CharField(max_length=16)
     currencyE = models.CharField(max_length=16)
-    is_deleted = models.BooleanField(blank=True, default=False)
+    is_deleted = models.BooleanField( default=False)
+
     def __str__(self):
         return self.currencyC
 
@@ -241,9 +243,10 @@ class webmenu(models.Model):
     """
     id = models.AutoField(primary_key=True)
     namekey = models.CharField(max_length=32,blank=True,null=True)
-    uri = models.CharField(max_length=200,blank=True,null=True)
-    icon = models.CharField(max_length=64,blank=True,null=True,help_text='图标链接')
-    parentmenu = models.ForeignKey('self',blank=True,null=True)
+    icon_active = models.CharField(max_length=64,blank=True,null=True)
+    icon_normal = models.CharField(max_length=64,blank=True,null=True,)
+    parentmenu = models.ForeignKey('self',blank=True,null=True,related_name='Pmenu_Smenus')
+    index = models.SmallIntegerField(blank=True,default=1)
     # class Meta:
     #     permissions = (
     #         # ('orgmanage','显示机构管理菜单'),

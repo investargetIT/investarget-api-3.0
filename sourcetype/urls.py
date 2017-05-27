@@ -68,6 +68,16 @@ orgareadetail = views.OrgAreaView.as_view({
 })
 
 
+orgtype = views.OrgTypeView.as_view({
+        'get': 'list',
+        'post':'create',
+})
+orgtypedetail = views.OrgTypeView.as_view({
+        'put': 'update',
+        'delete': 'destroy'
+})
+
+
 transactionType = views.TransactionTypeView.as_view({
         'get': 'list',
         'post':'create',
@@ -111,6 +121,8 @@ urlpatterns = [
     url(r'^datasource/(?P<pk>\d+)$', datasourcedetail,name='datasourcedetail',),
     url(r'^orgarea', orgarea,name='orgareasource',),
     url(r'^orgarea/(?P<pk>\d+)$', orgareadetail,name='orgareadetail',),
+    url(r'^orgtype', orgtype,name='orgtypesource',),
+    url(r'^orgtype/(?P<pk>\d+)$', orgtypedetail,name='orgtypedetail',),
     url(r'^transactionType', transactionType,name='transactionTypesource',),
     url(r'^transactionType/(?P<pk>\d+)$',transactionTypedetail,name='transactionTypedetail',),
     url(r'^transactionPhases', transactionPhases,name='transactionPhasessource',),

@@ -5,8 +5,10 @@ from django.shortcuts import render
 from APIlog.models import loginlog, userviewprojlog, APILog
 
 
-def logininlog(loginaccount,loginsource,userid=None):
-    loginlog(loginaccount=loginaccount,loginsource=loginsource,user=userid).save()
+def logininlog(loginaccount,logintypeid,datasourceid,userid=None):
+    if isinstance(logintypeid,str):
+        logintypeid = int(logintypeid)
+    loginlog(loginaccount=loginaccount,logintype=logintypeid,datasource=datasourceid,user=userid).save()
 
 def viewprojlog(userid,projid,sourceid):
     userviewprojlog(user=userid,proj=projid,source=sourceid).save()
@@ -27,18 +29,3 @@ def apilog(request,modeltype,request_before,request_after,modelID=None,datasourc
         datasource = request.user.datasource_id
     APILog(IPaddress=ip,URL=url,method=method,requestbody=requestbody,requestuser=requestuser,
            modeltype=modeltype,modelID=modelID,request_before=request_before,request_after=request_after,datasource=datasource).save()
-
-
-
-
-    # IPaddress = models.CharField(max_length=32,blank=True,null=True)
-    # URL = models.CharField(max_length=128,blank=True,null=True)
-    # method = models.CharField(max_length=16,blank=True,null=True)
-    # requestbody = models.TextField()
-    # requestuser = models.IntegerField(blank=True,null=True)
-    # modeltype = models.CharField(max_length=32,blank=True,null=True)
-    # modelID = models.IntegerField(blank=True,null=True)
-    # request_before = models.TextField(blank=True,null=True)
-    # request_after = models.TextField(blank=True,null=True)
-    # actiontime = models.DateTimeField(auto_now_add=True,null=True,blank=True)
-    # is_deleted = models.BooleanField(blank=True,default=False)

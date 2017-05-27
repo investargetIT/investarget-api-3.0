@@ -89,6 +89,7 @@ CORS_ALLOW_HEADERS = (
     'x-requested-with',
     'clienttype',
     'token',
+    'source',
 )
 
 
@@ -150,6 +151,7 @@ AUTHENTICATION_BACKENDS = [
 
 ANONYMOUS_USER_NAME = None
 
+TEMPLATE_DEBUG = False
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
