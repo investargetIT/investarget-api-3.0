@@ -2,8 +2,10 @@
 import traceback
 
 import datetime
+
+
 from django.contrib import auth
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 from django.core.exceptions import FieldDoesNotExist
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction,models
@@ -25,7 +27,7 @@ from usersys.models import MyUser,UserRelation, userTags, UserFriendship
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
     CreatUserSerializer , UserCommenSerializer , UserRelationDetailSerializer, UserFriendshipSerializer, \
     UserFriendshipDetailSerializer, UserFriendshipUpdateSerializer, UserInvestorRelationSerializer, \
-    UserTraderRelationSerializer
+    UserTraderRelationSerializer, GroupSerializer, GroupDetailSerializer, GroupCreateSerializer, PermissionSerializer
 from sourcetype.models import Tag, DataSource
 from utils import perimissionfields
 from utils.customClass import JSONResponse, InvestError, RelationFilter
@@ -138,7 +140,7 @@ class UserView(viewsets.ModelViewSet):
                 if request.user.is_anonymous:
                     pass
                 else:
-                    if request.user.has_perm('usersys.admin_getuser') or request.user.has_perm('usersys.user_getuser'):
+                    if request.user.has_perm('usersys.admin_getuser') or request.user.has_perm('usersys.user_getuserlist'):
                         actionlist['get'] = True
                     if request.user.has_perm('usersys.admin_changeuser') or request.user.has_perm('usersys.user_changeuser',
                                                                                              instance):
@@ -149,7 +151,6 @@ class UserView(viewsets.ModelViewSet):
                 instancedata = serializerclass(instance).data
                 instancedata['action'] = actionlist
                 responselist.append(instancedata)
-            apilog(request,'MyUser',None,None,datasource=request.user.datasource_id)
             return JSONResponse(
                 SuccessResponse({'count': count, 'data': returnListChangeToLanguage(responselist, lang)}))
         except InvestError as err:
@@ -238,13 +239,13 @@ class UserView(viewsets.ModelViewSet):
                     raise InvestError(code=20071,msg='%s\n%s' % (userserializer.error_messages, userserializer.errors))
                 returndic = CreatUserSerializer(user).data
                 sendmessage_userregister(user,user,['email'])
+                apilog(request, 'MyUser', None, None, datasource=request.user.datasource_id)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(returndic,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
     # 新增用户
     @loginTokenIsAvailable()
     def adduser(self, request, *args, **kwargs):
@@ -298,7 +299,7 @@ class UserView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     #get
-    @loginTokenIsAvailable(['usersys.admin_getuser','usersys.user_getuser'])
+    @loginTokenIsAvailable(['usersys.admin_getuser','usersys.user_getuserlist'])
     def retrieve(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
@@ -350,6 +351,7 @@ class UserView(viewsets.ModelViewSet):
             with transaction.atomic():
                 for userid in useridlist:
                     user = self.get_object(userid)
+                    olduserdata = UserSerializer(user)
                     sendmsg = False
                     if request.user == user:
                         canChangeField = perimissionfields.userpermfield['changeself']
@@ -382,11 +384,15 @@ class UserView(viewsets.ModelViewSet):
                             user.user_usertags.bulk_create(usertaglist)
                     else:
                         raise InvestError(code=20071,msg='userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
+                    newuserdata = UserSerializer(user)
+                    apilog(request, 'MyUser', olduserdata.data, newuserdata.data, modelID=userid,
+                           datasource=request.user.datasource_id)
                     userlist.append(user)
                     messgaelist.append((user,sendmsg))
                 for user,sendmsg in messgaelist:
                     if sendmsg:
                         sendmessage_userauditstatuchange(user,user,['app','email','webmsg'],sender=request.user)
+
                 return JSONResponse(SuccessResponse(returnListChangeToLanguage(CreatUserSerializer(userlist,many=True),lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -575,7 +581,7 @@ class UserRelationView(viewsets.ModelViewSet):
             raise InvestError(code=8890)
         return queryset
 
-    @loginTokenIsAvailable(['usersys.admin_getuserrelation','usersys.user_getuserrelation'])
+    @loginTokenIsAvailable(['usersys.admin_getuserrelation','usersys.user_getuserrelationlist'])
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')
@@ -586,24 +592,14 @@ class UserRelationView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
-            if request.user.has_perm('usersys.as_adminuser'):
-                queryset = queryset
-                serializerclass = UserRelationSerializer
-            elif request.user.has_perm('usersys.as_traderuser'):
-                queryset = queryset.filter(traderuser=request.user)
-                serializerclass = UserInvestorRelationSerializer
-            elif request.user.has_perm('usersys.as_investoruser'):
-                queryset = queryset.filter(investoruser=request.user)
-                serializerclass = UserTraderRelationSerializer
-            else:
-                raise InvestError(code=2009)
-            count = queryset.count()
+            queryset = queryset.filter(Q(traderuser=request.user) | Q(investoruser=request.user))
             try:
+                count = queryset.count()
                 queryset = Paginator(queryset, page_size)
             except EmptyPage:
                 raise InvestError(code=1001)
             queryset = queryset.page(page_index)
-            serializer = serializerclass(queryset, many=True)
+            serializer = UserRelationSerializer(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -928,6 +924,179 @@ class UserFriendshipView(viewsets.ModelViewSet):
 
 
 
+class GroupPermissionView(viewsets.ModelViewSet):
+    """
+    list:获取权限组列表
+    create:新增权限组
+    retrieve:查看权限组详情
+    update:修改权限组信息
+    delete:删除权限组
+    """
+    queryset = Group.objects.all()
+    serializer_class = GroupDetailSerializer
+
+    def get_queryset(self):
+        assert self.queryset is not None, (
+            "'%s' should either include a `queryset` attribute, "
+            "or override the `get_queryset()` method."
+            % self.__class__.__name__
+        )
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource=self.request.user.datasource)
+            else:
+                queryset = queryset.all()
+        else:
+            raise InvestError(code=8890)
+        return queryset
+
+    #未登录用户不能访问
+    def get_object(self):
+        lookup_url_kwarg = 'pk'
+        try:
+            obj = self.get_queryset().get(id=self.kwargs[lookup_url_kwarg])
+        except Group.DoesNotExist:
+            raise InvestError(code=5002)
+        assert self.request.user.is_authenticated, (
+            "user must be is_authenticated"
+        )
+        if obj.datasource != self.request.user.datasource:
+            raise InvestError(code=8888, msg='资源非同源')
+        return obj
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            if not request.user.is_superuser:
+                raise InvestError(2009)
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+            except EmptyPage:
+                raise InvestError(code=1001)
+            queryset = queryset.page(page_index)
+            serializer = GroupDetailSerializer(queryset, many=True)
+            return JSONResponse(
+                SuccessResponse({'count': count, 'data':serializer.data}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        try:
+            if not request.user.is_superuser:
+                raise InvestError(2009)
+            data = request.data
+            with transaction.atomic():
+                data['datasource'] = request.user.datasource_id
+                permissionsIdList = data.get('permissions',None)
+                if not isinstance(permissionsIdList,list):
+                    raise InvestError(2007,msg='permissions must be an ID list')
+                groupserializer = GroupCreateSerializer(data=data)
+                if groupserializer.is_valid():
+                    newgroup = groupserializer.save()
+                    permissions = Permission.objects.filter(id__in=permissionsIdList)
+                    map(newgroup.permissions.add, permissions)
+                else:
+                    raise InvestError(code=20071, msg='%s' % groupserializer.errors)
+                return JSONResponse(SuccessResponse(groupserializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            if not request.user.is_superuser:
+                raise InvestError(2009)
+            group = self.get_object()
+            serializer = GroupDetailSerializer(group)
+            return JSONResponse(SuccessResponse(serializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            if not request.user.is_superuser:
+                raise InvestError(2009)
+            with transaction.atomic():
+                group = self.get_object()
+                data = request.data
+                permissionsIdList = data.pop('permissions', None)
+                if not isinstance(permissionsIdList, list):
+                    raise InvestError(2007, msg='permissions must be an ID list')
+                serializer = GroupSerializer(group,data=data)
+                if serializer.is_valid():
+                    newgroup = serializer.save()
+                    permissions = Permission.objects.filter(id__in=permissionsIdList)
+                    newgroup.permissions.clear()
+                    map(newgroup.permissions.add,permissions)
+                else:
+                    raise InvestError(2007,msg='%s'%serializer.errors)
+                return JSONResponse(SuccessResponse(serializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            if not request.user.is_superuser:
+                raise InvestError(2009)
+            with transaction.atomic():
+                group = self.get_object()
+                groupuserset = MyUser.objects.filter(is_deleted=False,groups__in=[group])
+                if groupuserset.exists():
+                    raise InvestError(2008)
+                else:
+                    group.delete()
+                return JSONResponse(SuccessResponse(GroupSerializer(group).data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+class PermissionView(viewsets.ModelViewSet):
+    """
+    list:获取权限列表
+    """
+    queryset = Permission.objects.exclude(name__icontains='obj级别')
+    serializer_class = PermissionSerializer
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            if not request.user.is_superuser:
+                raise InvestError(2009)
+            queryset = self.queryset
+            serializer = self.serializer_class(queryset, many=True)
+            return JSONResponse(SuccessResponse(serializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+
 @api_view(['POST'])
 def login(request):
     """用户登录 """
@@ -979,4 +1148,5 @@ def testsendmsg(request):
     tag1 = Tag.objects.all()
     qs = organization.objects.all()
     org = qs.filter(org_users__tags__in=tag1).distinct()
+    print str(datetime.timedelta(hours=24 * 1))
     return JSONResponse({'xxx':'sss'})

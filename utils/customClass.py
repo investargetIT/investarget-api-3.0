@@ -1,4 +1,4 @@
-
+from django.db import models
 from django.http import HttpResponse
 from rest_framework import filters
 from rest_framework.permissions import BasePermission
@@ -30,8 +30,8 @@ class IsSuperUser(BasePermission):
     def has_permission(self, request, view):
         return (
             request.method in ('GET', 'HEAD', 'OPTIONS') or
-            request.user and
-            request.user.is_superuser
+            (request.user and
+            request.user.is_superuser)
         )
 class RelationFilter(Filter):
     def __init__(self, filterstr,lookup_method, **kwargs):
@@ -44,3 +44,15 @@ class RelationFilter(Filter):
         if self.lookup_method == 'in':
             value = value.split(',')
         return qs.filter(**{'%s__%s' % (self.filterstr,self.lookup_method): value}).distinct()
+
+class MyForeignKey(models.ForeignKey):
+    def get_extra_descriptor_filter(self,instance):
+        if hasattr(instance,'is_deleted'):
+            return {'is_deleted':False}
+        return {}
+
+
+class MyManyToManyField(models.ManyToManyField):
+    # def set_attributes_from_rel(self):
+    #     pass
+    pass

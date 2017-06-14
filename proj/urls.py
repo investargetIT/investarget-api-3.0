@@ -30,11 +30,16 @@ getshareprojtoken = views.ProjectView.as_view({
         'get':'getshareprojtoken'
 })
 
+getshareproj = views.ProjectView.as_view({
+        'get':'getshareprojdetail'
+})
+
 
 urlpatterns = [
         url(r'^$', proj_list , name='proj_list'),
         url(r'^(?P<pk>\d+)/$', proj_detail, name='proj_detail'),
         url(r'^finance/$', proj_finance, name='proj_finance'),
         url(r'^favorite/$' , userfavorite_proj,name='user_favoriteproj'),
-        url(r'^share/(?P<pk>\d+)/$',getshareprojtoken,name='getshareprojtoken')
+        url(r'^share/(?P<pk>\d+)/$',getshareprojtoken,name='getshareprojtoken'),
+        url(r'^shareproj/$',getshareproj,name='getshareprojdetail')
 ]

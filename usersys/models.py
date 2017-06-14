@@ -12,7 +12,7 @@ from django.db import models
 from django.db.models import Q
 from guardian.shortcuts import remove_perm, assign_perm
 from sourcetype.models import AuditStatus, ClientType, TitleType,School,Specialty,Tag, DataSource, Country
-from utils.customClass import InvestError
+from utils.customClass import InvestError, MyForeignKey
 
 registersourcechoice = (
     (1,'pc'),
@@ -90,9 +90,9 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     cardBucket = models.CharField(max_length=32,blank=True,null=True)
     cardKey = models.CharField(max_length=128,blank=True,null=True)
     wechat = models.CharField(max_length=64,blank=True,null=True)
-    country = models.ForeignKey(Country,blank=True,null=True)
-    userstatus = models.ForeignKey(AuditStatus,help_text='审核状态',blank=True,default=1)
-    org = models.ForeignKey('org.organization',help_text='所属机构',blank=True,null=True,related_name='org_users',on_delete=models.SET_NULL)
+    country = MyForeignKey(Country,blank=True,null=True)
+    userstatus = MyForeignKey(AuditStatus,help_text='审核状态',blank=True,default=1)
+    org = MyForeignKey('org.organization',help_text='所属机构',blank=True,null=True,related_name='org_users',on_delete=models.SET_NULL)
     usernameC = models.CharField(help_text='姓名',max_length=128,db_index=True,blank=True,null=True,)
     usernameE = models.CharField(help_text='name',max_length=128,db_index=True,blank=True,null=True)
     mobileAreaCode = models.CharField(max_length=10,blank=True,null=True,default='86')
@@ -100,22 +100,22 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     description = models.TextField(help_text='简介',blank=True,default='description')
     tags = models.ManyToManyField(Tag, through='userTags', through_fields=('user', 'tag'), blank=True,related_name='tag_users')
     email = models.EmailField(help_text='邮箱', max_length=48,db_index=True,blank=True,null=True)
-    title = models.ForeignKey(TitleType,blank=True,null=True,related_name='title_users',related_query_name='user_title',on_delete=models.SET_NULL)
+    title = MyForeignKey(TitleType,blank=True,null=True,related_name='title_users',related_query_name='user_title',on_delete=models.SET_NULL)
     gender = models.BooleanField(blank=True,default=0,help_text=('0=男，1=女'))
     remark = models.TextField(help_text='备注',blank=True,null=True)
-    school = models.ForeignKey(School,help_text='院校',blank=True,null=True,related_name='school_users',on_delete=models.SET_NULL)
-    specialty = models.ForeignKey(Specialty,help_text='专业',blank=True,null=True,related_name='profession_users',on_delete=models.SET_NULL)
+    school = MyForeignKey(School,help_text='院校',blank=True,null=True,related_name='school_users',on_delete=models.SET_NULL)
+    specialty = MyForeignKey(Specialty,help_text='专业',blank=True,null=True,related_name='profession_users',on_delete=models.SET_NULL)
     registersource = models.SmallIntegerField(help_text='注册来源',choices=registersourcechoice,default=1)
     lastmodifytime = models.DateTimeField(blank=True,null=True)
-    lastmodifyuser = models.ForeignKey('self',help_text='修改者',blank=True,null=True,related_name='usermodify_users',related_query_name='user_modifyuser',on_delete=models.SET_NULL)
+    lastmodifyuser = MyForeignKey('self',help_text='修改者',blank=True,null=True,related_name='usermodify_users',related_query_name='user_modifyuser',on_delete=models.SET_NULL)
     is_staff = models.BooleanField(help_text='登录admin', default=False, blank=True,)
     is_active = models.BooleanField(help_text='是否活跃', default=True, blank=True,)
     is_deleted = models.BooleanField(blank=True,help_text='是否已被删除', default=False)
-    deleteduser = models.ForeignKey('self',help_text='删除者',blank=True,null=True,related_name='userdelete_users',related_query_name='user_deleteduser',on_delete=models.SET_NULL)
+    deleteduser = MyForeignKey('self',help_text='删除者',blank=True,null=True,related_name='userdelete_users',related_query_name='user_deleteduser',on_delete=models.SET_NULL)
     deletedtime = models.DateTimeField(blank=True,null=True)
     createdtime = models.DateTimeField(auto_now_add=True,blank=True)
-    createuser = models.ForeignKey('self',help_text='创建者',blank=True,null=True,related_name='usercreate_users',related_query_name='user_createuser',on_delete=models.SET_NULL)
-    datasource = models.ForeignKey(DataSource,help_text='数据源',blank=True,null=True)
+    createuser = MyForeignKey('self',help_text='创建者',blank=True,null=True,related_name='usercreate_users',related_query_name='user_createuser',on_delete=models.SET_NULL)
+    datasource = MyForeignKey(DataSource,help_text='数据源',blank=True,null=True)
     USERNAME_FIELD = 'usercode'
     REQUIRED_FIELDS = ['email']
 
@@ -130,14 +130,11 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     class Meta:
         db_table = "user"
         permissions = (
-            ('as_investoruser', u'投资人身份'),
-            ('as_traderuser', u'交易师身份'),
-            ('as_adminuser', u'管理员身份'),
-
             ('user_adduser', u'用户新增用户'),
-            ('user_deleteuser', u'用户删除用户(obj级别权限)'),
-            ('user_changeuser', u'用户修改用户(obj级别权限)'),
-            ('user_getuser', u'用户查看用户(obj/class级别权限)'),
+            ('user_deleteuser', u'用户删除用户(obj级别)'),
+            ('user_changeuser', u'用户修改用户(obj级别)'),
+            ('user_getuser', u'用户查看用户(obj级别)'),
+            ('user_getuserlist', u'用户查看用户列表'),
 
             ('admin_adduser', u'管理员新增用户'),
             ('admin_deleteuser', u'管理员删除'),
@@ -194,13 +191,13 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
         super(MyUser,self).save(*args,**kwargs)
 
 class userTags(models.Model):
-    user = models.ForeignKey(MyUser,related_name='user_usertags',null=True,blank=True)
-    tag = models.ForeignKey(Tag, related_name='tag_usertags',null=True, blank=True)
+    user = MyForeignKey(MyUser,related_name='user_usertags',null=True,blank=True)
+    tag = MyForeignKey(Tag, related_name='tag_usertags',null=True, blank=True)
     is_deleted = models.BooleanField(blank=True,default=False)
-    deleteduser = models.ForeignKey(MyUser,blank=True, null=True,related_name='userdelete_usertags')
+    deleteduser = MyForeignKey(MyUser,blank=True, null=True,related_name='userdelete_usertags')
     deletedtime = models.DateTimeField(blank=True, null=True)
     createdtime = models.DateTimeField(auto_created=True,blank=True)
-    createuser = models.ForeignKey(MyUser,blank=True, null=True,related_name='usercreate_usertags')
+    createuser = MyForeignKey(MyUser,blank=True, null=True,related_name='usercreate_usertags')
     class Meta:
         db_table = "user_tags"
 
@@ -208,9 +205,9 @@ class userTags(models.Model):
 
 class MyToken(models.Model):
     key = models.CharField('Key', max_length=48, primary_key=True)
-    user = models.ForeignKey(MyUser, related_name='user_token',verbose_name=("MyUser"))
+    user = MyForeignKey(MyUser, related_name='user_token',verbose_name=("MyUser"))
     created = models.DateTimeField(help_text="CreatedTime", auto_now_add=True)
-    clienttype = models.ForeignKey(ClientType,help_text='登录类型')
+    clienttype = MyForeignKey(ClientType,help_text='登录类型')
     is_deleted = models.BooleanField(help_text='是否已被删除',blank=True,default=False)
     class Meta:
         db_table = 'user_token'
@@ -227,23 +224,23 @@ class MyToken(models.Model):
         return self.key
 
 class UserRelation(models.Model):
-    investoruser = models.ForeignKey(MyUser,related_name='investor_relations',help_text=('作为投资人'))
-    traderuser = models.ForeignKey(MyUser,related_name='trader_relations',help_text=('作为交易师'))
+    investoruser = MyForeignKey(MyUser,related_name='investor_relations',help_text=('作为投资人'))
+    traderuser = MyForeignKey(MyUser,related_name='trader_relations',help_text=('作为交易师'))
     relationtype = models.BooleanField(help_text=('强关系True，弱关系False'),default=False)
     score = models.SmallIntegerField(help_text=('交易师评分'), default=0, blank=True)
     is_deleted = models.BooleanField(blank=True, default=False)
-    deleteduser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_relations')
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_relations')
     deletedtime = models.DateTimeField(blank=True, null=True)
     createdtime = models.DateTimeField(auto_now_add=True)
-    createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_relations',
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_relations',
                                    on_delete=models.SET_NULL)
     lastmodifytime = models.DateTimeField(blank=True, null=True)
-    lastmodifyuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usermodify_relations',)
-    datasource = models.ForeignKey(DataSource, help_text='数据源')
+    lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_relations',)
+    datasource = MyForeignKey(DataSource, help_text='数据源')
     def save(self, *args, **kwargs):
         if not self.datasource:
             raise InvestError(code=8888,msg='datasource有误')
-        if self.datasource !=self.traderuser.datasource or self.datasource !=self.investoruser.datasource:
+        if self.datasource !=self.traderuser.datasource or self.datasource != self.investoruser.datasource:
             raise InvestError(code=8888,msg='requestuser.datasource不匹配')
         if self.pk:
             userrelation = UserRelation.objects.exclude(pk=self.pk).filter(is_deleted=False,datasource=self.datasource,investoruser=self.investoruser)
@@ -258,10 +255,6 @@ class UserRelation(models.Model):
             self.relationtype = True
         if self.investoruser.id == self.traderuser.id:
             raise InvestError(code=2014,msg='1.投资人和交易师不能是同一个人')
-        elif not self.traderuser.has_perm('usersys.as_traderuser'):
-            raise InvestError(code=2015,msg='4.没有交易师权限关系')
-        elif not self.investoruser.has_perm('usersys.as_investoruser'):
-            raise InvestError(code=2015,msg='5.没有投资人权限')
         else:
             if self.pk:
                 if self.is_deleted:
@@ -305,25 +298,26 @@ class UserRelation(models.Model):
             ('user_adduserrelation', u'用户建立用户联系'),
             ('user_changeuserrelation', u'用户改用户联系（obj级别）'),
             ('user_deleteuserrelation', u'用户删除用户联系（obj级别）'),
-            ('user_getuserrelation', u'用户查看用户联系（obj/class级别）'),
+            ('user_getuserrelation', u'用户查看用户联系（obj级别）'),
+            ('user_getuserrelationlist', u'用户查看用户联系列表'),
         )
 
 
 
 class UserFriendship(models.Model):
     id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(MyUser,related_name='user_friends',help_text='发起人')
-    friend = models.ForeignKey(MyUser,related_name='friend_users',help_text='接收人')
+    user = MyForeignKey(MyUser,related_name='user_friends',help_text='发起人')
+    friend = MyForeignKey(MyUser,related_name='friend_users',help_text='接收人')
     isaccept = models.BooleanField(blank=True,default=False)
     accepttime = models.DateTimeField(blank=True,null=True)
     userallowgetfavoriteproj = models.BooleanField(blank=True,default=True,help_text='发起人允许好友查看自己的项目收藏')
     friendallowgetfavoriteproj = models.BooleanField(blank=True, default=True,help_text='接收人允许好友查看自己的项目收藏')
     is_deleted = models.BooleanField(blank=True, default=False)
-    deleteduser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_userfriends',)
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_userfriends',)
     deletedtime = models.DateTimeField(blank=True, null=True)
     createdtime = models.DateTimeField(auto_created=True, blank=True)
-    createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_userfriends',)
-    datasource = models.ForeignKey(DataSource, help_text='数据源')
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_userfriends',)
+    datasource = MyForeignKey(DataSource, help_text='数据源')
     class Meta:
         db_table = "user_friendship"
         permissions =  (

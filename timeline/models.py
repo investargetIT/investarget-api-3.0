@@ -4,27 +4,27 @@ from django.db import models
 from proj.models import project
 from usersys.models import MyUser
 from sourcetype.models import TransactionStatus, DataSource
-from utils.customClass import InvestError
+from utils.customClass import InvestError, MyForeignKey
 
 
 class timeline(models.Model):
     id = models.AutoField(primary_key=True)
-    proj = models.ForeignKey(project,related_name='proj_timelines')
-    investor = models.ForeignKey(MyUser,related_name='investor_timelines')
-    supportor = models.ForeignKey(MyUser,related_name='supportor_timelines')
-    trader = models.ForeignKey(MyUser,related_name='trader_timelines')
+    proj = MyForeignKey(project,related_name='proj_timelines')
+    investor = MyForeignKey(MyUser,related_name='investor_timelines')
+    supportor = MyForeignKey(MyUser,related_name='supportor_timelines')
+    trader = MyForeignKey(MyUser,related_name='trader_timelines')
     isClose = models.BooleanField(blank=True,default=False)
     closeDate = models.DateTimeField(blank=True,null=True,)
     contractedServiceTime = models.DateTimeField(blank=True,null=True)
     turnoverTime = models.DateTimeField(blank=True,null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
-    deleteduser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_timelines',on_delete=models.SET_NULL)
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_timelines',on_delete=models.SET_NULL)
     deletedtime = models.DateTimeField(blank=True, null=True)
     createdtime = models.DateTimeField(auto_now_add=True)
-    createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_timelines',on_delete=models.SET_NULL)
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_timelines',on_delete=models.SET_NULL)
     lastmodifytime = models.DateTimeField(blank=True,null=True)
-    lastmodifyuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usermodify_timelines',on_delete=models.SET_NULL)
-    datasource = models.ForeignKey(DataSource, help_text='数据源')
+    lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_timelines',on_delete=models.SET_NULL)
+    datasource = MyForeignKey(DataSource, help_text='数据源')
     class Meta:
         db_table = 'timeline'
         permissions = (
@@ -34,7 +34,7 @@ class timeline(models.Model):
             ('admin_addline', '管理员添加时间轴'),
 
             ('user_addline', '用户添加时间轴'),
-            # ('user_getline','用户查看时间轴'),
+            ('user_getline','用户查看时间轴(obj级别)'),
             ('user_changeline', '用户修改时间轴(obj级别)'),
             ('user_deleteline','用户删除时间轴(obj级别)'),
         )
@@ -56,34 +56,34 @@ class timeline(models.Model):
 
 class timelineTransationStatu(models.Model):
     id = models.AutoField(primary_key=True)
-    timeline = models.ForeignKey(timeline,blank=True,null=True,related_name='timeline_transationStatus')
-    transationStatus = models.ForeignKey(TransactionStatus,default=1)
+    timeline = MyForeignKey(timeline,blank=True,null=True,related_name='timeline_transationStatus')
+    transationStatus = MyForeignKey(TransactionStatus,default=1)
     isActive = models.BooleanField(blank=True,default=False)
     alertCycle = models.SmallIntegerField(blank=True,default=7)
     inDate = models.DateTimeField(blank=True,null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
-    deleteduser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_timelinestatus',on_delete=models.SET_NULL)
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_timelinestatus',on_delete=models.SET_NULL)
     deletedtime = models.DateTimeField(blank=True, null=True)
     createdtime = models.DateTimeField(auto_now_add=True)
-    createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_timelinestatus',on_delete=models.SET_NULL)
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_timelinestatus',on_delete=models.SET_NULL)
     lastmodifytime = models.DateTimeField(auto_now=True)
-    lastmodifyuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usermodify_timelinestatus',on_delete=models.SET_NULL)
+    lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_timelinestatus',on_delete=models.SET_NULL)
 
     class Meta:
         db_table = 'timelineTransationStatus'
 
 class timelineremark(models.Model):
     id = models.AutoField(primary_key=True)
-    timeline = models.ForeignKey(timeline,related_name='timeline_remarks',blank=True,null=True)
+    timeline = MyForeignKey(timeline,related_name='timeline_remarks',blank=True,null=True)
     remark = models.TextField(blank=True,null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
-    deleteduser = models.ForeignKey(MyUser, blank=True, null=True, related_name='userdelete_timelineremarks',on_delete=models.SET_NULL)
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_timelineremarks',on_delete=models.SET_NULL)
     deletedtime = models.DateTimeField(blank=True, null=True)
     createdtime = models.DateTimeField(auto_now_add=True)
-    createuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usercreate_timelineremarks',on_delete=models.SET_NULL)
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_timelineremarks',on_delete=models.SET_NULL)
     lastmodifytime = models.DateTimeField(auto_now=True)
-    lastmodifyuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usermodify_timelineremarks', on_delete=models.SET_NULL)
-    datasource = models.ForeignKey(DataSource, help_text='数据源',default=1)
+    lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_timelineremarks', on_delete=models.SET_NULL)
+    datasource = MyForeignKey(DataSource, help_text='数据源',default=1)
     class Meta:
         db_table = 'timelineremarks'
         permissions = (

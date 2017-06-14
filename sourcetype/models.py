@@ -5,6 +5,14 @@ import sys
 from django.db import models
 
 # Create your models here.
+from django.db.models import Q
+from django.db.models import QuerySet
+from django.db.models import sql
+from django.db.models.manager import BaseManager
+from django.db.models.sql.where import WhereNode
+
+from utils.customClass import MyForeignKey
+
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
@@ -87,6 +95,19 @@ class TitleType(models.Model):
     def __str__(self):
         return self.nameC
 
+class CharacterType(models.Model):
+    '''
+    职位
+    '''
+    id = models.AutoField(primary_key=True)
+    characterC = models.CharField(max_length=20)
+    characterE = models.CharField(max_length=128)
+    is_deleted = models.BooleanField(blank=True, default=False)
+    def __str__(self):
+        return self.characterC
+
+
+
 
 class Continent(models.Model):
     '''
@@ -104,7 +125,7 @@ class Country(models.Model):
     国家
     '''
     id = models.AutoField(primary_key=True)
-    continent = models.ForeignKey(Continent,related_name='countries',related_query_name='continent',blank=True,null=True)
+    continent = MyForeignKey(Continent,related_name='countries',related_query_name='continent',blank=True,null=True)
     countryC = models.CharField(max_length=20)
     countryE = models.CharField(max_length=128)
     areaCode = models.CharField(max_length=8)
@@ -134,7 +155,7 @@ class Industry(models.Model):
     '''
     id = models.AutoField(primary_key=True)
     isPindustry = models.BooleanField(blank=True,default=False,help_text='是否是父级行业')
-    Pindustry = models.ForeignKey('self',blank=True,null=True,related_name='Pindustry_Sindustries',help_text='父级行业')
+    Pindustry = MyForeignKey('self',blank=True,null=True,related_name='Pindustry_Sindustries',help_text='父级行业')
     industryC = models.CharField(max_length=16)
     industryE = models.CharField(max_length=128)
     bucket = models.CharField(max_length=16,blank=True,default='image')
@@ -245,7 +266,7 @@ class webmenu(models.Model):
     namekey = models.CharField(max_length=32,blank=True,null=True)
     icon_active = models.CharField(max_length=64,blank=True,null=True)
     icon_normal = models.CharField(max_length=64,blank=True,null=True,)
-    parentmenu = models.ForeignKey('self',blank=True,null=True,related_name='Pmenu_Smenus')
+    parentmenu = MyForeignKey('self',blank=True,null=True,related_name='Pmenu_Smenus')
     index = models.SmallIntegerField(blank=True,default=1)
     # class Meta:
     #     permissions = (

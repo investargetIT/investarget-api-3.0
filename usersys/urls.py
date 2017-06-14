@@ -54,6 +54,21 @@ user_friendship_detail = views.UserFriendshipView.as_view({
 })
 
 
+group_list = views.GroupPermissionView.as_view({
+        'get':'list',
+        'post':'create',
+})
+
+group_permission = views.GroupPermissionView.as_view({
+        'get': 'retrieve',
+        'put': 'update',
+        'delete': 'destroy',
+})
+
+permission = views.PermissionView.as_view({
+        'get':'list',
+})
+
 
 urlpatterns = [
     url(r'^$', user_list,name='user-list',),
@@ -67,5 +82,9 @@ urlpatterns = [
     url(r'^login/$', views.login),
     url(r'^friend/$', user_friendship, name='user-friendship'),
     url(r'^friend/(?P<pk>\d+)/$', user_friendship_detail, name='user-friendship-detail'),
-    url(r'^test$',views.testsendmsg)
+    url(r'^group/$', group_list, name='group-list'),
+    url(r'^group/(?P<pk>\d+)/$', group_permission, name='group_permission-detail'),
+    url(r'^perm/$', permission, name='permission-list'),
+    url(r'^test/$',views.testsendmsg)
+
 ]

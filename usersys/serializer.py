@@ -1,9 +1,16 @@
 #coding=utf-8
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 from rest_framework import serializers
 
 from org.serializer import OrgCommonSerializer
+from sourcetype.serializer import tagSerializer
 from .models import MyUser, UserRelation, UserFriendship
+
+
+class PermissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Permission
+        fields = ('id','name','content_type')
 
 #用户基本信息
 class UserCommenSerializer(serializers.ModelSerializer):
@@ -16,6 +23,12 @@ class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
         fields = ('id','name',)
+
+# 权限组基本信息
+class GroupCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Group
+        fields = ('id', 'name','datasource')
 
 
 #投资人交易师关系基本信息
@@ -72,6 +85,7 @@ class UserFriendshipUpdateSerializer(serializers.ModelSerializer):
 
 # 权限组全部权限信息
 class GroupDetailSerializer(serializers.ModelSerializer):
+    permissions = PermissionSerializer(many=True)
     class Meta:
         model = Group
         fields = ('id', 'name','permissions')
@@ -79,11 +93,17 @@ class GroupDetailSerializer(serializers.ModelSerializer):
 #用户全部信息
 class UserSerializer(serializers.ModelSerializer):
     groups = GroupSerializer(MyUser.groups,many=True)
+    tags = serializers.SerializerMethodField()
     class Meta:
         model = MyUser
         fields = '__all__'
         read_only_fields = ('datasource', 'usercode')
         depth = 1
+    def get_tags(self, obj):
+        qs = obj.tags.filter(tag_usertags__is_deleted=False)
+        if qs.exists():
+            return tagSerializer(qs,many=True).data
+        return None
 
 #创建用户所需信息
 class CreatUserSerializer(serializers.ModelSerializer):

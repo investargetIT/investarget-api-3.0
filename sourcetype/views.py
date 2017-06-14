@@ -5,10 +5,10 @@ from rest_framework import filters
 from rest_framework import viewsets
 
 from sourcetype.models import Tag, TitleType, DataSource,Continent,Country,Industry, TransactionType, \
-    TransactionPhases, OrgArea, CurrencyType, OrgType
+    TransactionPhases, OrgArea, CurrencyType, OrgType, CharacterType
 from sourcetype.serializer import tagSerializer, countrySerializer, industrySerializer, continentSerializer, \
     titleTypeSerializer, DataSourceSerializer, orgAreaSerializer, transactionTypeSerializer, transactionPhasesSerializer, \
-    currencyTypeSerializer, orgTypeSerializer
+    currencyTypeSerializer, orgTypeSerializer, characterTypeSerializer
 from utils.customClass import IsSuperUser, JSONResponse, InvestError
 from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, returnListChangeToLanguage
 
@@ -45,6 +45,38 @@ class CountryView(viewsets.ModelViewSet):
     # permission_classes = (IsSuperUser,)
     queryset = Country.objects.all().filter(is_deleted=False)
     serializer_class = countrySerializer
+    def list(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = countrySerializer(queryset, many=True)
+            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    # def destroy(self, request, *args, **kwargs):
+    #     try:
+    #         instance = self.get_object()
+    #         instance.is_deleted = True
+    #         instance.save(update_fields=['is_deleted'])
+    #         return JSONResponse(SuccessResponse({'is_deleted':instance.is_deleted}))
+    #     except InvestError as err:
+    #         return JSONResponse(InvestErrorResponse(err))
+    #     except Exception:
+    #         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+class CharacterTypeView(viewsets.ModelViewSet):
+    """
+        list:获取所有角色类型
+        create:新增角色类型
+        update:修改角色类型
+        destroy:删除角色类型
+    """
+    # permission_classes = (IsSuperUser,)
+    queryset = CharacterType.objects.all().filter(is_deleted=False)
+    serializer_class = characterTypeSerializer
     def list(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
@@ -100,6 +132,7 @@ class IndustryView(viewsets.ModelViewSet):
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
 class TitleView(viewsets.ModelViewSet):
     """
         list:获取所有职位
@@ -251,5 +284,4 @@ class CurrencyTypeView(viewsets.ModelViewSet):
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
 

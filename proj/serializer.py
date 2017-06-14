@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from proj.models import project, finance, favoriteProject
+from proj.models import project, finance, favoriteProject, attachment
 from usersys.serializer import UserCommenSerializer
 
 
@@ -30,7 +30,10 @@ class ProjFinanceSerializer(serializers.ModelSerializer):
 
 
 
-
+class ProjAttachmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = attachment
+        fileds = '__all__'
 
 
 class ProjSerializer(serializers.ModelSerializer):

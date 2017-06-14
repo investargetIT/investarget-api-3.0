@@ -375,7 +375,7 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
                 dataroomobj = self.get_dataroom(dataroomid)
                 if request.user.has_perm('dataroom.admin_adddataroom'):
                     pass
-                elif request.user.has_perm('dataroom.user_adddataroom', dataroomobj):
+                elif request.user.has_perm('dataroom.user_adddataroomfile', dataroomobj):
                     pass
                 else:
                     raise InvestError(code=2009)

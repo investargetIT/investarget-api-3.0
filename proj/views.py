@@ -13,9 +13,9 @@ from rest_framework.decorators import detail_route
 
 from APIlog.views import viewprojlog
 from proj.models import project, finance, projectTags, projectIndustries, projectTransactionType, favoriteProject, \
-    ShareToken
+    ShareToken, attachment
 from proj.serializer import ProjSerializer, FinanceSerializer, ProjCreatSerializer, \
-    ProjCommonSerializer, FinanceChangeSerializer, FinanceCreateSerializer, FavoriteSerializer, FavoriteCreateSerializer
+    ProjCommonSerializer, FinanceChangeSerializer, FinanceCreateSerializer, FavoriteSerializer, FavoriteCreateSerializer,ProjAttachmentSerializer
 from sourcetype.models import Tag, Industry, TransactionType, DataSource
 from usersys.models import MyUser
 from utils.sendMessage import sendmessage_projectauditstatuchange
@@ -48,6 +48,7 @@ class ProjectView(viewsets.ModelViewSet):
     update:修改项目
     destroy:删除项目
     getshareprojtoken:获取分享项目token
+    getshareproj:获取分享的项目详情
     """
     filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
     queryset = project.objects.all().filter(is_deleted=False)
@@ -136,8 +137,7 @@ class ProjectView(viewsets.ModelViewSet):
                 if request.user.is_anonymous:
                     pass
                 else:
-                    if request.user.has_perm('proj.admin_getproj') or request.user.has_perm('proj.user_getproj'):
-                        actionlist['get'] = True
+                    actionlist['get'] = True
                     if request.user.has_perm('proj.admin_changeproj') or request.user.has_perm('proj.user_changeproj',
                                                                                              instance):
                         actionlist['change'] = True
@@ -162,6 +162,8 @@ class ProjectView(viewsets.ModelViewSet):
             tagsdata = projdata.pop('tags',None)
             industrydata = projdata.pop('industries',None)
             transactiontypedata = projdata.pop('transactionType',None)
+            projAttachmentdata = projdata.pop('projAttachment',None)
+            financedata = projdata.pop('finanace',None)
             with transaction.atomic():
                 proj = ProjCreatSerializer(data=projdata)
                 if proj.is_valid():
@@ -184,9 +186,25 @@ class ProjectView(viewsets.ModelViewSet):
                         transactiontypelist = []
                         if not isinstance(transactiontypedata,list):
                             raise InvestError(2007,msg='transactionType must be a not null list')
-                        for transactionPhase in tagsdata:
+                        for transactionPhase in transactiontypedata:
                             transactiontypelist.append(projectTransactionType(proj=pro, transactionType_id=transactionPhase,createuser=request.user))
                         pro.project_TransactionTypes.bulk_create(transactiontypelist)
+                    if projAttachmentdata:
+                        if not isinstance(projAttachmentdata, list):
+                            raise InvestError(2007, msg='transactionType must be a not null list')
+                        for oneprojAttachmentdata in projAttachmentdata:
+                            oneprojAttachmentdata['proj'] = pro.id
+                            projAttachmentSerializer = ProjAttachmentSerializer(data=oneprojAttachmentdata)
+                            if projAttachmentSerializer.is_valid():
+                                projAttachmentSerializer.save()
+                    if financedata:
+                        if not isinstance(financedata, list):
+                            raise InvestError(2007, msg='transactionType must be a not null list')
+                        for onefinancedata in financedata:
+                            onefinancedata['proj'] = pro.id
+                            financeSerializer = FinanceCreateSerializer(data=onefinancedata)
+                            if financeSerializer.is_valid():
+                                financeSerializer.save()
                 else:
                     raise InvestError(code=4001,
                                           msg='data有误_%s\n%s' % (proj.error_messages, proj.errors))
@@ -223,6 +241,26 @@ class ProjectView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    def getshareprojdetail(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            clienttype = request.META.get('HTTP_CLIENTTYPE')
+            tokenkey = request.GET.get('token')
+            if tokenkey and isinstance(tokenkey,str):
+                token = ShareToken.objects.get(key=tokenkey)
+                instance = token.proj
+            else:
+                raise InvestError(code=4004, msg='没有权限查看隐藏项目')
+            serializer = ProjSerializer(instance)
+            viewprojlog(userid=None,projid=instance.id,sourceid=clienttype)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
     @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
         try:
@@ -272,7 +310,7 @@ class ProjectView(viewsets.ModelViewSet):
                         pro.project_industries.bulk_create(projindustrylist)
 
                     if transactiontypedata:
-                        transactionTypelist = TransactionType.objects.in_bulk(tagsdata)
+                        transactionTypelist = TransactionType.objects.in_bulk(transactiontypedata)
                         addlist = [item for item in transactionTypelist if item not in pro.transactionType.all()]
                         removelist = [item for item in pro.transactionType.all() if item not in transactionTypelist]
                         pro.project_TransactionTypes.filter(transactionType__in=removelist, is_deleted=False).update(is_deleted=True,
@@ -282,6 +320,24 @@ class ProjectView(viewsets.ModelViewSet):
                         for transactionPhase in addlist:
                             projtransactiontypelist.append(projectTransactionType(proj=pro, transactionType=transactionPhase, createuser=request.user))
                         pro.project_TransactionTypes.bulk_create(projtransactiontypelist)
+
+                    # if projAttachmentdata:
+                    #     if not isinstance(projAttachmentdata, list):
+                    #         raise InvestError(2007, msg='transactionType must be a not null list')
+                    #     for oneprojAttachmentdata in projAttachmentdata:
+                    #         oneprojAttachmentdata['proj'] = pro.id
+                    #         projAttachmentSerializer = ProjAttachmentSerializer(data=oneprojAttachmentdata)
+                    #         if projAttachmentSerializer.is_valid():
+                    #             projAttachmentSerializer.save()
+
+                    # if financedata:
+                    #     if not isinstance(financedata, list):
+                    #         raise InvestError(2007, msg='transactionType must be a not null list')
+                    #     for onefinancedata in financedata:
+                    #         onefinancedata['proj'] = pro.id
+                    #         financeSerializer = FinanceCreateSerializer(data=onefinancedata)
+                    #         if financeSerializer.is_valid():
+                    #             financeSerializer.save()
 
                 else:
                     raise InvestError(code=4001,msg='data有误_%s' %  proj.errors)
@@ -354,7 +410,6 @@ class ProjectView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
 
     @detail_route(methods=['get'])
     @loginTokenIsAvailable()
@@ -512,8 +567,8 @@ class ProjFinanceView(viewsets.ModelViewSet):
                     newfinances = []
                     for f in financedata:
                         fid = f['id']
-                        if not isinstance(fid,(int,str)):
-                            raise InvestError(2007,msg='finances[\'id\'] need be a int/str type')
+                        if not isinstance(fid,(int,str)) or not fid:
+                            raise InvestError(2007,msg='finances[\'id\'] must be a int/str type')
                         projfinance = self.get_object(fid)
                         if request.user.has_perm('proj.admin_changeproj'):
                             pass
@@ -717,6 +772,7 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
     #批量删除（参数传收藏model的idlist）
     @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):

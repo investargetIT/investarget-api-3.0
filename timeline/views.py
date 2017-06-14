@@ -130,7 +130,7 @@ class TimelineView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user.has_perm('timeline.admin_getline'):
                 serializerclass = TimeLineSerializer
-            elif request.user == instance.investor or request.user == instance.trader or request.user == instance.supportor:
+            elif request.user.has_perm('timeline.user_getline',instance):
                 serializerclass = TimeLineSerializer
             else:
                 raise InvestError(code=2009)
@@ -146,6 +146,8 @@ class TimelineView(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         try:
             timeline = self.get_object()
+            if not request.user.has_perm('timeline.admin_changeline') or request.user.has_perm('timeline.user_changeline',timeline):
+                raise InvestError(2009,msg='没有相应权限')
             data = request.data
             lang = request.GET.get('lang')
             timelinedata = data.pop('timelinedata',None)
@@ -192,7 +194,7 @@ class TimelineView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     # delete
-    @loginTokenIsAvailable(['timeline.admin_deleteline'])
+    @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
         try:
             timelineidlist = request.data.get('timelines')
@@ -205,6 +207,9 @@ class TimelineView(viewsets.ModelViewSet):
                 links = [f.get_accessor_name() for f in rel_fileds]
                 for timelineid in timelineidlist:
                     instance = self.get_object(timelineid)
+                    if not request.user.has_perm('timeline.admin_deleteline') or request.user.has_perm(
+                            'timeline.user_deleteline', instance):
+                        raise InvestError(2009, msg='没有相应权限')
                     for link in links:
                         if link in []:
                             manager = getattr(instance, link, None)
@@ -255,7 +260,6 @@ class TimelineView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
 
 
 

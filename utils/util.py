@@ -9,7 +9,7 @@ from django.db.models import QuerySet
 from sourcetype.models import webmenu
 from sourcetype.serializer import WebMenuSerializer
 from usersys.models import MyToken
-from usersys.serializer import UserListSerializer
+from usersys.serializer import UserSerializer
 from utils.customClass import JSONResponse, InvestError
 
 REDIS_TIMEOUT = 1 * 24 * 60 * 60
@@ -101,7 +101,6 @@ def loginTokenIsAvailable(permissions=None):#判断class级别权限
                         return JSONResponse(InvestErrorResponse(InvestError(2009)))
                 kwargs['permissions'] = user_has_permissions
                 return func(self,request, *args, **kwargs)
-
         return _token_available
     return token_available
 
@@ -147,17 +146,17 @@ def getmenulist(user):
     allmenuobj = webmenu.objects.all()
     if user.has_perm('usersys.admin_getuser'):
         qslist.append(allmenuobj.filter(id__in=[5]))
-    if user.has_perm('usersys.admin_getuserrelation'):
-        qslist.append(allmenuobj.filter(id__in=[12, 13]))
-    elif user.has_perm('usersys.user_getuserrelation'):
-        if user.has_perm('usersys.as_traderuser'):
+    if user.has_perm('usersys.user_getuserrelation'):
+        if user.has_perm('usersys.user_adduserrelation'):
             qslist.append(allmenuobj.filter(id__in=[12]))
-        if user.has_perm('usersys.as_investoruser'):
+        else:
             qslist.append(allmenuobj.filter(id__in=[13]))
     if user.has_perm('org.admin_getorg'):
         qslist.append(allmenuobj.filter(id__in=[2, 3]))
     if user.has_perm('org.admin_getorg'):
         qslist.append(allmenuobj.filter(id__in=[9]))
+    if user.is_superuser:
+        qslist.append(allmenuobj.filter(id__in=[17]))
     qslist.append(allmenuobj.filter(id__in=[1, 4, 6, 7, 8, 10, 11, 14, 15, 16]))
     qsres = reduce(lambda x,y:x|y,qslist).distinct().order_by('index')
     return WebMenuSerializer(qsres,many=True).data
@@ -172,7 +171,7 @@ def maketoken(user,clienttype):
             token.is_deleted = True
             token.save(update_fields=['is_deleted'])
     token = MyToken.objects.create(user=user, clienttype_id=clienttype)
-    serializer = UserListSerializer(user)
+    serializer = UserSerializer(user)
     response = serializer.data
     return {'token':token.key,
         "user_info": response,

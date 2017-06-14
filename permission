@@ -51,8 +51,8 @@ dataroom（管理员/用户）
 dataroomfile（管理员/用户）
     {
     新建  管理员/用户 class
-    删除  管理员 class 用户obj(对dataroom)
-    移动  管理员 class 用户obj(对dataroom)
-    复制  管理员 class 用户obj(对dataroom)
-    查看  管理员 class 用户obj(对dataroom)
+    删除  管理员 class 用户obj
+    移动  管理员 class 用户obj
+    复制  管理员 class 用户obj
+    查看  管理员 class 用户obj
     }

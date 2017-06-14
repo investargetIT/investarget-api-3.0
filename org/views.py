@@ -8,6 +8,8 @@ from django.db.models import QuerySet
 from django.db.models.fields.reverse_related import ForeignObjectRel
 from guardian.shortcuts import assign_perm
 from rest_framework import filters , viewsets
+
+from APIlog.views import apilog
 from org.models import organization, orgTransactionPhase, orgRemarks
 from org.serializer import OrgSerializer, OrgCommonSerializer, OrgDetailSerializer, \
     OrgRemarkSerializer, OrgRemarkDetailSerializer, OrgCreateSerializer
@@ -135,7 +137,6 @@ class OrganizationView(viewsets.ModelViewSet):
                 instancedata = serializerclass(instance).data
                 instancedata['action'] = actionlist
                 responselist.append(instancedata)
-            print repr(OrgDetailSerializer())
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(responselist,lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -183,6 +184,7 @@ class OrganizationView(viewsets.ModelViewSet):
             else:
                 orgserializer = OrgDetailSerializer
             serializer = orgserializer(org)
+            apilog(request, 'Org', serializer.data, serializer.data,modelID=org.id, datasource=request.user.datasource_id)
             return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -347,7 +349,7 @@ class OrgRemarkView(viewsets.ModelViewSet):
         else:
             return org
 
-    @loginTokenIsAvailable(['org.admin_getorgremark','org.user_getorgremark'])
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')

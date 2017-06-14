@@ -4,6 +4,7 @@ from django.db import models
 
 # Create your models here.
 from usersys.models import MyUser
+from utils.customClass import MyForeignKey
 
 
 class activity(models.Model):
@@ -17,11 +18,11 @@ class activity(models.Model):
     isActive = models.BooleanField(blank=True,default=True)
     isNews = models.BooleanField(blank=True,default=False)
     is_deleted = models.BooleanField(blank=True, default=False)
-    deleteduser = models.ForeignKey(MyUser,blank=True,null=True,related_name='userdelete_activities',on_delete=models.SET_NULL)
+    deleteduser = MyForeignKey(MyUser,blank=True,null=True,related_name='userdelete_activities',on_delete=models.SET_NULL)
     deletedtime = models.DateTimeField(blank=True,null=True)
     createdtime = models.DateTimeField(auto_now_add=True)
-    createuser = models.ForeignKey(MyUser,blank=True,null=True,related_name='usercreate_activities',on_delete=models.SET_NULL)
+    createuser = MyForeignKey(MyUser,blank=True,null=True,related_name='usercreate_activities',on_delete=models.SET_NULL)
     lastmodifytime = models.DateTimeField(auto_now=True)
-    lastmodifyuser = models.ForeignKey(MyUser, blank=True, null=True, related_name='usermodify_activities', on_delete=models.SET_NULL)
+    lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_activities', on_delete=models.SET_NULL)
     class Meta:
         db_table = 'activity'
