@@ -220,6 +220,7 @@ class UserView(viewsets.ModelViewSet):
                         org = organization()
                         setattr(org,field,orgname)
                         org.datasource= userdatasource
+                        org.orgstatus_id = 1
                         org.save()
                     data['org'] = org.id
                 user = MyUser(email=email,mobile=mobile,datasource=userdatasource)
@@ -250,17 +251,15 @@ class UserView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def adduser(self, request, *args, **kwargs):
         data = request.data
-        data['createduser'] = request.user.id
-        data['createdtime'] = datetime.datetime.now()
-        data['datasource'] = request.user.datasource.id
-        lang = request.GET.get('lang')
-        if request.user.has_perm('usersys.admin_adduser'):
-            canCreateField = perimissionfields.userpermfield['usersys.admin_adduser']
-        elif request.user.has_perm('usersys.user_adduser'):
-            canCreateField = perimissionfields.userpermfield['usersys.trader_adduser']
-        else:
-            return JSONResponse({'result': None, 'success': False, 'errorcode':2009,'errormsg':'没有新增权限'})
         try:
+
+            lang = request.GET.get('lang')
+            if request.user.has_perm('usersys.admin_adduser'):
+                canCreateField = perimissionfields.userpermfield['usersys.admin_adduser']
+            elif request.user.has_perm('usersys.user_adduser'):
+                canCreateField = perimissionfields.userpermfield['usersys.trader_adduser']
+            else:
+                raise InvestError(2009,msg='没有新增权限')
             with transaction.atomic():
                 password = data.pop('password','Aa123456')
                 email = data.get('email')
@@ -269,15 +268,18 @@ class UserView(viewsets.ModelViewSet):
                     raise InvestError(code=2007)
                 if self.get_queryset().filter(Q(mobile=mobile) | Q(email=email)).exists():
                     raise InvestError(code=2004)
-                user = MyUser(usernameC=data['usernameC'],usernameE=data['usernameE'])
-                user.set_password(password)
-                user.save()
+                # user = MyUser(usernameC=data.get('usernameC',None),usernameE=data.get('usernameE',None),datasource_id=request.user.datasource.id)
+                # user.set_password(password)
+                # user.save()
                 keylist = data.keys()
                 cannoteditlist = [key for key in keylist if key not in canCreateField]
                 if cannoteditlist:
                     raise InvestError(code=2009,msg='没有权限修改%s' % cannoteditlist)
+                data['createduser'] = request.user.id
+                data['createdtime'] = datetime.datetime.now()
+                data['datasource'] = request.user.datasource.id
                 tags = data.pop('tags', None)
-                userserializer = CreatUserSerializer(user, data=data)
+                userserializer = CreatUserSerializer(data=data)
                 if userserializer.is_valid():
                     user = userserializer.save()
                     if tags:
@@ -1145,8 +1147,7 @@ def testsendmsg(request):
     # print datetime.datetime.now()
     # sendmessage_userauditstatuchange(MyUser.objects.get(id=8),MyUser.objects.get(id=8),['app'])
     # print datetime.datetime.now()
-    tag1 = Tag.objects.all()
-    qs = organization.objects.all()
-    org = qs.filter(org_users__tags__in=tag1).distinct()
-    print str(datetime.timedelta(hours=24 * 1))
+    with open('/Users/investarget/Desktop/django_server/qiniu_uploadprogress/5qC86JOd54m5546v5L+d5bel56iL77yI5YyX5LqsKeaciemZkOWFrOWPuOW3peWVhuaho+ahiOi1hOaWmS3miKrmraIyMDE2LTA3LTEyLnBkZi.moLzok53nibnnjq.kv53lt6XnqIvvvIjljJfkuqwp5pyJ6ZmQ5YWs5Y+45bel5ZWG5qGj5qGI6LWE5paZLeaIquatojIwMTYtMDctMTIucGRm', 'w') as f:
+        import json
+        json.dump('aaaa', f)
     return JSONResponse({'xxx':'sss'})

@@ -8,5 +8,6 @@ urlpatterns = [
     url(r'^sms$', views.submail.sendSmscode, name='sendsmscode', ),
     url(r'^intersms$', views.submail.sendInternationalsmscode, name='sendintersmscode', ),
     url(r'^qiniubigupload$', views.qiniufile.bigfileupload, name='qiniubig', ),
+    url(r'^qiniudelete$', views.qiniufile.qiniu_deletefile, name='qiniudelete', ),
     url(r'^currencyrate$', views.others.getcurrencyreat, name='getcurrencyrate', ),
 ]

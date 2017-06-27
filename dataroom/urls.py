@@ -7,7 +7,6 @@ dataroom = views.DataroomView.as_view({
         'post': 'create',
         'put':'update',
         'delete':'destroy',
-
 })
 
 dataroomfile = views.DataroomdirectoryorfileView.as_view({

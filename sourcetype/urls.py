@@ -20,6 +20,15 @@ countrydetail = views.CountryView.as_view({
         'delete': 'destroy'
 })
 
+character = views.CharacterTypeView.as_view({
+        'get': 'list',
+        'post':'create',
+})
+characterdetail = views.CharacterTypeView.as_view({
+        'put': 'update',
+        'delete': 'destroy'
+})
+
 continent = views.ContinentalView.as_view({
         'get': 'list',
         'post':'create',
@@ -129,4 +138,6 @@ urlpatterns = [
     url(r'^transactionPhases/(?P<pk>\d+)$', transactionPhasesdetail,name='transactionPhasesdetail',),
     url(r'^currencyType$', currencyType,name='currencyTypesource',),
     url(r'^currencyType/(?P<pk>\d+)$', currencyTypedetail,name='currencyTypedetail',),
+    url(r'^character', character,name='charactersource',),
+    url(r'^character/(?P<pk>\d+)$', characterdetail,name='characterdetail',),
 ]

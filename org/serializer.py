@@ -60,7 +60,7 @@ class OrgDetailSerializer(serializers.ModelSerializer):
 class OrgRemarkSerializer(serializers.ModelSerializer):
     class Meta:
         model = orgRemarks
-        fields = ('id','org','remark','createtime')
+        fields = ('id','org','remark','createdtime')
 
 class OrgRemarkDetailSerializer(serializers.ModelSerializer):
     class Meta:

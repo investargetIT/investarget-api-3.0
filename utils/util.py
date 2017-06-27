@@ -5,6 +5,7 @@ import datetime
 import traceback
 
 from django.db.models import QuerySet
+from guardian.shortcuts import assign_perm, remove_perm
 
 from sourcetype.models import webmenu
 from sourcetype.serializer import WebMenuSerializer
@@ -83,7 +84,7 @@ def loginTokenIsAvailable(permissions=None):#判断class级别权限
                     except MyToken.DoesNotExist:
                         return JSONResponse(InvestErrorResponse(InvestError(3000,msg='token不存在')))
                 else:
-                    return JSONResponse(InvestErrorResponse(InvestError(3000,msg='server error')))
+                    return JSONResponse(InvestErrorResponse(InvestError(3000,msg='token缺失')))
             except Exception as exc:
                 return JSONResponse(InvestErrorResponse(InvestError(code=3000,msg=repr(exc))))
             else:
@@ -173,9 +174,18 @@ def maketoken(user,clienttype):
     token = MyToken.objects.create(user=user, clienttype_id=clienttype)
     serializer = UserSerializer(user)
     response = serializer.data
-    return {'token':token.key,
+    return {'token': token.key,
         "user_info": response,
     }
+
+def setUserObjectPermission(user,obj,permissions,touser=None):
+    if touser is None:
+        for permission in permissions:
+            assign_perm(permission, user, obj)
+    else:
+        for permission in permissions:
+            remove_perm(permission, user, obj)
+            assign_perm(permission, touser, obj)
 
 def returnDictChangeToLanguage(dictdata,lang=None):
     newdict = {}
@@ -198,7 +208,7 @@ def returnDictChangeToLanguage(dictdata,lang=None):
                     newdict[key] = newlist
                 else:
                     newdict[key] = value
-    else:
+    elif lang == 'cn':
         for key,value in dictdata.items():
             if key[-1] == 'E' and dictdata.has_key(key[0:-1]+'C'):
                 pass
@@ -217,7 +227,8 @@ def returnDictChangeToLanguage(dictdata,lang=None):
                     newdict[key] = newlist
                 else:
                     newdict[key] = value
-
+    else:
+        newdict = dictdata
     return newdict
 
 #list内嵌dict

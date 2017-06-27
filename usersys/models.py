@@ -113,7 +113,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     is_deleted = models.BooleanField(blank=True,help_text='是否已被删除', default=False)
     deleteduser = MyForeignKey('self',help_text='删除者',blank=True,null=True,related_name='userdelete_users',related_query_name='user_deleteduser',on_delete=models.SET_NULL)
     deletedtime = models.DateTimeField(blank=True,null=True)
-    createdtime = models.DateTimeField(auto_now_add=True,blank=True)
+    createdtime = models.DateTimeField(auto_now_add=True,blank=True,null=True)
     createuser = MyForeignKey('self',help_text='创建者',blank=True,null=True,related_name='usercreate_users',related_query_name='user_createuser',on_delete=models.SET_NULL)
     datasource = MyForeignKey(DataSource,help_text='数据源',blank=True,null=True)
     USERNAME_FIELD = 'usercode'

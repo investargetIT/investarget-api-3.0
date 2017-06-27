@@ -14,10 +14,16 @@ class PermissionSerializer(serializers.ModelSerializer):
 
 #用户基本信息
 class UserCommenSerializer(serializers.ModelSerializer):
+    tags = serializers.SerializerMethodField()
     class Meta:
         model = MyUser
         fields = ('id', 'usernameC','usernameE','tags')
-        depth = 1
+    def get_tags(self, obj):
+        qs = obj.tags.filter(tag_usertags__is_deleted=False)
+        if qs.exists():
+            return tagSerializer(qs,many=True).data
+        return None
+
 #权限组基本信息
 class GroupSerializer(serializers.ModelSerializer):
     class Meta:
@@ -81,7 +87,7 @@ class UserFriendshipUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserFriendship
         fields = '__all__'
-        read_only_fields = ('datasource','user','friend','createtime','createuser','is_deleted')
+        read_only_fields = ('datasource','user','friend','createdtime','createuser','is_deleted')
 
 # 权限组全部权限信息
 class GroupDetailSerializer(serializers.ModelSerializer):
@@ -109,29 +115,28 @@ class UserSerializer(serializers.ModelSerializer):
 class CreatUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = MyUser
+        fields = '__all__'
         # fields = ('groups','photoBucket','photoKey','cardBucket','cardKey','wechat','org','username','usernameE',
         # 'mobileAreaCode','mobile','description','tags','email','title','gender','school','specialty','registersource','remark',)
-        exclude = ('password','datasource')
+        # exclude = ('password','datasource')
 
 # 用户列表显示信息
 class UserListSerializer(serializers.ModelSerializer):
     groups = GroupSerializer(MyUser.groups,many=True)
     org = OrgCommonSerializer(MyUser.org)
-    # investor_relations = UserRelationSerializer(MyUser.investor_relations, many=True)
-    # trader_relations = UserRelationSerializer(MyUser.trader_relations, many=True)
+    trader_relation = serializers.SerializerMethodField()
+    investor_relation = serializers.SerializerMethodField()
     class Meta:
         model = MyUser
         fields = ('id','groups','tags','usernameC','usernameE','mobile','email','title','userstatus','org','trader_relation','investor_relation')
         depth = 1
 
-    trader_relation = serializers.SerializerMethodField()
     def get_trader_relation(self, obj):
         usertrader = obj.investor_relations.filter(relationtype=True)
         if usertrader.exists():
             return UserRelationSerializer(usertrader.first()).data
         return None
 
-    investor_relation = serializers.SerializerMethodField()
     def get_investor_relation(self, obj):
         usertrader = obj.trader_relations.filter(relationtype=True)
         if usertrader.exists():
@@ -139,3 +144,93 @@ class UserListSerializer(serializers.ModelSerializer):
         return None
 
 
+#list
+class UserListSerializer_admin(serializers.ModelSerializer):
+    groups = GroupSerializer(MyUser.groups, many=True)
+    org = OrgCommonSerializer(MyUser.org)
+    trader_relation = serializers.SerializerMethodField()
+    investor_relation = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MyUser
+        fields = ('id', 'groups', 'tags', 'usernameC', 'usernameE', 'mobile', 'email', 'title', 'userstatus', 'org',
+                  'trader_relation', 'investor_relation')
+        depth = 1
+
+    def get_trader_relation(self, obj):
+        usertrader = obj.investor_relations.filter(relationtype=True)
+        if usertrader.exists():
+            return UserRelationSerializer(usertrader.first()).data
+        return None
+
+    def get_investor_relation(self, obj):
+        usertrader = obj.trader_relations.filter(relationtype=True)
+        if usertrader.exists():
+            return UserRelationSerializer(usertrader, many=True).data
+        return None
+class UserListSerializer_user(serializers.ModelSerializer):
+    class Meta:
+        model = MyUser
+        fields = ('id', 'usernameC', 'usernameE')
+#detail
+class UserDetailSerializer_admin_withsecretinfo(serializers.ModelSerializer):
+    groups = GroupSerializer(MyUser.groups, many=True)
+    org = OrgCommonSerializer(MyUser.org)
+    trader_relation = serializers.SerializerMethodField()
+    investor_relation = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MyUser
+        fields = '__all__'
+        depth = 1
+
+    def get_trader_relation(self, obj):
+        usertrader = obj.investor_relations.filter(relationtype=True)
+        if usertrader.exists():
+            return UserRelationSerializer(usertrader.first()).data
+        return None
+
+    def get_investor_relation(self, obj):
+        usertrader = obj.trader_relations.filter(relationtype=True)
+        if usertrader.exists():
+            return UserRelationSerializer(usertrader, many=True).data
+        return None
+class UserDetailSerializer_user_withsecretinfo(serializers.ModelSerializer):
+    groups = GroupSerializer(MyUser.groups, many=True)
+    org = OrgCommonSerializer(MyUser.org)
+    class Meta:
+        model = MyUser
+        fields = '__all__'
+        depth = 1
+
+
+class UserDetailSerializer_admin_withoutsecretinfo(serializers.ModelSerializer):
+    groups = GroupSerializer(MyUser.groups, many=True)
+    org = OrgCommonSerializer(MyUser.org)
+    trader_relation = serializers.SerializerMethodField()
+    investor_relation = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MyUser
+        fields = '__all__'
+        depth = 1
+
+    def get_trader_relation(self, obj):
+        usertrader = obj.investor_relations.filter(relationtype=True)
+        if usertrader.exists():
+            return UserRelationSerializer(usertrader.first()).data
+        return None
+
+    def get_investor_relation(self, obj):
+        usertrader = obj.trader_relations.filter(relationtype=True)
+        if usertrader.exists():
+            return UserRelationSerializer(usertrader, many=True).data
+        return None
+class UserDetailSerializer_user_withoutsecretinfo(serializers.ModelSerializer):
+    groups = GroupSerializer(MyUser.groups, many=True)
+    org = OrgCommonSerializer(MyUser.org)
+
+    class Meta:
+        model = MyUser
+        exclude = ('password','datasource','email','mobile')
+        depth = 1

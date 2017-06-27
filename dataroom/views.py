@@ -146,21 +146,6 @@ class DataroomView(viewsets.ModelViewSet):
                             responselist.append(investordataroomserializer.data)
                         else:
                             raise InvestError(code=20071,msg=investordataroomserializer.errors)
-                    traderdataroom = self.get_queryset().filter(proj=proj, user_id=traderid, trader_id=traderid,investor_id=investorid)
-                    if traderdataroom.exists():
-                        responselist.append(DataroomCreateSerializer(traderdataroom.first()).data)
-                    else:
-                        dataroomdata['user'] = traderid
-                        dataroomdata['isPublic'] = False
-                        dataroomdata['investor'] = investorid
-                        dataroomdata['trader'] = traderid
-                        dataroomdata['createuser'] = request.user.id
-                        traderdataroomserializer = DataroomCreateSerializer(data=dataroomdata)
-                        if traderdataroomserializer.is_valid():
-                            traderdataroomserializer.save()
-                            responselist.append(traderdataroomserializer.data)
-                        else:
-                            raise InvestError(code=20071,msg=traderdataroomserializer.errors)
                 return JSONResponse(
                     SuccessResponse(returnDictChangeToLanguage(responselist, lang)))
         except InvestError as err:
@@ -168,7 +153,7 @@ class DataroomView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
+    #关闭/打开dataroom
     @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
         try:
@@ -176,6 +161,11 @@ class DataroomView(viewsets.ModelViewSet):
             traderid = data.get('trader', None)
             investorid = data.get('investor', None)
             projid = data.get('proj', None)
+            isClose = data.get('isClose',False)
+            if isClose:
+                isClose = True
+            else:
+                isClose = False
             if not data or not traderid or not investorid:
                 raise InvestError(code=20071)
             dataroomquery = self.get_queryset().filter(isPublic=False, proj_id=projid, investor_id=investorid,trader_id=traderid)
@@ -187,7 +177,7 @@ class DataroomView(viewsets.ModelViewSet):
                 pass
             else:
                 raise InvestError(code=2009)
-            self.get_queryset().filter(isPublic=False,proj_id=projid,investor_id=investorid,trader_id=traderid).update(isClose=True,closeDate=datetime.datetime.now())
+            self.get_queryset().filter(isPublic=False,proj_id=projid,investor_id=investorid,trader_id=traderid).update(isClose=isClose,closeDate=datetime.datetime.now())
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:

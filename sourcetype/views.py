@@ -81,7 +81,7 @@ class CharacterTypeView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             queryset = self.filter_queryset(self.get_queryset())
-            serializer = countrySerializer(queryset, many=True)
+            serializer = characterTypeSerializer(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))

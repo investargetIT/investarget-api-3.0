@@ -30,7 +30,9 @@ class project(models.Model):
     p_introducteC = models.TextField(blank=True, default='项目介绍')
     p_introducteE = models.TextField(blank=True, default='project introduction')
     isoverseasproject = models.BooleanField(blank=True,default=True,help_text='是否是海外项目')
-    supportUser = MyForeignKey(MyUser,blank=True,null=True,related_name='usersupport_projs',on_delete=models.SET_NULL)
+    supportUser = MyForeignKey(MyUser,blank=True,null=True,related_name='usersupport_projs',help_text='上传人')
+    takeUser = MyForeignKey(MyUser,blank=True,null=True,related_name='usertake_projs',help_text='承揽人')
+    makeUser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermake_projs', help_text='承做人')
     isHidden = models.BooleanField(blank=True,default=False)
     financeAmount = models.BigIntegerField(blank=True,null=True)
     financeAmount_USD = models.BigIntegerField(blank=True,null=True)
@@ -67,10 +69,10 @@ class project(models.Model):
     operationalDataC = models.TextField(help_text='经营数据', blank=True, null=True)
     operationalDataE = models.TextField(blank=True, null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
-    deleteuser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='userdelete_projects')
-    deletetime = models.DateTimeField(blank=True, null=True)
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='userdelete_projects')
+    deletedtime = models.DateTimeField(blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='usercreate_projects')
-    createtime = models.DateTimeField(auto_now_add=True)
+    createdtime = models.DateTimeField(auto_created=True,blank=True,null=True)
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='usermodify_projects')
     lastmodifytime = models.DateTimeField(auto_now=True)
     datasource = MyForeignKey(DataSource, help_text='数据源')
@@ -88,6 +90,8 @@ class project(models.Model):
             ('user_changeproj', '用户修改项目(obj级别)'),
             ('user_deleteproj', '用户删除项目(obj级别)'),
             ('user_getproj','用户查看项目(obj级别)'),
+
+            ('get_secretinfo','查看项目保密信息')
         )
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
@@ -111,10 +115,10 @@ class finance(models.Model):
     grossMerchandiseValue = models.BigIntegerField(blank=True, null=True, )
     fYear = models.SmallIntegerField(blank=True, null=True, )
     is_deleted = models.BooleanField(blank=True, default=False)
-    deleteuser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='userdelete_finances')
-    deletetime = models.DateTimeField(blank=True, null=True)
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='userdelete_finances')
+    deletedtime = models.DateTimeField(blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL, related_name='usercreate_finances')
-    createtime = models.DateTimeField(auto_now_add=True)
+    createdtime = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='usermodify_finances')
     lastmodifytime = models.DateTimeField(auto_now=True)
     datasource = MyForeignKey(DataSource, help_text='数据源')
@@ -132,16 +136,16 @@ class finance(models.Model):
         super(finance,self).save(force_insert,force_update,using,update_fields)
 
 class attachment(models.Model):
-    proj = MyForeignKey(project,related_name='project_attachment')
+    proj = MyForeignKey(project,related_name='proj_attachment',blank=True,null=True)
     filename = models.CharField(max_length=128,blank=True,null=True)
     filetype = models.CharField(max_length=32,blank=True,null=True)
     bucket = models.CharField(max_length=32,blank=True,default='file')
     key = models.CharField(max_length=128,blank=True,null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
-    deleteuser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='userdelete_projattachments')
-    deletetime = models.DateTimeField(blank=True, null=True)
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='userdelete_projattachments')
+    deletedtime = models.DateTimeField(blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL, related_name='usercreate_projattachments')
-    createtime = models.DateTimeField(auto_now_add=True)
+    createdtime = models.DateTimeField(auto_created=True, blank=True, null=True)
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='usermodify_projattachments')
     lastmodifytime = models.DateTimeField(auto_now=True)
 
@@ -157,7 +161,7 @@ class projectTags(models.Model):
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_projtags')
     deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_created=True)
+    createdtime = models.DateTimeField(auto_created=True, blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_projtag')
 
     class Meta:
@@ -170,7 +174,7 @@ class projectIndustries(models.Model):
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_projIndustries')
     deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_created=True)
+    createdtime = models.DateTimeField(auto_created=True, blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_projIndustry')
 
     class Meta:
@@ -183,7 +187,7 @@ class projectTransactionType(models.Model):
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_projtransactionTypes')
     deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_created=True)
+    createdtime = models.DateTimeField(auto_created=True, blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_projtransactionType')
 
     class Meta:
@@ -200,7 +204,7 @@ class favoriteProject(models.Model):
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_favoriteproj')
     deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_now_add=True, blank=True,null=True)
+    createdtime = models.DateTimeField(auto_created=True, blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_favoriteproj')
     datasource = MyForeignKey(DataSource, help_text='数据源')
 

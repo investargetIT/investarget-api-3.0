@@ -17,14 +17,15 @@ from proj.models import project, finance, projectTags, projectIndustries, projec
 from proj.serializer import ProjSerializer, FinanceSerializer, ProjCreatSerializer, \
     ProjCommonSerializer, FinanceChangeSerializer, FinanceCreateSerializer, FavoriteSerializer, FavoriteCreateSerializer,ProjAttachmentSerializer
 from sourcetype.models import Tag, Industry, TransactionType, DataSource
+from third.views.qiniufile import deleteqiniufile
 from usersys.models import MyUser
 from utils.sendMessage import sendmessage_projectauditstatuchange
 from utils.util import catchexcption, read_from_cache, write_to_cache, loginTokenIsAvailable, returnListChangeToLanguage, \
-    returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser
+    returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser, \
+    setUserObjectPermission
 from utils.customClass import JSONResponse, InvestError, RelationFilter
 
 from django_filters import FilterSet
-
 
 class ProjectFilter(FilterSet):
     industrys = RelationFilter(filterstr='industry',lookup_method='in')
@@ -159,11 +160,13 @@ class ProjectView(viewsets.ModelViewSet):
             projdata = request.data
             lang = request.GET.get('lang')
             projdata['createuser'] = request.user.id
+            projdata['createdtime'] = datetime.datetime.now()
+            projdata['datasource'] = request.user.datasource_id
             tagsdata = projdata.pop('tags',None)
             industrydata = projdata.pop('industries',None)
             transactiontypedata = projdata.pop('transactionType',None)
             projAttachmentdata = projdata.pop('projAttachment',None)
-            financedata = projdata.pop('finanace',None)
+            financedata = projdata.pop('finance',None)
             with transaction.atomic():
                 proj = ProjCreatSerializer(data=projdata)
                 if proj.is_valid():
@@ -171,47 +174,48 @@ class ProjectView(viewsets.ModelViewSet):
                     if tagsdata:
                         tagslist = []
                         if not isinstance(tagslist,list):
-                            raise InvestError(2007,msg='tags must be a not null list')
-                        for transactionPhase in tagsdata:
-                            tagslist.append(projectTags(proj=pro, tag_id=transactionPhase,createuser=request.user))
+                            raise InvestError(2007,msg='tags must be a list')
+                        for tagid in tagsdata:
+                            tagslist.append(projectTags(proj=pro, tag_id=tagid,createuser=request.user))
                         pro.project_tags.bulk_create(tagslist)
                     if industrydata:
                         industrylist = []
                         if not isinstance(industrydata,list):
-                            raise InvestError(2007,msg='industries must be a not null list')
-                        for transactionPhase in industrydata:
-                            industrylist.append(projectIndustries(proj=pro, industry_id=transactionPhase,createuser=request.user))
+                            raise InvestError(2007,msg='industries must be a  list')
+                        for industryid in industrydata:
+                            industrylist.append(projectIndustries(proj=pro, industry_id=industryid,createuser=request.user))
                         pro.project_industries.bulk_create(industrylist)
                     if transactiontypedata:
                         transactiontypelist = []
                         if not isinstance(transactiontypedata,list):
-                            raise InvestError(2007,msg='transactionType must be a not null list')
-                        for transactionPhase in transactiontypedata:
-                            transactiontypelist.append(projectTransactionType(proj=pro, transactionType_id=transactionPhase,createuser=request.user))
+                            raise InvestError(2007,msg='transactionType must be a list')
+                        for transactionPhaseid in transactiontypedata:
+                            transactiontypelist.append(projectTransactionType(proj=pro, transactionType_id=transactionPhaseid,createuser=request.user))
                         pro.project_TransactionTypes.bulk_create(transactiontypelist)
                     if projAttachmentdata:
                         if not isinstance(projAttachmentdata, list):
-                            raise InvestError(2007, msg='transactionType must be a not null list')
+                            raise InvestError(2007, msg='transactionType must be a list')
                         for oneprojAttachmentdata in projAttachmentdata:
                             oneprojAttachmentdata['proj'] = pro.id
+                            oneprojAttachmentdata['createuser'] = request.user.id
                             projAttachmentSerializer = ProjAttachmentSerializer(data=oneprojAttachmentdata)
                             if projAttachmentSerializer.is_valid():
                                 projAttachmentSerializer.save()
                     if financedata:
                         if not isinstance(financedata, list):
-                            raise InvestError(2007, msg='transactionType must be a not null list')
+                            raise InvestError(2007, msg='transactionType must be a list')
                         for onefinancedata in financedata:
                             onefinancedata['proj'] = pro.id
+                            onefinancedata['datasource'] = request.user.datasource_id
+                            onefinancedata['createuser'] = request.user.id
                             financeSerializer = FinanceCreateSerializer(data=onefinancedata)
                             if financeSerializer.is_valid():
                                 financeSerializer.save()
                 else:
                     raise InvestError(code=4001,
-                                          msg='data有误_%s\n%s' % (proj.error_messages, proj.errors))
-
-                assign_perm('proj.user_changeproj', request.user, pro)
-                assign_perm('proj.user_deleteproj', request.user, pro)
-                assign_perm('proj.user_getproj', request.user, pro)
+                                          msg='data有误_%s' % proj.errors)
+                setUserObjectPermission(request.user, pro,
+                                        ['proj.user_getproj', 'proj.user_changeproj', 'proj.user_deleteproj'])
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(ProjSerializer(pro).data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -275,9 +279,12 @@ class ProjectView(viewsets.ModelViewSet):
             projdata = request.data
             projdata['lastmodifyuser'] = request.user.id
             projdata['lastmodifytime'] = datetime.datetime.now()
+            projdata['datasource'] = request.user.datasource_id
             tagsdata = projdata.pop('tags', None)
             industrydata = projdata.pop('industries', None)
             transactiontypedata = projdata.pop('transactionType', None)
+            projAttachmentdata = projdata.pop('projAttachment', None)
+            financedata = projdata.pop('finance', None)
             sendmessage = False
             if projdata.get('projstatus', None) and projdata.get('projstatus', None) != pro.projstatus_id:
                 sendmessage = True
@@ -294,7 +301,7 @@ class ProjectView(viewsets.ModelViewSet):
                                                                                            deleteduser=request.user)
                         usertaglist = []
                         for tag in addlist:
-                            usertaglist.append(projectTags(proj=pro, tag=tag, createuser=request.user))
+                            usertaglist.append(projectTags(proj=pro, tag_id=tag, createuser=request.user))
                         pro.project_tags.bulk_create(usertaglist)
 
                     if industrydata:
@@ -306,7 +313,7 @@ class ProjectView(viewsets.ModelViewSet):
                                                                                            deleteduser=request.user)
                         projindustrylist = []
                         for industry in addlist:
-                            projindustrylist.append(projectIndustries(proj=pro, industry=industry, createuser=request.user))
+                            projindustrylist.append(projectIndustries(proj=pro, industry_id=industry, createuser=request.user))
                         pro.project_industries.bulk_create(projindustrylist)
 
                     if transactiontypedata:
@@ -318,26 +325,28 @@ class ProjectView(viewsets.ModelViewSet):
                                                                                            deleteduser=request.user)
                         projtransactiontypelist = []
                         for transactionPhase in addlist:
-                            projtransactiontypelist.append(projectTransactionType(proj=pro, transactionType=transactionPhase, createuser=request.user))
+                            projtransactiontypelist.append(projectTransactionType(proj=pro, transactionType_id=transactionPhase, createuser=request.user))
                         pro.project_TransactionTypes.bulk_create(projtransactiontypelist)
 
-                    # if projAttachmentdata:
-                    #     if not isinstance(projAttachmentdata, list):
-                    #         raise InvestError(2007, msg='transactionType must be a not null list')
-                    #     for oneprojAttachmentdata in projAttachmentdata:
-                    #         oneprojAttachmentdata['proj'] = pro.id
-                    #         projAttachmentSerializer = ProjAttachmentSerializer(data=oneprojAttachmentdata)
-                    #         if projAttachmentSerializer.is_valid():
-                    #             projAttachmentSerializer.save()
+                    if projAttachmentdata:
+                        if not isinstance(projAttachmentdata, list):
+                            raise InvestError(2007, msg='transactionType must be a not null list')
+                        pro.proj_attachment.update(is_deleted=True, deletedtime=datetime.datetime.now(), deleteduser=request.user)
+                        for oneprojAttachmentdata in projAttachmentdata:
+                            oneprojAttachmentdata['proj'] = pro.id
+                            projAttachmentSerializer = ProjAttachmentSerializer(data=oneprojAttachmentdata)
+                            if projAttachmentSerializer.is_valid():
+                                projAttachmentSerializer.save()
 
-                    # if financedata:
-                    #     if not isinstance(financedata, list):
-                    #         raise InvestError(2007, msg='transactionType must be a not null list')
-                    #     for onefinancedata in financedata:
-                    #         onefinancedata['proj'] = pro.id
-                    #         financeSerializer = FinanceCreateSerializer(data=onefinancedata)
-                    #         if financeSerializer.is_valid():
-                    #             financeSerializer.save()
+                    if financedata:
+                        if not isinstance(financedata, list):
+                            raise InvestError(2007, msg='transactionType must be a not null list')
+                        pro.proj_finances.update(is_deleted=True, deletedtime=datetime.datetime.now(), deleteduser=request.user)
+                        for onefinancedata in financedata:
+                            onefinancedata['proj'] = pro.id
+                            financeSerializer = FinanceCreateSerializer(data=onefinancedata)
+                            if financeSerializer.is_valid():
+                                financeSerializer.save()
 
                 else:
                     raise InvestError(code=4001,msg='data有误_%s' %  proj.errors)
@@ -429,6 +438,201 @@ class ProjectView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+class ProjAttachmentView(viewsets.ModelViewSet):
+    """
+    list:获取项目附件
+    create:创建项目附件 （projid+data）
+    update:修改项目附件（批量idlist+data）
+    destroy:删除项目附件 （批量idlist）
+    """
+    filter_backends = (filters.DjangoFilterBackend,)
+    queryset = attachment.objects.all().filter(is_deleted=False)
+    filter_fields = ('proj',)
+    serializer_class = ProjAttachmentSerializer
+    redis_key = 'projectAttachment'
+    Model = finance
+
+
+    def get_queryset(self):
+        assert self.queryset is not None, (
+            "'%s' should either include a `queryset` attribute, "
+            "or override the `get_queryset()` method."
+            % self.__class__.__name__
+        )
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(proj__datasource=self.request.user.datasource)
+            else:
+                queryset = queryset.all()
+        else:
+            raise InvestError(code=8890)
+        return queryset
+
+    def get_object(self, pk=None):
+        if pk:
+            obj = read_from_cache(self.redis_key + '_%s' % pk)
+            if not obj:
+                try:
+                    obj = self.queryset.get(id=pk)
+                except attachment.DoesNotExist:
+                    raise InvestError(code=40031)
+                else:
+                    write_to_cache(self.redis_key + '_%s' % pk, obj)
+        else:
+            lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+            assert lookup_url_kwarg in self.kwargs, (
+                'Expected view %s to be called with a URL keyword argument '
+                'named "%s". Fix your URL conf, or set the `.lookup_field` '
+                'attribute on the view correctly.' %
+                (self.__class__.__name__, lookup_url_kwarg)
+            )
+            obj = read_from_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg])
+            if not obj:
+                try:
+                    obj = self.queryset.get(id=self.kwargs[lookup_url_kwarg])
+                except attachment.DoesNotExist:
+                    raise InvestError(code=40031)
+                else:
+                    write_to_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg], obj)
+        if obj.proj.datasource != self.request.user.datasource:
+            raise InvestError(code=8888, msg='资源非同源')
+        return obj
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            lang = request.GET.get('lang')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            if not request.user.has_perm('proj.admin_getproj'):
+                queryset = queryset
+            else:
+                queryset = queryset.filter(proj__createuser__id=request.user.id)
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse([],msg='没有符合的结果'))
+            queryset = queryset.page(page_index)
+            serializer = FinanceSerializer(queryset, many=True)
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            projid = data.get('proj')
+            try:
+                proj = project.objects.get(id=projid,is_deleted=False,datasource=request.user.datasource)
+            except project.DoesNotExist:
+                raise InvestError(code=4002,msg='指定内容不存在')
+            if request.user.has_perm('proj.admin_changeproj'):
+                pass
+            elif request.user.has_perm('proj.user_changeproj',proj):
+                pass
+            else:
+                raise InvestError(code=2009,msg='没有增加该项目附件的权限')
+            lang = request.GET.get('lang')
+            attachmentdata = data.get('attachment')
+            with transaction.atomic():
+                if attachmentdata:
+                    for f in attachmentdata:
+                        f['proj'] = proj.pk
+                        f['createuser'] = request.user.id
+                    attachments = ProjAttachmentSerializer(data=attachmentdata,many=True)
+                    if attachments.is_valid():
+                        attachments.save()
+                    else:
+                        raise InvestError(code=4001,msg='财务信息有误_%s\n%s' % (attachments.error_messages, attachments.errors))
+                else:
+                    raise InvestError(code=20071,msg='attachment field cannot be null')
+                return JSONResponse(SuccessResponse(returnListChangeToLanguage(attachments.data,lang)))
+        except InvestError as err:
+                return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        data = request.data
+        lang = request.GET.get('lang')
+        attachmentdata = data.get('attachment')
+        try:
+            with transaction.atomic():
+                if attachmentdata:
+                    newfinances = []
+                    for f in attachmentdata:
+                        fid = f['id']
+                        if not isinstance(fid,(int,str)) or not fid:
+                            raise InvestError(2007,msg='finances[\'id\'] must be a int/str type')
+                        projAttachment = self.get_object(fid)
+                        if request.user.has_perm('proj.admin_changeproj'):
+                            pass
+                        elif request.user.has_perm('proj.user_changeproj',projAttachment.proj):
+                            pass
+                        else:
+                            raise InvestError(code=2009)
+                        f['lastmodifyuser'] = request.user.id
+                        f['lastmodifytime'] = datetime.datetime.now()
+                        attachmentSer = FinanceChangeSerializer(projAttachment,data=attachmentdata)
+                        if attachmentSer.is_valid():
+                            attachmentSer.save()
+                        else:
+                            raise InvestError(code=4001,
+                                          msg='财务信息有误_%s\n%s' % (attachmentSer.error_messages, attachmentSer.errors))
+                        newfinances.append(attachmentSer.data)
+                else:
+                    raise InvestError(code=20071, msg='finances field cannot be null')
+                return JSONResponse(SuccessResponse(returnListChangeToLanguage(newfinances, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            with transaction.atomic():
+                attachmentidlist = request.data.get('attachment',None)
+                if not isinstance(attachmentidlist,list) or not attachmentidlist:
+                    raise InvestError(code=20071,msg='\'finances\' expect an not null list')
+                lang = request.GET.get('lang')
+                returnlist = []
+                for projattachmentid in attachmentidlist:
+                    projattachment = self.get_object(projattachmentid)
+                    if request.user.has_perm('proj.user_changeproj', projattachment.proj):
+                        pass
+                    elif request.user.has_perm('proj.admin_changeproj'):
+                        pass
+                    else:
+                        raise InvestError(code=2009, msg='没有权限')
+                    projattachment.is_deleted = True
+                    projattachment.deleteduser = request.user
+                    projattachment.deletedtime = datetime.datetime.now()
+                    projattachment.save()
+                    deleteqiniufile(projattachment.bucket,projattachment.key)
+                    returnlist.append(FinanceSerializer(projattachment).data)
+                return JSONResponse(SuccessResponse(returnListChangeToLanguage(returnlist,lang).data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
 
 class ProjFinanceView(viewsets.ModelViewSet):
     """
@@ -599,7 +803,7 @@ class ProjFinanceView(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 financeidlist = request.data.get('finances',None)
-                if not isinstance(finance,list) or not financeidlist:
+                if not isinstance(financeidlist,list) or not financeidlist:
                     raise InvestError(code=20071,msg='\'finances\' expect an not null list')
                 lang = request.GET.get('lang')
                 returnlist = []
