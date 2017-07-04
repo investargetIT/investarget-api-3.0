@@ -72,9 +72,14 @@ class currencyTypeSerializer(serializers.ModelSerializer):
 
 
 class industrySerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
     class Meta:
         model = Industry
         fields = '__all__'
+    def get_url(self, obj):
+        if not obj.key:
+            return 'https://o79atf82v.qnssl.com/' + '040.jpg'
+        return 'https://o79atf82v.qnssl.com/' + obj.key
 
 
 class tagSerializer(serializers.ModelSerializer):

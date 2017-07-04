@@ -42,10 +42,10 @@ from django_filters import FilterSet
 class UserFilter(FilterSet):
     groups = RelationFilter(filterstr='groups', lookup_method='in')
     org = RelationFilter(filterstr='org',lookup_method='in')
-    tags = RelationFilter(filterstr='tags',lookup_method='in')
+    tags = RelationFilter(filterstr='tags',lookup_method='in',relationName='user_usertags__is_deleted')
     userstatus = RelationFilter(filterstr='userstatus',lookup_method='in')
     currency = RelationFilter(filterstr='org__currency', lookup_method='in')
-    orgtransactionphases = RelationFilter(filterstr='org__orgtransactionphase', lookup_method='in')
+    orgtransactionphases = RelationFilter(filterstr='org__orgtransactionphase', lookup_method='in',relationName='org__org_orgTransactionPhases__is_deleted')
     class Meta:
         model = MyUser
         fields = ('groups','org','tags','userstatus','currency','orgtransactionphases')
@@ -382,7 +382,7 @@ class UserView(viewsets.ModelViewSet):
                             user.user_usertags.filter(tag__in=removelist,is_deleted=False).update(is_deleted=True,deletedtime=datetime.datetime.now(),deleteduser=request.user)
                             usertaglist = []
                             for tag in addlist:
-                                usertaglist.append(userTags(user=user, tag=tag, createuser=request.user))
+                                usertaglist.append(userTags(user=user, tag_id=tag, createuser=request.user))
                             user.user_usertags.bulk_create(usertaglist)
                     else:
                         raise InvestError(code=20071,msg='userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))

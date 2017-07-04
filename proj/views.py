@@ -15,21 +15,23 @@ from APIlog.views import viewprojlog
 from proj.models import project, finance, projectTags, projectIndustries, projectTransactionType, favoriteProject, \
     ShareToken, attachment
 from proj.serializer import ProjSerializer, FinanceSerializer, ProjCreatSerializer, \
-    ProjCommonSerializer, FinanceChangeSerializer, FinanceCreateSerializer, FavoriteSerializer, FavoriteCreateSerializer,ProjAttachmentSerializer
+    ProjCommonSerializer, FinanceChangeSerializer, FinanceCreateSerializer, FavoriteSerializer, \
+    FavoriteCreateSerializer, ProjAttachmentSerializer, ProjListSerializer_admin , ProjListSerializer_user, \
+    ProjDetailSerializer_admin_withoutsecretinfo, ProjDetailSerializer_admin_withsecretinfo, ProjDetailSerializer_user_withoutsecretinfo, \
+    ProjDetailSerializer_user_withsecretinfo, ProjAttachmentCreateSerializer
 from sourcetype.models import Tag, Industry, TransactionType, DataSource
 from third.views.qiniufile import deleteqiniufile
 from usersys.models import MyUser
 from utils.sendMessage import sendmessage_projectauditstatuchange
 from utils.util import catchexcption, read_from_cache, write_to_cache, loginTokenIsAvailable, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser, \
-    setUserObjectPermission
+    setUserObjectPermission, checkConformType
 from utils.customClass import JSONResponse, InvestError, RelationFilter
-
 from django_filters import FilterSet
 
 class ProjectFilter(FilterSet):
-    industrys = RelationFilter(filterstr='industry',lookup_method='in')
-    tags = RelationFilter(filterstr='tags',lookup_method='in')
+    industrys = RelationFilter(filterstr='industry',lookup_method='in',relationName='project_industries__is_deleted')
+    tags = RelationFilter(filterstr='tags',lookup_method='in',relationName='project_tags__is_deleted')
     projstatus = RelationFilter(filterstr='projstatus',lookup_method='in')
     country = RelationFilter(filterstr='country',lookup_method='in')
     netIncome_USD_F = RelationFilter(filterstr='proj_finances__netIncome_USD',lookup_method='gte')
@@ -122,10 +124,10 @@ class ProjectView(viewsets.ModelViewSet):
             else:
                 if request.user.has_perm('proj.admin_getproj'):
                     queryset = queryset
-                    serializerclass = ProjCreatSerializer
+                    serializerclass = ProjListSerializer_admin
                 else:
                     queryset = queryset.filter(Q(isHidden=False) | Q(createuser=request.user))
-                    serializerclass = ProjCommonSerializer
+                    serializerclass = ProjListSerializer_user
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -198,7 +200,7 @@ class ProjectView(viewsets.ModelViewSet):
                         for oneprojAttachmentdata in projAttachmentdata:
                             oneprojAttachmentdata['proj'] = pro.id
                             oneprojAttachmentdata['createuser'] = request.user.id
-                            projAttachmentSerializer = ProjAttachmentSerializer(data=oneprojAttachmentdata)
+                            projAttachmentSerializer = ProjAttachmentCreateSerializer(data=oneprojAttachmentdata)
                             if projAttachmentSerializer.is_valid():
                                 projAttachmentSerializer.save()
                     if financedata:
@@ -228,10 +230,15 @@ class ProjectView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             clienttype = request.META.get('HTTP_CLIENTTYPE')
-            if request.user.has_perm('proj.admin_getproj'):
-                serializerclass = ProjSerializer
+            if request.user.has_perm('proj.admin_getproj') :
+                if request.user.has_perm('proj.get_secretinfo'):
+                    serializerclass = ProjDetailSerializer_admin_withsecretinfo
+                else:
+                    serializerclass = ProjDetailSerializer_admin_withoutsecretinfo
+            elif request.user.has_perm('proj.get_secretinfo'):
+                serializerclass = ProjDetailSerializer_user_withsecretinfo
             else:
-                serializerclass = ProjSerializer
+                serializerclass = ProjDetailSerializer_user_withoutsecretinfo
             instance = self.get_object()
             if instance.isHidden:
                 if not request.user.has_perm('proj.user_getproj', instance) or not request.user.has_perm(
@@ -334,7 +341,7 @@ class ProjectView(viewsets.ModelViewSet):
                         pro.proj_attachment.update(is_deleted=True, deletedtime=datetime.datetime.now(), deleteduser=request.user)
                         for oneprojAttachmentdata in projAttachmentdata:
                             oneprojAttachmentdata['proj'] = pro.id
-                            projAttachmentSerializer = ProjAttachmentSerializer(data=oneprojAttachmentdata)
+                            projAttachmentSerializer = ProjAttachmentCreateSerializer(data=oneprojAttachmentdata)
                             if projAttachmentSerializer.is_valid():
                                 projAttachmentSerializer.save()
 
@@ -450,8 +457,7 @@ class ProjAttachmentView(viewsets.ModelViewSet):
     queryset = attachment.objects.all().filter(is_deleted=False)
     filter_fields = ('proj',)
     serializer_class = ProjAttachmentSerializer
-    redis_key = 'projectAttachment'
-    Model = finance
+
 
 
     def get_queryset(self):
@@ -472,14 +478,11 @@ class ProjAttachmentView(viewsets.ModelViewSet):
 
     def get_object(self, pk=None):
         if pk:
-            obj = read_from_cache(self.redis_key + '_%s' % pk)
-            if not obj:
-                try:
-                    obj = self.queryset.get(id=pk)
-                except attachment.DoesNotExist:
-                    raise InvestError(code=40031)
-                else:
-                    write_to_cache(self.redis_key + '_%s' % pk, obj)
+
+            try:
+                obj = self.queryset.get(id=pk)
+            except attachment.DoesNotExist:
+                raise InvestError(code=40031)
         else:
             lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
             assert lookup_url_kwarg in self.kwargs, (
@@ -488,24 +491,38 @@ class ProjAttachmentView(viewsets.ModelViewSet):
                 'attribute on the view correctly.' %
                 (self.__class__.__name__, lookup_url_kwarg)
             )
-            obj = read_from_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg])
-            if not obj:
-                try:
-                    obj = self.queryset.get(id=self.kwargs[lookup_url_kwarg])
-                except attachment.DoesNotExist:
-                    raise InvestError(code=40031)
-                else:
-                    write_to_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg], obj)
+            try:
+                obj = self.queryset.get(id=self.kwargs[lookup_url_kwarg])
+            except attachment.DoesNotExist:
+                raise InvestError(code=40031)
         if obj.proj.datasource != self.request.user.datasource:
             raise InvestError(code=8888, msg='资源非同源')
         return obj
-
+    def get_proj(self,pk):
+        obj = read_from_cache('project_%s' % pk)
+        if not obj:
+            try:
+                obj = project.objects.get(id=pk, is_deleted=False)
+            except project.DoesNotExist:
+                raise InvestError(code=4002)
+            else:
+                write_to_cache('project_%s' % pk, obj)
+        if obj.datasource != self.request.user.datasource:
+            raise InvestError(code=8888, msg='资源非同源')
+        if obj.is_deleted:
+            raise InvestError(code=4002,msg='项目已删除')
+        return obj
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')
             page_index = request.GET.get('page_index')  # 从第一页开始
             lang = request.GET.get('lang')
+            projid = request.GET.get('proj')
+            if projid:
+                proj = self.get_proj(projid)
+            else:
+                raise InvestError(2007,msg='proj 不能为空')
             if not page_size:
                 page_size = 10
             if not page_index:
@@ -514,7 +531,7 @@ class ProjAttachmentView(viewsets.ModelViewSet):
             if not request.user.has_perm('proj.admin_getproj'):
                 queryset = queryset
             else:
-                queryset = queryset.filter(proj__createuser__id=request.user.id)
+                queryset = queryset.filter(proj=proj)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -533,24 +550,21 @@ class ProjAttachmentView(viewsets.ModelViewSet):
         try:
             data = request.data
             projid = data.get('proj')
-            try:
-                proj = project.objects.get(id=projid,is_deleted=False,datasource=request.user.datasource)
-            except project.DoesNotExist:
-                raise InvestError(code=4002,msg='指定内容不存在')
+            lang = request.GET.get('lang')
+            attachmentdata = data.get('attachment')
+            proj = self.get_proj(projid)
             if request.user.has_perm('proj.admin_changeproj'):
                 pass
             elif request.user.has_perm('proj.user_changeproj',proj):
                 pass
             else:
                 raise InvestError(code=2009,msg='没有增加该项目附件的权限')
-            lang = request.GET.get('lang')
-            attachmentdata = data.get('attachment')
             with transaction.atomic():
                 if attachmentdata:
                     for f in attachmentdata:
                         f['proj'] = proj.pk
                         f['createuser'] = request.user.id
-                    attachments = ProjAttachmentSerializer(data=attachmentdata,many=True)
+                    attachments = ProjAttachmentCreateSerializer(data=attachmentdata,many=True)
                     if attachments.is_valid():
                         attachments.save()
                     else:
@@ -575,8 +589,8 @@ class ProjAttachmentView(viewsets.ModelViewSet):
                     newfinances = []
                     for f in attachmentdata:
                         fid = f['id']
-                        if not isinstance(fid,(int,str)) or not fid:
-                            raise InvestError(2007,msg='finances[\'id\'] must be a int/str type')
+                        if not isinstance(fid,(int,str,unicode)) or not fid:
+                            raise InvestError(2007,msg='attachment[\'id\'] must be a int/str type')
                         projAttachment = self.get_object(fid)
                         if request.user.has_perm('proj.admin_changeproj'):
                             pass
@@ -586,7 +600,7 @@ class ProjAttachmentView(viewsets.ModelViewSet):
                             raise InvestError(code=2009)
                         f['lastmodifyuser'] = request.user.id
                         f['lastmodifytime'] = datetime.datetime.now()
-                        attachmentSer = FinanceChangeSerializer(projAttachment,data=attachmentdata)
+                        attachmentSer = ProjAttachmentCreateSerializer(projAttachment,data=attachmentdata)
                         if attachmentSer.is_valid():
                             attachmentSer.save()
                         else:
@@ -608,7 +622,7 @@ class ProjAttachmentView(viewsets.ModelViewSet):
             with transaction.atomic():
                 attachmentidlist = request.data.get('attachment',None)
                 if not isinstance(attachmentidlist,list) or not attachmentidlist:
-                    raise InvestError(code=20071,msg='\'finances\' expect an not null list')
+                    raise InvestError(code=20071,msg='\'attachment\' expect an not null list')
                 lang = request.GET.get('lang')
                 returnlist = []
                 for projattachmentid in attachmentidlist:
@@ -645,8 +659,7 @@ class ProjFinanceView(viewsets.ModelViewSet):
     queryset = finance.objects.all().filter(is_deleted=False)
     filter_fields = ('proj',)
     serializer_class = FinanceSerializer
-    redis_key = 'projectFinanace'
-    Model = finance
+
 
 
     def get_queryset(self):
@@ -667,14 +680,11 @@ class ProjFinanceView(viewsets.ModelViewSet):
 
     def get_object(self, pk=None):
         if pk:
-            obj = read_from_cache(self.redis_key + '_%s' % pk)
-            if not obj:
-                try:
-                    obj = self.queryset.get(id=pk)
-                except finance.DoesNotExist:
-                    raise InvestError(code=40031)
-                else:
-                    write_to_cache(self.redis_key + '_%s' % pk, obj)
+
+            try:
+                obj = self.queryset.get(id=pk)
+            except finance.DoesNotExist:
+                raise InvestError(code=40031)
         else:
             lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
             assert lookup_url_kwarg in self.kwargs, (
@@ -683,16 +693,26 @@ class ProjFinanceView(viewsets.ModelViewSet):
                 'attribute on the view correctly.' %
                 (self.__class__.__name__, lookup_url_kwarg)
             )
-            obj = read_from_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg])
-            if not obj:
-                try:
-                    obj = self.queryset.get(id=self.kwargs[lookup_url_kwarg])
-                except finance.DoesNotExist:
-                    raise InvestError(code=40031)
-                else:
-                    write_to_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg], obj)
+            try:
+                obj = self.queryset.get(id=self.kwargs[lookup_url_kwarg])
+            except finance.DoesNotExist:
+                raise InvestError(code=40031)
         if obj.datasource != self.request.user.datasource:
             raise InvestError(code=8888, msg='资源非同源')
+        return obj
+    def get_proj(self,pk):
+        obj = read_from_cache('project_%s' % pk)
+        if not obj:
+            try:
+                obj = project.objects.get(id=pk, is_deleted=False)
+            except project.DoesNotExist:
+                raise InvestError(code=4002)
+            else:
+                write_to_cache('project_%s' % pk, obj)
+        if obj.datasource != self.request.user.datasource:
+            raise InvestError(code=8888, msg='资源非同源')
+        if obj.is_deleted:
+            raise InvestError(code=4002,msg='项目已删除')
         return obj
 
     @loginTokenIsAvailable()
@@ -701,6 +721,11 @@ class ProjFinanceView(viewsets.ModelViewSet):
             page_size = request.GET.get('page_size')
             page_index = request.GET.get('page_index')  # 从第一页开始
             lang = request.GET.get('lang')
+            projid = request.GET.get('proj')
+            if projid and isinstance(projid,(str,int,unicode)):
+                proj = self.get_proj(projid)
+            else:
+                raise InvestError(2007, msg='proj 不能为空')
             if not page_size:
                 page_size = 10
             if not page_index:
@@ -709,7 +734,7 @@ class ProjFinanceView(viewsets.ModelViewSet):
             if not request.user.has_perm('proj.admin_getproj'):
                 queryset = queryset
             else:
-                queryset = queryset.filter(proj__createuser__id=request.user.id)
+                queryset = queryset.filter(proj=proj)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -728,10 +753,7 @@ class ProjFinanceView(viewsets.ModelViewSet):
         try:
             data = request.data
             projid = data.get('proj')
-            try:
-                proj = project.objects.get(id=projid,is_deleted=False,datasource=request.user.datasource)
-            except project.DoesNotExist:
-                raise InvestError(code=4002,msg='指定内容不存在')
+            proj = self.get_proj(projid)
             if request.user.has_perm('proj.admin_changeproj'):
                 pass
             elif request.user.has_perm('proj.user_changeproj',proj):
@@ -765,13 +787,16 @@ class ProjFinanceView(viewsets.ModelViewSet):
         data = request.data
         lang = request.GET.get('lang')
         financedata = data.get('finances')
+        checkConformType(financedata,list)
         try:
             with transaction.atomic():
                 if financedata:
                     newfinances = []
                     for f in financedata:
+                        checkConformType(f,dict)
                         fid = f['id']
-                        if not isinstance(fid,(int,str)) or not fid:
+                        f.pop('proj')
+                        if not isinstance(fid,(int,str,unicode)) or not fid:
                             raise InvestError(2007,msg='finances[\'id\'] must be a int/str type')
                         projfinance = self.get_object(fid)
                         if request.user.has_perm('proj.admin_changeproj'):
@@ -779,7 +804,7 @@ class ProjFinanceView(viewsets.ModelViewSet):
                         elif request.user.has_perm('proj.user_changeproj',projfinance.proj):
                             pass
                         else:
-                            raise InvestError(code=2009)
+                            raise InvestError(code=2009,msg='没有权限修改项目（%s）的相关信息'%projfinance.proj)
                         f['lastmodifyuser'] = request.user.id
                         f['lastmodifytime'] = datetime.datetime.now()
                         finance = FinanceChangeSerializer(projfinance,data=financedata)

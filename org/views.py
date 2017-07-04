@@ -12,7 +12,7 @@ from rest_framework import filters , viewsets
 from APIlog.views import apilog
 from org.models import organization, orgTransactionPhase, orgRemarks
 from org.serializer import OrgSerializer, OrgCommonSerializer, OrgDetailSerializer, \
-    OrgRemarkSerializer, OrgRemarkDetailSerializer, OrgCreateSerializer
+    OrgRemarkSerializer, OrgRemarkDetailSerializer, OrgCreateSerializer, OrgUpdateSerializer
 from sourcetype.models import TransactionPhases, Tag, DataSource
 from utils.customClass import InvestError, JSONResponse, RelationFilter
 from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, returnListChangeToLanguage, \
@@ -24,10 +24,10 @@ from django_filters import FilterSet
 class OrganizationFilter(FilterSet):
     industrys = RelationFilter(filterstr='industry',lookup_method='in')
     currencys = RelationFilter(filterstr='currency',lookup_method='in')
-    orgtransactionphases = RelationFilter(filterstr='orgtransactionphase',lookup_method='in')
+    orgtransactionphases = RelationFilter(filterstr='orgtransactionphase',lookup_method='in',relationName='org_orgTransactionPhases__is_deleted')
     orgtypes = RelationFilter(filterstr='orgtype',lookup_method='in')
     orgstatus = RelationFilter(filterstr='orgstatus',lookup_method='in')
-    tags =  RelationFilter(filterstr='org_users__tags',lookup_method='in')
+    tags =  RelationFilter(filterstr='org_users__tags',lookup_method='in',relationName='org_users__user_usertags__is_deleted')
     class Meta:
         model = organization
         fields = ['orgstatus','currencys','industrys','orgtransactionphases','orgtypes','tags']
@@ -208,10 +208,10 @@ class OrganizationView(viewsets.ModelViewSet):
             else:
                 raise InvestError(code=2009)
             with transaction.atomic():
-                orgTransactionPhases = data.pop('transactionPhases', None)
-                orgserializer = OrgDetailSerializer(org, data=data)
-                if orgserializer.is_valid():
-                    org = orgserializer.save()
+                orgTransactionPhases = data.pop('orgtransactionphase', None)
+                orgupdateserializer = OrgUpdateSerializer(org, data=data)
+                if orgupdateserializer.is_valid():
+                    org = orgupdateserializer.save()
                     if orgTransactionPhases:
                         transactionPhaselist = TransactionPhases.objects.filter(is_deleted=False).in_bulk(orgTransactionPhases)
                         addlist = [item for item in transactionPhaselist if item not in org.orgtransactionphase.all()]
@@ -221,12 +221,12 @@ class OrganizationView(viewsets.ModelViewSet):
                                                                                            deleteduser=request.user)
                         usertaglist = []
                         for transactionPhase in addlist:
-                            usertaglist.append(orgTransactionPhase(org=org, transactionPhase=transactionPhase, createuser=request.user))
+                            usertaglist.append(orgTransactionPhase(org=org, transactionPhase_id=transactionPhase, createuser=request.user))
                         org.org_orgTransactionPhases.bulk_create(usertaglist)
                 else:
                     raise InvestError(code=20071,
-                                      msg='data有误_%s\n%s' % (orgserializer.error_messages, orgserializer.errors))
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgSerializer(org).data,lang)))
+                                      msg='data有误_%s\n%s' % (orgupdateserializer.error_messages, orgupdateserializer.errors))
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgDetailSerializer(org).data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:

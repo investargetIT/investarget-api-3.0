@@ -67,7 +67,7 @@ class DataroomView(viewsets.ModelViewSet):
             if request.user.has_perm('dataroom.admin_getdataroom'):
                 queryset = queryset
             else:
-                if userid and isinstance(userid,(int,str)) and projid and isinstance(projid,(int,str)):
+                if userid and isinstance(userid,(int,str,unicode)) and projid and isinstance(projid,(int,str,unicode)):
                     queryset = queryset.filter(user_id=userid,proj_id=projid)
                 else:
                     queryset = queryset.filter(user=request.user)
@@ -104,7 +104,7 @@ class DataroomView(viewsets.ModelViewSet):
                     raise InvestError(code=20072,msg='investor/trader bust be an nunull \'int\'')
             with transaction.atomic():
                 responselist = []
-                dataroomdata = {'proj':projid,'datasource':request.user.datasource.id,'supportor':proj.supportUser_id}
+                dataroomdata = {'proj':projid,'datasource':request.user.datasource.id,'createuser':request.user.id}
                 projdataroom = self.get_queryset().filter(proj=proj,user_id=proj.supportUser_id)
                 publicdataroom = self.get_queryset().filter(proj=proj, isPublic=True)
                 if projdataroom.exists():
@@ -139,7 +139,6 @@ class DataroomView(viewsets.ModelViewSet):
                         dataroomdata['isPublic'] = False
                         dataroomdata['investor'] = investorid
                         dataroomdata['trader'] = traderid
-                        dataroomdata['createuser'] = request.user.id
                         investordataroomserializer = DataroomCreateSerializer(data=dataroomdata)
                         if investordataroomserializer.is_valid():
                             investordataroomserializer.save()
@@ -162,11 +161,11 @@ class DataroomView(viewsets.ModelViewSet):
             investorid = data.get('investor', None)
             projid = data.get('proj', None)
             isClose = data.get('isClose',False)
-            if isClose:
+            if isClose in ['True', 1, '1', 'true', 'TRUE']:
                 isClose = True
             else:
                 isClose = False
-            if not data or not traderid or not investorid:
+            if not data or not traderid or not investorid or not projid or not isClose:
                 raise InvestError(code=20071)
             dataroomquery = self.get_queryset().filter(isPublic=False, proj_id=projid, investor_id=investorid,trader_id=traderid)
             if not dataroomquery.exists():
@@ -332,7 +331,7 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
-            if dataroomid and isinstance(dataroomid,(int,str)):
+            if dataroomid and isinstance(dataroomid,(int,str,unicode)):
                 dataroomobj = self.get_dataroom(dataroomid)
                 if request.user.has_perm('dataroom.admin_getdataroom'):
                     queryset = queryset.filter(parent_id=parentid)

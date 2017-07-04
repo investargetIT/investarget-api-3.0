@@ -37,16 +37,22 @@ class IsSuperUser(BasePermission):
             request.user.is_superuser)
         )
 class RelationFilter(Filter):
-    def __init__(self, filterstr,lookup_method, **kwargs):
+    def __init__(self, filterstr,lookup_method,relationName=None, **kwargs):
         self.filterstr = filterstr
         self.lookup_method = lookup_method
+        self.relationName = relationName
         super(RelationFilter,self).__init__(**kwargs)
     def filter(self, qs, value):
         if value in ([], (), {}, '', None):
             return qs
         if self.lookup_method == 'in':
             value = value.split(',')
-        return qs.filter(**{'%s__%s' % (self.filterstr,self.lookup_method): value}).distinct()
+        if self.relationName is not None:
+            return qs.filter(**{'%s__%s' % (self.filterstr,self.lookup_method): value, self.relationName:False}).distinct()
+        else:
+            return qs.filter(**{'%s__%s' % (self.filterstr, self.lookup_method): value}).distinct()
+
+
 
 class MyForeignKey(models.ForeignKey):
     def get_extra_descriptor_filter(self,instance):

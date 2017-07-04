@@ -10,7 +10,7 @@ blackIPlist = []
 class IpMiddleware(MiddlewareMixin):
     def process_request(self, request):
         # clienttype = request.META.get('HTTP_CLIENTTYPE')
-        # if clienttype and isinstance(clienttype,(str,int)) and clienttype in [1,2,3,4,'1','2','3','4']:
+        # if clienttype and isinstance(clienttype,(str,int,unicode)) and clienttype in [1,2,3,4,'1','2','3','4']:
         #     pass
         # else:
         #     return JSONResponse(InvestErrorResponse(InvestError(code=3007)))

@@ -52,7 +52,7 @@ def catchexcption(request):
         ip = request.META['REMOTE_ADDR']
     filepath = excptionlogpath + '/' + now.strftime('%Y-%m-%d')
     f = open(filepath, 'a')
-    f.writelines(now.strftime('%H:%M:%S') + '请求用户ip:%s'%ip +'  user_agent:'+request.META['HTTP_USER_AGENT']+ '  请求发起用户id:'+str(request.user.id)+'  path: '+request.path+ '\n'+ traceback.format_exc()+'\n\n')
+    f.writelines(now.strftime('%H:%M:%S') + '请求用户ip:%s'%ip +'  user_agent:'+request.META['HTTP_USER_AGENT']+ '  请求发起用户id:'+str(request.user.id)+'  path: '+request.path + 'method:' + request.method +'\n'+ traceback.format_exc()+'\n\n')
     f.close()
 
 #记录error
@@ -186,6 +186,13 @@ def setUserObjectPermission(user,obj,permissions,touser=None):
         for permission in permissions:
             remove_perm(permission, user, obj)
             assign_perm(permission, touser, obj)
+
+
+def checkConformType(data,type):
+    if isinstance(data,type):
+        pass
+    else:
+        raise InvestError(2007,msg='data type error')
 
 def returnDictChangeToLanguage(dictdata,lang=None):
     newdict = {}

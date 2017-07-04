@@ -37,7 +37,7 @@ def apilog(request,modeltype,request_before,request_after,modelID=None,datasourc
         requestuser_name = None
     else:
         requestuser = request.user.id
-        requestuser_name = request.user.__str__
+        requestuser_name = request.user.usernameC
         datasource = request.user.datasource_id
     APILog(IPaddress=ip,URL=url,method=method,requestbody=requestbody,requestuser_id=requestuser,requestuser_name=requestuser_name,
            modeltype=modeltype,model_id=modelID,model_name=model_name,request_before=request_before,request_after=request_after,datasource=datasource).save()

@@ -54,7 +54,7 @@ class organization(models.Model):
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True,related_name='usermodify_orgs')
     lastmodifytime = models.DateTimeField(auto_now=True,blank=True,null=True)
     datasource = MyForeignKey(DataSource,help_text='数据源')
-    # CurrencyType.objects.filter(currencyC__in='人民币')
+
     def __str__(self):
         return self.orgnameC
     class Meta:
@@ -78,7 +78,10 @@ class organization(models.Model):
     #     print self.currency.id
     #     print self.orgtransactionphase.filter(transactionPhase_orgs__is_deleted=False)
 
-
+    def activeTransactionPhase(self):
+        qs = self.orgtransactionphase.filter(transactionPhase_orgs__is_deleted=False)
+        qs = qs.filter(is_deleted=False)
+        return qs
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):

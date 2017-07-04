@@ -22,7 +22,6 @@ class publicdirectorytemplate(models.Model):
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_publicdirectorytemplate')
     lastmodifytime = models.DateTimeField(blank=True, null=True)
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_publicdirectorytemplate')
-    datasource = MyForeignKey(DataSource, help_text='数据源')
     class Meta:
         db_table = 'dataroompublicdirectorytemplate'
         permissions = (
@@ -38,7 +37,6 @@ class dataroom(models.Model):
     user = MyForeignKey(MyUser,blank=True,null=True,related_name='user_datarooms',help_text='dataroom的用户')
     trader = MyForeignKey(MyUser, blank=True, null=True, related_name='trader_datarooms',help_text='dataroom关联的交易师')
     investor = MyForeignKey(MyUser, blank=True, null=True, related_name='investor_datarooms',help_text='dataroom关联的投资人')
-    supportor = MyForeignKey(MyUser, blank=True, null=True, related_name='supportor_datarooms', help_text='dataroom关联的项目方')
     isPublic = models.BooleanField(help_text='是否是公共文件夹',blank=True,default=False)
     isClose = models.BooleanField(help_text='是否关闭',blank=True,default=False)
     closeDate = models.DateTimeField(blank=True,null=True,help_text='关闭日期')
@@ -69,11 +67,10 @@ class dataroom(models.Model):
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
-        if not self.proj or not self.supportor:
-            raise InvestError(code=7004,msg='proj缺失或proj.supportor缺失')
-        if self.supportor == self.investor or self.supportor == self.trader:
-            raise InvestError(code=7003)
-
+        if not self.proj:
+            raise InvestError(code=7004,msg='proj缺失')
+        if self.proj.supportUser and (self.proj.supportUser == self.investor or self.proj.supportUser == self.trader):
+            raise InvestError(7003,msg='项目上传者不能作为交易师或者投资人')
         super(dataroom, self).save(force_insert, force_update, using, update_fields)
 
 class dataroomdirectoryorfile(models.Model):
