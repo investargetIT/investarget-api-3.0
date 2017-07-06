@@ -325,15 +325,14 @@ class OrgRemarkView(viewsets.ModelViewSet):
 
     def get_object(self, pk=None):
         if pk:
-
             try:
                 obj = self.queryset.get(id=pk)
-            except organization.DoesNotExist:
+            except orgRemarks.DoesNotExist:
                 raise InvestError(code=5002)
         else:
             try:
                 obj = self.queryset.get(id=self.kwargs['pk'])
-            except organization.DoesNotExist:
+            except orgRemarks.DoesNotExist:
                 raise InvestError(code=5002)
         if obj.datasource != self.request.user.datasource:
             raise InvestError(code=8888, msg='资源非同源')
@@ -406,7 +405,7 @@ class OrgRemarkView(viewsets.ModelViewSet):
                     assign_perm('org.user_getorgremark', orgremark.createuser, orgremark)
                     assign_perm('org.user_changeorgremark', orgremark.createuser, orgremark)
                     assign_perm('org.user_deleteorgremark', orgremark.createuser, orgremark)
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgSerializer(orgremark).data,lang)))
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgRemarkDetailSerializer(orgremark).data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -446,14 +445,15 @@ class OrgRemarkView(viewsets.ModelViewSet):
             data = request.data
             data['lastmodifyuser'] = request.user.id
             data['lastmodifytime'] = datetime.datetime.now()
+            data['datasource'] = request.user.datasource_id
             with transaction.atomic():
                 orgserializer = OrgRemarkDetailSerializer(orgremark, data=data)
                 if orgserializer.is_valid():
                     org = orgserializer.save()
                 else:
                     raise InvestError(code=20071,
-                                      msg='data有误_%s\n%s' % (orgserializer.error_messages, orgserializer.errors))
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgSerializer(org).data,lang)))
+                                      msg='data有误_%s' % orgserializer.errors)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgRemarkDetailSerializer(org).data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:

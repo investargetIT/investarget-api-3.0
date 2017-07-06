@@ -1,8 +1,7 @@
 #coding=utf-8
-
-
 # Create your views here.
 import datetime
+import json
 import traceback
 
 import qiniu
@@ -146,6 +145,37 @@ def getUrlWithBucketAndKey(bucket,key):
         return_url = q.private_download_url(return_url)
     return return_url
 
+@api_view(['POST'])
+def qiniu_uploadtoken(request):
+    try:
+        data = request.data
+        bucket_name = data['bucket']
+        key = data['key']
+        policy = data['policy']
+        q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
+        token = q.upload_token(bucket_name, key, 3600, policy=policy)
+        return JSONResponse(SuccessResponse(token))
+    except InvestError as err:
+        return JSONResponse(InvestErrorResponse(err))
+    except Exception:
+        return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+@api_view(['POST'])
+def qiniu_downloadurl(request):
+    try:
+        data = request.data
+        bucket_name = data['bucket']
+        key = data['key']
+        q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
+        return_url = "https://%s/%s" % (qiniu_url[bucket_name], key)
+        if bucket_name == 'file':
+            return_url = q.private_download_url(return_url)
+        return JSONResponse(SuccessResponse(return_url))
+    except InvestError as err:
+        return JSONResponse(InvestErrorResponse(err))
+    except Exception:
+        return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
 
 @api_view(['POST'])
 def qiniu_deletefile(request):
@@ -159,7 +189,9 @@ def qiniu_deletefile(request):
         if bucket not in qiniu_url.keys():
             return None
         ret, info = deleteqiniufile(bucket,key)
-        return  JSONResponse(SuccessResponse({'ret':ret,'info':info}))
+        if info.req_id is None or info.status_code != 200:
+            raise InvestError(7010,msg=json.dumps(info.text_body))
+        return JSONResponse(SuccessResponse('删除成功'))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
     except Exception:

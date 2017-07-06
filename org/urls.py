@@ -30,5 +30,5 @@ urlpatterns = [
         url(r'^$', org_list,name='org-list'),
         url(r'^(?P<pk>\d+)/$', org_detail,name='org-detail'),
         url(r'^remark/$', org_remarklist,name='orgremark-list'),
-        url(r'^remark/^(?P<pk>\d+)/$', org_remarkdetail,name='orgremark-detail'),
+        url(r'^remark/(?P<pk>\d+)/$', org_remarkdetail,name='orgremark-detail'),
 ]

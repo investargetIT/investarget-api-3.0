@@ -30,7 +30,7 @@ from utils.customClass import JSONResponse, InvestError, RelationFilter
 from django_filters import FilterSet
 
 class ProjectFilter(FilterSet):
-    industrys = RelationFilter(filterstr='industry',lookup_method='in',relationName='project_industries__is_deleted')
+    industries = RelationFilter(filterstr='industries',lookup_method='in',relationName='project_industries__is_deleted')
     tags = RelationFilter(filterstr='tags',lookup_method='in',relationName='project_tags__is_deleted')
     projstatus = RelationFilter(filterstr='projstatus',lookup_method='in')
     country = RelationFilter(filterstr='country',lookup_method='in')
@@ -538,7 +538,7 @@ class ProjAttachmentView(viewsets.ModelViewSet):
             except EmptyPage:
                 return JSONResponse(SuccessResponse([],msg='没有符合的结果'))
             queryset = queryset.page(page_index)
-            serializer = FinanceSerializer(queryset, many=True)
+            serializer = ProjAttachmentSerializer(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -551,7 +551,6 @@ class ProjAttachmentView(viewsets.ModelViewSet):
             data = request.data
             projid = data.get('proj')
             lang = request.GET.get('lang')
-            attachmentdata = data.get('attachment')
             proj = self.get_proj(projid)
             if request.user.has_perm('proj.admin_changeproj'):
                 pass
@@ -560,17 +559,12 @@ class ProjAttachmentView(viewsets.ModelViewSet):
             else:
                 raise InvestError(code=2009,msg='没有增加该项目附件的权限')
             with transaction.atomic():
-                if attachmentdata:
-                    for f in attachmentdata:
-                        f['proj'] = proj.pk
-                        f['createuser'] = request.user.id
-                    attachments = ProjAttachmentCreateSerializer(data=attachmentdata,many=True)
-                    if attachments.is_valid():
-                        attachments.save()
-                    else:
-                        raise InvestError(code=4001,msg='财务信息有误_%s\n%s' % (attachments.error_messages, attachments.errors))
+                data['createuser'] = request.user.id
+                attachments = ProjAttachmentCreateSerializer(data=data)
+                if attachments.is_valid():
+                    attachments.save()
                 else:
-                    raise InvestError(code=20071,msg='attachment field cannot be null')
+                    raise InvestError(code=4001,msg='附件信息有误_%s\n%s' % (attachments.error_messages, attachments.errors))
                 return JSONResponse(SuccessResponse(returnListChangeToLanguage(attachments.data,lang)))
         except InvestError as err:
                 return JSONResponse(InvestErrorResponse(err))
@@ -638,8 +632,8 @@ class ProjAttachmentView(viewsets.ModelViewSet):
                     projattachment.deletedtime = datetime.datetime.now()
                     projattachment.save()
                     deleteqiniufile(projattachment.bucket,projattachment.key)
-                    returnlist.append(FinanceSerializer(projattachment).data)
-                return JSONResponse(SuccessResponse(returnListChangeToLanguage(returnlist,lang).data))
+                    returnlist.append(ProjAttachmentSerializer(projattachment).data)
+                return JSONResponse(SuccessResponse(returnListChangeToLanguage(returnlist,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -761,20 +755,15 @@ class ProjFinanceView(viewsets.ModelViewSet):
             else:
                 raise InvestError(code=2009,msg='没有增加该项目财务信息的权限')
             lang = request.GET.get('lang')
-            financedata = data.get('finances')
             with transaction.atomic():
-                if financedata:
-                    for f in financedata:
-                        f['proj'] = proj.pk
-                        f['createuser'] = request.user.id
-                        f['datasource'] = request.user.datasource.id
-                    finances = FinanceCreateSerializer(data=financedata,many=True)
-                    if finances.is_valid():
-                       finances.save()
-                    else:
-                        raise InvestError(code=4001,msg='财务信息有误_%s\n%s' % (finances.error_messages, finances.errors))
+
+                data['createuser'] = request.user.id
+                data['datasource'] = request.user.datasource.id
+                finances = FinanceCreateSerializer(data=data)
+                if finances.is_valid():
+                    finances.save()
                 else:
-                    raise InvestError(code=20071,msg='finances field cannot be null')
+                    raise InvestError(code=4001,msg='财务信息有误_%s\n%s' % (finances.error_messages, finances.errors))
                 return JSONResponse(SuccessResponse(returnListChangeToLanguage(finances.data,lang)))
         except InvestError as err:
                 return JSONResponse(InvestErrorResponse(err))
@@ -807,7 +796,7 @@ class ProjFinanceView(viewsets.ModelViewSet):
                             raise InvestError(code=2009,msg='没有权限修改项目（%s）的相关信息'%projfinance.proj)
                         f['lastmodifyuser'] = request.user.id
                         f['lastmodifytime'] = datetime.datetime.now()
-                        finance = FinanceChangeSerializer(projfinance,data=financedata)
+                        finance = FinanceChangeSerializer(projfinance,data=f)
                         if finance.is_valid():
                             finance.save()
                         else:
@@ -845,7 +834,7 @@ class ProjFinanceView(viewsets.ModelViewSet):
                     projfinance.deletedtime = datetime.datetime.now()
                     projfinance.save()
                     returnlist.append(FinanceSerializer(projfinance).data)
-                return JSONResponse(SuccessResponse(returnListChangeToLanguage(returnlist,lang).data))
+                return JSONResponse(SuccessResponse(returnListChangeToLanguage(returnlist,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:

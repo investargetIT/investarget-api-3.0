@@ -10,4 +10,6 @@ urlpatterns = [
     url(r'^qiniubigupload$', views.qiniufile.bigfileupload, name='qiniubig', ),
     url(r'^qiniudelete$', views.qiniufile.qiniu_deletefile, name='qiniudelete', ),
     url(r'^currencyrate$', views.others.getcurrencyreat, name='getcurrencyrate', ),
+    url(r'^uploadToken$', views.qiniufile.qiniu_uploadtoken, name='getuploadtoken', ),
+    url(r'^downloadUrl$', views.qiniufile.qiniu_downloadurl, name='getdownloadurl', ),
 ]

@@ -18,6 +18,7 @@ from django.contrib import admin
 from rest_framework_swagger.views import get_swagger_view
 
 import APIlog.urls
+import mongoDoc.urls
 import org.urls
 import proj.urls
 import usersys.urls
@@ -40,4 +41,5 @@ urlpatterns += [
     url(r'^service/',include(third.urls)),
     url(r'^source/', include(sourcetype.urls)),
     url(r'^log/', include(APIlog.urls)),
+    url(r'^mongolog/', include(mongoDoc.urls)),
 ]

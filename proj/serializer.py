@@ -14,8 +14,7 @@ class FinanceSerializer(serializers.ModelSerializer):
 class FinanceChangeSerializer(serializers.ModelSerializer):
     class Meta:
         model = finance
-        fields = '__all__'
-        # read_only_fields = ('datasource','createuser','createdtime','proj')
+        exclude = ('datasource',)
 
 class FinanceCreateSerializer(serializers.ModelSerializer):
     class Meta:
