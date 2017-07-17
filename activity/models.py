@@ -20,7 +20,7 @@ class activity(models.Model):
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser,blank=True,null=True,related_name='userdelete_activities',on_delete=models.SET_NULL)
     deletedtime = models.DateTimeField(blank=True,null=True)
-    createdtime = models.DateTimeField(auto_now_add=True)
+    createdtime = models.DateTimeField(auto_now_add=True, null=True)
     createuser = MyForeignKey(MyUser,blank=True,null=True,related_name='usercreate_activities',on_delete=models.SET_NULL)
     lastmodifytime = models.DateTimeField(auto_now=True)
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_activities', on_delete=models.SET_NULL)

@@ -43,7 +43,7 @@ class UserRelationSerializer(serializers.ModelSerializer):
     traderuser = UserCommenSerializer()
     class Meta:
         model = UserRelation
-        fields = ('investoruser','traderuser','relationtype','score')
+        fields = ('id','investoruser','traderuser','relationtype','score')
         depth = 1
 
 # 投资人的交易师
@@ -51,7 +51,7 @@ class UserTraderRelationSerializer(serializers.ModelSerializer):
     traderuser = UserCommenSerializer()
     class Meta:
         model = UserRelation
-        fields = ('traderuser', 'relationtype', 'score')
+        fields = ('id','traderuser', 'relationtype', 'score')
         depth = 1
 
 # 交易师的投资人
@@ -59,7 +59,7 @@ class UserInvestorRelationSerializer(serializers.ModelSerializer):
     investoruser = UserCommenSerializer()
     class Meta:
         model = UserRelation
-        fields = ('investoruser', 'relationtype', 'score')
+        fields = ('id','investoruser', 'relationtype', 'score')
         depth = 1
 
 
@@ -87,7 +87,7 @@ class UserFriendshipUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserFriendship
         fields = '__all__'
-        read_only_fields = ('datasource','user','friend','createdtime','createuser','is_deleted')
+        read_only_fields = ('id','datasource','user','friend','createdtime','createuser','is_deleted')
 
 # 权限组全部权限信息
 class GroupDetailSerializer(serializers.ModelSerializer):
@@ -102,7 +102,7 @@ class UserSerializer(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
     class Meta:
         model = MyUser
-        fields = '__all__'
+        exclude = ('is_staff','is_superuser')
         read_only_fields = ('datasource', 'usercode')
         depth = 1
     def get_tags(self, obj):
@@ -116,9 +116,13 @@ class CreatUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = MyUser
         fields = '__all__'
+
+class UpdateUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MyUser
         # fields = ('groups','photoBucket','photoKey','cardBucket','cardKey','wechat','org','username','usernameE',
         # 'mobileAreaCode','mobile','description','tags','email','title','gender','school','specialty','registersource','remark',)
-        # exclude = ('password','datasource')
+        exclude = ('password','datasource')
 
 # 用户列表显示信息
 class UserListSerializer(serializers.ModelSerializer):

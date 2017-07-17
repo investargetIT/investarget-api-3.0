@@ -188,6 +188,8 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
             self.usernameC = self.usernameE
         if not self.usernameE and self.usernameC:
             self.usernameE = hanzizhuanpinpin(self.usernameC,separator='')
+        if not self.createdtime:
+            self.createdtime = datetime.datetime.now()
         super(MyUser,self).save(*args,**kwargs)
 
 class userTags(models.Model):
@@ -196,7 +198,7 @@ class userTags(models.Model):
     is_deleted = models.BooleanField(blank=True,default=False)
     deleteduser = MyForeignKey(MyUser,blank=True, null=True,related_name='userdelete_usertags')
     deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_created=True,blank=True)
+    createdtime = models.DateTimeField(auto_created=True,blank=True,null=True)
     createuser = MyForeignKey(MyUser,blank=True, null=True,related_name='usercreate_usertags')
     class Meta:
         db_table = "user_tags"
@@ -206,7 +208,7 @@ class userTags(models.Model):
 class MyToken(models.Model):
     key = models.CharField('Key', max_length=48, primary_key=True)
     user = MyForeignKey(MyUser, related_name='user_token',verbose_name=("MyUser"))
-    created = models.DateTimeField(help_text="CreatedTime", auto_now_add=True)
+    created = models.DateTimeField(help_text="CreatedTime", auto_now_add=True,null=True)
     clienttype = MyForeignKey(ClientType,help_text='登录类型')
     is_deleted = models.BooleanField(help_text='是否已被删除',blank=True,default=False)
     class Meta:
@@ -231,7 +233,7 @@ class UserRelation(models.Model):
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_relations')
     deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_now_add=True)
+    createdtime = models.DateTimeField(auto_now_add=True,null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_relations',
                                    on_delete=models.SET_NULL)
     lastmodifytime = models.DateTimeField(blank=True, null=True)
@@ -315,7 +317,7 @@ class UserFriendship(models.Model):
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_userfriends',)
     deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_created=True, blank=True)
+    createdtime = models.DateTimeField(auto_created=True, blank=True,null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_userfriends',)
     datasource = MyForeignKey(DataSource, help_text='数据源')
     class Meta:

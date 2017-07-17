@@ -10,7 +10,7 @@ class AuditStatusSerializer(serializers.ModelSerializer):
         model = AuditStatus
         fields = '__all__'
 
-class projectStatusSerializer(serializers.ModelSerializer):
+class ProjectStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectStatus
         fields = '__all__'

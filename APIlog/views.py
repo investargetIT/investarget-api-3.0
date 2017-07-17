@@ -30,7 +30,7 @@ def apilog(request,modeltype,request_before,request_after,modelID=None,datasourc
         ip = request.META['REMOTE_ADDR']
     url = request.get_full_path()
     method = request.method
-    requestbody = request.body
+    requestbody = request.data
     if request.user.is_anonymous:
         requestuser = None
         datasource = datasource

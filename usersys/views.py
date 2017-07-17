@@ -27,7 +27,8 @@ from usersys.models import MyUser,UserRelation, userTags, UserFriendship
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
     CreatUserSerializer , UserCommenSerializer , UserRelationDetailSerializer, UserFriendshipSerializer, \
     UserFriendshipDetailSerializer, UserFriendshipUpdateSerializer, UserInvestorRelationSerializer, \
-    UserTraderRelationSerializer, GroupSerializer, GroupDetailSerializer, GroupCreateSerializer, PermissionSerializer
+    UserTraderRelationSerializer, GroupSerializer, GroupDetailSerializer, GroupCreateSerializer, PermissionSerializer, \
+    UpdateUserSerializer
 from sourcetype.models import Tag, DataSource
 from utils import perimissionfields
 from utils.customClass import JSONResponse, InvestError, RelationFilter
@@ -264,7 +265,7 @@ class UserView(viewsets.ModelViewSet):
                 password = data.pop('password','Aa123456')
                 email = data.get('email')
                 mobile = data.get('mobile')
-                if not email and not mobile:
+                if not email or not mobile:
                     raise InvestError(code=2007)
                 if self.get_queryset().filter(Q(mobile=mobile) | Q(email=email)).exists():
                     raise InvestError(code=2004)
@@ -278,6 +279,7 @@ class UserView(viewsets.ModelViewSet):
                 data['createduser'] = request.user.id
                 data['createdtime'] = datetime.datetime.now()
                 data['datasource'] = request.user.datasource.id
+                data['password'] = 'Aa123456'
                 tags = data.pop('tags', None)
                 userserializer = CreatUserSerializer(data=data)
                 if userserializer.is_valid():
@@ -344,10 +346,8 @@ class UserView(viewsets.ModelViewSet):
             lang = request.GET.get('lang')
             useridlist = request.data.get('userlist')
             data = request.data.get('userdata')
-            data['lastmodifyuser'] = request.user.id
-            data['lastmodifytime'] = datetime.datetime.now()
             userlist = []
-            messgaelist = []
+            messagelist = []
             if not useridlist or not isinstance(useridlist,list):
                 raise InvestError(2007,msg='expect a not null id list')
             with transaction.atomic():
@@ -368,10 +368,12 @@ class UserView(viewsets.ModelViewSet):
                     cannoteditlist = [key for key in keylist if key not in canChangeField]
                     if cannoteditlist:
                         raise InvestError(code=2009,msg='没有权限修改_%s' % cannoteditlist)
+                    data['lastmodifyuser'] = request.user.id
+                    data['lastmodifytime'] = datetime.datetime.now()
                     tags = data.pop('tags', None)
                     if data.get('userstatus',None) and user.userstatus_id != data.get('userstatus',None):
                         sendmsg = True
-                    userserializer = CreatUserSerializer(user, data=data)
+                    userserializer = UpdateUserSerializer(user, data=data)
                     if userserializer.is_valid():
                         user = userserializer.save()
                         cache_delete_key(self.redis_key + '_%s' % user.id)
@@ -389,13 +391,13 @@ class UserView(viewsets.ModelViewSet):
                     newuserdata = UserSerializer(user)
                     apilog(request, 'MyUser', olduserdata.data, newuserdata.data, modelID=userid,
                            datasource=request.user.datasource_id)
-                    userlist.append(user)
-                    messgaelist.append((user,sendmsg))
-                for user,sendmsg in messgaelist:
+                    userlist.append(newuserdata.data)
+                    messagelist.append((user,sendmsg))
+                for user,sendmsg in messagelist:
                     if sendmsg:
                         sendmessage_userauditstatuchange(user,user,['app','email','webmsg'],sender=request.user)
 
-                return JSONResponse(SuccessResponse(returnListChangeToLanguage(CreatUserSerializer(userlist,many=True),lang)))
+                return JSONResponse(SuccessResponse(returnListChangeToLanguage(userlist,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -594,7 +596,10 @@ class UserRelationView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
-            queryset = queryset.filter(Q(traderuser=request.user) | Q(investoruser=request.user))
+            if request.user.has_perm('usersys.admin_getuserrelation'):
+                pass
+            else:
+                queryset = queryset.filter(Q(traderuser=request.user) | Q(investoruser=request.user))
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -737,7 +742,8 @@ class UserRelationView(viewsets.ModelViewSet):
                 if not isinstance(relationidlist,list) or not relationidlist:
                     raise InvestError(2007,msg='expect a not null relation id list')
                 lang = request.GET.get('lang')
-                relationlist = self.get_queryset().in_bulk(relationidlist)
+                relationlist = self.get_queryset().filter(id__in=relationidlist)
+                returnlist = []
                 for userrelation in relationlist:
                     if request.user.has_perm('usersys.user_deleteuserrelation',userrelation):
                         pass
@@ -749,7 +755,8 @@ class UserRelationView(viewsets.ModelViewSet):
                     userrelation.deleteduser = request.user
                     userrelation.deletedtime = datetime.datetime.now()
                     userrelation.save()
-                return JSONResponse(SuccessResponse(returnListChangeToLanguage(UserRelationSerializer(relationlist,many=True),lang).data))
+                    returnlist.append(userrelation.id)
+                return JSONResponse(SuccessResponse(returnlist))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:

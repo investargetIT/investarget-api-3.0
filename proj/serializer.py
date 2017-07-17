@@ -151,9 +151,7 @@ class ProjDetailSerializer_admin_withsecretinfo(serializers.ModelSerializer):
     makeUser = UserCommenSerializer()
     class Meta:
         model = project
-        exclude = (
-        'createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime',
-        'createdtime', 'lastmodifytime', 'datasource')
+        exclude = ('createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource')
         depth = 1
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_projects__is_deleted=False)
@@ -193,9 +191,7 @@ class ProjDetailSerializer_user_withsecretinfo(serializers.ModelSerializer):
     makeUser = UserCommenSerializer()
     class Meta:
         model = project
-        exclude = (
-        'createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime',
-        'createdtime', 'lastmodifytime', 'datasource')
+        exclude = ('createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource')
         depth = 1
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_projects__is_deleted=False)
@@ -236,7 +232,7 @@ class ProjDetailSerializer_admin_withoutsecretinfo(serializers.ModelSerializer):
     makeUser = UserCommenSerializer()
     class Meta:
         model = project
-        exclude = ('phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'createdtime', 'lastmodifytime', 'datasource')
+        exclude = ('phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource')
         depth = 1
 
     def get_tags(self, obj):
@@ -276,7 +272,7 @@ class ProjDetailSerializer_user_withoutsecretinfo(serializers.ModelSerializer):
     makeUser = UserCommenSerializer()
     class Meta:
         model = project
-        exclude = ('phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'createdtime', 'lastmodifytime', 'datasource')
+        exclude = ('phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource')
         depth = 1
 
     def get_tags(self, obj):

@@ -10,6 +10,11 @@ tagdetail = views.TagView.as_view({
         'put': 'update',
         'delete': 'destroy'
 })
+projstatus = views.ProjectStatusView.as_view({
+        'get': 'list',
+
+})
+
 
 country = views.CountryView.as_view({
         'get': 'list',
@@ -117,6 +122,7 @@ currencyTypedetail = views.CurrencyTypeView.as_view({
 
 urlpatterns = [
     url(r'^tag$', tag,name='tagsource',),
+    url(r'^projstatus$', projstatus, name='projstatus', ),
     url(r'^tag/(?P<pk>\d+)$', tagdetail,name='tagdetail',),
     url(r'^country$', country,name='countrysource',),
     url(r'^country/(?P<pk>\d+)$', countrydetail,name='countrydetail',),

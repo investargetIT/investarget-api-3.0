@@ -45,12 +45,13 @@ class WXView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
 from aip import AipNlp
 aipNlp = AipNlp(APPID, APIKEY, APISECRET)
 
 @api_view(['GET'])
 def getBaiDuNLP_Accesstoken(request):
-    text = '请问是否有关于北京市四合院销售市场分析，谢谢！[抱拳]'
+    text = '项目地区: 德国，欧洲 项目行业: 消费品 项目类型: 兼并收购 拟交易规模：$ 393,781,776 营业收入（2016）:  $ 273,583,923 EBITDA（2016）：$ 32,830,070'
     # result = aipNlp.depParser(text, {'mode': 0})
     # print 'depParser mode 0'
     # print result
