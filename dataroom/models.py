@@ -99,10 +99,8 @@ class dataroomdirectoryorfile(models.Model):
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
-        if (not self.parent and self.isShadow) or self.shadowdirectory == self.parent:
+        if (not self.parent and self.isShadow) or (self.shadowdirectory == self.parent and self.parent):
             raise InvestError(code=7005)
-
-
         super(dataroomdirectoryorfile, self).save(force_insert, force_update, using, update_fields)
 
     def checkDirectoryHasFile(self):

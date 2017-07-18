@@ -1,4 +1,5 @@
 #coding=utf-8
+import os
 import traceback
 
 import datetime
@@ -1154,7 +1155,8 @@ def testsendmsg(request):
     # print datetime.datetime.now()
     # sendmessage_userauditstatuchange(MyUser.objects.get(id=8),MyUser.objects.get(id=8),['app'])
     # print datetime.datetime.now()
-    with open('/Users/investarget/Desktop/django_server/qiniu_uploadprogress/5qC86JOd54m5546v5L+d5bel56iL77yI5YyX5LqsKeaciemZkOWFrOWPuOW3peWVhuaho+ahiOi1hOaWmS3miKrmraIyMDE2LTA3LTEyLnBkZi.moLzok53nibnnjq.kv53lt6XnqIvvvIjljJfkuqwp5pyJ6ZmQ5YWs5Y+45bel5ZWG5qGj5qGI6LWE5paZLeaIquatojIwMTYtMDctMTIucGRm', 'w') as f:
-        import json
-        json.dump('aaaa', f)
+    # with open('/Users/investarget/Desktop/django_server/qiniu_uploadprogress/5qC86JOd54m5546v5L+d5bel56iL77yI5YyX5LqsKeaciemZkOWFrOWPuOW3peWVhuaho+ahiOi1hOaWmS3miKrmraIyMDE2LTA3LTEyLnBkZi.moLzok53nibnnjq.kv53lt6XnqIvvvIjljJfkuqwp5pyJ6ZmQ5YWs5Y+45bel5ZWG5qGj5qGI6LWE5paZLeaIquatojIwMTYtMDctMTIucGRm', 'w') as f:
+    #     import json
+    #     json.dump('aaaa', f)
+    print (os.sys.path)
     return JSONResponse({'xxx':'sss'})

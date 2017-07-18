@@ -1,8 +1,6 @@
 #coding=utf-8
 from __future__ import unicode_literals
 
-from Tkinter import Entry
-
 from django.db import models
 import sys
 

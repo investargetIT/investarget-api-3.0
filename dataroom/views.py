@@ -145,8 +145,7 @@ class DataroomView(viewsets.ModelViewSet):
                             responselist.append(investordataroomserializer.data)
                         else:
                             raise InvestError(code=20071,msg=investordataroomserializer.errors)
-                return JSONResponse(
-                    SuccessResponse(returnDictChangeToLanguage(responselist, lang)))
+                return JSONResponse(SuccessResponse(returnListChangeToLanguage(responselist, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -262,11 +261,12 @@ class DataroomView(viewsets.ModelViewSet):
                 self.create_diractory(directoryname=directory.name,dataroom=publicdataroomid,templatedirectoryID=directory.id,orderNO=directory.orderNO,parent=None)
     #创建public模板
     def create_diractory(self,directoryname,dataroom,templatedirectoryID,orderNO,parent=None):
-        directoryobj = dataroomdirectoryorfile(filename=directoryname, dataroom_id=dataroom,orderNO=orderNO,parent_id=parent,createdtime=datetime.datetime.now(),createuser=self.request.user.id).save()
+        directoryobj = dataroomdirectoryorfile(filename=directoryname, dataroom_id=dataroom,orderNO=orderNO,parent_id=parent,createdtime=datetime.datetime.now(),createuser_id=self.request.user.id,datasource_id=self.request.user.datasource_id)
+        directoryobj.save()
         sondirectoryquery = publicdirectorytemplate.objects.filter(parent=templatedirectoryID)
         if sondirectoryquery.exists():
             for sondirectory in sondirectoryquery:
-                self.create_diractory(directoryname=sondirectory.filename,dataroom=dataroom,templatedirectoryID=sondirectory.id,orderNO=sondirectory.orderNO,parent=directoryobj.id)
+                self.create_diractory(directoryname=sondirectory.name,dataroom=dataroom,templatedirectoryID=sondirectory.id,orderNO=sondirectory.orderNO,parent=directoryobj.id)
 
 
 class DataroomdirectoryorfileView(viewsets.ModelViewSet):
