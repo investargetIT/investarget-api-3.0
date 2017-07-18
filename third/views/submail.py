@@ -3,9 +3,9 @@ import json
 import traceback
 
 import datetime
-from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.app_configs import MAIL_CONFIGS, MESSAGE_CONFIGS, \
-    INTERNATIONALMESSAGE_CONFIGS
+
 from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.mail_xsend import MAILXsend
+from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.app_configs import MAIL_CONFIGS, MESSAGE_CONFIGS, INTERNATIONALMESSAGE_CONFIGS
 from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.message_xsend import MESSAGEXsend
 from rest_framework.decorators import api_view, throttle_classes
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
