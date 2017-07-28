@@ -2,8 +2,8 @@
 
 
 userpermfield = {
-    'usersys.admin_changeuser':['country','userstatus','groups','photoBucket','photoKey','cardBucket','cardKey','wechat','org','usernameC','usernameE','mobileAreaCode','mobile','description','tags','email','title','gender','school','specialty','remark'],
-    'usersys.trader_changeuser':['tags','country','remark','description','title','email',],
+    'usersys.admin_changeuser':['lastmodifytime','lastmodifyuser','country','userstatus','groups','photoBucket','photoKey','cardBucket','cardKey','wechat','org','usernameC','usernameE','mobileAreaCode','mobile','description','tags','email','title','gender','school','specialty','remark'],
+    'usersys.trader_changeuser':['lastmodifyuser','lastmodifytime','tags','country','remark','description','title','email',],
     'usersys.admin_adduser':['userstatus','country','groups','photoBucket','photoKey','cardBucket','cardKey','wechat','org','usernameC','usernameE','mobileAreaCode','mobile','description','tags','email','title','gender','school','specialty','registersource','remark'],
     'usersys.trader_adduser':['cardBucket','cardKey','country','wechat','org','usernameC','usernameE','mobileAreaCode','mobile','description','tags','email','title','gender','school','specialty','registersource','remark'],
     'changeself':['photoBucket','photoKey','country','cardBucket','cardKey','wechat','org','usernameC','usernameE','mobileAreaCode','mobile','description','tags','email','title','gender'],

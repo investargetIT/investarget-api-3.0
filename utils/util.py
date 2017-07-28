@@ -4,13 +4,9 @@ from django.core.cache import cache
 import datetime
 import traceback
 
-from django.db.models import QuerySet
 from guardian.shortcuts import assign_perm, remove_perm
 
-from sourcetype.models import webmenu
-from sourcetype.serializer import WebMenuSerializer
 from usersys.models import MyToken
-from usersys.serializer import UserSerializer
 from utils.customClass import JSONResponse, InvestError
 
 REDIS_TIMEOUT = 1 * 24 * 60 * 60
@@ -142,43 +138,6 @@ def setrequestuser(request):#根据token设置request.user
         pass
 
 
-def getmenulist(user):
-    qslist = []
-    allmenuobj = webmenu.objects.all()
-    if user.has_perm('usersys.admin_getuser'):
-        qslist.append(allmenuobj.filter(id__in=[5]))
-    if user.has_perm('usersys.user_getuserrelation'):
-        if user.has_perm('usersys.user_adduserrelation'):
-            qslist.append(allmenuobj.filter(id__in=[12]))
-        else:
-            qslist.append(allmenuobj.filter(id__in=[13]))
-    if user.has_perm('org.admin_getorg'):
-        qslist.append(allmenuobj.filter(id__in=[2, 3]))
-    if user.has_perm('org.admin_getorg'):
-        qslist.append(allmenuobj.filter(id__in=[9]))
-    if user.is_superuser:
-        qslist.append(allmenuobj.filter(id__in=[17]))
-    if user.has_perm('proj.admin_addproj') or user.has_perm('proj.user_addproj'):
-        qslist.append(allmenuobj.filter(id__in=[19]))
-    qslist.append(allmenuobj.filter(id__in=[1, 4, 6, 7, 8, 10, 11, 14, 15, 16, 18, 20]))
-    qsres = reduce(lambda x,y:x|y,qslist).distinct().order_by('index')
-    return WebMenuSerializer(qsres,many=True).data
-
-def maketoken(user,clienttype):
-    try:
-        tokens = MyToken.objects.filter(user=user, clienttype_id=clienttype, is_deleted=False)
-    except MyToken.DoesNotExist:
-        pass
-    else:
-        for token in tokens:
-            token.is_deleted = True
-            token.save(update_fields=['is_deleted'])
-    token = MyToken.objects.create(user=user, clienttype_id=clienttype)
-    serializer = UserSerializer(user)
-    response = serializer.data
-    return {'token': token.key,
-        "user_info": response,
-    }
 
 def setUserObjectPermission(user,obj,permissions,touser=None):
     if touser is None:

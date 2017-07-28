@@ -140,19 +140,23 @@ def sendSmscode(request):
             ip = request.META['REMOTE_ADDR']
         if ip:
             times = checkIPAddress(ip)
-            if times > 3:
+            if times > 100:
                 raise InvestError(code=3004,msg='单位时间内只能获取三次验证码')
         else:
             raise InvestError(code=3003)
-        destination = request.data.get('destination')
+        destination = request.data.get('mobile')
+        areacode = request.data.get('areacode')
         now = datetime.datetime.now()
         start = now - datetime.timedelta(minutes=1)
-        if MobileAuthCode.objects.filter(createTime_gt=start,is_deleted=False).exists():
+        if MobileAuthCode.objects.filter(createTime__gt=start).filter(mobile=destination,is_deleted=False).exists():
             raise InvestError(code=3004)
         mobilecode = MobileAuthCode(mobile=destination)
         mobilecode.save()
         varsdict = {'code': mobilecode.code, 'time': '10'}
-        response = xsendSms(destination, SMSCODE_projectsign, varsdict)
+        if areacode in ['86',86]:
+            response = xsendSms(destination, SMSCODE_projectsign, varsdict)
+        else:
+            response = xsendInternationalsms(destination, SMSCODE_projectsign, varsdict)
         success = response.get('status',None)
         if success:
             response['smstoken'] = mobilecode.token
@@ -225,29 +229,9 @@ def xsendSms(destination,projectsign,vars=None):
         submail.vars = vars
     # submail.add_var('code', '198276')
 
-    submail.xsend()
+    return submail.xsend()
 
 
-
-@api_view(['POST'])
-def sendInternationalsmscode(request):
-    try :
-        destination = request.data.get('destination')
-        mobilecode = MobileAuthCode(mobile=destination)
-        mobilecode.save()
-        varsdict = {'code': mobilecode.code, 'time': '10'}
-        response = xsendInternationalsms(destination, SMSCODE_projectsign, varsdict)
-        success = response.get('status',None)
-        if success:
-            response['smstoken'] = mobilecode.token
-        else:
-            raise InvestError(code=30012,msg=response)
-        return JSONResponse(SuccessResponse(response))
-    except InvestError as err:
-        return JSONResponse(InvestErrorResponse(err))
-    except Exception:
-        catchexcption(request)
-        return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
 def xsendInternationalsms(destination, projectsign, vars=None):

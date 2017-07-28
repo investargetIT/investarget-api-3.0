@@ -30,7 +30,9 @@ class project(models.Model):
     p_introducteC = models.TextField(blank=True, default='项目介绍')
     p_introducteE = models.TextField(blank=True, default='project introduction')
     isoverseasproject = models.BooleanField(blank=True,default=True,help_text='是否是海外项目')
-    supportUser = MyForeignKey(MyUser,blank=True,null=True,related_name='usersupport_projs',help_text='上传人')
+    ismarketplace = models.BooleanField(blank=True,default=False,help_text='是否是marketplace')
+    linkpdfkey = models.TextField(blank=True,null=True,help_text='marketplace链接pdf文件')
+    supportUser = MyForeignKey(MyUser,blank=True,null=True,related_name='usersupport_projs',help_text='项目方(上传方)')
     takeUser = MyForeignKey(MyUser,blank=True,null=True,related_name='usertake_projs',help_text='承揽人')
     makeUser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermake_projs', help_text='承做人')
     isHidden = models.BooleanField(blank=True,default=False)
@@ -68,6 +70,8 @@ class project(models.Model):
     financingHistoryE = models.TextField(blank=True, null=True)
     operationalDataC = models.TextField(help_text='经营数据', blank=True, null=True)
     operationalDataE = models.TextField(blank=True, null=True)
+    publishDate = models.DateTimeField(blank=True, null=True,help_text='终审发布日期')
+    isSendEmail = models.BooleanField(blank=True,default=False,help_text='是否发送邮件')
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='userdelete_projects')
     deletedtime = models.DateTimeField(blank=True, null=True)
@@ -76,6 +80,8 @@ class project(models.Model):
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='usermodify_projects')
     lastmodifytime = models.DateTimeField(auto_now=True)
     datasource = MyForeignKey(DataSource, help_text='数据源')
+
+
     def __str__(self):
         return self.projtitleC
     class Meta:
@@ -211,6 +217,8 @@ class favoriteProject(models.Model):
     #只用于create和delete，没有update
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
+        if self.createdtime is None:
+            self.createdtime = datetime.datetime.now()
         if not self.datasource or self.datasource != self.proj.datasource:
             raise InvestError(code=8888,msg='项目收藏datasource与项目不符')
         if not self.pk: #交易师不能自己主动删除推荐，再次推荐同一个项目时删除旧的添加新的(暂定)
@@ -222,9 +230,6 @@ class favoriteProject(models.Model):
         ordering = ('proj',)
         db_table = 'project_favorites'
         permissions = (
-            ('user_addfavorite','用户添加favorite(obj级别——给交易师的)'),
-            ('user_getfavorite', '用户查看favorite(obj级别——给交易师的)'),
-
             ('admin_addfavorite', '管理员添加favorite'),
             ('admin_getfavorite', '管理员查看favorite'),
             ('admin_deletefavorite','管理员删除favorite'),

@@ -22,7 +22,7 @@ from proj.serializer import ProjSerializer, FinanceSerializer, ProjCreatSerializ
 from sourcetype.models import Tag, Industry, TransactionType, DataSource
 from third.views.qiniufile import deleteqiniufile
 from usersys.models import MyUser
-from utils.sendMessage import sendmessage_projectauditstatuchange
+from utils.sendMessage import sendmessage_projectauditstatuchange, sendmessage_favoriteproject
 from utils.util import catchexcption, read_from_cache, write_to_cache, loginTokenIsAvailable, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser, \
     setUserObjectPermission, checkConformType
@@ -30,6 +30,9 @@ from utils.customClass import JSONResponse, InvestError, RelationFilter
 from django_filters import FilterSet
 
 class ProjectFilter(FilterSet):
+    supportUser = RelationFilter(filterstr='supportUser',lookup_method='in')
+    ismarketplace = RelationFilter(filterstr='ismarketplace', lookup_method='exact')
+    isoverseasproject = RelationFilter(filterstr='isoverseasproject', lookup_method='in')
     industries = RelationFilter(filterstr='industries',lookup_method='in',relationName='project_industries__is_deleted')
     tags = RelationFilter(filterstr='tags',lookup_method='in',relationName='project_tags__is_deleted')
     projstatus = RelationFilter(filterstr='projstatus',lookup_method='in')
@@ -40,7 +43,7 @@ class ProjectFilter(FilterSet):
     grossProfit_T = RelationFilter(filterstr='proj_finances__grossProfit', lookup_method='lte')
     class Meta:
         model = project
-        fields = ('isoverseasproject','industries','tags','projstatus','country','netIncome_USD_F','netIncome_USD_T','grossProfit_F','grossProfit_T')
+        fields = ('supportUser','ismarketplace','isoverseasproject','industries','tags','projstatus','country','netIncome_USD_F','netIncome_USD_T','grossProfit_F','grossProfit_T')
 
 
 class ProjectView(viewsets.ModelViewSet):
@@ -134,9 +137,9 @@ class ProjectView(viewsets.ModelViewSet):
             except EmptyPage:
                 return JSONResponse(SuccessResponse([],msg='没有符合条件的结果'))
             queryset = queryset.page(page_index)
-            actionlist = {'get': False, 'change': False, 'delete': False}
             responselist = []
             for instance in queryset:
+                actionlist = {'get': False, 'change': False, 'delete': False}
                 if request.user.is_anonymous:
                     pass
                 else:
@@ -258,9 +261,12 @@ class ProjectView(viewsets.ModelViewSet):
             lang = request.GET.get('lang')
             clienttype = request.META.get('HTTP_CLIENTTYPE')
             tokenkey = request.GET.get('token')
-            if tokenkey and isinstance(tokenkey,str):
-                token = ShareToken.objects.get(key=tokenkey)
-                instance = token.proj
+            if tokenkey:
+                token = ShareToken.objects.filter(key=tokenkey)
+                if token.exists():
+                    instance = token.first().proj
+                else:
+                    raise InvestError(4004,msg='token无效')
             else:
                 raise InvestError(code=4004, msg='没有权限查看隐藏项目')
             serializer = ProjSerializer(instance)
@@ -295,6 +301,8 @@ class ProjectView(viewsets.ModelViewSet):
             sendmessage = False
             if projdata.get('projstatus', None) and projdata.get('projstatus', None) != pro.projstatus_id:
                 sendmessage = True
+                if projdata.get('projstatus', None) == 4:
+                    projdata['publishDate'] = datetime.datetime.now()
             with transaction.atomic():
                 proj = ProjCreatSerializer(pro,data=projdata)
                 if proj.is_valid():
@@ -849,8 +857,8 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
     destroy:删除收藏
     """
     filter_backends = (filters.DjangoFilterBackend,)
-    queryset = favoriteProject.objects.all().filter(is_deleted=False)
-    filter_fields = ('user','trader','favoritetype')
+    queryset = favoriteProject.objects.filter(is_deleted=False)
+    filter_fields = ('user','trader','favoritetype','proj')
     serializer_class = FavoriteSerializer
     Model = favoriteProject
 
@@ -865,7 +873,7 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
             if datasource:
                 queryset = queryset.filter(datasource=datasource)
             else:
-                queryset = queryset.all()
+                queryset = queryset
         else:
             raise InvestError(code=8890)
         return queryset
@@ -917,19 +925,19 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
             userid = request.GET.get('user')
             traderid = request.GET.get('trader')
             ftype = request.GET.get('favoritetype')
-            if not ftype or not userid or (ftype == 3 and not traderid):
+            if not ftype or (not userid and not traderid):
                 raise InvestError(code=20072,msg='favoritetype and user cannot be null')
             if not page_size:
                 page_size = 10
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
-            user = self.get_user(userid)
+            user = self.get_user(userid if userid else traderid)
             if request.user == user:
                 pass
             elif request.user.has_perm('proj.admin_getfavorite'):
                 pass
-            elif request.user.has_perm('proj.user_getfavorite',user):
+            elif request.user.has_perm('usersys.user_getfavorite',user):
                 pass
             else:
                 raise InvestError(code=2009)
@@ -966,8 +974,8 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
             elif request.user.has_perm('proj.admin_addfavorite'):
                 if ftype not in [1,2]:
                     raise InvestError(code=4005)
-            elif request.user.has_perm('proj.user_addfavorite',user):
-                if ftype != 3:
+            elif request.user.has_perm('usersys.user_addfavorite', user):
+                if ftype not in [3]:
                     raise InvestError(code=4005)
             else:
                 raise InvestError(code=2009)
@@ -984,7 +992,8 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
                         favoriteProjectList.append(newfavorite.data)
                     else:
                         raise InvestError(code=20071,msg='%s'%newfavorite.errors)
-                    return JSONResponse(SuccessResponse(returnDictChangeToLanguage(newfavorite.data,lang)))
+                    # sendmessage_favoriteproject(newfavoriteproj,newfavoriteproj.user,sender=request.user)
+                return JSONResponse(SuccessResponse(returnListChangeToLanguage(favoriteProjectList,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -995,7 +1004,7 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
         try:
-            favoridlist = request.data.get('favotiteids')
+            favoridlist = request.data.get('favoriteids')
             favorlist = []
             lang = request.GET.get('lang')
             if not isinstance(favoridlist,list) or not favoridlist:

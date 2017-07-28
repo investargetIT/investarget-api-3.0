@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
+    'django_crontab',
     'usersys',
     'rest_framework',
     'org',
@@ -55,7 +56,15 @@ INSTALLED_APPS = [
     'rest_framework_swagger',
     'APIlog',
     'mongoDoc',
+    'emailmanage'
 ]
+
+CRONJOBS = [
+    ('*/1 * * * *', 'invest.cron.task1_loadsendmailproj'),
+    ('*/1 * * * *', 'invest.cron.task2_sendmailprojtouser'),
+]
+
+
 REST_FRAMEWORK = {
     'PAGINATE_BY': 10,
     'DEFAULT_THROTTLE_CLASSES': (
@@ -94,53 +103,6 @@ CORS_ALLOW_HEADERS = (
     'token',
     'source',
 )
-
-
-# LOGGING = {
-#     'version': 1,
-#     'disable_existing_loggers': False,
-#     'filters': {
-#         'require_debug_true': {
-#             '()': 'django.utils.log.RequireDebugTrue',
-#         }, # 针对 DEBUG = True 的情况
-#     },
-#     'formatters': {
-#         'standard': {
-#             'format': '%(asctime)s %(funcName)s %(message)s'
-#         },
-#     },
-#     'handlers': {
-#         'mail_admins': {
-#             'level': 'ERROR',
-#             'class': 'django.utils.log.AdminEmailHandler',
-#              'formatter':'standard'
-#         },
-#         'file_handler': {
-#              'level': 'DEBUG',
-#              'class': 'logging.handlers.TimedRotatingFileHandler',
-#              'filename': '/Users/investarget/Desktop/django_server/excption_log/2017-05-12',
-#              'formatter':'standard'
-#         }, # 用于文件输出
-#         'console':{
-#             'level': 'INFO',
-#             'filters': ['require_debug_true'],
-#             'class': 'logging.StreamHandler',
-#             'formatter': 'standard'
-#         },
-#     },
-#     'loggers': {
-#         'django': {
-#             'handlers' :['file_handler', 'console'],
-#             'level':'DEBUG',
-#             'propagate': True # 是否继承父类的log信息
-#         }, # handlers 来自于上面的 handlers 定义的内容
-#         'django.request': {
-#             'handlers': ['mail_admins'],
-#             'level': 'ERROR',
-#             'propagate': False,
-#         },
-#     }
-# }
 
 
 ROOT_URLCONF = 'invest.urls'

@@ -77,12 +77,12 @@ class dataroomdirectoryorfile(models.Model):
     id = models.AutoField(primary_key=True)
     dataroom = MyForeignKey(dataroom,related_name='dataroom_directories',help_text='目录或文件所属dataroom')
     parent = MyForeignKey('self',blank=True,null=True,related_name='asparent_directories',help_text='目录或文件所属目录id')
-    orderNO = models.PositiveSmallIntegerField(help_text='目录或文件在所属目录下的排序位置')
+    orderNO = models.PositiveSmallIntegerField(help_text='目录或文件在所属目录下的排序位置',blank=True,default=0)
     isShadow = models.BooleanField(blank=True,default=False)
     shadowdirectory = MyForeignKey('self',related_name='shadowdirectory_directory',blank=True,null=True,)
     size = models.IntegerField(blank=True,null=True,help_text='文件大小')
     filename = models.CharField(max_length=128,blank=True,null=True,help_text='文件名或目录名')
-    key = models.CharField(max_length=16,blank=True,null=True,help_text='文件路径')
+    key = models.CharField(max_length=128,blank=True,null=True,help_text='文件路径')
     bucket = models.CharField(max_length=128,blank=True,null=True,help_text='文件所在空间')
     isFile = models.BooleanField(blank=True,default=False,help_text='true/文件，false/目录')
     isRead = models.BooleanField(blank=True,default=False)
@@ -97,17 +97,21 @@ class dataroomdirectoryorfile(models.Model):
     class Meta:
         db_table = 'dataroomdirectoryorfile'
 
-    def save(self, force_insert=False, force_update=False, using=None,
-             update_fields=None):
-        if (not self.parent and self.isShadow) or (self.shadowdirectory == self.parent and self.parent):
-            raise InvestError(code=7005)
+    def save(self, force_insert=False, force_update=False, using=None,update_fields=None):
+        if self.pk and self.isShadow:
+            if self.is_deleted:
+                pass
+            else:
+                raise InvestError(code=7005,msg='影子目录无法操作，只能删除')
+        if self.isShadow and self.shadowdirectory is None:
+            raise InvestError(7005,msg='复制体必须有真身')
         super(dataroomdirectoryorfile, self).save(force_insert, force_update, using, update_fields)
 
     def checkDirectoryHasFile(self):
         if self.is_deleted:
             raise InvestError(code=7002)
         if self.isFile:
-            raise True
+            return True
         else:
             filequery = self.asparent_directories.filter(is_deleted=False)
             if filequery.count():

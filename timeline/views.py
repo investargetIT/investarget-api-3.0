@@ -11,7 +11,7 @@ from rest_framework import filters, viewsets
 
 from timeline.models import timeline, timelineTransationStatu, timelineremark
 from timeline.serializer import TimeLineSerializer, TimeLineStatuSerializer, TimeLineCreateSerializer, \
-    TimeLineHeaderListSerializer, TimeLineStatuCreateSerializer, TimeLineRemarkSerializer
+    TimeLineStatuCreateSerializer, TimeLineRemarkSerializer, TimeLineListSerializer_admin, TimeLineUpdateSerializer
 from utils.customClass import InvestError, JSONResponse
 from utils.sendMessage import sendmessage_timelineauditstatuchange
 from utils.util import read_from_cache, write_to_cache, returnListChangeToLanguage, loginTokenIsAvailable, \
@@ -26,9 +26,10 @@ class TimelineView(viewsets.ModelViewSet):
     update:修改时间轴信息
     destroy:删除时间轴
     """
-    filter_backends = (filters.DjangoFilterBackend,)
+    filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
     queryset = timeline.objects.all().filter(is_deleted=False)
-    filter_fields = ('proj', 'investor','trader','supportor','isClose')
+    filter_fields = ('proj', 'investor','trader','isClose')
+    search_fields = ('investor__usernameC', 'investor__usernameE', 'trader__usernameE', 'trader__usernameC', 'proj__projtitleC', 'proj__projtitleE')
     serializer_class = TimeLineSerializer
     redis_key = 'timeline'
     Model = timeline
@@ -90,8 +91,19 @@ class TimelineView(viewsets.ModelViewSet):
             except EmptyPage:
                 raise InvestError(code=1001)
             queryset = queryset.page(page_index)
-            serializer = TimeLineHeaderListSerializer(queryset, many=True)
-            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data, lang)}))
+            responselist = []
+            for instance in queryset:
+                actionlist = {'get': False, 'change': False, 'delete': False}
+                if request.user.has_perm('org.admin_getline') or request.user.has_perm('org.user_getline', instance):
+                    actionlist['get'] = True
+                if request.user.has_perm('org.admin_changeline') or request.user.has_perm('org.user_changeline', instance):
+                    actionlist['change'] = True
+                if request.user.has_perm('org.admin_deleteline') or request.user.has_perm('org.user_deleteline', instance):
+                    actionlist['delete'] = True
+                instancedata = TimeLineListSerializer_admin(instance).data
+                instancedata['action'] = actionlist
+                responselist.append(instancedata)
+            return JSONResponse(SuccessResponse({'count': count, 'data': returnListChangeToLanguage(responselist, lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -101,22 +113,42 @@ class TimelineView(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
+            timelinedata = data.pop('timelinedata', None)
+            statudata = data.pop('statusdata', None)
             lang = request.GET.get('lang')
-            data['createuser'] = request.user.id
-            data['datasource'] = request.user.datasource.id
+            timelinedata['createuser'] = request.user.id
+            timelinedata['datasource'] = request.user.datasource_id
+            if timelinedata.get('isClose', None) in ['true','True','1',1,'Yes','yes']:
+                timelinedata['closeDate'] = datetime.datetime.now()
             with transaction.atomic():
-                timelineserializer = TimeLineCreateSerializer(data=data)
+                timelineserializer = TimeLineCreateSerializer(data=timelinedata)
                 if timelineserializer.is_valid():
-                    timeline = timelineserializer.save()
-                    data['timeline'] = timeline.id
-                    timelinestatu = TimeLineStatuCreateSerializer(data=data)
-                    if timelinestatu.is_valid():
-                        timelinestatu.save()
+                    newtimeline = timelineserializer.save()
+                    if statudata:
+                        statudata['timeline'] = newtimeline.id
+                        statudata['datasource'] = request.user.datasource_id
+                        timelinestatu = TimeLineStatuCreateSerializer(data=statudata)
+                        if timelinestatu.is_valid():
+                           timelinestatu.save()
+                        else:
+                            raise InvestError(code=20071,msg=timelinestatu.errors)
                     else:
-                        raise InvestError(code=20071,msg=timelinestatu.errors)
+                        statudata = {
+                            'createuser' : request.user.id,
+                            'createdtime': datetime.datetime.now(),
+                            'timeline' : newtimeline.id,
+                            'isActive' : True,
+                            'transationStatus' : 1,
+                            'datasource' : 1,
+                        }
+                        timelinestatu = TimeLineStatuCreateSerializer(data=statudata)
+                        if timelinestatu.is_valid():
+                            timelinestatu.save()
+                        else:
+                            raise InvestError(code=20071, msg=timelinestatu.errors)
                 else:
                     raise InvestError(code=20071,msg=timelineserializer.errors)
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(TimeLineSerializer(timeline).data, lang)))
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(TimeLineSerializer(newtimeline).data, lang)))
         except InvestError as err:
                 return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -146,7 +178,9 @@ class TimelineView(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         try:
             timeline = self.get_object()
-            if not request.user.has_perm('timeline.admin_changeline') or request.user.has_perm('timeline.user_changeline',timeline):
+            if request.user.has_perm('timeline.admin_changeline') or request.user.has_perm('timeline.user_changeline',timeline):
+                pass
+            else:
                 raise InvestError(2009,msg='没有相应权限')
             data = request.data
             lang = request.GET.get('lang')
@@ -179,7 +213,16 @@ class TimelineView(viewsets.ModelViewSet):
                 if timelinedata:
                     timelinedata['lastmodifyuser'] = request.user.id
                     timelinedata['lastmodifytime'] = datetime.datetime.now()
-                    timelineseria = TimeLineCreateSerializer(timeline,data=timelinedata)
+                    timelinedata['datasource'] = request.user.datasource_id
+                    timelinedata['proj'] = timeline.proj_id
+                    timelinedata['investor'] = timeline.investor_id
+                    if timelinedata.get('trader',None) is None:
+                        timelinedata['trader'] = timeline.trader_id
+                    if timelinedata.get('isClose', None) in ['true','True','1',1,'Yes','yes']:
+                        timelinedata['closeDate'] = datetime.datetime.now()
+                    else:
+                        timelinedata['closeDate'] = None
+                    timelineseria = TimeLineUpdateSerializer(timeline,data=timelinedata)
                     if timelineseria.is_valid():
                         newtimeline = timelineseria.save()
                     else:
@@ -207,8 +250,8 @@ class TimelineView(viewsets.ModelViewSet):
                 links = [f.get_accessor_name() for f in rel_fileds]
                 for timelineid in timelineidlist:
                     instance = self.get_object(timelineid)
-                    if not request.user.has_perm('timeline.admin_deleteline') or request.user.has_perm(
-                            'timeline.user_deleteline', instance):
+                    if not (request.user.has_perm('timeline.admin_deleteline') or request.user.has_perm(
+                            'timeline.user_deleteline', instance)):
                         raise InvestError(2009, msg='没有相应权限')
                     for link in links:
                         if link in []:

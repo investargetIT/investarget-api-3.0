@@ -109,7 +109,14 @@ transactionPhasesdetail = views.TransactionPhasesView.as_view({
         'put': 'update',
         'delete': 'destroy'
 })
-
+transactionStatus = views.TransactionStatusView.as_view({
+        'get': 'list',
+        'post':'create',
+})
+transactionStatusdetail = views.TransactionStatusView.as_view({
+        'put': 'update',
+        'delete': 'destroy'
+})
 
 currencyType = views.CurrencyTypeView.as_view({
         'get': 'list',
@@ -119,6 +126,16 @@ currencyTypedetail = views.CurrencyTypeView.as_view({
         'put': 'update',
         'delete': 'destroy'
 })
+
+Orgtitletable = views.OrgtitletableView.as_view({
+        'get': 'list',
+        'post':'create',
+})
+Orgtitletabledetail = views.OrgtitletableView.as_view({
+        'put': 'update',
+        'delete': 'destroy'
+})
+
 
 urlpatterns = [
     url(r'^tag$', tag,name='tagsource',),
@@ -142,8 +159,12 @@ urlpatterns = [
     url(r'^transactionType/(?P<pk>\d+)$',transactionTypedetail,name='transactionTypedetail',),
     url(r'^transactionPhases$', transactionPhases,name='transactionPhasessource',),
     url(r'^transactionPhases/(?P<pk>\d+)$', transactionPhasesdetail,name='transactionPhasesdetail',),
+    url(r'^transactionStatus$', transactionStatus, name='transactionStatussource', ),
+    url(r'^transactionStatus/(?P<pk>\d+)$', transactionStatusdetail, name='transactionStatusdetail', ),
     url(r'^currencyType$', currencyType,name='currencyTypesource',),
     url(r'^currencyType/(?P<pk>\d+)$', currencyTypedetail,name='currencyTypedetail',),
-    url(r'^character', character,name='charactersource',),
+    url(r'^character$', character,name='charactersource',),
     url(r'^character/(?P<pk>\d+)$', characterdetail,name='characterdetail',),
+    url(r'^orgtitletable$', Orgtitletable,name='Orgtitletablesource',),
+    url(r'^orgtitletable/(?P<pk>\d+)$', Orgtitletabledetail,name='Orgtitletabledetail',),
 ]

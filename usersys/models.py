@@ -13,6 +13,7 @@ from django.db.models import Q
 from guardian.shortcuts import remove_perm, assign_perm
 from sourcetype.models import AuditStatus, ClientType, TitleType,School,Specialty,Tag, DataSource, Country
 from utils.customClass import InvestError, MyForeignKey
+from utils.makeAvatar import makeAvatar
 
 registersourcechoice = (
     (1,'pc'),
@@ -84,10 +85,11 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     groups : 作为权限组
     """
     id = models.AutoField(primary_key=True)
+    userlevel = models.PositiveSmallIntegerField(blank=True,default=0,help_text='用户服务级别')
     usercode = models.CharField(max_length=128,blank=True, unique=True)
-    photoBucket = models.CharField(max_length=32,blank=True,null=True)
+    photoBucket = models.CharField(max_length=32,blank=True,default='image')
     photoKey = models.CharField(max_length=128,blank=True,null=True)
-    cardBucket = models.CharField(max_length=32,blank=True,null=True)
+    cardBucket = models.CharField(max_length=32,blank=True,default='image')
     cardKey = models.CharField(max_length=128,blank=True,null=True)
     wechat = models.CharField(max_length=64,blank=True,null=True)
     country = MyForeignKey(Country,blank=True,null=True)
@@ -130,16 +132,21 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     class Meta:
         db_table = "user"
         permissions = (
+            ('as_investor', u'投资人身份类型'),
+            ('as_trader', u'交易师身份类型'),
+            ('as_admin', u'管理员身份类型'),
+
             ('user_adduser', u'用户新增用户'),
             ('user_deleteuser', u'用户删除用户(obj级别)'),
             ('user_changeuser', u'用户修改用户(obj级别)'),
             ('user_getuser', u'用户查看用户(obj级别)'),
-            ('user_getuserlist', u'用户查看用户列表'),
 
             ('admin_adduser', u'管理员新增用户'),
             ('admin_deleteuser', u'管理员删除'),
             ('admin_changeuser', u'管理员修改用户基本信息'),
             ('admin_getuser', u'管理员查看用户'),
+            ('user_addfavorite', '用户添加favorite(obj级别——给交易师的)'),
+            ('user_getfavorite', '用户查看favorite(obj级别——给交易师的)'),
         )
     def save(self, *args, **kwargs):
         if not self.usercode:
@@ -190,6 +197,9 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
             self.usernameE = hanzizhuanpinpin(self.usernameC,separator='')
         if not self.createdtime:
             self.createdtime = datetime.datetime.now()
+        if not self.photoKey:
+            if self.usernameC:
+                self.photoKey = makeAvatar(self.usernameC[0:1])
         super(MyUser,self).save(*args,**kwargs)
 
 class userTags(models.Model):
@@ -267,6 +277,9 @@ class UserRelation(models.Model):
                     remove_perm('usersys.user_getuserrelation', self.traderuser, self)
                     remove_perm('usersys.user_changeuserrelation', self.traderuser, self)
                     remove_perm('usersys.user_deleteuserrelation', self.traderuser, self)
+
+                    remove_perm('usersys.user_addfavorite', self.traderuser, self.investoruser)
+                    remove_perm('usersys.user_getfavorite', self.traderuser, self.investoruser)
                 else:
                     oldrela = UserRelation.objects.get(pk=self.pk)
                     remove_perm('usersys.user_getuser', oldrela.traderuser, oldrela.investoruser)
@@ -284,10 +297,15 @@ class UserRelation(models.Model):
                     assign_perm('usersys.user_getuserrelation', self.traderuser, self)
                     assign_perm('usersys.user_changeuserrelation', self.traderuser, self)
                     assign_perm('usersys.user_deleteuserrelation', self.traderuser, self)
+
+                    assign_perm('usersys.user_addfavorite', self.traderuser, self.investoruser)
+                    assign_perm('usersys.user_getfavorite', self.traderuser, self.investoruser)
             else:
                 assign_perm('usersys.user_getuser', self.traderuser, self.investoruser)
                 assign_perm('usersys.user_changeuser', self.traderuser, self.investoruser)
                 assign_perm('usersys.user_deleteuser', self.traderuser, self.investoruser)
+                assign_perm('usersys.user_addfavorite', self.traderuser, self.investoruser)
+                assign_perm('usersys.user_getfavorite', self.traderuser, self.investoruser)
             super(UserRelation, self).save(*args, **kwargs)
     class Meta:
         db_table = "user_relation"
@@ -302,6 +320,7 @@ class UserRelation(models.Model):
             ('user_deleteuserrelation', u'用户删除用户联系（obj级别）'),
             ('user_getuserrelation', u'用户查看用户联系（obj级别）'),
             ('user_getuserrelationlist', u'用户查看用户联系列表'),
+
         )
 
 

@@ -122,9 +122,9 @@ class OrganizationView(viewsets.ModelViewSet):
             except EmptyPage:
                 raise InvestError(1001)
             queryset = queryset.page(page_index)
-            actionlist = {'get':False,'change':False,'delete':False}
             responselist = []
             for instance in queryset:
+                actionlist = {'get': False, 'change': False, 'delete': False}
                 if request.user.is_anonymous:
                     pass
                 else:

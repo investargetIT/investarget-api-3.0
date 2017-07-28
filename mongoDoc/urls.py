@@ -9,7 +9,13 @@ WXContentList = views.WXView.as_view({
         # 'put': 'update',
         # 'delete': 'destroy',
 })
+
+EmailGroupList = views.GroupEmailDataView.as_view({
+        'get': 'list',
+        # 'post': 'create',
+})
+
 urlpatterns = [
     url(r'^$', WXContentList,name='WXContent-list',),
-    url(r'^test$', views.getBaiDuNLP_Accesstoken,name='WXContent-list',),
+    url(r'^email$', EmailGroupList,name='WXContent-list',),
 ]

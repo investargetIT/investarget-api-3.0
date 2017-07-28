@@ -1,11 +1,5 @@
-from collections import OrderedDict
 
-from django.db.models import Manager
-from django.db.models import QuerySet
-from django.db.models.query import Prefetch
 from rest_framework import serializers
-from rest_framework.fields import SkipField, get_attribute, is_simple_callable
-from rest_framework.relations import PKOnlyObject
 from org.models import organization, orgRemarks, orgTransactionPhase
 from sourcetype.serializer import transactionPhasesSerializer
 

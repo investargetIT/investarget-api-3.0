@@ -15,10 +15,10 @@ from utils.customClass import JSONResponse, InvestError
 from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse
 
 
-def logininlog(loginaccount,logintypeid,datasourceid,userid=None):
+def logininlog(loginaccount,logintypeid,datasourceid,userid=None,ipaddress=None):
     if isinstance(logintypeid,str):
         logintypeid = int(logintypeid)
-    loginlog(loginaccount=loginaccount,logintype=logintypeid,datasource=datasourceid,user=userid).save()
+    loginlog(loginaccount=loginaccount,ipaddress=ipaddress,logintype=logintypeid,datasource=datasourceid,user=userid).save()
 
 def viewprojlog(userid,projid,sourceid):
     userviewprojlog(user=userid,proj=projid,source=sourceid).save()
@@ -41,6 +41,11 @@ def apilog(request,modeltype,request_before,request_after,modelID=None,datasourc
         datasource = request.user.datasource_id
     APILog(IPaddress=ip,URL=url,method=method,requestbody=requestbody,requestuser_id=requestuser,requestuser_name=requestuser_name,
            modeltype=modeltype,model_id=modelID,model_name=model_name,request_before=request_before,request_after=request_after,datasource=datasource).save()
+
+
+
+def Checkthedatabeforeandafterthechangeofdifference(before,after):
+    pass
 
 
 

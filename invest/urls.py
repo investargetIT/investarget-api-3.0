@@ -26,6 +26,8 @@ import timeline.urls
 import third.urls
 import dataroom.urls
 import sourcetype.urls
+import msg.urls
+import emailmanage.urls
 schema_view = get_swagger_view(title='investarget-api-3.0')
 
 urlpatterns = [
@@ -41,5 +43,7 @@ urlpatterns += [
     url(r'^service/',include(third.urls)),
     url(r'^source/', include(sourcetype.urls)),
     url(r'^log/', include(APIlog.urls)),
+    url(r'^msg/', include(msg.urls)),
     url(r'^mongolog/', include(mongoDoc.urls)),
+    url(r'^emailmanage/', include(emailmanage.urls)),
 ]

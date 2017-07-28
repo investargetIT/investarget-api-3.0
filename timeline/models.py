@@ -1,5 +1,7 @@
 #coding=utf-8
 from __future__ import unicode_literals
+
+import datetime
 from django.db import models
 from proj.models import project
 from usersys.models import MyUser
@@ -9,10 +11,9 @@ from utils.customClass import InvestError, MyForeignKey
 
 class timeline(models.Model):
     id = models.AutoField(primary_key=True)
-    proj = MyForeignKey(project,related_name='proj_timelines')
-    investor = MyForeignKey(MyUser,related_name='investor_timelines')
-    supportor = MyForeignKey(MyUser,related_name='supportor_timelines')
-    trader = MyForeignKey(MyUser,related_name='trader_timelines')
+    proj = MyForeignKey(project,related_name='proj_timelines',blank=True, null=True)
+    investor = MyForeignKey(MyUser,related_name='investor_timelines', blank=True, null=True)
+    trader = MyForeignKey(MyUser,related_name='trader_timelines', blank=True, null=True)
     isClose = models.BooleanField(blank=True,default=False)
     closeDate = models.DateTimeField(blank=True,null=True,)
     contractedServiceTime = models.DateTimeField(blank=True,null=True)
@@ -42,6 +43,10 @@ class timeline(models.Model):
         return self.timeline_transationStatus.all().filter(isActive=True,is_deleted=False)
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
+        if self.datasource:
+            pass
+        else:
+            raise InvestError(20071,msg='datasource/proj/investor/trader cannot be null')
         try:
             if self.pk:
                 timeline.objects.exclude(pk=self.pk).get(is_deleted=False,datasource=self.datasource,proj=self.proj,investor=self.investor,trader=self.trader)
@@ -59,8 +64,8 @@ class timelineTransationStatu(models.Model):
     timeline = MyForeignKey(timeline,blank=True,null=True,related_name='timeline_transationStatus')
     transationStatus = MyForeignKey(TransactionStatus,default=1)
     isActive = models.BooleanField(blank=True,default=False)
-    alertCycle = models.SmallIntegerField(blank=True,default=7)
-    inDate = models.DateTimeField(blank=True,null=True)
+    alertCycle = models.SmallIntegerField(blank=True,default=7,help_text='提醒周期')
+    inDate = models.DateTimeField(blank=True,null=True,help_text='提醒到期时间')
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_timelinestatus',on_delete=models.SET_NULL)
     deletedtime = models.DateTimeField(blank=True, null=True)
@@ -71,7 +76,12 @@ class timelineTransationStatu(models.Model):
 
     class Meta:
         db_table = 'timelineTransationStatus'
-
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if self.alertCycle:
+            if not self.inDate:
+                self.inDate = datetime.datetime.now() + datetime.timedelta(hours=self.alertCycle * 24)
+        super(timelineTransationStatu, self).save(force_insert, force_update, using, update_fields)
 class timelineremark(models.Model):
     id = models.AutoField(primary_key=True)
     timeline = MyForeignKey(timeline,related_name='timeline_remarks',blank=True,null=True)

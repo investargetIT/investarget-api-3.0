@@ -22,13 +22,15 @@ from rest_framework import viewsets
 from rest_framework.decorators import api_view, detail_route, list_route
 
 from APIlog.views import logininlog, apilog
+from emailmanage.views import sendEmailToUser, getAllProjectsNeedToSendMail
 from org.models import organization
+from proj.models import project
+from sourcetype.views import getmenulist
 from third.models import MobileAuthCode
-from usersys.models import MyUser,UserRelation, userTags, UserFriendship
+from usersys.models import MyUser, UserRelation, userTags, UserFriendship, MyToken
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
     CreatUserSerializer , UserCommenSerializer , UserRelationDetailSerializer, UserFriendshipSerializer, \
-    UserFriendshipDetailSerializer, UserFriendshipUpdateSerializer, UserInvestorRelationSerializer, \
-    UserTraderRelationSerializer, GroupSerializer, GroupDetailSerializer, GroupCreateSerializer, PermissionSerializer, \
+    UserFriendshipDetailSerializer, UserFriendshipUpdateSerializer, GroupSerializer, GroupDetailSerializer, GroupCreateSerializer, PermissionSerializer, \
     UpdateUserSerializer
 from sourcetype.models import Tag, DataSource
 from utils import perimissionfields
@@ -36,8 +38,8 @@ from utils.customClass import JSONResponse, InvestError, RelationFilter
 from utils.sendMessage import sendmessage_userauditstatuchange, sendmessage_userregister, sendmessage_traderchange, \
     sendmessage_usermakefriends
 from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable,\
-    catchexcption, cache_delete_key, maketoken, returnDictChangeToLanguage, returnListChangeToLanguage, SuccessResponse, \
-    InvestErrorResponse, ExceptionResponse, setrequestuser, getmenulist
+    catchexcption, cache_delete_key, returnDictChangeToLanguage, returnListChangeToLanguage, SuccessResponse, \
+    InvestErrorResponse, ExceptionResponse
 from django_filters import FilterSet
 
 
@@ -67,7 +69,7 @@ class UserView(viewsets.ModelViewSet):
     destroy:删除用户
 
     """
-    filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
+    filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
     queryset = MyUser.objects.filter(is_deleted=False)
     search_fields = ('mobile','email','usernameC','usernameE','org__orgnameC')
     serializer_class = UserSerializer
@@ -136,13 +138,13 @@ class UserView(viewsets.ModelViewSet):
             except EmptyPage:
                 raise InvestError(code=1001)
             queryset = queryset.page(page_index)
-            actionlist = {'get': False, 'change': False, 'delete': False}
             responselist = []
             for instance in queryset:
+                actionlist = {'get': False, 'change': False, 'delete': False}
                 if request.user.is_anonymous:
                     pass
                 else:
-                    if request.user.has_perm('usersys.admin_getuser') or request.user.has_perm('usersys.user_getuserlist'):
+                    if request.user.has_perm('usersys.admin_getuser') or request.user.has_perm('usersys.user_getuser', instance):
                         actionlist['get'] = True
                     if request.user.has_perm('usersys.admin_changeuser') or request.user.has_perm('usersys.user_changeuser',
                                                                                              instance):
@@ -179,24 +181,19 @@ class UserView(viewsets.ModelViewSet):
                         raise  InvestError(code=8888)
                 else:
                     raise InvestError(code=8888,msg='source field is required,//forbidden')
-                if mobile:
-                    if not mobilecodetoken or not mobilecode:
+                if not mobile or not email:
+                    raise InvestError(code=2007, msg='mobile、email cannot all be null')
+
+                if not mobilecodetoken or not mobilecode:
                         raise InvestError(code=20072,msg='验证码缺失')
-                    try:
-                        mobileauthcode = MobileAuthCode.objects.get(mobile=mobile, code=mobilecode, token=mobilecodetoken)
-                    except MobileAuthCode.DoesNotExist:
-                        raise InvestError(code=2005)
-                    else:
-                        if mobileauthcode.isexpired():
-                            raise InvestError(code=20051)
-                    if email:
-                        filterQ = Q(mobile=mobile) | Q(email=email)
-                    else:
-                        filterQ = Q(mobile=mobile)
-                elif email:
-                    filterQ = Q(email=email)
+                try:
+                    mobileauthcode = MobileAuthCode.objects.get(mobile=mobile, code=mobilecode, token=mobilecodetoken)
+                except MobileAuthCode.DoesNotExist:
+                    raise InvestError(code=2005)
                 else:
-                    raise InvestError(code=2007,msg='mobile、email cannot all be null')
+                    if mobileauthcode.isexpired():
+                        raise InvestError(code=20051)
+                filterQ = Q(mobile=mobile) | Q(email=email)
                 if self.queryset.filter(filterQ,datasource=userdatasource).exists():
                     raise InvestError(code=2004)
                 groupid = data.pop('groups', None)
@@ -242,7 +239,7 @@ class UserView(viewsets.ModelViewSet):
                     raise InvestError(code=20071,msg='%s\n%s' % (userserializer.error_messages, userserializer.errors))
                 returndic = CreatUserSerializer(user).data
                 sendmessage_userregister(user,user,['email'])
-                apilog(request, 'MyUser', None, None, datasource=request.user.datasource_id)
+                apilog(request, 'MyUser', None, None, datasource=source)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(returndic,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -263,26 +260,25 @@ class UserView(viewsets.ModelViewSet):
             else:
                 raise InvestError(2009,msg='没有新增权限')
             with transaction.atomic():
-                password = data.pop('password','Aa123456')
                 email = data.get('email')
                 mobile = data.get('mobile')
                 if not email or not mobile:
                     raise InvestError(code=2007)
                 if self.get_queryset().filter(Q(mobile=mobile) | Q(email=email)).exists():
                     raise InvestError(code=2004)
-                # user = MyUser(usernameC=data.get('usernameC',None),usernameE=data.get('usernameE',None),datasource_id=request.user.datasource.id)
-                # user.set_password(password)
-                # user.save()
+                user = MyUser(email=email, mobile=mobile, datasource_id=request.user.datasource.id)
+                data.pop('password', None)
+                user.set_password('Aa123456')
+                user.save()
                 keylist = data.keys()
                 cannoteditlist = [key for key in keylist if key not in canCreateField]
                 if cannoteditlist:
                     raise InvestError(code=2009,msg='没有权限修改%s' % cannoteditlist)
-                data['createduser'] = request.user.id
+                data['createuser'] = request.user.id
                 data['createdtime'] = datetime.datetime.now()
                 data['datasource'] = request.user.datasource.id
-                data['password'] = 'Aa123456'
                 tags = data.pop('tags', None)
-                userserializer = CreatUserSerializer(data=data)
+                userserializer = CreatUserSerializer(user, data=data)
                 if userserializer.is_valid():
                     user = userserializer.save()
                     if tags:
@@ -304,7 +300,7 @@ class UserView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     #get
-    @loginTokenIsAvailable(['usersys.admin_getuser','usersys.user_getuserlist'])
+    @loginTokenIsAvailable()
     def retrieve(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
@@ -346,21 +342,21 @@ class UserView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             useridlist = request.data.get('userlist')
-            data = request.data.get('userdata')
             userlist = []
             messagelist = []
             if not useridlist or not isinstance(useridlist,list):
                 raise InvestError(2007,msg='expect a not null id list')
             with transaction.atomic():
                 for userid in useridlist:
+                    data = request.data.get('userdata')
                     user = self.get_object(userid)
                     olduserdata = UserSerializer(user)
                     sendmsg = False
-                    if request.user == user:
-                        canChangeField = perimissionfields.userpermfield['changeself']
+                    if request.user.has_perm('usersys.admin_changeuser'):
+                        canChangeField = perimissionfields.userpermfield['usersys.admin_changeuser']
                     else:
-                        if request.user.has_perm('usersys.admin_changeuser'):
-                            canChangeField = perimissionfields.userpermfield['usersys.admin_changeuser']
+                        if request.user == user:
+                            canChangeField = perimissionfields.userpermfield['changeself']
                         elif request.user.has_perm('usersys.user_changeuser',user):
                             canChangeField = perimissionfields.userpermfield['usersys.trader_changeuser']
                         else:
@@ -518,14 +514,17 @@ class UserView(viewsets.ModelViewSet):
         try:
             data = request.data
             oldpassword = data.get('oldpassword')
-            password = data.get('password')
-            passwordagain = data.get('passwordagain')
+            password = data.get('newpassword')
             user = self.get_object()
             if user == request.user:
-                if user.check_password(oldpassword):
-                    raise InvestError(code=2001,msg='密码错误')
-                if not password or password != passwordagain:
-                    raise InvestError(code=2001,msg='新密码输入有误')
+                if not user.check_password(oldpassword):
+                    raise InvestError(code=2001, msg='密码错误')
+                if not password or not isinstance(password, (str,unicode)):
+                    raise InvestError(code=2001, msg='新密码输入有误')
+                if password == oldpassword:
+                    raise InvestError(code=2001, msg='新旧密码不能相同')
+                if len(password) < 6:
+                    raise InvestError(code=2001, msg='密码长度至少6位')
             else:
                 raise InvestError(code=2009)
             with transaction.atomic():
@@ -619,7 +618,7 @@ class UserRelationView(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
-            data['createduser'] = request.user.id
+            data['createuser'] = request.user.id
             data['datasource'] = request.user.datasource.id
             lang = request.GET.get('lang')
             if request.user.has_perm('usersys.admin_adduserrelation'):
@@ -742,7 +741,6 @@ class UserRelationView(viewsets.ModelViewSet):
                 relationidlist = request.data.get('relationlist',None)
                 if not isinstance(relationidlist,list) or not relationidlist:
                     raise InvestError(2007,msg='expect a not null relation id list')
-                lang = request.GET.get('lang')
                 relationlist = self.get_queryset().filter(id__in=relationidlist)
                 returnlist = []
                 for userrelation in relationlist:
@@ -986,7 +984,12 @@ class GroupPermissionView(viewsets.ModelViewSet):
                 page_size = 10
             if not page_index:
                 page_index = 1
-            queryset = self.filter_queryset(self.get_queryset())
+            queryset = self.get_queryset()
+            grouptype = request.GET.get('type', None)
+            if grouptype in [u'trader','trader']:
+                queryset = queryset.filter(permissions__codename__in=['as_trader'])
+            if grouptype in [u'investor', 'investor']:
+                queryset = queryset.filter(permissions__codename__in=['as_investor'])
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -1142,13 +1145,34 @@ def login(request):
         response = maketoken(user, clienttype)
         response['permissions'] = perimissions
         response['menulist'] = menulist
-        logininlog(loginaccount=username, logintypeid=clienttype, datasourceid=source,userid=user.id)
+        if request.META.has_key('HTTP_X_FORWARDED_FOR'):
+            ip = request.META['HTTP_X_FORWARDED_FOR']
+        else:
+            ip = request.META['REMOTE_ADDR']
+        logininlog(loginaccount=username, logintypeid=clienttype, datasourceid=source,userid=user.id, ipaddress=ip)
         return JSONResponse(SuccessResponse(returnDictChangeToLanguage(response,lang)))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
     except Exception:
         catchexcption(request)
         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+def maketoken(user,clienttype):
+    try:
+        tokens = MyToken.objects.filter(user=user, clienttype_id=clienttype, is_deleted=False)
+    except MyToken.DoesNotExist:
+        pass
+    else:
+        for token in tokens:
+            token.is_deleted = True
+            token.save(update_fields=['is_deleted'])
+    token = MyToken.objects.create(user=user, clienttype_id=clienttype)
+    serializer = UserSerializer(user)
+    response = serializer.data
+    return {'token': token.key,
+        "user_info": response,
+    }
 
 
 def testsendmsg(request):
@@ -1158,5 +1182,7 @@ def testsendmsg(request):
     # with open('/Users/investarget/Desktop/django_server/qiniu_uploadprogress/5qC86JOd54m5546v5L+d5bel56iL77yI5YyX5LqsKeaciemZkOWFrOWPuOW3peWVhuaho+ahiOi1hOaWmS3miKrmraIyMDE2LTA3LTEyLnBkZi.moLzok53nibnnjq.kv53lt6XnqIvvvIjljJfkuqwp5pyJ6ZmQ5YWs5Y+45bel5ZWG5qGj5qGI6LWE5paZLeaIquatojIwMTYtMDctMTIucGRm', 'w') as f:
     #     import json
     #     json.dump('aaaa', f)
-    print (os.sys.path)
+
+    getAllProjectsNeedToSendMail()
+    # sendEmailToUser()
     return JSONResponse({'xxx':'sss'})

@@ -5,12 +5,11 @@ import views
 timelines = views.TimelineView.as_view({
         'get': 'list',
         'post': 'create',
-
+        'delete': 'destroy',
 })
 timeline_detail = views.TimelineView.as_view({
         'get':'retrieve',
         'put': 'update',
-        'delete': 'destroy',
 })
 
 timelineremark = views.TimeLineRemarkView.as_view({

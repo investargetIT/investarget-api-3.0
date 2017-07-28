@@ -45,6 +45,10 @@ class RelationFilter(Filter):
     def filter(self, qs, value):
         if value in ([], (), {}, '', None):
             return qs
+        if value in (u'true','true'):
+            value = True
+        if value in (u'false','false'):
+            value = False
         if self.lookup_method == 'in':
             value = value.split(',')
         if self.relationName is not None:

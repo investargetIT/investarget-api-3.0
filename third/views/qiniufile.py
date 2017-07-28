@@ -28,21 +28,22 @@ pipeline = 'aszxsddsfcsc'
 fops = 'yifangyun_preview/v2'
 
 
-
-
-def qiniuupload(request):
+#覆盖上传
+@api_view(['POST'])
+def qiniu_coverupload(request):
     try:
         bucket_name = request.GET.get('bucket')
+        key = request.GET.get('key')
+        if not bucket_name or not key or bucket_name not in qiniu_url.keys():
+            raise InvestError(2020,msg='bucket/key error')
         data_dict = request.FILES
         uploaddata = None
-        if bucket_name not in qiniu_url.keys():
-            raise InvestError(2020,msg='bucket error')
-        for key in data_dict.keys():
-            uploaddata = data_dict[key]
+        for keya in data_dict.keys():
+            uploaddata = data_dict[keya]
         q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
         filetype = str(uploaddata.name).split('.')[-1]
-        if filetype != 'pdf':
-            saveas_key = qiniu.urlsafe_base64_encode('file:%s' % (str(uploaddata.name).split('.')[0] + '.pdf'))
+        if filetype != 'pdf' and bucket_name not in ['image', u'image']:
+            saveas_key = qiniu.urlsafe_base64_encode('file:%s' % (key.split('.')[0] + '.pdf'))
             persistentOps = fops + '|saveas/' + saveas_key
             policy = {
                 'persistentOps': persistentOps,
@@ -51,39 +52,27 @@ def qiniuupload(request):
             }
         else:
             policy = None
-        key = str(uploaddata.name)   #key 文件名
+        print key
+        params = {'x:a':'a'}
+        mime_type = uploaddata.content_type
         token = q.upload_token(bucket_name, key, 3600,policy=policy)
-        ret, info = put_data(token, key, uploaddata)
-        return_url= None
+        progress_handler = lambda progress,total:progress / total
+        uploader = _Resume(token,key,uploaddata,uploaddata.size,params,mime_type,progress_handler,upload_progress_recorder=MyUploadProgressRecorder(),modify_time=None,file_name=key)
+        ret,info = uploader.upload()
         if info is not None:
             if info.status_code == 200:
-                return_url = getUrlWithBucketAndKey(bucket_name, ret['key'])
+                return_url = getUrlWithBucketAndKey(bucket_name,ret['key'])
             else:
                 raise InvestError(2020,msg=str(info))
+        else:
+            raise InvestError(2020,msg=str(ret))
+        if policy:
+            key = key.split('.')[0] + '.pdf'
         return JSONResponse(SuccessResponse({'key':key,'url':return_url}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
     except Exception:
         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
-#上传本地文件
-def qiniuuploadfilepath(filepath, bucket_name):
-    q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
-    filetype = filepath.split('.')[-1]
-    key = "%s.%s" % (str(time.time()), filetype)   # key 文件名
-    print key
-    token = q.upload_token(bucket_name, key, 3600, policy={}, strict_policy=True)
-    ret, info = put_file(token, key, filepath)
-    if info is not None:
-        if info.status_code == 200:
-            return True, "http://%s/%s" % (qiniu_url['file'], ret["key"]),key
-        else:
-            return False, str(info),None
-    else:
-        return False,None,None
-
-
-
 
 
 @api_view(['POST'])
@@ -102,8 +91,8 @@ def bigfileupload(request):
         q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
         filetype = str(uploaddata.name).split('.')[-1]
         key = str(uploaddata.name)  # key 文件名
-        # key = datetime.datetime.strftime('%d/%m/%Y %H:%M') + filetype
-        if filetype != 'pdf':
+        key = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%s')+ key
+        if filetype != 'pdf' and bucket_name not in ['image', u'image']:
             saveas_key = qiniu.urlsafe_base64_encode('file:%s' % (key.split('.')[0] + '.pdf'))
             persistentOps = fops + '|saveas/' + saveas_key
             policy = {
@@ -120,9 +109,6 @@ def bigfileupload(request):
         progress_handler = lambda progress,total:progress / total
         uploader = _Resume(token,key,uploaddata,uploaddata.size,params,mime_type,progress_handler,upload_progress_recorder=MyUploadProgressRecorder(),modify_time=None,file_name=key)
         ret,info = uploader.upload()
-        print ret
-        print '*****'
-        print info
         if info is not None:
             if info.status_code == 200:
                 return_url = getUrlWithBucketAndKey(bucket_name,ret['key'])
@@ -130,20 +116,13 @@ def bigfileupload(request):
                 raise InvestError(2020,msg=str(info))
         else:
             raise InvestError(2020,msg=str(ret))
+        if policy:
+            key = key.split('.')[0] + '.pdf'
         return JSONResponse(SuccessResponse({'key':key,'url':return_url}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
     except Exception:
         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
-def getUrlWithBucketAndKey(bucket,key):
-    if bucket not in qiniu_url.keys():
-        return None
-    q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
-    return_url = "https://%s/%s" % (qiniu_url[bucket], key)
-    if bucket == 'file':
-        return_url = q.private_download_url(return_url)
-    return return_url
 
 @api_view(['POST'])
 def qiniu_uploadtoken(request):
@@ -151,7 +130,9 @@ def qiniu_uploadtoken(request):
         data = request.data
         bucket_name = data['bucket']
         key = data['key']
-        policy = data['policy']
+        if not bucket_name or not key:
+            raise InvestError(2020,msg='bucket/key error')
+        policy = data.get('policy',None)
         q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
         token = q.upload_token(bucket_name, key, 3600, policy=policy)
         return JSONResponse(SuccessResponse(token))
@@ -166,10 +147,7 @@ def qiniu_downloadurl(request):
         data = request.data
         bucket_name = data['bucket']
         key = data['key']
-        q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
-        return_url = "https://%s/%s" % (qiniu_url[bucket_name], key)
-        if bucket_name == 'file':
-            return_url = q.private_download_url(return_url)
+        return_url = getUrlWithBucketAndKey(bucket_name,key)
         return JSONResponse(SuccessResponse(return_url))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
@@ -202,3 +180,28 @@ def deleteqiniufile(bucket,key):
     bucketManager = BucketManager(q)
     ret, info = bucketManager.delete(bucket, key)
     return ret, info
+
+def getUrlWithBucketAndKey(bucket,key):
+    if bucket not in qiniu_url.keys():
+        return None
+    q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
+    return_url = "https://%s/%s" % (qiniu_url[bucket], key)
+    if bucket == 'file':
+        return_url = q.private_download_url(return_url)
+    return return_url
+
+#上传本地文件
+def qiniuuploadfile(filepath, bucket_name):
+    q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
+    filetype = filepath.split('.')[-1]
+    key = "%s.%s" % (datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%s'), filetype)   # key 文件名
+    print key
+    token = q.upload_token(bucket_name, key, 3600, policy={}, strict_policy=True)
+    ret, info = put_file(token, key, filepath)
+    if info is not None:
+        if info.status_code == 200:
+            return True, "http://%s/%s" % (qiniu_url['file'], ret["key"]),key
+        else:
+            return False, str(info),None
+    else:
+        return False,None,None

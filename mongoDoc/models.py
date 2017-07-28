@@ -1,6 +1,7 @@
 #coding:utf-8
 from __future__ import unicode_literals
 
+import datetime
 from mongoengine import *
 
 
@@ -13,3 +14,11 @@ class WXContentData(Document):
     meta = {"collection": "aaa"}
 
 
+
+
+class GroupEmailData(Document):
+    users = ListField(DictField())
+    proj = DictField()
+    savetime = DateTimeField(default=datetime.datetime.now())
+    datasource = IntField()
+    meta = {"collection": "groupemaildata"}

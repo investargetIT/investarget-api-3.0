@@ -13,6 +13,100 @@ from third.views.submail import xsendSms, xsendEmail
 typelist = ['sms','app','email','webmsg']
 
 
+favoriteTypeConf = {
+# 1	系统推荐
+# 2	管理员推荐(暂无)
+# 3	合伙人推荐
+# 4	主动收藏
+# 5	感兴趣
+    '1':{
+        'paths':['app','sms','webmsg','email'],
+        'app':{
+            'content' : '根据您的意向，系统向您推荐(%s)。',
+            'platform' : 'ios',
+            'bdage' : '1',
+            'n_extras' : {},
+        },
+        'sms':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+        'webmsg':{
+            'content' : '根据您的意向，系统向您推荐(%s)。',
+            'title' : '',
+            'messagetype' : 1,
+        },
+        'email':{
+            'projectsign' : 'SRo1Y1',
+            'vars' : {},
+        },
+    },
+    '3':{
+        'paths':['app','sms','webmsg','email'],
+        'app':{
+            'content' : '您的交易师推荐给您项目(%s)。',
+            'platform' : 'ios',
+            'bdage' : '1',
+            'n_extras' : {},
+        },
+        'sms':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+        'webmsg':{
+            'content' : '您的交易师%s推荐给您项目(%s)。',
+            'title' : '您的交易师推荐给您项目。点击查看详情',
+            'messagetype' : 1,
+        },
+        'email':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+    },
+    '4':{
+        'paths':['email','app','webmsg'],
+            'app':{
+            'content' : '有投资者%s收藏了项目(%s)，点击查看详情。',
+            'platform' : 'ios',
+            'bdage' : '1',
+            'n_extras' : {},
+        },
+            'email':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+            'webmsg':{
+            'content' : '您的投资者%s收藏了项目(%s)，。',
+            'title' : '您的投资者收藏了项目，点击查看详情。',
+            'messagetype' : 1,
+        },
+    },
+    '5':{
+        'paths':['app','sms','webmsg','email'],
+        'app':{
+            'content' : '有投资者对项目(%s)感兴趣，点击查看详情。',
+            'platform' : 'ios',
+            'bdage' : '1',
+            'n_extras' : {},
+        },
+        'sms':{
+            'projectsign' : '',
+            'vars' : {},
+        },
+        'webmsg':{
+            'content' : '您的投资者%s对项目(%s)感兴趣，请在48小时内联系投资者。',
+            'title' : '您的投资者对项目感兴趣，点击查看详情。',
+            'messagetype' : 1,
+        },
+        'email':{
+            'projectsign' : 'LQrMB1',
+            'vars' : {},
+        },
+    },
+}
+
+
+
 messageconfig = {
     'favoriteproject':{
         'modeltype':favoriteProject,
@@ -59,7 +153,7 @@ messageconfig = {
         },
     },
     'userauditstatuschange':{
-    'modeltype':MyUser,
+        'modeltype':MyUser,
         'app':{
             'content' : '',
             'platform' : 'ios',
@@ -295,7 +389,7 @@ def sendmessage_withtypes(configtype,model,receiver,types,sender=None):
 
 
 
-def sendmessage_favoriteproject(model,receiver,types,sender=None):
+def sendmessage_favoriteproject(model,receiver,sender=None):
     """
     :param model: favoriteProject type
     :param receiver: myuser type
@@ -304,43 +398,50 @@ def sendmessage_favoriteproject(model,receiver,types,sender=None):
     :return: None
     """
     class sendmessage_favoriteprojectThread(threading.Thread):
-        def __init__(self, model, receiver, types, sender=None):
+        def __init__(self, model, receiver, sender=None):
             self.model = model
             self.receiver = receiver
-            self.types = types
             self.sender = sender
             threading.Thread.__init__(self)
 
         def run(self):
-            types = self.types
             receiver = self.receiver
             model = self.model
             sender = self.sender
             if isinstance(model, favoriteProject):
-                if 'app' in types:
-                    content = ''
-                    receiver_alias = receiver.usercode
-                    platform = 'ios'
-                    bdage = 1
-                    n_extras = {}
-                    pushnotification(content, receiver_alias, platform, bdage, n_extras)
-                if 'email' in types:
-                    destination = receiver.email
-                    projectsign = ''
-                    vars = {}
-                    xsendEmail(destination, projectsign, vars)
-                if 'sms' in types:
-                    destination = receiver.mobile
-                    projectsign = 'WzSYg'
-                    vars = {'code': 'sss', 'time': '10'}
-                    xsendSms(destination, projectsign, vars)
-                if 'webmsg' in types:
-                    content = ''
-                    title = ''
-                    messagetype = 1
-                    saveMessage(content, messagetype, title, receiver, sender)
+                if model.favoritetype_id != 2:
+                    msgconfig = favoriteTypeConf[str(model.favoritetype_id)]
+                    paths = msgconfig['paths']
+                    if 'app' in paths:
+                        content = (msgconfig['app']['content']) % model.proj.projtitleC
+                        receiver_alias = receiver.usercode
+                        platform = 'ios'
+                        bdage = 1
+                        n_extras = {}
+                        pushnotification(content, receiver_alias, platform, bdage, n_extras)
+                    if 'email' in paths:
+                        destination = receiver.email
+                        projectsign = msgconfig['email']['projectsign']
+                        if model.favoritetype_id in [3,5]:
+                            vars = {'NameC': 'sss', 'NameE': '10', 'projectC':'', 'projectE':''}
+                        else:
+                            vars = {'projectC':'', 'projectE':''}
+                        xsendEmail(destination, projectsign, vars)
+                    if 'sms' in paths:
+                        destination = receiver.mobile
+                        projectsign = msgconfig['sms']['projectsign']
+                        if model.favoritetype_id in [3,5]:
+                            vars = {'NameC': 'sss', 'projectC': ''}
+                        else:
+                            vars = {'projectC': ''}
+                        xsendSms(destination, projectsign, vars)
+                    if 'webmsg' in paths:
+                        content = (msgconfig['webmsg']['content']) % model.proj.projtitleC
+                        title = msgconfig['webmsg']['title']
+                        messagetype = msgconfig['webmsg']['messagetype']
+                        saveMessage(content, messagetype, title, receiver, sender)
 
-    # sendmessage_favoriteprojectThread(model,receiver,types,sender).start()
+    sendmessage_favoriteprojectThread(model,receiver,sender).start()
 
 def sendmessage_traderchange(model,receiver,types,sender=None):
     """

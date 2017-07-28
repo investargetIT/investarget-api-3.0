@@ -34,6 +34,7 @@ class APILog(models.Model):
 
 class loginlog(models.Model):
     user = models.IntegerField(blank=True,null=True)
+    ipaddress = models.CharField(max_length=20,blank=True,null=True)
     loginaccount = models.CharField(max_length=40,blank=True,null=True)
     logintime = models.DateTimeField(auto_now_add=True,blank=True,null=True)
     logintype = models.PositiveSmallIntegerField(blank=True,null=True)
