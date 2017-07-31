@@ -85,6 +85,11 @@ class TimelineView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
+            sort = request.GET.get('sort')
+            if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
+                queryset = queryset.order_by('-lastmodifytime', '-createdtime')
+            else:
+                queryset = queryset.order_by('lastmodifytime', 'createdtime')
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -94,11 +99,11 @@ class TimelineView(viewsets.ModelViewSet):
             responselist = []
             for instance in queryset:
                 actionlist = {'get': False, 'change': False, 'delete': False}
-                if request.user.has_perm('org.admin_getline') or request.user.has_perm('org.user_getline', instance):
+                if request.user.has_perm('timeline.admin_getline') or request.user.has_perm('timeline.user_getline', instance):
                     actionlist['get'] = True
-                if request.user.has_perm('org.admin_changeline') or request.user.has_perm('org.user_changeline', instance):
+                if request.user.has_perm('timeline.admin_changeline') or request.user.has_perm('timeline.user_changeline', instance):
                     actionlist['change'] = True
-                if request.user.has_perm('org.admin_deleteline') or request.user.has_perm('org.user_deleteline', instance):
+                if request.user.has_perm('timeline.admin_deleteline') or request.user.has_perm('timeline.user_deleteline', instance):
                     actionlist['delete'] = True
                 instancedata = TimeLineListSerializer_admin(instance).data
                 instancedata['action'] = actionlist
@@ -253,7 +258,7 @@ class TimelineView(viewsets.ModelViewSet):
                     if not (request.user.has_perm('timeline.admin_deleteline') or request.user.has_perm(
                             'timeline.user_deleteline', instance)):
                         raise InvestError(2009, msg='没有相应权限')
-                    for link in links:
+                    for link in ['timeline_transationStatus','timeline_remarks']:
                         if link in []:
                             manager = getattr(instance, link, None)
                             if not manager:
@@ -356,6 +361,11 @@ class TimeLineRemarkView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
+            sort = request.GET.get('sort')
+            if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
+                queryset = queryset.order_by('-lastmodifytime', '-createdtime')
+            else:
+                queryset = queryset.order_by('lastmodifytime', 'createdtime')
             if request.user.has_perm('timeline.admin_getlineremark'):
                 queryset = queryset
             else:

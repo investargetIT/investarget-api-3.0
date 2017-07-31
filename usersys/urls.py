@@ -69,6 +69,18 @@ permission = views.PermissionView.as_view({
         'get':'list',
 })
 
+unreachuser_list = views.UnReachUserView.as_view({
+        'get': 'list',
+        'post': 'create',
+})
+
+unreachuser_deteil = views.UnReachUserView.as_view({
+        'get': 'retrieve',
+        'put': 'update',
+        'delete': 'destroy',
+})
+
+
 
 urlpatterns = [
     url(r'^$', user_list,name='user-list',),
@@ -85,6 +97,7 @@ urlpatterns = [
     url(r'^group/$', group_list, name='group-list'),
     url(r'^group/(?P<pk>\d+)/$', group_permission, name='group_permission-detail'),
     url(r'^perm/$', permission, name='permission-list'),
+    url(r'^unuser/$',unreachuser_list, name='unreachuser-list'),
+    url(r'^unuser/(?P<pk>\d+)/$', unreachuser_deteil, name='unreachuser_-detail'),
     url(r'^test/$',views.testsendmsg)
-
 ]

@@ -217,6 +217,8 @@ class favoriteProject(models.Model):
     #只用于create和delete，没有update
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
+        if self.proj.projstatus_id < 4:
+            raise InvestError(5003,msg='项目尚未终审发布')
         if self.createdtime is None:
             self.createdtime = datetime.datetime.now()
         if not self.datasource or self.datasource != self.proj.datasource:

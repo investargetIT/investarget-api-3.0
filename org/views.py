@@ -108,6 +108,11 @@ class OrganizationView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(queryset)
+            sort = request.GET.get('sort')
+            if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
+                queryset = queryset.order_by('-lastmodifytime', '-createdtime')
+            else:
+                queryset = queryset.order_by('lastmodifytime', 'createdtime')
             setrequestuser(request)
             if request.user.is_anonymous:
                 serializerclass = OrgCommonSerializer
@@ -247,8 +252,9 @@ class OrganizationView(viewsets.ModelViewSet):
             rel_fileds = [f for f in instance._meta.get_fields() if isinstance(f, ForeignObjectRel)]
             links = [f.get_accessor_name() for f in rel_fileds]
             with transaction.atomic():
-                for link in links:
-                    if link in []:
+                # for link in links:
+                for link in ['org_users','org_orgTransactionPhases','org_remarks','org_unreachuser']:
+                    if link in ['org_users']:
                         manager = getattr(instance, link, None)
                         if not manager:
                             continue

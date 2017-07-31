@@ -94,7 +94,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     wechat = models.CharField(max_length=64,blank=True,null=True)
     country = MyForeignKey(Country,blank=True,null=True)
     userstatus = MyForeignKey(AuditStatus,help_text='审核状态',blank=True,default=1)
-    org = MyForeignKey('org.organization',help_text='所属机构',blank=True,null=True,related_name='org_users',on_delete=models.SET_NULL)
+    org = MyForeignKey('org.organization',help_text='所属机构',blank=True,null=True,related_name='org_users')
     usernameC = models.CharField(help_text='姓名',max_length=128,db_index=True,blank=True,null=True,)
     usernameE = models.CharField(help_text='name',max_length=128,db_index=True,blank=True,null=True)
     mobileAreaCode = models.CharField(max_length=10,blank=True,null=True,default='86')
@@ -145,8 +145,10 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
             ('admin_deleteuser', u'管理员删除'),
             ('admin_changeuser', u'管理员修改用户基本信息'),
             ('admin_getuser', u'管理员查看用户'),
-            ('user_addfavorite', '用户添加favorite(obj级别——给交易师的)'),
+
+            ('user_addfavorite', '用户主动推荐favorite(obj级别——给交易师的)'),
             ('user_getfavorite', '用户查看favorite(obj级别——给交易师的)'),
+            ('user_interestproj', '用户主动联系favorite(obj级别——给投资人的)'),
         )
     def save(self, *args, **kwargs):
         if not self.usercode:
@@ -200,7 +202,34 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
         if not self.photoKey:
             if self.usernameC:
                 self.photoKey = makeAvatar(self.usernameC[0:1])
+        self.exchangeUnreachuserToMyUser()
         super(MyUser,self).save(*args,**kwargs)
+
+    def exchangeUnreachuserToMyUser(self):
+        unreachuser_qs = UnreachUser.objects.filter(title=self.title, org=self.org, name=self.usernameC,
+                                                    is_deleted=False, datasource=self.datasource)
+        if unreachuser_qs.exists():
+            unreachuser = unreachuser_qs.first()
+            unreachuser.is_deleted = True
+            unreachuser.deletedtime = datetime.datetime.now()
+            unreachuser.save()
+
+
+class UnreachUser(models.Model):
+    name = models.CharField(max_length=128,blank=True,null=True)
+    title = MyForeignKey(TitleType,blank=True,null=True)
+    org = MyForeignKey('org.organization',blank=True,null=True,related_name='org_unreachuser')
+    mobile = models.CharField(max_length=32,blank=True,null=True)
+    email = models.CharField(max_length=32,blank=True,null=True)
+    is_deleted = models.BooleanField(blank=True, default=False)
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_unreachUsers')
+    deletedtime = models.DateTimeField(blank=True, null=True)
+    createdtime = models.DateTimeField(auto_created=True, blank=True, null=True)
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_unreachUsers')
+    datasource = MyForeignKey(DataSource, blank=True,default=1)
+    class Meta:
+        db_table = "unreachuser"
+
 
 class userTags(models.Model):
     user = MyForeignKey(MyUser,related_name='user_usertags',null=True,blank=True)
@@ -254,6 +283,8 @@ class UserRelation(models.Model):
             raise InvestError(code=8888,msg='datasource有误')
         if self.datasource !=self.traderuser.datasource or self.datasource != self.investoruser.datasource:
             raise InvestError(code=8888,msg='requestuser.datasource不匹配')
+        if self.traderuser.userstatus != self.investoruser.userstatus and self.traderuser.userstatus_id != 2:
+            raise InvestError(code=2022,msg='用户尚未审核通过，无法建立相关联系')
         if self.pk:
             userrelation = UserRelation.objects.exclude(pk=self.pk).filter(is_deleted=False,datasource=self.datasource,investoruser=self.investoruser)
         else:
@@ -267,6 +298,8 @@ class UserRelation(models.Model):
             self.relationtype = True
         if self.investoruser.id == self.traderuser.id:
             raise InvestError(code=2014,msg='1.投资人和交易师不能是同一个人')
+        elif not self.investoruser.has_perm('usersys.as_investor') or not self.traderuser.has_perm('usersys.as_trader'):
+            raise InvestError(2015)
         else:
             if self.pk:
                 if self.is_deleted:
@@ -280,32 +313,41 @@ class UserRelation(models.Model):
 
                     remove_perm('usersys.user_addfavorite', self.traderuser, self.investoruser)
                     remove_perm('usersys.user_getfavorite', self.traderuser, self.investoruser)
+                    remove_perm('usersys.user_interestproj', self.investoruser, self.traderuser)
                 else:
                     oldrela = UserRelation.objects.get(pk=self.pk)
-                    remove_perm('usersys.user_getuser', oldrela.traderuser, oldrela.investoruser)
-                    remove_perm('usersys.user_changeuser', oldrela.traderuser, oldrela.investoruser)
-                    remove_perm('usersys.user_deleteuser', oldrela.traderuser, oldrela.investoruser)
+                    if oldrela.traderuser != self.traderuser or oldrela.investoruser != self.investoruser:
+                        remove_perm('usersys.user_getuser', oldrela.traderuser, oldrela.investoruser)
+                        remove_perm('usersys.user_changeuser', oldrela.traderuser, oldrela.investoruser)
+                        remove_perm('usersys.user_deleteuser', oldrela.traderuser, oldrela.investoruser)
 
-                    remove_perm('usersys.user_getuserrelation', oldrela.traderuser, self)
-                    remove_perm('usersys.user_changeuserrelation', oldrela.traderuser, self)
-                    remove_perm('usersys.user_deleteuserrelation', oldrela.traderuser, self)
+                        remove_perm('usersys.user_getuserrelation', oldrela.traderuser, self)
+                        remove_perm('usersys.user_changeuserrelation', oldrela.traderuser, self)
+                        remove_perm('usersys.user_deleteuserrelation', oldrela.traderuser, self)
 
-                    assign_perm('usersys.user_getuser',self.traderuser,self.investoruser)
-                    assign_perm('usersys.user_changeuser', self.traderuser, self.investoruser)
-                    assign_perm('usersys.user_deleteuser', self.traderuser, self.investoruser)
+                        remove_perm('usersys.user_addfavorite', self.traderuser, self.investoruser)
+                        remove_perm('usersys.user_getfavorite', self.traderuser, self.investoruser)
+                        remove_perm('usersys.user_interestproj', self.investoruser, self.traderuser)
 
-                    assign_perm('usersys.user_getuserrelation', self.traderuser, self)
-                    assign_perm('usersys.user_changeuserrelation', self.traderuser, self)
-                    assign_perm('usersys.user_deleteuserrelation', self.traderuser, self)
+                        assign_perm('usersys.user_getuser',self.traderuser,self.investoruser)
+                        assign_perm('usersys.user_changeuser', self.traderuser, self.investoruser)
+                        assign_perm('usersys.user_deleteuser', self.traderuser, self.investoruser)
 
-                    assign_perm('usersys.user_addfavorite', self.traderuser, self.investoruser)
-                    assign_perm('usersys.user_getfavorite', self.traderuser, self.investoruser)
+                        assign_perm('usersys.user_getuserrelation', self.traderuser, self)
+                        assign_perm('usersys.user_changeuserrelation', self.traderuser, self)
+                        assign_perm('usersys.user_deleteuserrelation', self.traderuser, self)
+
+                        assign_perm('usersys.user_addfavorite', self.traderuser, self.investoruser)
+                        assign_perm('usersys.user_getfavorite', self.traderuser, self.investoruser)
+                        assign_perm('usersys.user_interestproj', self.investoruser, self.traderuser)
             else:
                 assign_perm('usersys.user_getuser', self.traderuser, self.investoruser)
                 assign_perm('usersys.user_changeuser', self.traderuser, self.investoruser)
                 assign_perm('usersys.user_deleteuser', self.traderuser, self.investoruser)
+
                 assign_perm('usersys.user_addfavorite', self.traderuser, self.investoruser)
                 assign_perm('usersys.user_getfavorite', self.traderuser, self.investoruser)
+                assign_perm('usersys.user_interestproj', self.investoruser, self.traderuser)
             super(UserRelation, self).save(*args, **kwargs)
     class Meta:
         db_table = "user_relation"

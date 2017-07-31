@@ -88,6 +88,11 @@ class DataroomView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
+            sort = request.GET.get('sort')
+            if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
+                queryset = queryset.order_by('-lastmodifytime', '-createdtime')
+            else:
+                queryset = queryset.order_by('lastmodifytime', 'createdtime')
             if request.user.has_perm('dataroom.admin_getdataroom'):
                 queryset = queryset
             else:
@@ -248,7 +253,7 @@ class DataroomView(viewsets.ModelViewSet):
                 for instance in dataroomquery:
                     rel_fileds = [f for f in dataroom._meta.get_fields() if isinstance(f, ForeignObjectRel)]
                     links = [f.get_accessor_name() for f in rel_fileds]
-                    for link in links:
+                    for link in ['dataroom_directories']:
                         if link in []:
                             manager = getattr(instance, link, None)
                             if not manager:

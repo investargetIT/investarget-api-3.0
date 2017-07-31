@@ -1,17 +1,11 @@
 #coding=utf-8
-import os
 import traceback
-
 import datetime
-
-
 from django.contrib import auth
 from django.contrib.auth.models import Group, Permission
 from django.core.exceptions import FieldDoesNotExist
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction,models
-
-# Create your views here.
 from django.db.models import Q
 from django.db.models import QuerySet
 from django.db.models.fields.reverse_related import ForeignObjectRel
@@ -24,14 +18,13 @@ from rest_framework.decorators import api_view, detail_route, list_route
 from APIlog.views import logininlog, apilog
 from emailmanage.views import sendEmailToUser, getAllProjectsNeedToSendMail
 from org.models import organization
-from proj.models import project
 from sourcetype.views import getmenulist
 from third.models import MobileAuthCode
-from usersys.models import MyUser, UserRelation, userTags, UserFriendship, MyToken
+from usersys.models import MyUser, UserRelation, userTags, UserFriendship, MyToken, UnreachUser
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
     CreatUserSerializer , UserCommenSerializer , UserRelationDetailSerializer, UserFriendshipSerializer, \
     UserFriendshipDetailSerializer, UserFriendshipUpdateSerializer, GroupSerializer, GroupDetailSerializer, GroupCreateSerializer, PermissionSerializer, \
-    UpdateUserSerializer
+    UpdateUserSerializer, UnreachUserSerializer
 from sourcetype.models import Tag, DataSource
 from utils import perimissionfields
 from utils.customClass import JSONResponse, InvestError, RelationFilter
@@ -128,6 +121,11 @@ class UserView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
+            sort = request.GET.get('sort')
+            if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
+                queryset = queryset.order_by('-lastmodifytime', '-createdtime')
+            else:
+                queryset = queryset.order_by('lastmodifytime', 'createdtime')
             if request.user.has_perm('usersys.admin_getuser'):
                 serializerclass = UserListSerializer
             else:
@@ -419,8 +417,9 @@ class UserView(viewsets.ModelViewSet):
                         pass
                     else:
                         raise InvestError(code=2009)
-                    for link in links:
-                        if link in ['investor_relations','trader_relations','investor_timelines','supportor_timelines','trader_timelines']:
+                    for link in ['investor_relations','trader_relations','investor_timelines','supportor_timelines','trader_timelines','usersupport_projs','usertake_projs',
+                                 'usermake_projs','user_usertags','user_datarooms','trader_datarooms','investor_datarooms']:
+                        if link in ['investor_relations','trader_relations','investor_timelines','supportor_timelines','trader_timelines','user_datarooms','trader_datarooms','investor_datarooms']:
                             manager = getattr(instance, link, None)
                             if not manager:
                                 continue
@@ -554,6 +553,161 @@ class UserView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+class UnReachUserView(viewsets.ModelViewSet):
+    """
+        list:获取unreachuser列表
+        create:添加unreachuser
+        retrieve:查看unreachuser详情
+        update:修改unreachuser
+        destroy:删除unreachuser
+    """
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_fields = ('org', 'name', 'title')
+    search_fields = ('name', 'org', 'title', 'email','mobile')
+    queryset = UnreachUser.objects.filter(is_deleted=False)
+    serializer_class = UnreachUserSerializer
+
+    def get_queryset(self):
+        assert self.queryset is not None, (
+            "'%s' should either include a `queryset` attribute, "
+            "or override the `get_queryset()` method."
+            % self.__class__.__name__
+        )
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource=self.request.user.datasource)
+            else:
+                queryset = queryset.all()
+        else:
+            raise InvestError(code=8890)
+        return queryset
+
+    @loginTokenIsAvailable(['usersys.admin_getuser',])
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            lang = request.GET.get('lang')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            sort = request.GET.get('sort')
+            if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
+                queryset = queryset.order_by('-createdtime',)
+            else:
+                queryset = queryset.order_by('createdtime',)
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+            except EmptyPage:
+                raise InvestError(code=1001)
+            queryset = queryset.page(page_index)
+            instancedata = UnreachUserSerializer(queryset,many=True).data
+            return JSONResponse(
+                SuccessResponse({'count': count, 'data': returnListChangeToLanguage(instancedata, lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable(['usersys.admin_adduser',])
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            data['createuser'] = request.user.id
+            data['createdtime'] = datetime.datetime.now()
+            data['datasource'] = request.user.datasource.id
+            with transaction.atomic():
+                newinstance = UnreachUserSerializer(data=data)
+                if newinstance.is_valid():
+                    relation = newinstance.save()
+                else:
+                    raise InvestError(code=20071, msg='%s' % newinstance.errors)
+                return JSONResponse(SuccessResponse(newinstance.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    def get_object(self, pk=None):
+        if pk:
+            lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+            assert lookup_url_kwarg in self.kwargs, (
+                'Expected view %s to be called with a URL keyword argument '
+                'named "%s". Fix your URL conf, or set the `.lookup_field` '
+                'attribute on the view correctly.' %
+                (self.__class__.__name__, lookup_url_kwarg)
+            )
+            try:
+                obj = UserRelation.objects.get(id=self.kwargs[lookup_url_kwarg], is_deleted=False)
+            except UserRelation.DoesNotExist:
+                raise InvestError(code=2011, msg='relation with pk = "%s" is not exist' % self.kwargs[lookup_url_kwarg])
+        else:
+            lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+            assert lookup_url_kwarg in self.kwargs, (
+                'Expected view %s to be called with a URL keyword argument '
+                'named "%s". Fix your URL conf, or set the `.lookup_field` '
+                'attribute on the view correctly.' %
+                (self.__class__.__name__, lookup_url_kwarg)
+            )
+            try:
+                obj = UserRelation.objects.get(id=self.kwargs[lookup_url_kwarg], is_deleted=False)
+            except UserRelation.DoesNotExist:
+                raise InvestError(code=2011, msg='relation with pk = "%s" is not exist' % self.kwargs[lookup_url_kwarg])
+        if obj.datasource != self.request.user.datasource:
+            raise InvestError(code=8888, msg='资源非同源')
+        return obj
+
+    @loginTokenIsAvailable(['usersys.admin_getuser',])
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            serializer = UnreachUserSerializer(instance).data
+            return JSONResponse(SuccessResponse(serializer))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable(['usersys.admin_changeuser',])
+    def update(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            data = request.data
+            with transaction.atomic():
+                newinstance = UnreachUserSerializer(instance, data=data)
+                if newinstance.is_valid():
+                    newinstance.save()
+                else:
+                    raise InvestError(code=20071, msg='%s' % newinstance.errors)
+                return JSONResponse(SuccessResponse(newinstance.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable(['usersys.admin_deleteuser',])
+    def destroy(self, request, *args, **kwargs):
+        try:
+            with transaction.atomic():
+                instance = self.get_object()
+                instance.is_deleted = True
+                instance.deletedtime = datetime.datetime.now()
+                instance.deleteduser = request.user.id
+                instance.save()
+                return JSONResponse(SuccessResponse(UnreachUserSerializer(instance).data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
 
 class UserRelationView(viewsets.ModelViewSet):
     """
@@ -596,6 +750,11 @@ class UserRelationView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
+            sort = request.GET.get('sort')
+            if sort not in ['True', 'true', True, 1 ,'Yes','yes','YES','TRUE']:
+                queryset = queryset.order_by('-lastmodifytime', '-createdtime')
+            else:
+                queryset = queryset.order_by('lastmodifytime', 'createdtime')
             if request.user.has_perm('usersys.admin_getuserrelation'):
                 pass
             else:
@@ -623,10 +782,9 @@ class UserRelationView(viewsets.ModelViewSet):
             lang = request.GET.get('lang')
             if request.user.has_perm('usersys.admin_adduserrelation'):
                 pass
-            elif request.user.has_perm('usersys.user_adduserrelation'):
-                data['traderuser'] = request.user.id
             else:
-                raise InvestError(code=2009)
+                if data.get('traderuser',None) != request.user.id and data.get('investoruser',None) != request.user.id:
+                    raise InvestError(2009,msg='非管理员权限')
             with transaction.atomic():
                 newrelation = UserRelationDetailSerializer(data=data)
                 if newrelation.is_valid():
@@ -1145,6 +1303,7 @@ def login(request):
         response = maketoken(user, clienttype)
         response['permissions'] = perimissions
         response['menulist'] = menulist
+        response['is_superuser'] = user.is_superuser
         if request.META.has_key('HTTP_X_FORWARDED_FOR'):
             ip = request.META['HTTP_X_FORWARDED_FOR']
         else:

@@ -69,6 +69,8 @@ class dataroom(models.Model):
              update_fields=None):
         if not self.proj:
             raise InvestError(code=7004,msg='proj缺失')
+        if self.proj.projstatus_id < 4:
+            raise InvestError(5003,msg='项目尚未终审发布')
         if self.proj.supportUser and (self.proj.supportUser == self.investor or self.proj.supportUser == self.trader):
             raise InvestError(7003,msg='项目上传者不能作为交易师或者投资人')
         super(dataroom, self).save(force_insert, force_update, using, update_fields)

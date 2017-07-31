@@ -11,9 +11,9 @@ def rndColor():
 def rndColor2():
     return (random.randint(32, 127), random.randint(32, 127), random.randint(32, 127))
 
-colorset = [(247, 58, 97), (87, 96, 105), (173, 195, 192), (243, 244, 246), (185, 227, 217)]
 
 def rndColor3():
+    colorset = [(247, 58, 97), (87, 96, 105), (173, 195, 192), (243, 244, 246), (185, 227, 217)]
     return colorset[random.randint(0,4)]
 
 

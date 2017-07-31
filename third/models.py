@@ -18,7 +18,7 @@ class MobileAuthCode(models.Model):
     createTime = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(blank=True,default=False)
     def isexpired(self):
-        return datetime.datetime.now() - self.createTime >=  datetime.timedelta(minutes=10 * 1)
+        return datetime.datetime.now() - self.createTime >=  datetime.timedelta(minutes=30)
     def __str__(self):
         return self.code
     class Meta:

@@ -59,7 +59,7 @@ favoriteTypeConf = {
             'messagetype' : 1,
         },
         'email':{
-            'projectsign' : '',
+            'projectsign' : 'quyk52',
             'vars' : {},
         },
     },
@@ -72,7 +72,7 @@ favoriteTypeConf = {
             'n_extras' : {},
         },
             'email':{
-            'projectsign' : '',
+            'projectsign' : 'OwV0x',
             'vars' : {},
         },
             'webmsg':{
@@ -104,8 +104,6 @@ favoriteTypeConf = {
         },
     },
 }
-
-
 
 messageconfig = {
     'favoriteproject':{
@@ -474,7 +472,7 @@ def sendmessage_traderchange(model,receiver,types,sender=None):
                     pushnotification(content, receiver_alias, platform, bdage, n_extras)
                 if 'email' in types:
                     destination = receiver.email
-                    projectsign = ''
+                    projectsign = 'evsM7'
                     vars = {}
                     xsendEmail(destination, projectsign, vars)
                 if 'sms' in types:
@@ -483,8 +481,8 @@ def sendmessage_traderchange(model,receiver,types,sender=None):
                     vars = {'code': 'sss', 'time': '10'}
                     xsendSms(destination, projectsign, vars)
                 if 'webmsg' in types:
-                    content = ''
-                    title = ''
+                    content = '您的交易师已更换为%s，感谢您的信任与支持' % model.traderuser.usernameC
+                    title = '交易师已更换'
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
 
@@ -513,25 +511,34 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
             sender = self.sender
             if isinstance(model, MyUser):
                 if 'app' in types:
-                    content = '您的账号状态已经改为\'%s\''%model.userstatu.nameC
+                    if model.userstatus.id == 2:
+                        content = '您在海拓注册的%s账号已经通过审核，欢迎加入海拓交易平台。'% model.usernameC
+                    else:
+                        content = '您在海拓注册的%s账号%s，如有疑问，请咨询相关工作人员。。'%(model.usernameC, model.userstatu.nameC)
                     receiver_alias = receiver.mobile
                     platform = 'ios'
                     bdage = 1
                     n_extras = {}
                     pushnotification(content=content, receiver_alias=receiver_alias, platform=platform, bdage=bdage, n_extras=n_extras)
                 if 'email' in types:
-                    destination = receiver.email
-                    projectsign = ''
-                    vars = {}
-                    xsendEmail(destination, projectsign, vars)
+                    if model.userstatus.id == 2:
+                        destination = receiver.email
+                        projectsign = 'uszOI1'
+                        vars = {}
+                        xsendEmail(destination, projectsign, vars)
                 if 'sms' in types:
-                    destination = receiver.mobile
-                    projectsign = 'WzSYg'
-                    vars = {'code': 'sss', 'time': '10'}
-                    xsendSms(destination, projectsign, vars)
+                    if model.userstatus.id == 2:
+                        destination = receiver.mobile
+                        projectsign = 'WzSYg'
+                        vars = {'code': 'sss', 'time': '10'}
+                        xsendSms(destination, projectsign, vars)
                 if 'webmsg' in types:
-                    content = '您的账号状态已经改为\'%s\'，如有疑问，请咨询相关工作人员。'%model.userstatu.nameC
-                    title = '您的账号状态已经改为\'%s\''%model.userstatu.nameC
+                    if model.userstatus.id == 2:
+                        content = '您在海拓注册的%s账号已经通过审核，欢迎加入海拓交易平台。'% model.usernameC
+                        title = '账号状态更改'
+                    else:
+                        content = '您在海拓注册的%s账号%s，如有疑问，请咨询相关工作人员。。'%(model.usernameC, model.userstatu.nameC)
+                        title = '账号状态更改'
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
 
@@ -577,8 +584,8 @@ def sendmessage_userregister(model,receiver,types,sender=None):
                     vars = {'code': 'sss', 'time': '10'}
                     xsendSms(destination, projectsign, vars)
                 if 'webmsg' in types:
-                    content = '您的账号状态已经改为\'%s\'，如有疑问，请咨询相关工作人员。'%model.userstatu.nameC
-                    title = '您的账号状态已经改为\'%s\''%model.userstatu.nameC
+                    content = '我们已收到您提交的注册申请。我们将在24小时内与您取得联系，进行用户信息审核，并明确您的意向和需求。请您耐心等待！审核结果将通过邮件和短信通知您。感谢您对多维海拓的关注！'
+                    title = '账号注册成功，审核工作会在24小时内开始。'
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
 

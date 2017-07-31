@@ -283,13 +283,14 @@ class ProjectView(viewsets.ModelViewSet):
         try:
             pro = self.get_object()
             lang = request.GET.get('lang')
+            projdata = request.data
             if request.user.has_perm('proj.admin_changeproj'):
                 pass
             elif request.user.has_perm('proj.user_changeproj',pro):
-                pass
+                if projdata.get('projstatus', None) and projdata.get('projstatus', None) != pro.projstatus_id:
+                    raise InvestError(2009,msg='只有管理员能修改项目状态')
             else:
                 raise InvestError(code=2009,msg='非上传方或管理员无法修改项目')
-            projdata = request.data
             projdata['lastmodifyuser'] = request.user.id
             projdata['lastmodifytime'] = datetime.datetime.now()
             projdata['datasource'] = request.user.datasource_id
@@ -388,7 +389,8 @@ class ProjectView(viewsets.ModelViewSet):
             with transaction.atomic():
                 rel_fileds = [f for f in instance._meta.get_fields() if isinstance(f, ForeignObjectRel)]
                 links = [f.get_accessor_name() for f in rel_fileds]
-                for link in links:
+                for link in ['proj_timelines','proj_finances','proj_attachment','project_tags','project_industries','project_TransactionTypes',
+                             'proj_favorite','proj_sharetoken','proj_datarooms']:
                     if link in []:
                         manager = getattr(instance, link, None)
                         if not manager:
@@ -932,6 +934,11 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
+            sort = request.GET.get('sort')
+            if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
+                queryset = queryset.order_by('-createdtime',)
+            else:
+                queryset = queryset.order_by('createdtime',)
             user = self.get_user(userid if userid else traderid)
             if request.user == user:
                 pass
@@ -968,14 +975,20 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
             data['datasource'] = request.user.datasource.id
             projidlist = data.pop('projs',None)
             user = self.get_user(userid)
-            if request.user == user:
-                if ftype not in [4,5]:
+            if ftype == 4:
+                pass
+            elif ftype == 5:
+                traderid = data.get('trader', None)
+                if not traderid:
+                    raise InvestError(4005,msg='trader cannot be null')
+                traderuser = self.get_user(traderid)
+                if user.has_perm('usersys.user_interestproj', traderuser):
                     raise InvestError(code=4005)
-            elif request.user.has_perm('proj.admin_addfavorite'):
-                if ftype not in [1,2]:
+            elif ftype not in [1,2]:
+                if request.user.has_perm('proj.admin_addfavorite'):
                     raise InvestError(code=4005)
-            elif request.user.has_perm('usersys.user_addfavorite', user):
-                if ftype not in [3]:
+            elif ftype == 3:
+                if request.user.has_perm('usersys.user_addfavorite', user):
                     raise InvestError(code=4005)
             else:
                 raise InvestError(code=2009)

@@ -5,13 +5,21 @@ from rest_framework import serializers
 from org.serializer import OrgCommonSerializer
 from sourcetype.serializer import tagSerializer
 from third.views.qiniufile import getUrlWithBucketAndKey
-from .models import MyUser, UserRelation, UserFriendship
+from .models import MyUser, UserRelation, UserFriendship, UnreachUser
 
+
+class UnreachUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UnreachUser
+        fields = '__all__'
 
 class PermissionSerializer(serializers.ModelSerializer):
+    codename = serializers.SerializerMethodField()
     class Meta:
         model = Permission
-        fields = ('id','name','content_type')
+        fields = ('id','name','content_type','codename')
+    def get_codename(self, obj):
+        return str(obj.content_type.app_label) +'.' + obj.codename
 
 #用户基本信息
 class UserCommenSerializer(serializers.ModelSerializer):

@@ -47,6 +47,10 @@ class timeline(models.Model):
             pass
         else:
             raise InvestError(20071,msg='datasource/proj/investor/trader cannot be null')
+        if self.proj.projstatus_id < 4:
+            raise InvestError(5003,msg='项目状态尚未终审发布')
+        if self.trader.userstatus_id != 2 or self.investor.userstatus_id != 2:
+            raise InvestError(2022)
         try:
             if self.pk:
                 timeline.objects.exclude(pk=self.pk).get(is_deleted=False,datasource=self.datasource,proj=self.proj,investor=self.investor,trader=self.trader)
