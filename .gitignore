@@ -1,4 +1,4 @@
 .idea/
 *.pyc
 avatar.jpg
-settings.py
+invest/settings.py
