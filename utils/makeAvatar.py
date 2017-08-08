@@ -4,6 +4,9 @@ import random
 
 
 # 随机颜色1:
+from invest.settings import APILOG_PATH
+
+
 def rndColor():
     return (random.randint(64, 255), random.randint(64, 255), random.randint(64, 255))
 
@@ -36,8 +39,8 @@ def makeAvatar(name):
     # 输出文字:
     draw.text((textX0, textY0), name, font=font, fill=(255,255,255))
     from third.views.qiniufile import qiniuuploadfile
-    image.save('avatar.jpg', 'jpeg')
-    success, url, key = qiniuuploadfile('avatar.jpg', 'image')
+    image.save(APILOG_PATH['userAvatarPath'], 'jpeg')
+    success, url, key = qiniuuploadfile(APILOG_PATH['userAvatarPath'], 'image')
     if success:
         return key
     else:
