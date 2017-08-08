@@ -6,17 +6,16 @@ from django.db.models import Q, FieldDoesNotExist
 # Create your views here.
 from django.db.models import QuerySet
 from django.db.models.fields.reverse_related import ForeignObjectRel
-from guardian.shortcuts import assign_perm
 from rest_framework import filters , viewsets
 
-from APIlog.views import apilog
 from org.models import organization, orgTransactionPhase, orgRemarks
 from org.serializer import OrgSerializer, OrgCommonSerializer, OrgDetailSerializer, \
     OrgRemarkSerializer, OrgRemarkDetailSerializer, OrgCreateSerializer, OrgUpdateSerializer
 from sourcetype.models import TransactionPhases, Tag, DataSource
 from utils.customClass import InvestError, JSONResponse, RelationFilter
 from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, returnListChangeToLanguage, \
-    returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser
+    returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser, add_perm, \
+    cache_delete_key
 from django.db import transaction,models
 from django_filters import FilterSet
 
@@ -28,9 +27,11 @@ class OrganizationFilter(FilterSet):
     orgtypes = RelationFilter(filterstr='orgtype',lookup_method='in')
     orgstatus = RelationFilter(filterstr='orgstatus',lookup_method='in')
     tags =  RelationFilter(filterstr='org_users__tags',lookup_method='in',relationName='org_users__user_usertags__is_deleted')
+    area = RelationFilter(filterstr='org_users__orgarea',lookup_method='in',relationName='org_users__is_deleted')
+    trader = RelationFilter(filterstr='org_users__investor_relations__traderuser',lookup_method='in',relationName='org_users__investor_relations__is_deleted')
     class Meta:
         model = organization
-        fields = ['orgstatus','currencys','industrys','orgtransactionphases','orgtypes','tags']
+        fields = ['orgstatus','currencys','industrys','orgtransactionphases','orgtypes','tags','area','trader']
 
 class OrganizationView(viewsets.ModelViewSet):
     """
@@ -43,7 +44,7 @@ class OrganizationView(viewsets.ModelViewSet):
     filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
     queryset = organization.objects.filter(is_deleted=False)
     filter_class = OrganizationFilter
-    search_fields = ('orgnameC','orgnameE','orgcode',)
+    search_fields = ('orgnameC','orgnameE','orgcode','org_users__orgarea__nameC','org_users__orgarea__nameE')
     serializer_class = OrgDetailSerializer
     redis_key = 'organization'
 
@@ -124,16 +125,16 @@ class OrganizationView(viewsets.ModelViewSet):
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
             except EmptyPage:
-                raise InvestError(1001)
-            queryset = queryset.page(page_index)
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             responselist = []
             for instance in queryset:
                 actionlist = {'get': False, 'change': False, 'delete': False}
                 if request.user.is_anonymous:
                     pass
                 else:
-                    if request.user.has_perm('org.admin_getorg') or request.user.has_perm('org.user_getorg'):
+                    if request.user.has_perm('org.admin_getorg') or request.user.has_perm('org.user_getorg',instance):
                         actionlist['get'] = True
                     if request.user.has_perm('org.admin_changeorg') or request.user.has_perm('org.user_changeorg',instance):
                         actionlist['change'] = True
@@ -169,9 +170,9 @@ class OrganizationView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(code=20071, msg='data有误_%s' % orgserializer.errors)
                 if org.createuser:
-                    assign_perm('org.user_getorg', org.createuser, org)
-                    assign_perm('org.user_changeorg', org.createuser, org)
-                    assign_perm('org.user_deleteorg', org.createuser, org)
+                    add_perm('org.user_getorg', org.createuser, org)
+                    add_perm('org.user_changeorg', org.createuser, org)
+                    add_perm('org.user_deleteorg', org.createuser, org)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgSerializer(org).data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -183,13 +184,17 @@ class OrganizationView(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         try:
             org = self.get_object()
+            orgusers = org.org_users.all().filter(is_deleted=False)
             lang = request.GET.get('lang')
-            if request.user.has_perm('org.admin_getorg') or request.user == org.createuser:
+            if request.user.has_perm('org.admin_getorg'):
+                orgserializer = OrgDetailSerializer
+            elif request.user.has_perm('org.user_getorg', org):
+                orgserializer = OrgDetailSerializer
+            elif request.user.trader_relations.all().filter(is_deleted=False, investoruser__in=orgusers).exists():
                 orgserializer = OrgDetailSerializer
             else:
-                orgserializer = OrgDetailSerializer
+                orgserializer = OrgCommonSerializer
             serializer = orgserializer(org)
-            apilog(request, 'Org', serializer.data, serializer.data,modelID=org.id, datasource=request.user.datasource_id)
             return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -231,6 +236,7 @@ class OrganizationView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(code=20071,
                                       msg='data有误_%s\n%s' % (orgupdateserializer.error_messages, orgupdateserializer.errors))
+                cache_delete_key(self.redis_key + '_%s' % org.id)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgDetailSerializer(org).data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -293,6 +299,7 @@ class OrganizationView(viewsets.ModelViewSet):
                 instance.deleteduser = request.user
                 instance.deletetime = datetime.datetime.utcnow()
                 instance.save()
+                cache_delete_key(self.redis_key + '_%s' % instance.id)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgDetailSerializer(instance).data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -372,9 +379,9 @@ class OrgRemarkView(viewsets.ModelViewSet):
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
             except EmptyPage:
-                raise InvestError(1001)
-            queryset = queryset.page(page_index)
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             serializer = OrgRemarkSerializer(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
@@ -408,9 +415,9 @@ class OrgRemarkView(viewsets.ModelViewSet):
                     raise InvestError(code=20071,
                                       msg='data有误_%s\n%s' % (orgremarkserializer.error_messages, orgremarkserializer.errors))
                 if orgremark.createuser:
-                    assign_perm('org.user_getorgremark', orgremark.createuser, orgremark)
-                    assign_perm('org.user_changeorgremark', orgremark.createuser, orgremark)
-                    assign_perm('org.user_deleteorgremark', orgremark.createuser, orgremark)
+                    add_perm('org.user_getorgremark', orgremark.createuser, orgremark)
+                    add_perm('org.user_changeorgremark', orgremark.createuser, orgremark)
+                    add_perm('org.user_deleteorgremark', orgremark.createuser, orgremark)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgRemarkDetailSerializer(orgremark).data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))

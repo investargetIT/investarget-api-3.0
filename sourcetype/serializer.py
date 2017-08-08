@@ -1,8 +1,8 @@
 from rest_framework import serializers
 
 from sourcetype.models import TransactionType, TransactionPhases, Specialty, School, OrgArea, Tag, Industry, CurrencyType, \
-    AuditStatus, ProjectStatus, OrgType, FavoriteType, MessageType, ClientType, TitleType, Continent, Country, \
-    DataSource, TransactionStatus, webmenu, CharacterType, orgtitletable
+    AuditStatus, ProjectStatus, OrgType, FavoriteType, MessageType, ClientType, TitleType, Country, \
+    DataSource, TransactionStatus, webmenu, CharacterType, orgtitletable, Service
 
 
 class AuditStatusSerializer(serializers.ModelSerializer):
@@ -48,17 +48,11 @@ class titleTypeSerializer(serializers.ModelSerializer):
         exclude = ('is_deleted',)
 
 
-class continentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Continent
-        fields = '__all__'
-
-
 class countrySerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
     class Meta:
         model = Country
-        exclude = ('is_deleted',)
+        exclude = ('is_deleted','datasource')
     def get_url(self, obj):
         if not obj.key:
             return 'https://o79atf82v.qnssl.com/' + '040.jpg'
@@ -75,7 +69,7 @@ class industrySerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
     class Meta:
         model = Industry
-        exclude = ('is_deleted',)
+        exclude = ('is_deleted','datasource')
     def get_url(self, obj):
         if not obj.key:
             return 'https://o79atf82v.qnssl.com/' + '040.jpg'
@@ -85,8 +79,12 @@ class industrySerializer(serializers.ModelSerializer):
 class tagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
-        exclude = ('is_deleted',)
+        exclude = ('is_deleted','datasource')
 
+class serviceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Service
+        exclude = ('is_deleted',)
 
 class orgAreaSerializer(serializers.ModelSerializer):
     class Meta:

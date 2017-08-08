@@ -1,12 +1,12 @@
 from rest_framework_mongoengine.serializers import DynamicDocumentSerializer, DocumentSerializer, EmbeddedDocumentSerializer
 
-from mongoDoc.models import WXContentData, GroupEmailData
+from mongoDoc.models import GroupEmailData
 
 
-class WXContentDataSerializer(DocumentSerializer):
-    class Meta:
-        model = WXContentData
-        fields = '__all__'
+# class WXContentDataSerializer(DocumentSerializer):
+#     class Meta:
+#         model = WXContentData
+#         fields = '__all__'
 
 class GroupEmailDataSerializer(DocumentSerializer):
     class Meta:

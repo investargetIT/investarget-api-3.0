@@ -4,13 +4,13 @@ import traceback
 from rest_framework import filters
 from rest_framework import viewsets
 
-from sourcetype.models import Tag, TitleType, DataSource,Continent,Country,Industry, TransactionType, \
+from sourcetype.models import Tag, TitleType, DataSource,Country,Industry, TransactionType, \
     TransactionPhases, OrgArea, CurrencyType, OrgType, CharacterType, ProjectStatus, TransactionStatus, orgtitletable, \
-    webmenu
-from sourcetype.serializer import tagSerializer, countrySerializer, industrySerializer, continentSerializer, \
+    webmenu, Service
+from sourcetype.serializer import tagSerializer, countrySerializer, industrySerializer, \
     titleTypeSerializer, DataSourceSerializer, orgAreaSerializer, transactionTypeSerializer, transactionPhasesSerializer, \
     currencyTypeSerializer, orgTypeSerializer, characterTypeSerializer, ProjectStatusSerializer, \
-    transactionStatuSerializer, OrgtitletableSerializer, WebMenuSerializer
+    transactionStatuSerializer, OrgtitletableSerializer, WebMenuSerializer, serviceSerializer
 from utils.customClass import IsSuperUser, JSONResponse, InvestError
 from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, returnListChangeToLanguage
 
@@ -29,7 +29,8 @@ class TagView(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
-            queryset = self.filter_queryset(self.get_queryset())
+            source = request.META.get('HTTP_SOURCE', 1)
+            queryset = self.filter_queryset(self.get_queryset()).filter(datasource=source)
             serializer = tagSerializer(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
@@ -59,6 +60,37 @@ class ProjectStatusView(viewsets.ModelViewSet):
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+class ServiceView(viewsets.ModelViewSet):
+    """
+        list:获取所有service
+        create:新增service
+        update:修改service
+        destroy:删除service
+    """
+    permission_classes = (IsSuperUser,)
+    queryset = Service.objects.all().filter(is_deleted=False)
+    serializer_class = serviceSerializer
+    def list(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = serviceSerializer(queryset, many=True)
+            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    # def destroy(self, request, *args, **kwargs):
+    #     try:
+    #         instance = self.get_object()
+    #         instance.is_deleted = True
+    #         instance.save(update_fields=['is_deleted'])
+    #         return JSONResponse(SuccessResponse({'is_deleted':instance.is_deleted}))
+    #     except InvestError as err:
+    #         return JSONResponse(InvestErrorResponse(err))
+    #     except Exception:
+    #         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 class CountryView(viewsets.ModelViewSet):
     """
@@ -67,13 +99,17 @@ class CountryView(viewsets.ModelViewSet):
         update:修改国家
         destroy:删除国家
     """
+    filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
+    filter_fields = ('level', 'parent',)
     permission_classes = (IsSuperUser,)
     queryset = Country.objects.all().filter(is_deleted=False)
     serializer_class = countrySerializer
+
     def list(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
-            queryset = self.filter_queryset(self.get_queryset())
+            source = request.META.get('HTTP_SOURCE',1)
+            queryset = self.filter_queryset(self.get_queryset()).filter(datasource=source)
             serializer = countrySerializer(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
@@ -91,6 +127,7 @@ class CountryView(viewsets.ModelViewSet):
     #         return JSONResponse(InvestErrorResponse(err))
     #     except Exception:
     #         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
 
 class CharacterTypeView(viewsets.ModelViewSet):
     """
@@ -113,27 +150,6 @@ class CharacterTypeView(viewsets.ModelViewSet):
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-class ContinentalView(viewsets.ModelViewSet):
-    """
-        list:获取所有大洲
-        create:新增大洲
-        update:修改大洲
-        destroy:删除大洲
-    """
-    permission_classes = (IsSuperUser,)
-    queryset = Continent.objects.all().filter(is_deleted=False)
-    serializer_class = continentSerializer
-
-    def list(self, request, *args, **kwargs):
-        try:
-            lang = request.GET.get('lang')
-            queryset = self.filter_queryset(self.get_queryset())
-            serializer = continentSerializer(queryset, many=True)
-            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
-        except InvestError as err:
-            return JSONResponse(InvestErrorResponse(err))
-        except Exception:
-            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 class IndustryView(viewsets.ModelViewSet):
     """
         list:获取所有行业
@@ -150,7 +166,8 @@ class IndustryView(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
-            queryset = self.filter_queryset(self.get_queryset())
+            source = request.META.get('HTTP_SOURCE', 1)
+            queryset = self.filter_queryset(self.get_queryset()).filter(datasource=source)
             serializer = industrySerializer(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
@@ -359,10 +376,10 @@ def getmenulist(user):
     if user.has_perm('usersys.as_investor'):
         qslist.append(allmenuobj.filter(id__in=[13]))
     if user.has_perm('usersys.as_trader'):
-        qslist.append(allmenuobj.filter(id__in=[12]))
+        qslist.append(allmenuobj.filter(id__in=[12, 2]))
     if user.has_perm('org.admin_getorg'):#机构 、邮件管理
         qslist.append(allmenuobj.filter(id__in=[2, 3]))
-    if user.has_perm('org.admin_getorg'):#日志查询
+    if user.has_perm('usersys.as_admin'):#日志查询
         qslist.append(allmenuobj.filter(id__in=[9]))
     if user.is_superuser:
         qslist.append(allmenuobj.filter(id__in=[17]))

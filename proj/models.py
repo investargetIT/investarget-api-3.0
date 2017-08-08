@@ -9,12 +9,14 @@ import os
 from django.db import models
 
 # Create your models here.
+
 from sourcetype.models import FavoriteType, ProjectStatus,CurrencyType,Tag,Country,TransactionType,Industry, DataSource, \
-    CharacterType
+    CharacterType, Service
 from usersys.models import MyUser
 import sys
 
 from utils.customClass import InvestError, MyForeignKey
+from utils.util import add_perm, rem_perm
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
@@ -47,6 +49,7 @@ class project(models.Model):
     tags = models.ManyToManyField(Tag, through='projectTags', through_fields=('proj', 'tag'),blank=True)
     industries = models.ManyToManyField(Industry, through='projectIndustries', through_fields=('proj', 'industry'),blank=True)
     transactionType = models.ManyToManyField(TransactionType, through='projectTransactionType',through_fields=('proj', 'transactionType'),blank=True)
+    service = models.ManyToManyField(Service, through='projServices',through_fields=('proj', 'service'), blank=True)
     contactPerson = models.CharField(help_text='联系人',max_length=64,blank=True,null=True)
     phoneNumber = models.CharField(max_length=32,blank=True,null=True)
     email = models.EmailField(help_text='联系人邮箱', max_length=48, db_index=True,blank=True,null=True)
@@ -103,8 +106,29 @@ class project(models.Model):
              update_fields=None):
         if not self.datasource or not self.createuser or self.datasource != self.createuser.datasource:
             raise InvestError(code=8888,msg='项目datasource不合法')
+        if self.pk:
+            if self.is_deleted:
+                rem_perm('proj.user_getproj',self.createuser,self)
+                rem_perm('proj.user_changeproj', self.createuser, self)
+                rem_perm('proj.user_deleteproj', self.createuser, self)
+
         super(project,self).save(force_insert,force_update,using,update_fields)
 
+class projServices(models.Model):
+    id = models.AutoField(primary_key=True)
+    proj = MyForeignKey(project,blank=True,null=True,related_name='proj_services')
+    service = MyForeignKey(Service, related_name='service_projects')
+    is_deleted = models.BooleanField(blank=True, default=False)
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_projservices')
+    deletedtime = models.DateTimeField(blank=True, null=True)
+    createdtime = models.DateTimeField(auto_created=True, blank=True, null=True)
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_projservices')
+
+    class Meta:
+        db_table = "project_services"
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        super(projServices,self).save(force_insert,force_update,using,update_fields)
 
 class finance(models.Model):
     id = models.AutoField(primary_key=True)
@@ -127,7 +151,7 @@ class finance(models.Model):
     createdtime = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='usermodify_finances')
     lastmodifytime = models.DateTimeField(auto_now=True)
-    datasource = MyForeignKey(DataSource, help_text='数据源')
+    datasource = MyForeignKey(DataSource, help_text='数据源',blank=True,default=1)
     def __str__(self):
         if self.proj:
             return self.proj.projtitleC

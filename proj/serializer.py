@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
-from proj.models import project, finance, favoriteProject, attachment
-from sourcetype.serializer import tagSerializer, industrySerializer, transactionTypeSerializer
+from proj.models import project, finance, favoriteProject, attachment, projServices
+from sourcetype.serializer import tagSerializer, industrySerializer, transactionTypeSerializer, serviceSerializer
 from third.views.qiniufile import getUrlWithBucketAndKey
 from usersys.serializer import UserCommenSerializer
 
@@ -25,7 +25,10 @@ class FinanceCreateSerializer(serializers.ModelSerializer):
         model = finance
         fields = '__all__'
         # read_only_fields = ('deletedtime', 'lastmodifyuser', 'lastmodifytime', 'is_deleted', 'deleteduser')
-
+class ProjServiceCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = projServices
+        fields = '__all__'
 
 class ProjFinanceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -160,21 +163,29 @@ class ProjDetailSerializer_admin_withsecretinfo(serializers.ModelSerializer):
     finance = serializers.SerializerMethodField()
     attachment = serializers.SerializerMethodField()
     tags = serializers.SerializerMethodField()
+    service = serializers.SerializerMethodField()
     industries = serializers.SerializerMethodField()
     transactionType = serializers.SerializerMethodField()
     supportUser = UserCommenSerializer()
     takeUser = UserCommenSerializer()
     makeUser = UserCommenSerializer()
     linkpdfurl = serializers.SerializerMethodField()
+
     class Meta:
         model = project
-        exclude = ('createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail')
+        exclude = ('createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail',)
         depth = 1
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_projects__is_deleted=False)
         if qs.exists():
             return tagSerializer(qs,many=True).data
         return None
+    def get_service(self, obj):
+        qs = obj.service.filter(service_projects__is_deleted=False)
+        if qs.exists():
+            return serviceSerializer(qs,many=True).data
+        return None
+
     def get_industries(self, obj):
         qs = obj.industries.filter(industry_projects__is_deleted=False)
         if qs.exists():
@@ -203,6 +214,7 @@ class ProjDetailSerializer_admin_withsecretinfo(serializers.ModelSerializer):
 
 class ProjDetailSerializer_user_withsecretinfo(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
+    service = serializers.SerializerMethodField()
     industries = serializers.SerializerMethodField()
     transactionType = serializers.SerializerMethodField()
     finance = serializers.SerializerMethodField()
@@ -240,10 +252,16 @@ class ProjDetailSerializer_user_withsecretinfo(serializers.ModelSerializer):
         if usertrader.exists():
             return ProjAttachmentSerializer(usertrader, many=True).data
         return None
+    def get_service(self, obj):
+        qs = obj.service.filter(service_projects__is_deleted=False)
+        if qs.exists():
+            return serviceSerializer(qs,many=True).data
+        return None
 
 
 class ProjDetailSerializer_admin_withoutsecretinfo(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
+    service = serializers.SerializerMethodField()
     industries = serializers.SerializerMethodField()
     transactionType = serializers.SerializerMethodField()
     finance = serializers.SerializerMethodField()
@@ -256,6 +274,11 @@ class ProjDetailSerializer_admin_withoutsecretinfo(serializers.ModelSerializer):
         exclude = ('phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail')
         depth = 1
 
+    def get_service(self, obj):
+        qs = obj.service.filter(service_projects__is_deleted=False)
+        if qs.exists():
+            return serviceSerializer(qs, many=True).data
+        return None
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_projects__is_deleted=False)
         if qs.exists():
@@ -284,6 +307,7 @@ class ProjDetailSerializer_admin_withoutsecretinfo(serializers.ModelSerializer):
         return None
 class ProjDetailSerializer_user_withoutsecretinfo(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
+    service = serializers.SerializerMethodField()
     industries = serializers.SerializerMethodField()
     transactionType = serializers.SerializerMethodField()
     finance = serializers.SerializerMethodField()
@@ -296,6 +320,11 @@ class ProjDetailSerializer_user_withoutsecretinfo(serializers.ModelSerializer):
         exclude = ('phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail')
         depth = 1
 
+    def get_service(self, obj):
+        qs = obj.service.filter(service_projects__is_deleted=False)
+        if qs.exists():
+            return serviceSerializer(qs, many=True).data
+        return None
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_projects__is_deleted=False)
         if qs.exists():

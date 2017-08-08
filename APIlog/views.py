@@ -10,7 +10,7 @@ from rest_framework import filters
 from rest_framework import viewsets
 
 from APIlog.models import loginlog, userviewprojlog, APILog
-from APIlog.serializer import APILogSerializer
+from APIlog.serializer import APILogSerializer, ViewProjLogSerializer, LoginLogSerializer
 from utils.customClass import JSONResponse, InvestError
 from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse
 
@@ -54,6 +54,7 @@ def Checkthedatabeforeandafterthechangeofdifference(before,after):
 class APILogView(viewsets.ModelViewSet):
     queryset = APILog.objects.filter(is_deleted=False)
     serializer_class = APILogSerializer
+
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')
@@ -66,9 +67,9 @@ class APILogView(viewsets.ModelViewSet):
             count = queryset.count()
             try:
                 queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
             except EmptyPage:
-                    raise InvestError(code=1001)
-            queryset = queryset.page(page_index)
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse({'count': count, 'data':serializer.data}))
         except InvestError as err:
@@ -80,7 +81,8 @@ class APILogView(viewsets.ModelViewSet):
 class LoginLogView(viewsets.ModelViewSet):
 
     queryset = loginlog.objects.filter(is_deleted=False)
-    serializer_class = APILogSerializer
+    serializer_class = LoginLogSerializer
+
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')
@@ -93,9 +95,9 @@ class LoginLogView(viewsets.ModelViewSet):
             count = queryset.count()
             try:
                 queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
             except EmptyPage:
-                    raise InvestError(code=1001)
-            queryset = queryset.page(page_index)
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse({'count': count, 'data':serializer.data}))
         except InvestError as err:
@@ -106,7 +108,8 @@ class LoginLogView(viewsets.ModelViewSet):
 class ViewprojLogView(viewsets.ModelViewSet):
 
     queryset = userviewprojlog.objects.filter(is_deleted=False)
-    serializer_class = APILogSerializer
+    serializer_class = ViewProjLogSerializer
+
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')
@@ -119,9 +122,9 @@ class ViewprojLogView(viewsets.ModelViewSet):
             count = queryset.count()
             try:
                 queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
             except EmptyPage:
-                    raise InvestError(code=1001)
-            queryset = queryset.page(page_index)
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse({'count': count, 'data':serializer.data}))
         except InvestError as err:

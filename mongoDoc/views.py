@@ -11,8 +11,8 @@ import requests
 from rest_framework import viewsets
 from rest_framework.decorators import api_view
 
-from mongoDoc.models import WXContentData, GroupEmailData
-from mongoDoc.serializers import WXContentDataSerializer, GroupEmailDataSerializer
+from mongoDoc.models import GroupEmailData
+from mongoDoc.serializers import GroupEmailDataSerializer
 from utils.customClass import JSONResponse, InvestError
 from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, catchexcption, logexcption
 
@@ -20,52 +20,54 @@ APPID = '9845160'
 APIKEY = 'xxnuhuvogLrRR7jCH9vKh2Tt'
 APISECRET = 'pmnYqjuzEXpnzi96FbNlm4PxvWUw460y'
 
-class WXView(viewsets.ModelViewSet):
-
-    queryset = WXContentData.objects.all()
-    serializer_class = WXContentDataSerializer
-    def list(self, request, *args, **kwargs):
-        try:
-            count = self.queryset.count()
-            serializer = WXContentDataSerializer(self.queryset,many=True)
-            return JSONResponse(SuccessResponse({'count':count,'data':serializer.data}))
-        except InvestError as err:
-            return JSONResponse(InvestErrorResponse(err))
-        except Exception:
-            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
-    def create(self, request, *args, **kwargs):
-        try:
-            data = request.data
-            serializer = WXContentDataSerializer(data=data)
-            if serializer.is_valid():
-                serializer.save()
-            return JSONResponse(SuccessResponse(serializer.data))
-        except InvestError as err:
-            return JSONResponse(InvestErrorResponse(err))
-        except Exception:
-            catchexcption(request)
-            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+# class WXView(viewsets.ModelViewSet):
+#
+#     queryset = WXContentData.objects.all()
+#     serializer_class = WXContentDataSerializer
+#     def list(self, request, *args, **kwargs):
+#         try:
+#             count = self.queryset.count()
+#             serializer = WXContentDataSerializer(self.queryset,many=True)
+#             return JSONResponse(SuccessResponse({'count':count,'data':serializer.data}))
+#         except InvestError as err:
+#             return JSONResponse(InvestErrorResponse(err))
+#         except Exception:
+#             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+#
+#     def create(self, request, *args, **kwargs):
+#         try:
+#             data = request.data
+#             serializer = WXContentDataSerializer(data=data)
+#             if serializer.is_valid():
+#                 serializer.save()
+#             return JSONResponse(SuccessResponse(serializer.data))
+#         except InvestError as err:
+#             return JSONResponse(InvestErrorResponse(err))
+#         except Exception:
+#             catchexcption(request)
+#             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
 
 class GroupEmailDataView(viewsets.ModelViewSet):
-
     queryset = GroupEmailData.objects.all()
     serializer_class = GroupEmailDataSerializer
-
     def list(self, request, *args, **kwargs):
         try:
-            count = self.queryset.count()
-            serializer = GroupEmailDataSerializer(self.queryset,many=True)
+            projtitle = request.GET.get('title')
+            queryset = self.queryset
+            if projtitle:
+                queryset = queryset(projtitle__icontains=projtitle)
+            # queryset =queryset(proj__id=13)
+            count = queryset.count()
+            serializer = GroupEmailDataSerializer(queryset,many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':serializer.data}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    #
-    #
+
     # def create(self, request, *args, **kwargs):
     #     try:
     #         data = request.data
@@ -91,6 +93,7 @@ def saveSendEmailDataToMongo(data):
             raise InvestError(2001,msg=serializer.error_messages)
     except Exception:
         logexcption()
+
 def readSendEmailDataFromMongo():
     start = datetime.datetime.now() - datetime.timedelta(hours=23, minutes=59, seconds=59)
     qs = GroupEmailData.objects.filter(savetime__gt=start)

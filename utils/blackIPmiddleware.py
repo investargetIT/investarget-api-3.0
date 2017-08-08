@@ -9,6 +9,11 @@ except ImportError:
 blackIPlist = []
 class IpMiddleware(MiddlewareMixin):
     def process_request(self, request):
+        # source = request.META.get('HTTP_SOURCE')
+        # if source is not None:
+        #     pass
+        # else:
+        #     return JSONResponse(InvestErrorResponse(InvestError(8888,msg='source unknown')))
         # clienttype = request.META.get('HTTP_CLIENTTYPE')
         # if clienttype and isinstance(clienttype,(str,int,unicode)) and clienttype in [1,2,3,4,'1','2','3','4']:
         #     pass

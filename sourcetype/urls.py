@@ -14,7 +14,14 @@ projstatus = views.ProjectStatusView.as_view({
         'get': 'list',
 
 })
-
+service = views.ServiceView.as_view({
+        'get': 'list',
+        'post':'create',
+})
+servicedetail = views.ServiceView.as_view({
+        'put': 'update',
+        'delete': 'destroy'
+})
 
 country = views.CountryView.as_view({
         'get': 'list',
@@ -34,14 +41,6 @@ characterdetail = views.CharacterTypeView.as_view({
         'delete': 'destroy'
 })
 
-continent = views.ContinentalView.as_view({
-        'get': 'list',
-        'post':'create',
-})
-continentdetail = views.ContinentalView.as_view({
-        'put': 'update',
-        'delete': 'destroy'
-})
 
 title = views.TitleView.as_view({
         'get': 'list',
@@ -139,12 +138,12 @@ Orgtitletabledetail = views.OrgtitletableView.as_view({
 
 urlpatterns = [
     url(r'^tag$', tag,name='tagsource',),
-    url(r'^projstatus$', projstatus, name='projstatus', ),
     url(r'^tag/(?P<pk>\d+)$', tagdetail,name='tagdetail',),
+    url(r'^service', service,name='servicesource',),
+    url(r'^service/(?P<pk>\d+)$', servicedetail,name='servicedetail',),
+    url(r'^projstatus$', projstatus, name='projstatus', ),
     url(r'^country$', country,name='countrysource',),
     url(r'^country/(?P<pk>\d+)$', countrydetail,name='countrydetail',),
-    url(r'^continent$', continent,name='continentsource',),
-    url(r'^continent/(?P<pk>\d+)$', continentdetail,name='continentdetail',),
     url(r'^industry$', industry,name='industrysource',),
     url(r'^industry/(?P<pk>\d+)$', industrydetail,name='industrydetail',),
     url(r'^title$', title,name='titlesource',),

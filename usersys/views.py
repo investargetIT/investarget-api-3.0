@@ -9,17 +9,18 @@ from django.db import transaction,models
 from django.db.models import Q
 from django.db.models import QuerySet
 from django.db.models.fields.reverse_related import ForeignObjectRel
-from guardian.shortcuts import assign_perm
 from rest_framework import filters
 from rest_framework import viewsets
 
 from rest_framework.decorators import api_view, detail_route, list_route
 
 from APIlog.views import logininlog, apilog
+from dataroom.models import dataroom
 from emailmanage.views import sendEmailToUser, getAllProjectsNeedToSendMail
 from org.models import organization
 from sourcetype.views import getmenulist
 from third.models import MobileAuthCode
+from timeline.models import timeline
 from usersys.models import MyUser, UserRelation, userTags, UserFriendship, MyToken, UnreachUser
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
     CreatUserSerializer , UserCommenSerializer , UserRelationDetailSerializer, UserFriendshipSerializer, \
@@ -32,20 +33,21 @@ from utils.sendMessage import sendmessage_userauditstatuchange, sendmessage_user
     sendmessage_usermakefriends
 from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable,\
     catchexcption, cache_delete_key, returnDictChangeToLanguage, returnListChangeToLanguage, SuccessResponse, \
-    InvestErrorResponse, ExceptionResponse
+    InvestErrorResponse, ExceptionResponse, add_perm
 from django_filters import FilterSet
 
 
 class UserFilter(FilterSet):
     groups = RelationFilter(filterstr='groups', lookup_method='in')
     org = RelationFilter(filterstr='org',lookup_method='in')
+    orgarea = RelationFilter(filterstr='orgarea', lookup_method='in')
     tags = RelationFilter(filterstr='tags',lookup_method='in',relationName='user_usertags__is_deleted')
     userstatus = RelationFilter(filterstr='userstatus',lookup_method='in')
     currency = RelationFilter(filterstr='org__currency', lookup_method='in')
     orgtransactionphases = RelationFilter(filterstr='org__orgtransactionphase', lookup_method='in',relationName='org__org_orgTransactionPhases__is_deleted')
     class Meta:
         model = MyUser
-        fields = ('groups','org','tags','userstatus','currency','orgtransactionphases')
+        fields = ('groups','org','tags','userstatus','currency','orgtransactionphases','orgarea')
 
 
 class UserView(viewsets.ModelViewSet):
@@ -64,7 +66,7 @@ class UserView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
     queryset = MyUser.objects.filter(is_deleted=False)
-    search_fields = ('mobile','email','usernameC','usernameE','org__orgnameC')
+    search_fields = ('mobile','email','usernameC','usernameE','org__orgnameC','orgarea__nameC','orgarea__nameE')
     serializer_class = UserSerializer
     filter_class = UserFilter
     redis_key = 'user'
@@ -133,9 +135,9 @@ class UserView(viewsets.ModelViewSet):
             count = queryset.count()
             try:
                 queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
             except EmptyPage:
-                raise InvestError(code=1001)
-            queryset = queryset.page(page_index)
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             responselist = []
             for instance in queryset:
                 actionlist = {'get': False, 'change': False, 'delete': False}
@@ -191,17 +193,22 @@ class UserView(viewsets.ModelViewSet):
                 else:
                     if mobileauthcode.isexpired():
                         raise InvestError(code=20051)
-                filterQ = Q(mobile=mobile) | Q(email=email)
-                if self.queryset.filter(filterQ,datasource=userdatasource).exists():
-                    raise InvestError(code=2004)
-                groupid = data.pop('groups', None)
-                if not groupid:
-                    raise InvestError(code=2007,msg='groups cannot be null')
+                if self.queryset.filter(mobile=mobile,datasource=userdatasource).exists():
+                    raise InvestError(code=20041)
+                if self.queryset.filter(email=email,datasource=userdatasource).exists():
+                    raise InvestError(code=20042)
+                type = data.pop('type',None)
+                if type in ['trader',u'trader']:
+                    groupname = '未审核交易师'
+                else:
+                    groupname = '未审核投资人'
+                if not groupname:
+                    raise InvestError(code=2007,msg='type cannot be null')
                 try:
-                    Group.objects.get(id=groupid,datasource=userdatasource)
+                    group = Group.objects.get(name=groupname,datasource=userdatasource)
                 except Exception:
-                    raise InvestError(code=2007,msg='groups bust be an available GroupID')
-                data['groups'] = [groupid]
+                    raise InvestError(code=2007,msg='type bust be an available name')
+                data['groups'] = [group.id]
                 orgname = data.pop('orgname', None)
                 if orgname:
                     if lang == 'en':
@@ -225,6 +232,7 @@ class UserView(viewsets.ModelViewSet):
                 user.set_password(password)
                 user.save()
                 tags = data.pop('tags', None)
+                data.pop('IR', None)
                 userserializer = CreatUserSerializer(user, data=data)
                 if userserializer.is_valid():
                     user = userserializer.save()
@@ -236,7 +244,7 @@ class UserView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(code=20071,msg='%s\n%s' % (userserializer.error_messages, userserializer.errors))
                 returndic = CreatUserSerializer(user).data
-                sendmessage_userregister(user,user,['email'])
+                sendmessage_userregister(user,user,['email','webmsg','app'])
                 apilog(request, 'MyUser', None, None, datasource=source)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(returndic,lang)))
         except InvestError as err:
@@ -287,9 +295,10 @@ class UserView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(code=20071,msg='userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
                 if user.createuser:
-                    assign_perm('usersys.user_getuser', user.createuser, user)
-                    assign_perm('usersys.user_changeuser', user.createuser, user)
-                    assign_perm('usersys.user_deleteuser', user.createuser, user)
+                    add_perm('usersys.user_getuser', user.createuser, user)
+                    add_perm('usersys.user_changeuser', user.createuser, user)
+                    add_perm('usersys.user_deleteuser', user.createuser, user)
+                apilog(request, 'MyUser', None, None, datasource=request.user.datasource_id)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(UserSerializer(user).data,lang=lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -342,7 +351,7 @@ class UserView(viewsets.ModelViewSet):
             useridlist = request.data.get('userlist')
             userlist = []
             messagelist = []
-            if not useridlist or not isinstance(useridlist,list):
+            if not useridlist or not isinstance(useridlist, list):
                 raise InvestError(2007,msg='expect a not null id list')
             with transaction.atomic():
                 for userid in useridlist:
@@ -355,10 +364,10 @@ class UserView(viewsets.ModelViewSet):
                     else:
                         if request.user == user:
                             canChangeField = perimissionfields.userpermfield['changeself']
-                        elif request.user.has_perm('usersys.user_changeuser',user):
+                        elif request.user.has_perm('usersys.user_changeuser', user):
                             canChangeField = perimissionfields.userpermfield['usersys.trader_changeuser']
                         else:
-                            raise InvestError(code=2009)
+                            raise InvestError(code= 2009)
                     keylist = data.keys()
                     cannoteditlist = [key for key in keylist if key not in canChangeField]
                     if cannoteditlist:
@@ -384,8 +393,7 @@ class UserView(viewsets.ModelViewSet):
                     else:
                         raise InvestError(code=20071,msg='userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
                     newuserdata = UserSerializer(user)
-                    apilog(request, 'MyUser', olduserdata.data, newuserdata.data, modelID=userid,
-                           datasource=request.user.datasource_id)
+                    apilog(request, 'MyUser', olduserdata.data, newuserdata.data, modelID=userid, datasource=request.user.datasource_id)
                     userlist.append(newuserdata.data)
                     messagelist.append((user,sendmsg))
                 for user,sendmsg in messagelist:
@@ -553,6 +561,27 @@ class UserView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+    @list_route(methods=['get'])
+    def checkUserAccountExist(self, request, *args, **kwargs):
+        try:
+            source = request.META.get('HTTP_SOURCE')
+            account = request.GET.get('account', None)
+            if account:
+                if self.queryset.filter(mobile=account, datasource_id=source).exists():
+                    result = True
+                elif self.queryset.filter(email=account, datasource_id=source).exists():
+                    result = True
+                else:
+                    result = False
+            else:
+                raise InvestError(20072)
+            return JSONResponse(SuccessResponse({'result':result}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
 class UnReachUserView(viewsets.ModelViewSet):
     """
         list:获取unreachuser列表
@@ -602,9 +631,9 @@ class UnReachUserView(viewsets.ModelViewSet):
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
             except EmptyPage:
-                raise InvestError(code=1001)
-            queryset = queryset.page(page_index)
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             instancedata = UnreachUserSerializer(queryset,many=True).data
             return JSONResponse(
                 SuccessResponse({'count': count, 'data': returnListChangeToLanguage(instancedata, lang)}))
@@ -633,34 +662,6 @@ class UnReachUserView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    def get_object(self, pk=None):
-        if pk:
-            lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-            assert lookup_url_kwarg in self.kwargs, (
-                'Expected view %s to be called with a URL keyword argument '
-                'named "%s". Fix your URL conf, or set the `.lookup_field` '
-                'attribute on the view correctly.' %
-                (self.__class__.__name__, lookup_url_kwarg)
-            )
-            try:
-                obj = UserRelation.objects.get(id=self.kwargs[lookup_url_kwarg], is_deleted=False)
-            except UserRelation.DoesNotExist:
-                raise InvestError(code=2011, msg='relation with pk = "%s" is not exist' % self.kwargs[lookup_url_kwarg])
-        else:
-            lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-            assert lookup_url_kwarg in self.kwargs, (
-                'Expected view %s to be called with a URL keyword argument '
-                'named "%s". Fix your URL conf, or set the `.lookup_field` '
-                'attribute on the view correctly.' %
-                (self.__class__.__name__, lookup_url_kwarg)
-            )
-            try:
-                obj = UserRelation.objects.get(id=self.kwargs[lookup_url_kwarg], is_deleted=False)
-            except UserRelation.DoesNotExist:
-                raise InvestError(code=2011, msg='relation with pk = "%s" is not exist' % self.kwargs[lookup_url_kwarg])
-        if obj.datasource != self.request.user.datasource:
-            raise InvestError(code=8888, msg='资源非同源')
-        return obj
 
     @loginTokenIsAvailable(['usersys.admin_getuser',])
     def retrieve(self, request, *args, **kwargs):
@@ -699,7 +700,7 @@ class UnReachUserView(viewsets.ModelViewSet):
                 instance = self.get_object()
                 instance.is_deleted = True
                 instance.deletedtime = datetime.datetime.now()
-                instance.deleteduser = request.user.id
+                instance.deleteduser = request.user
                 instance.save()
                 return JSONResponse(SuccessResponse(UnreachUserSerializer(instance).data))
         except InvestError as err:
@@ -709,6 +710,15 @@ class UnReachUserView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
+class UserRelationFilter(FilterSet):
+    investoruser = RelationFilter(filterstr='investoruser', lookup_method='in')
+    traderuser = RelationFilter(filterstr='traderuser',lookup_method='in')
+    relationtype = RelationFilter(filterstr='relationtype', lookup_method='in')
+    orgs = RelationFilter(filterstr='investoruser__org',lookup_method='in',relationName='investoruser__org__is_deleted')
+    class Meta:
+        model = UserRelation
+        fields = ('investoruser', 'traderuser', 'relationtype','orgs')
+
 class UserRelationView(viewsets.ModelViewSet):
     """
     list:获取用户业务关系联系人
@@ -717,9 +727,9 @@ class UserRelationView(viewsets.ModelViewSet):
     update:修改业务关系联系人(批量)
     destroy:删除业务关系联系人(批量)
     """
-    filter_backends = (filters.DjangoFilterBackend,)
-    filter_fields = ('investoruser', 'traderuser', 'relationtype')
-    search_fields = ('investoruser__usernameC', 'investoruser__usernameE', 'traderuser__usernameC', 'traderuser__usernameE')
+    filter_backends = (filters.DjangoFilterBackend, filters.SearchFilter)
+    filter_class = UserRelationFilter
+    search_fields = ('investoruser__usernameC', 'investoruser__usernameE', 'traderuser__usernameC', 'traderuser__usernameE','investoruser__org__orgnameC')
     queryset = UserRelation.objects.filter(is_deleted=False)
     serializer_class = UserRelationSerializer
 
@@ -762,9 +772,9 @@ class UserRelationView(viewsets.ModelViewSet):
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
             except EmptyPage:
-                raise InvestError(code=1001)
-            queryset = queryset.page(page_index)
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             serializer = UserRelationSerializer(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
@@ -789,9 +799,9 @@ class UserRelationView(viewsets.ModelViewSet):
                 newrelation = UserRelationDetailSerializer(data=data)
                 if newrelation.is_valid():
                     relation = newrelation.save()
-                    assign_perm('usersys.user_getuserrelation', relation.traderuser, relation)
-                    assign_perm('usersys.user_changeuserrelation', relation.traderuser, relation)
-                    assign_perm('usersys.user_deleteuserrelation', relation.traderuser, relation)
+                    add_perm('usersys.user_getuserrelation', relation.traderuser, relation)
+                    add_perm('usersys.user_changeuserrelation', relation.traderuser, relation)
+                    add_perm('usersys.user_deleteuserrelation', relation.traderuser, relation)
                 else:
                     raise InvestError(code=20071,msg='%s'%newrelation.errors)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(newrelation.data,lang)))
@@ -908,6 +918,12 @@ class UserRelationView(viewsets.ModelViewSet):
                         pass
                     else:
                         raise InvestError(code=2009,msg='没有权限')
+                    timeline_qs = timeline.objects.filter(investor=userrelation.investoruser,trader=userrelation.traderuser,is_deleted=False,isClose=False)
+                    if timeline_qs.exists():
+                        raise InvestError(2010, msg='%s,%s有未关闭的timeline' % (userrelation.traderuser.usernameC, userrelation.investoruser.usernameC))
+                    dataroom_qs = dataroom.objects.filter(investor=userrelation.investoruser,trader=userrelation.traderuser,is_deleted=False,isClose=False)
+                    if dataroom_qs.exists():
+                        raise InvestError(2010, msg='%s,%s有未关闭的dataroom' % (userrelation.traderuser.usernameC, userrelation.investoruser.usernameC))
                     userrelation.is_deleted = True
                     userrelation.deleteduser = request.user
                     userrelation.deletedtime = datetime.datetime.now()
@@ -920,6 +936,24 @@ class UserRelationView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+    @loginTokenIsAvailable()
+    def checkUserRelation(self, request, *args, **kwargs):
+        try:
+            trader = request.data.get('trader', None)
+            investor = request.data.get('investor', None)
+            if not trader or not investor:
+                raise InvestError(2007, msg='trader/investor 不能空')
+            qs = self.get_queryset().filter(Q(traderuser_id=trader,investoruser_id=investor,is_deleted=False) | Q(traderuser_id=investor,investoruser_id=trader,is_deleted=False))
+            if qs.exists():
+                res = True
+            else:
+                res = False
+            return JSONResponse(SuccessResponse(res))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 class UserFriendshipView(viewsets.ModelViewSet):
     """
@@ -982,9 +1016,10 @@ class UserFriendshipView(viewsets.ModelViewSet):
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
             except EmptyPage:
-                raise InvestError(code=1001)
-            queryset = queryset.page(page_index)
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+
             serializer = UserFriendshipSerializer(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
@@ -1134,8 +1169,6 @@ class GroupPermissionView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            if not request.user.is_superuser:
-                raise InvestError(2009)
             page_size = request.GET.get('page_size')
             page_index = request.GET.get('page_index')
             if not page_size:
@@ -1148,12 +1181,15 @@ class GroupPermissionView(viewsets.ModelViewSet):
                 queryset = queryset.filter(permissions__codename__in=['as_trader'])
             if grouptype in [u'investor', 'investor']:
                 queryset = queryset.filter(permissions__codename__in=['as_investor'])
+            if grouptype in [u'admin', 'admin']:
+                queryset = queryset.filter(permissions__codename__in=['as_admin'])
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
             except EmptyPage:
-                raise InvestError(code=1001)
-            queryset = queryset.page(page_index)
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+
             serializer = GroupDetailSerializer(queryset, many=True)
             return JSONResponse(
                 SuccessResponse({'count': count, 'data':serializer.data}))

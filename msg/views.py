@@ -61,13 +61,13 @@ class WebMessageView(viewsets.ModelViewSet):
                 page_size = 10
             if not page_index:
                 page_index = 1
-            queryset = self.filter_queryset(self.get_queryset())
+            queryset = self.filter_queryset(self.get_queryset()).filter(receiver=request.user.id)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
             except EmptyPage:
-                raise InvestError(1001)
-            queryset = queryset.page(page_index)
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             serializer = MsgSerializer(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':serializer.data}))
         except InvestError as err:
@@ -75,9 +75,12 @@ class WebMessageView(viewsets.ModelViewSet):
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+    @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
         try:
             msg = self.get_object()
+            if msg.receiver.id != request.user.id:
+                raise InvestError(2009)
             with transaction.atomic():
                 data = {
                     'isRead':True,

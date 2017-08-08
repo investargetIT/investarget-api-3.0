@@ -1,5 +1,7 @@
 #coding=utf-8
 from __future__ import unicode_literals
+
+from guardian.shortcuts import remove_perm, assign_perm
 from pypinyin import slug as hanzizhuanpinpin
 import binascii
 import os
@@ -10,10 +12,10 @@ from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin, Group
 from django.db import models
 from django.db.models import Q
-from guardian.shortcuts import remove_perm, assign_perm
-from sourcetype.models import AuditStatus, ClientType, TitleType,School,Specialty,Tag, DataSource, Country
+from sourcetype.models import AuditStatus, ClientType, TitleType,School,Specialty,Tag, DataSource, Country, OrgArea
 from utils.customClass import InvestError, MyForeignKey
 from utils.makeAvatar import makeAvatar
+
 
 registersourcechoice = (
     (1,'pc'),
@@ -26,21 +28,11 @@ class MyUserBackend(ModelBackend):
     def authenticate(self, username=None, password=None, datasource=None):
         try:
             if '@' not in username:
-                user = MyUser.objects.get(mobile=username,is_deleted=False,)
+                user = MyUser.objects.get(mobile=username,is_deleted=False,datasource=datasource)
             else:
-                user = MyUser.objects.get(email=username,is_deleted=False,)
+                user = MyUser.objects.get(email=username,is_deleted=False,datasource=datasource)
         except MyUser.DoesNotExist:
             raise InvestError(code=2002)
-        # datasource = kwargs.pop('datasource',None)
-        # if not datasource:
-        #     raise InvestError(code=8888, msg='没有datasource')
-        # try:
-        #     if '@' not in username:
-        #         user = MyUser.objects.get(mobile=username, is_deleted=False, datasource=datasource)
-        #     else:
-        #         user = MyUser.objects.get(email=username, is_deleted=False, datasource=datasource)
-        # except MyUser.DoesNotExist:
-        #     raise InvestError(code=2002)
         except Exception as err:
             raise InvestError(code=9999,msg='MyUserBackend/authenticate模块验证失败\n,%s'%err)
         else:
@@ -93,6 +85,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     cardKey = models.CharField(max_length=128,blank=True,null=True)
     wechat = models.CharField(max_length=64,blank=True,null=True)
     country = MyForeignKey(Country,blank=True,null=True)
+    orgarea = MyForeignKey(OrgArea,blank=True,null=True,help_text='机构地区')
     userstatus = MyForeignKey(AuditStatus,help_text='审核状态',blank=True,default=1)
     org = MyForeignKey('org.organization',help_text='所属机构',blank=True,null=True,related_name='org_users')
     usernameC = models.CharField(help_text='姓名',max_length=128,db_index=True,blank=True,null=True,)
@@ -107,6 +100,10 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     remark = models.TextField(help_text='备注',blank=True,null=True)
     school = MyForeignKey(School,help_text='院校',blank=True,null=True,related_name='school_users',on_delete=models.SET_NULL)
     specialty = MyForeignKey(Specialty,help_text='专业',blank=True,null=True,related_name='profession_users',on_delete=models.SET_NULL)
+    targetdemand = models.TextField(help_text='标的需求',blank=True,default='标的需求')
+    mergedynamic = models.TextField(help_text='并购动态', blank=True, default='并购动态')
+    ishasfundorplan = models.TextField(help_text='是否有产业基金或成立计划', blank=True, default='是否有产业基金或成立计划')
+    IR = MyForeignKey('self',blank=True,null=True,help_text='IR')
     registersource = models.SmallIntegerField(help_text='注册来源',choices=registersourcechoice,default=1)
     lastmodifytime = models.DateTimeField(blank=True,null=True)
     lastmodifyuser = MyForeignKey('self',help_text='修改者',blank=True,null=True,related_name='usermodify_users',related_query_name='user_modifyuser',on_delete=models.SET_NULL)

@@ -38,6 +38,10 @@ user_relationshiplist = views.UserRelationView.as_view({
         'put': 'update',         #（批量）
         'delete': 'destroy',     #（批量）
 })
+checkrealtion = views.UserRelationView.as_view({
+        'post': 'checkUserRelation',
+})
+
 detail_relationone = views.UserRelationView.as_view({
         'get': 'retrieve',
 })
@@ -79,16 +83,20 @@ unreachuser_deteil = views.UnReachUserView.as_view({
         'put': 'update',
         'delete': 'destroy',
 })
-
+checkUserAccountExist = views.UserView.as_view({
+        'get':'checkUserAccountExist',
+})
 
 
 urlpatterns = [
     url(r'^$', user_list,name='user-list',),
+    url(r'^checkexists/$', checkUserAccountExist,name='user-checkUserAccountExist',),
     url(r'^(?P<pk>\d+)/$', user_detail,name='user-one'),
     url(r'^detail/(?P<pk>\d+)/$', user_detailinfo,name='user-detailinfo'),
     url(r'^password/$', find_password ,name='find-password'),
     url(r'^password/(?P<pk>\d+)/$', change_password ,name='change-password'),
     url(r'^relationship/$', user_relationshiplist, name='user-relationshiplist'),
+    url(r'^checkrelation/$', checkrealtion, name='user-checkrealtion'),
     url(r'^relationship/(?P<pk>\d+)/$', detail_relationone, name='user-relationshipone'),
     url(r'^register/$', regist_user),
     url(r'^login/$', views.login),

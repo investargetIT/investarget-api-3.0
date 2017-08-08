@@ -2,6 +2,8 @@
 # Create your views here.
 import datetime
 import json
+import random
+import string
 import traceback
 
 import qiniu
@@ -91,7 +93,7 @@ def bigfileupload(request):
         q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
         filetype = str(uploaddata.name).split('.')[-1]
         key = str(uploaddata.name)  # key 文件名
-        key = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%s')+ key
+        key = datetime.datetime.now().strftime('%Y%m%d%H%M%s') + ''.join(random.sample(string.ascii_lowercase,5)) + key
         if filetype != 'pdf' and bucket_name not in ['image', u'image']:
             saveas_key = qiniu.urlsafe_base64_encode('file:%s' % (key.split('.')[0] + '.pdf'))
             persistentOps = fops + '|saveas/' + saveas_key
@@ -194,7 +196,7 @@ def getUrlWithBucketAndKey(bucket,key):
 def qiniuuploadfile(filepath, bucket_name):
     q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
     filetype = filepath.split('.')[-1]
-    key = "%s.%s" % (datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%s'), filetype)   # key 文件名
+    key = "%s.%s" % (datetime.datetime.now().strftime('%Y%m%d%H%M%s')+''.join(random.sample(string.ascii_lowercase,5)), filetype)   # key 文件名
     print key
     token = q.upload_token(bucket_name, key, 3600, policy={}, strict_policy=True)
     ret, info = put_file(token, key, filepath)

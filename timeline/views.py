@@ -6,7 +6,6 @@ from django.db import models
 from django.db import transaction
 from django.db.models import Q,QuerySet, FieldDoesNotExist
 from django.db.models.fields.reverse_related import ForeignObjectRel
-from guardian.shortcuts import assign_perm
 from rest_framework import filters, viewsets
 
 from timeline.models import timeline, timelineTransationStatu, timelineremark
@@ -15,7 +14,8 @@ from timeline.serializer import TimeLineSerializer, TimeLineStatuSerializer, Tim
 from utils.customClass import InvestError, JSONResponse
 from utils.sendMessage import sendmessage_timelineauditstatuchange
 from utils.util import read_from_cache, write_to_cache, returnListChangeToLanguage, loginTokenIsAvailable, \
-    returnDictChangeToLanguage, catchexcption, cache_delete_key, SuccessResponse, InvestErrorResponse, ExceptionResponse
+    returnDictChangeToLanguage, catchexcption, cache_delete_key, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
+    add_perm
 import datetime
 
 class TimelineView(viewsets.ModelViewSet):
@@ -84,7 +84,7 @@ class TimelineView(viewsets.ModelViewSet):
                 page_size = 10
             if not page_index:
                 page_index = 1
-            queryset = self.filter_queryset(self.get_queryset())
+            queryset = self.filter_queryset(self.get_queryset()).filter(datasource=request.user.datasource)
             sort = request.GET.get('sort')
             if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
                 queryset = queryset.order_by('-lastmodifytime', '-createdtime')
@@ -93,9 +93,9 @@ class TimelineView(viewsets.ModelViewSet):
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
             except EmptyPage:
-                raise InvestError(code=1001)
-            queryset = queryset.page(page_index)
+                return JSONResponse(SuccessResponse({'count': 0, 'data':[]}))
             responselist = []
             for instance in queryset:
                 actionlist = {'get': False, 'change': False, 'delete': False}
@@ -153,6 +153,12 @@ class TimelineView(viewsets.ModelViewSet):
                             raise InvestError(code=20071, msg=timelinestatu.errors)
                 else:
                     raise InvestError(code=20071,msg=timelineserializer.errors)
+                userlist = [newtimeline.investor, newtimeline.trader, newtimeline.createuser, newtimeline.proj.makeUser, newtimeline.proj.takeUser,
+                            newtimeline.proj.supportUser]
+                userlist = set(userlist)
+                for user in userlist:
+                     add_perm('timeline.user_getline', user, newtimeline)
+                add_perm('timeline.user_changeline', newtimeline.trader, newtimeline)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(TimeLineSerializer(newtimeline).data, lang)))
         except InvestError as err:
                 return JSONResponse(InvestErrorResponse(err))
@@ -233,7 +239,8 @@ class TimelineView(viewsets.ModelViewSet):
                     else:
                         raise InvestError(code=20071, msg=timelineseria.errors)
                 if sendmessage:
-                    sendmessage_timelineauditstatuchange(newactivetimelinestatu,newtimeline.trader,['app','email','webmsg'])
+                    sendmessage_timelineauditstatuchange(newactivetimelinestatu, newtimeline.trader, ['app', 'email', 'webmsg'], sender=request.user)
+                    sendmessage_timelineauditstatuchange(newactivetimelinestatu, newtimeline.proj.supportUser, ['app', 'email', 'webmsg'], sender=request.user)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(TimeLineSerializer(timeline).data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -373,9 +380,9 @@ class TimeLineRemarkView(viewsets.ModelViewSet):
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
             except EmptyPage:
-                raise InvestError(code=1001)
-            queryset = queryset.page(page_index)
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             serializer = TimeLineRemarkSerializer(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data, lang)}))
         except InvestError as err:
@@ -402,7 +409,7 @@ class TimeLineRemarkView(viewsets.ModelViewSet):
             line = self.get_timeline(timelineid)
             if request.user.has_perm('timeline.admin_addlineremark'):
                 pass
-            elif request.user.has_perm('timeline.user_addlineremark', line):
+            elif request.user.has_perm('timeline.user_getline', line):
                 pass
             else:
                 raise InvestError(code=2009)
@@ -420,9 +427,9 @@ class TimeLineRemarkView(viewsets.ModelViewSet):
                                       msg='data有误_%s\n%s' % (
                                           timeLineremarkserializer.error_messages, timeLineremarkserializer.errors))
                 if timeLineremark.createuser:
-                    assign_perm('timeline.user_getlineremark', timeLineremark.createuser, timeLineremark)
-                    assign_perm('timeline.user_changelineremark', timeLineremark.createuser, timeLineremark)
-                    assign_perm('timeline.user_deletelineremark', timeLineremark.createuser, timeLineremark)
+                    add_perm('timeline.user_getlineremark', timeLineremark.createuser, timeLineremark)
+                    add_perm('timeline.user_changelineremark', timeLineremark.createuser, timeLineremark)
+                    add_perm('timeline.user_deletelineremark', timeLineremark.createuser, timeLineremark)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(timeLineremarkserializer.data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))

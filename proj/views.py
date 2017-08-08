@@ -5,36 +5,38 @@ from django.db import models,transaction
 from django.db.models import Q,QuerySet
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models.fields.reverse_related import ForeignObjectRel
-from guardian.shortcuts import assign_perm
 from rest_framework import filters, viewsets
 import datetime
 
 from rest_framework.decorators import detail_route
 
 from APIlog.views import viewprojlog
+from dataroom.views import pulishProjectCreateDataroom
 from proj.models import project, finance, projectTags, projectIndustries, projectTransactionType, favoriteProject, \
-    ShareToken, attachment
+    ShareToken, attachment, projServices
 from proj.serializer import ProjSerializer, FinanceSerializer, ProjCreatSerializer, \
     ProjCommonSerializer, FinanceChangeSerializer, FinanceCreateSerializer, FavoriteSerializer, \
     FavoriteCreateSerializer, ProjAttachmentSerializer, ProjListSerializer_admin , ProjListSerializer_user, \
     ProjDetailSerializer_admin_withoutsecretinfo, ProjDetailSerializer_admin_withsecretinfo, ProjDetailSerializer_user_withoutsecretinfo, \
-    ProjDetailSerializer_user_withsecretinfo, ProjAttachmentCreateSerializer
-from sourcetype.models import Tag, Industry, TransactionType, DataSource
+    ProjDetailSerializer_user_withsecretinfo, ProjAttachmentCreateSerializer, ProjServiceCreateSerializer
+from sourcetype.models import Tag, Industry, TransactionType, DataSource, Service
 from third.views.qiniufile import deleteqiniufile
 from usersys.models import MyUser
-from utils.sendMessage import sendmessage_projectauditstatuchange, sendmessage_favoriteproject
+from utils.sendMessage import sendmessage_favoriteproject, sendmessage_projectpublish
 from utils.util import catchexcption, read_from_cache, write_to_cache, loginTokenIsAvailable, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser, \
-    setUserObjectPermission, checkConformType
+    setUserObjectPermission, checkConformType, cache_delete_key
 from utils.customClass import JSONResponse, InvestError, RelationFilter
 from django_filters import FilterSet
 
 class ProjectFilter(FilterSet):
     supportUser = RelationFilter(filterstr='supportUser',lookup_method='in')
+    createuser = RelationFilter(filterstr='createuser', lookup_method='in')
     ismarketplace = RelationFilter(filterstr='ismarketplace', lookup_method='exact')
     isoverseasproject = RelationFilter(filterstr='isoverseasproject', lookup_method='in')
     industries = RelationFilter(filterstr='industries',lookup_method='in',relationName='project_industries__is_deleted')
     tags = RelationFilter(filterstr='tags',lookup_method='in',relationName='project_tags__is_deleted')
+    service = RelationFilter(filterstr='proj_services', lookup_method='in', relationName='proj_services__is_deleted')
     projstatus = RelationFilter(filterstr='projstatus',lookup_method='in')
     country = RelationFilter(filterstr='country',lookup_method='in')
     netIncome_USD_F = RelationFilter(filterstr='proj_finances__netIncome_USD',lookup_method='gte')
@@ -43,7 +45,7 @@ class ProjectFilter(FilterSet):
     grossProfit_T = RelationFilter(filterstr='proj_finances__grossProfit', lookup_method='lte')
     class Meta:
         model = project
-        fields = ('supportUser','ismarketplace','isoverseasproject','industries','tags','projstatus','country','netIncome_USD_F','netIncome_USD_T','grossProfit_F','grossProfit_T')
+        fields = ('createuser','service','supportUser','ismarketplace','isoverseasproject','industries','tags','projstatus','country','netIncome_USD_F','netIncome_USD_T','grossProfit_F','grossProfit_T')
 
 
 class ProjectView(viewsets.ModelViewSet):
@@ -122,21 +124,21 @@ class ProjectView(viewsets.ModelViewSet):
             setrequestuser(request)
             queryset = self.filter_queryset(queryset)
             if request.user.is_anonymous:
-                queryset = queryset.filter(isHidden=False)
+                queryset = queryset.filter(isHidden=False,projstatus_id__in=[4,6,7,8])
                 serializerclass = ProjCommonSerializer
             else:
                 if request.user.has_perm('proj.admin_getproj'):
                     queryset = queryset
                     serializerclass = ProjListSerializer_admin
                 else:
-                    queryset = queryset.filter(Q(isHidden=False) | Q(createuser=request.user))
+                    queryset = queryset.filter(Q(isHidden=False,projstatus_id__in=[4,6,7,8])| Q(createuser=request.user)| Q(supportUser=request.user)| Q(takeUser=request.user)| Q(makeUser=request.user))
                     serializerclass = ProjListSerializer_user
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
             except EmptyPage:
                 return JSONResponse(SuccessResponse([],msg='没有符合条件的结果'))
-            queryset = queryset.page(page_index)
             responselist = []
             for instance in queryset:
                 actionlist = {'get': False, 'change': False, 'delete': False}
@@ -167,11 +169,13 @@ class ProjectView(viewsets.ModelViewSet):
             projdata['createuser'] = request.user.id
             projdata['createdtime'] = datetime.datetime.now()
             projdata['datasource'] = request.user.datasource_id
+            projdata['projstatus'] = 1
             tagsdata = projdata.pop('tags',None)
             industrydata = projdata.pop('industries',None)
             transactiontypedata = projdata.pop('transactionType',None)
             projAttachmentdata = projdata.pop('projAttachment',None)
             financedata = projdata.pop('finance',None)
+            servicedata = projdata.pop('service',None)
             with transaction.atomic():
                 proj = ProjCreatSerializer(data=projdata)
                 if proj.is_valid():
@@ -183,6 +187,13 @@ class ProjectView(viewsets.ModelViewSet):
                         for tagid in tagsdata:
                             tagslist.append(projectTags(proj=pro, tag_id=tagid,createuser=request.user))
                         pro.project_tags.bulk_create(tagslist)
+                    if servicedata:
+                        servicelist = []
+                        if not isinstance(servicedata,list):
+                            raise InvestError(2007,msg='service must be an ID list')
+                        for serviceid in servicedata:
+                            servicelist.append(projServices(proj=pro, service_id=serviceid,createuser=request.user))
+                        pro.proj_services.bulk_create(servicelist)
                     if industrydata:
                         industrylist = []
                         if not isinstance(industrydata,list):
@@ -287,8 +298,8 @@ class ProjectView(viewsets.ModelViewSet):
             if request.user.has_perm('proj.admin_changeproj'):
                 pass
             elif request.user.has_perm('proj.user_changeproj',pro):
-                if projdata.get('projstatus', None) and projdata.get('projstatus', None) != pro.projstatus_id:
-                    raise InvestError(2009,msg='只有管理员能修改项目状态')
+                if projdata.get('projstatus', None) and projdata.get('projstatus', None) >= 4:
+                    raise InvestError(2009,msg='只有管理员权限能修改到该状态')
             else:
                 raise InvestError(code=2009,msg='非上传方或管理员无法修改项目')
             projdata['lastmodifyuser'] = request.user.id
@@ -299,11 +310,13 @@ class ProjectView(viewsets.ModelViewSet):
             transactiontypedata = projdata.pop('transactionType', None)
             projAttachmentdata = projdata.pop('projAttachment', None)
             financedata = projdata.pop('finance', None)
-            sendmessage = False
+            servicedata = projdata.pop('service', None)
+            sendmsg = False
             if projdata.get('projstatus', None) and projdata.get('projstatus', None) != pro.projstatus_id:
-                sendmessage = True
                 if projdata.get('projstatus', None) == 4:
+                    sendmsg = True
                     projdata['publishDate'] = datetime.datetime.now()
+                    pulishProjectCreateDataroom(request.user,pro)
             with transaction.atomic():
                 proj = ProjCreatSerializer(pro,data=projdata)
                 if proj.is_valid():
@@ -319,6 +332,19 @@ class ProjectView(viewsets.ModelViewSet):
                         for tag in addlist:
                             usertaglist.append(projectTags(proj=pro, tag_id=tag, createuser=request.user))
                         pro.project_tags.bulk_create(usertaglist)
+                    if servicedata:
+                        if not isinstance(servicedata, list) or len(servicedata) == 0:
+                            raise InvestError(2007, msg='service must be a not null list')
+                        servicelist = Service.objects.in_bulk(servicedata)
+                        addlist = [item for item in servicelist if item not in pro.service.all()]
+                        removelist = [item for item in pro.service.all() if item not in servicelist]
+                        pro.proj_services.filter(service__in=removelist, is_deleted=False).update(is_deleted=True,
+                                                                                             deletedtime=datetime.datetime.now(),
+                                                                                             deleteduser=request.user)
+                        projservicelist = []
+                        for serviceid in addlist:
+                            projservicelist.append(projServices(proj=pro, service_id=serviceid,createuser=request.user))
+                        pro.proj_services.bulk_create(projservicelist)
 
                     if industrydata:
                         industrylist = Industry.objects.in_bulk(industrydata)
@@ -345,7 +371,7 @@ class ProjectView(viewsets.ModelViewSet):
                         pro.project_TransactionTypes.bulk_create(projtransactiontypelist)
 
                     if projAttachmentdata:
-                        if not isinstance(projAttachmentdata, list):
+                        if not isinstance(projAttachmentdata, list) or len(projAttachmentdata) == 0:
                             raise InvestError(2007, msg='transactionType must be a not null list')
                         pro.proj_attachment.update(is_deleted=True, deletedtime=datetime.datetime.now(), deleteduser=request.user)
                         for oneprojAttachmentdata in projAttachmentdata:
@@ -363,11 +389,11 @@ class ProjectView(viewsets.ModelViewSet):
                             financeSerializer = FinanceCreateSerializer(data=onefinancedata)
                             if financeSerializer.is_valid():
                                 financeSerializer.save()
-
+                    cache_delete_key(self.redis_key + '_%s' % pro.id)
                 else:
                     raise InvestError(code=4001,msg='data有误_%s' %  proj.errors)
-                if sendmessage:
-                    sendmessage_projectauditstatuchange(pro,pro.supportUser,['app','email','webmsg'],sender=request.user)
+                if sendmsg:
+                    sendmessage_projectpublish(pro,pro.supportUser,['email',],sender=request.user)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(ProjSerializer(pro).data,lang)))
         except InvestError as err:
                 return JSONResponse(InvestErrorResponse(err))
@@ -390,8 +416,8 @@ class ProjectView(viewsets.ModelViewSet):
                 rel_fileds = [f for f in instance._meta.get_fields() if isinstance(f, ForeignObjectRel)]
                 links = [f.get_accessor_name() for f in rel_fileds]
                 for link in ['proj_timelines','proj_finances','proj_attachment','project_tags','project_industries','project_TransactionTypes',
-                             'proj_favorite','proj_sharetoken','proj_datarooms']:
-                    if link in []:
+                             'proj_favorite','proj_sharetoken','proj_datarooms','proj_services']:
+                    if link in ['proj_timelines','proj_datarooms']:
                         manager = getattr(instance, link, None)
                         if not manager:
                             continue
@@ -430,6 +456,7 @@ class ProjectView(viewsets.ModelViewSet):
                 instance.deleteduser = request.user
                 instance.deletetime = datetime.datetime.now()
                 instance.save()
+                cache_delete_key(self.redis_key + '_%s' % instance.id)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(ProjSerializer(instance).data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -545,9 +572,9 @@ class ProjAttachmentView(viewsets.ModelViewSet):
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
             except EmptyPage:
                 return JSONResponse(SuccessResponse([],msg='没有符合的结果'))
-            queryset = queryset.page(page_index)
             serializer = ProjAttachmentSerializer(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
@@ -742,9 +769,9 @@ class ProjFinanceView(viewsets.ModelViewSet):
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
             except EmptyPage:
                 return JSONResponse(SuccessResponse([],msg='没有符合的结果'))
-            queryset = queryset.page(page_index)
             serializer = FinanceSerializer(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
@@ -928,7 +955,8 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
             traderid = request.GET.get('trader')
             ftype = request.GET.get('favoritetype')
             if not ftype or (not userid and not traderid):
-                raise InvestError(code=20072,msg='favoritetype and user cannot be null')
+                if not request.user.has_perm('proj.admin_getfavorite'):
+                    raise InvestError(code=20072,msg='favoritetype and user cannot be null')
             if not page_size:
                 page_size = 10
             if not page_index:
@@ -939,21 +967,22 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
                 queryset = queryset.order_by('-createdtime',)
             else:
                 queryset = queryset.order_by('createdtime',)
-            user = self.get_user(userid if userid else traderid)
-            if request.user == user:
-                pass
-            elif request.user.has_perm('proj.admin_getfavorite'):
-                pass
-            elif request.user.has_perm('usersys.user_getfavorite',user):
+            if request.user.has_perm('proj.admin_getfavorite'):
                 pass
             else:
-                raise InvestError(code=2009)
+                user = self.get_user(userid if userid else traderid)
+                if request.user == user:
+                    pass
+                elif request.user.has_perm('usersys.user_getfavorite',user):
+                    pass
+                else:
+                    raise InvestError(code=2009)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
             except EmptyPage:
-                raise InvestError(1001)
-            queryset = queryset.page(page_index)
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             serializer = FavoriteSerializer(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
@@ -994,6 +1023,7 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
                 raise InvestError(code=2009)
             with transaction.atomic():
                 favoriteProjectList = []
+                projlist = []
                 for projid in projidlist:
                     data['proj'] = projid
                     newfavorite = FavoriteCreateSerializer(data=data)
@@ -1003,9 +1033,11 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
                                 (newfavoriteproj.trader and newfavoriteproj.trader.datasource != request.user.datasource):
                             raise InvestError(code=8888)
                         favoriteProjectList.append(newfavorite.data)
+                        projlist.append(newfavoriteproj)
                     else:
                         raise InvestError(code=20071,msg='%s'%newfavorite.errors)
-                    # sendmessage_favoriteproject(newfavoriteproj,newfavoriteproj.user,sender=request.user)
+                for proj in projlist:
+                    sendmessage_favoriteproject(proj,proj.user,sender=request.user)
                 return JSONResponse(SuccessResponse(returnListChangeToLanguage(favoriteProjectList,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))

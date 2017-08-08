@@ -22,8 +22,8 @@ class AuditStatus(models.Model):
     审核状态
     '''
     id = models.AutoField(primary_key=True)
-    nameC = models.CharField(max_length=20)
-    nameE = models.CharField(max_length=128)
+    nameC = models.CharField(max_length=20,blank=True,null=True)
+    nameE = models.CharField(max_length=128,blank=True,null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
@@ -35,8 +35,8 @@ class ProjectStatus(models.Model):
     项目状态
     '''
     id = models.AutoField(primary_key=True)
-    nameC = models.CharField(max_length=20)
-    nameE = models.CharField(max_length=128)
+    nameC = models.CharField(max_length=20,blank=True,null=True)
+    nameE = models.CharField(max_length=128,blank=True,null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
@@ -48,8 +48,8 @@ class OrgType(models.Model):
     机构类型：投行、基金~~~
     '''
     id = models.AutoField(primary_key=True)
-    nameC = models.CharField(max_length=20)
-    nameE = models.CharField(max_length=128)
+    nameC = models.CharField(max_length=20,blank=True,null=True)
+    nameE = models.CharField(max_length=128,blank=True,null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
@@ -61,8 +61,8 @@ class FavoriteType(models.Model):
     收藏类型
     '''
     id = models.AutoField(primary_key=True)
-    nameC = models.CharField(max_length=20)
-    nameE = models.CharField(max_length=128)
+    nameC = models.CharField(max_length=20,blank=True,null=True)
+    nameE = models.CharField(max_length=128,blank=True,null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
@@ -74,8 +74,8 @@ class MessageType(models.Model):
     站内信类型
     '''
     id = models.AutoField(primary_key=True)
-    nameC = models.CharField(max_length=20)
-    nameE = models.CharField(max_length=128)
+    nameC = models.CharField(max_length=20,blank=True,null=True)
+    nameE = models.CharField(max_length=128,blank=True,null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
@@ -87,8 +87,8 @@ class ClientType(models.Model):
     用户登录端类型
     '''
     id = models.AutoField(primary_key=True)
-    nameC = models.CharField(max_length=20)
-    nameE = models.CharField(max_length=128)
+    nameC = models.CharField(max_length=20,blank=True,null=True)
+    nameE = models.CharField(max_length=128,blank=True,null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
@@ -100,8 +100,8 @@ class TitleType(models.Model):
     职位
     '''
     id = models.AutoField(primary_key=True)
-    nameC = models.CharField(max_length=20)
-    nameE = models.CharField(max_length=128)
+    nameC = models.CharField(max_length=20,blank=True,null=True)
+    nameE = models.CharField(max_length=128,blank=True,null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
@@ -113,25 +113,14 @@ class CharacterType(models.Model):
     职位
     '''
     id = models.AutoField(primary_key=True)
-    characterC = models.CharField(max_length=20)
-    characterE = models.CharField(max_length=128)
+    characterC = models.CharField(max_length=20,blank=True,null=True)
+    characterE = models.CharField(max_length=128,blank=True,null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
         return self.characterC
 
 
-class Continent(models.Model):
-    '''
-    大洲
-    '''
-    id = models.AutoField(primary_key=True)
-    continentC = models.CharField(max_length=20)
-    continentE = models.CharField(max_length=128)
-    is_deleted = models.BooleanField(blank=True, default=False)
-
-    def __str__(self):
-        return self.continentC
 
 
 class Country(models.Model):
@@ -139,25 +128,37 @@ class Country(models.Model):
     国家
     '''
     id = models.AutoField(primary_key=True)
-    continent = MyForeignKey(Continent, related_name='countries', related_query_name='continent', blank=True, null=True)
-    countryC = models.CharField(max_length=20)
-    countryE = models.CharField(max_length=128)
-    areaCode = models.CharField(max_length=8)
+    parent = MyForeignKey('self', related_name='parent_location', blank=True, null=True)
+    countryC = models.CharField(max_length=20,blank=True,null=True)
+    countryE = models.CharField(max_length=128,blank=True,null=True)
+    areaCode = models.CharField(max_length=8,blank=True,null=True)
     bucket = models.CharField(max_length=20, blank=True, default='image')
     key = models.CharField(max_length=64, blank=True, null=True)
+    level = models.PositiveSmallIntegerField(blank=True,default=1)
     is_deleted = models.BooleanField(blank=True, default=False)
+    datasource = models.PositiveSmallIntegerField(blank=True,default=1)
 
     def __str__(self):
         return self.countryC
 
+class Service(models.Model):
+    '''
+    项目服务
+    '''
+    id = models.AutoField(primary_key=True)
+    nameC = models.CharField(max_length=20,blank=True,null=True)
+    nameE = models.CharField(max_length=128,blank=True,null=True)
+    is_deleted = models.BooleanField(blank=True, default=False)
+    def __str__(self):
+        return self.nameC
 
 class CurrencyType(models.Model):
     '''
     货币类型
     '''
     id = models.AutoField(primary_key=True)
-    currencyC = models.CharField(max_length=16)
-    currencyE = models.CharField(max_length=16)
+    currencyC = models.CharField(max_length=16,blank=True,null=True)
+    currencyE = models.CharField(max_length=32,blank=True,null=True)
     is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
@@ -171,12 +172,12 @@ class Industry(models.Model):
     id = models.AutoField(primary_key=True)
     isPindustry = models.BooleanField(blank=True, default=False, help_text='是否是父级行业')
     Pindustry = MyForeignKey('self', blank=True, null=True, related_name='Pindustry_Sindustries', help_text='父级行业')
-    industryC = models.CharField(max_length=16)
-    industryE = models.CharField(max_length=128)
+    industryC = models.CharField(max_length=16,blank=True,null=True)
+    industryE = models.CharField(max_length=128,blank=True,null=True)
     bucket = models.CharField(max_length=16, blank=True, default='image')
     key = models.CharField(max_length=64, blank=True, null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
-
+    datasource = models.SmallIntegerField(blank=True, default=1)
     def __str__(self):
         return self.countryC
 
@@ -186,9 +187,10 @@ class Tag(models.Model):
     热门标签
     '''
     id = models.AutoField(primary_key=True)
-    nameC = models.CharField(max_length=20)
-    nameE = models.CharField(max_length=128)
+    nameC = models.CharField(max_length=20,blank=True,null=True)
+    nameE = models.CharField(max_length=128,blank=True,null=True)
     hotpoint = models.SmallIntegerField(blank=True, default=0)
+    datasource = models.SmallIntegerField(blank=True, default=1)
     is_deleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
@@ -200,8 +202,8 @@ class OrgArea(models.Model):
     机构地区
     '''
     id = models.AutoField(primary_key=True)
-    nameC = models.CharField(max_length=20)
-    nameE = models.CharField(max_length=128)
+    nameC = models.CharField(max_length=20,blank=True,null=True)
+    nameE = models.CharField(max_length=128,blank=True,null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
@@ -239,8 +241,8 @@ class TransactionPhases(models.Model):
     机构状态：e.天使轮，A轮，B轮~
     '''
     id = models.AutoField(primary_key=True)
-    nameC = models.CharField(max_length=20)
-    nameE = models.CharField(max_length=128)
+    nameC = models.CharField(max_length=20,blank=True,null=True)
+    nameE = models.CharField(max_length=128,blank=True,null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
@@ -252,8 +254,8 @@ class TransactionType(models.Model):
     交易类型：兼并收购、股权融资、少数股权装让~
     '''
     id = models.AutoField(primary_key=True)
-    nameC = models.CharField(max_length=20)
-    nameE = models.CharField(max_length=128)
+    nameC = models.CharField(max_length=20,blank=True,null=True)
+    nameE = models.CharField(max_length=128,blank=True,null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
@@ -265,8 +267,8 @@ class TransactionStatus(models.Model):
     项目进程（时间轴）状态：11个step
     '''
     id = models.AutoField(primary_key=True)
-    nameC = models.CharField(max_length=16)
-    nameE = models.CharField(max_length=32)
+    nameC = models.CharField(max_length=16,blank=True,null=True)
+    nameE = models.CharField(max_length=32,blank=True,null=True)
     index = models.PositiveSmallIntegerField(blank=True, default=0)
     is_deleted = models.BooleanField(blank=True, default=False)
 
@@ -279,7 +281,7 @@ class DataSource(models.Model):
     平台来源（数据）
      '''
     id = models.AutoField(primary_key=True)
-    nameC = models.CharField(max_length=32)
+    nameC = models.CharField(max_length=32,blank=True,null=True)
     nameE = models.CharField(max_length=128, blank=True, null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
 

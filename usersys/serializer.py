@@ -27,7 +27,7 @@ class UserCommenSerializer(serializers.ModelSerializer):
     photourl = serializers.SerializerMethodField()
     class Meta:
         model = MyUser
-        fields = ('id', 'usernameC','usernameE','tags','userstatus','photourl')
+        fields = ('id', 'usernameC','usernameE','tags','userstatus','photourl',)
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_usertags__is_deleted=False)
         if qs.exists():
@@ -56,7 +56,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
     photourl = serializers.SerializerMethodField()
     class Meta:
         model = MyUser
-        fields = ('usernameC', 'usernameE', 'org', 'mobile', 'email', 'title', 'id','tags','userstatus','photourl')
+        fields = ('usernameC', 'usernameE', 'org', 'mobile', 'email', 'title', 'id','tags','userstatus','photourl','orgarea')
         depth = 1
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_usertags__is_deleted=False)

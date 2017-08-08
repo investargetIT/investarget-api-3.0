@@ -46,7 +46,7 @@ class OrgDetailSerializer(serializers.ModelSerializer):
         model = organization
         # fields = ('id','orgnameC','orgnameE','industry','currency','decisionCycle','orgcode','orgtransactionphase','orgtype',)
         depth = 1
-        fields = '__all__'
+        exclude = ('datasource', 'createuser', 'createdtime','is_deleted','deleteduser','deletedtime','lastmodifyuser','lastmodifytime',)
 
     def get_orgtransactionphase(self, obj):
         usertrader = obj.orgtransactionphase.filter(transactionPhase_orgs__is_deleted=False)

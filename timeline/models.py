@@ -7,6 +7,7 @@ from proj.models import project
 from usersys.models import MyUser
 from sourcetype.models import TransactionStatus, DataSource
 from utils.customClass import InvestError, MyForeignKey
+from utils.util import add_perm, rem_perm
 
 
 class timeline(models.Model):
@@ -60,6 +61,30 @@ class timeline(models.Model):
             pass
         else:
             raise InvestError(code=6003)
+        if self.pk:
+            if self.is_deleted:
+                userlist = [self.investor,self.trader,self.createuser,self.proj.makeUser,self.proj.takeUser,self.proj.supportUser]
+                userlist = set(userlist)
+                for user in userlist:
+                    rem_perm('timeline.user_getline', user, self)
+                rem_perm('timeline.user_changeline', self.trader, self)
+            else:
+                oldrela = timeline.objects.get(pk=self.pk)
+                userlist1 = [oldrela.investor, oldrela.trader, oldrela.createuser, oldrela.proj.makeUser, oldrela.proj.takeUser,
+                            oldrela.proj.supportUser]
+                userlist2 = [self.investor, self.trader, self.createuser, self.proj.makeUser, self.proj.takeUser,
+                             self.proj.supportUser]
+                userset1 = set(userlist1)
+                userset2 = set(userlist2)
+                if userset1 != userset2:
+                    for user in userset1:
+                        rem_perm('timeline.user_getline', user, self)
+                    rem_perm('timeline.user_changeline', oldrela.trader, self)
+
+
+                    for user in userset2:
+                        add_perm('timeline.user_getline', user, self)
+                    add_perm('timeline.user_changeline', self.trader, self)
         super(timeline,self).save(force_insert, force_update, using, update_fields)
 
 
@@ -82,6 +107,8 @@ class timelineTransationStatu(models.Model):
         db_table = 'timelineTransationStatus'
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
+        if self.timeline.isClose:
+            raise InvestError(6004)
         if self.alertCycle:
             if not self.inDate:
                 self.inDate = datetime.datetime.now() + datetime.timedelta(hours=self.alertCycle * 24)
@@ -106,8 +133,16 @@ class timelineremark(models.Model):
             ('admin_changelineremark', '管理员修改时间轴备注'),
             ('admin_deletelineremark', '管理员删除时间轴备注'),
 
-            ('user_addlineremark', '用户添加时间轴备注（obj级别/相对timeline)'),
             ('user_getlineremark', '用户查看时间轴备注（obj级别)'),
             ('user_changelineremark', '用户修改时间轴备注（obj级别)'),
             ('user_deletelineremark','用户删除时间轴备注（obj级别)'),
         )
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if self.pk:
+            if self.is_deleted:
+                rem_perm('timeline.user_getlineremark', self.createuser, self)
+                rem_perm('timeline.user_changelineremark', self.createuser, self)
+                rem_perm('timeline.user_deletelineremark', self.createuser, self)
+        super(timelineremark, self).save(force_insert, force_update, using, update_fields)

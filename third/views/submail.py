@@ -17,7 +17,7 @@ from utils.util import SuccessResponse, catchexcption, ExceptionResponse, Invest
 '''
 （海拓）注册短信验证码模板
 '''
-SMSCODE_projectsign = 'WzSYg'
+SMSCODE_projectsign = {'1':'WzSYg','2':'tybmL4'}
 
 INTERNATIONALMESSAGE_CONFIGS = {}
 '''
@@ -134,6 +134,7 @@ def xsendEmail(destination,projectsign,vars=None):
 @throttle_classes([AnonRateThrottle])
 def sendSmscode(request):
     try :
+        source = request.META['source']
         if request.META.has_key('HTTP_X_FORWARDED_FOR'):
             ip = request.META['HTTP_X_FORWARDED_FOR']
         else:
@@ -152,11 +153,11 @@ def sendSmscode(request):
             raise InvestError(code=3004)
         mobilecode = MobileAuthCode(mobile=destination)
         mobilecode.save()
-        varsdict = {'code': mobilecode.code, 'time': '10'}
+        varsdict = {'code': mobilecode.code, 'time': '30'}
         if areacode in ['86',86]:
-            response = xsendSms(destination, SMSCODE_projectsign, varsdict)
+            response = xsendSms(destination, SMSCODE_projectsign[str(source)], varsdict)
         else:
-            response = xsendInternationalsms(destination, SMSCODE_projectsign, varsdict)
+            response = xsendInternationalsms('+%s'%areacode + destination, SMSCODE_projectsign[str(source)], varsdict)
         success = response.get('status',None)
         if success:
             response['smstoken'] = mobilecode.token

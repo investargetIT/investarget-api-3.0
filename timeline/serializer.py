@@ -4,7 +4,7 @@ from rest_framework import serializers
 from proj.serializer import ProjSimpleSerializer
 from sourcetype.serializer import transactionStatuSerializer
 from timeline.models import timeline,timelineremark,timelineTransationStatu
-from usersys.serializer import UserInfoSerializer
+from usersys.serializer import UserCommenSerializer
 
 
 class TimeLineStatuCreateSerializer(serializers.ModelSerializer):
@@ -18,6 +18,7 @@ class TimeLineStatuSerializer(serializers.ModelSerializer):
     class Meta:
         model = timelineTransationStatu
         fields = ('transationStatus','timeline','isActive','id','inDate','alertCycle','remainingAlertDay')
+
     def get_remainingAlertDay(self,obj):
         if obj.inDate:
             day = (obj.inDate - datetime.datetime.now()) / 3600 / 24
@@ -55,8 +56,8 @@ class TimeLineRemarkSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class TimeLineListSerializer_admin(serializers.ModelSerializer):
-    investor = UserInfoSerializer()
-    trader = UserInfoSerializer()
+    investor = UserCommenSerializer()
+    trader = UserCommenSerializer()
     proj = ProjSimpleSerializer()
     transationStatu = serializers.SerializerMethodField()
     supportor = serializers.SerializerMethodField()
@@ -71,7 +72,7 @@ class TimeLineListSerializer_admin(serializers.ModelSerializer):
         user = obj.proj.supportUser
         if user.is_deleted:
             return None
-        return UserInfoSerializer(user).data
+        return UserCommenSerializer(user).data
     def get_transationStatu(self, obj):
         qs = obj.timeline_transationStatus.all().filter(is_deleted=False,isActive=True)
         if qs.exists():
@@ -83,4 +84,15 @@ class TimeLineListSerializer_admin(serializers.ModelSerializer):
         if qs.exists():
             return TimeLineRemarkSerializer(qs.last()).data
         return None
-
+class TimeLineListSerializer_user(serializers.ModelSerializer):
+    proj = ProjSimpleSerializer()
+    transationStatu = serializers.SerializerMethodField()
+    class Meta:
+        model = timeline
+        # fields = '__all__'
+        exclude = ('is_deleted','deleteduser','deletedtime','lastmodifyuser','lastmodifytime',)
+    def get_transationStatu(self, obj):
+        qs = obj.timeline_transationStatus.all().filter(is_deleted=False,isActive=True)
+        if qs.exists():
+            return TimeLineStatuSerializer(qs.first()).data
+        return None

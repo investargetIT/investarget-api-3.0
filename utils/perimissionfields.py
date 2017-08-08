@@ -2,15 +2,12 @@
 
 
 userpermfield = {
-    'usersys.admin_changeuser':['lastmodifytime','lastmodifyuser','country','userstatus','groups','photoBucket','photoKey','cardBucket','cardKey','wechat','org','usernameC','usernameE','mobileAreaCode','mobile','description','tags','email','title','gender','school','specialty','remark'],
-    'usersys.trader_changeuser':['lastmodifyuser','lastmodifytime','tags','country','remark','description','title','email',],
-    'usersys.admin_adduser':['userstatus','country','groups','photoBucket','photoKey','cardBucket','cardKey','wechat','org','usernameC','usernameE','mobileAreaCode','mobile','description','tags','email','title','gender','school','specialty','registersource','remark'],
-    'usersys.trader_adduser':['cardBucket','cardKey','country','wechat','org','usernameC','usernameE','mobileAreaCode','mobile','description','tags','email','title','gender','school','specialty','registersource','remark'],
-    'changeself':['photoBucket','photoKey','country','cardBucket','cardKey','wechat','org','usernameC','usernameE','mobileAreaCode','mobile','description','tags','email','title','gender'],
-    'register_user':['groups','photoBucket','photoKey','country','cardBucket','cardKey','wechat','org','usernameC','usernameE','mobileAreaCode','mobile','description','tags','email','title','gender','school','specialty','registersource','remark'],
-    'usersys.admin_changefriend':[],
-
-
+    'usersys.admin_changeuser':['IR','targetdemand','mergedynamic','ishasfundorplan','lastmodifytime','orgarea','lastmodifyuser','country','userstatus','groups','photoBucket','photoKey','cardBucket','cardKey','wechat','org','usernameC','usernameE','mobileAreaCode','mobile','description','tags','email','title','gender','school','specialty','remark'],
+    'usersys.trader_changeuser':['lastmodifyuser','targetdemand','mergedynamic','ishasfundorplan','lastmodifytime','orgarea','tags','country','remark','description','title','email',],
+    'usersys.admin_adduser':['IR','targetdemand','mergedynamic','ishasfundorplan','userstatus','country','groups','photoBucket','orgarea','photoKey','cardBucket','cardKey','wechat','org','usernameC','usernameE','mobileAreaCode','mobile','description','tags','email','title','gender','school','specialty','registersource','remark'],
+    'usersys.trader_adduser':['cardBucket','targetdemand','mergedynamic','ishasfundorplan','cardKey','country','wechat','org','orgarea','usernameC','usernameE','mobileAreaCode','mobile','description','tags','email','title','gender','school','specialty','registersource','remark'],
+    'changeself':['photoBucket','photoKey','targetdemand','mergedynamic','ishasfundorplan','country','cardBucket','cardKey','wechat','org','orgarea','usernameC','usernameE','mobileAreaCode','mobile','description','tags','email','title','gender'],
+    'register_user':['groups','targetdemand','mergedynamic','ishasfundorplan','photoBucket','photoKey','country','cardBucket','cardKey','wechat','org','orgarea','usernameC','usernameE','mobileAreaCode','mobile','description','tags','email','title','gender','school','specialty','registersource','remark'],
 }
 
 projectpermfield = {

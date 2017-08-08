@@ -24,7 +24,7 @@ from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorRespon
     logexcption
 
 
-
+#邮件群发模板
 Email_project_sign = 'y0dQe4'
 
 #收集邮件群发任务名单
@@ -66,6 +66,7 @@ def saveEmailGroupSendData(projs):
         transactionTypeName = TransactionType.objects.filter(transactionType_projects__proj=proj, is_deleted=False, transactionType_projects__is_deleted=False).values_list('nameC')
         user_qs = Usergroupsendlistserializer(MyUser.objects.filter(tags__in=tags, user_usertags__is_deleted=False,datasource_id=proj.datasource_id).distinct(), many=True).data
         datadic = {
+            'projtitle': proj.projtitleC,
             'proj': {
                 'id': proj.id,
                 'Title': proj.projtitleC,
@@ -157,9 +158,9 @@ class EmailgroupsendlistView(viewsets.ModelViewSet):
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
             except EmptyPage:
-                raise InvestError(1001)
-            queryset = queryset.page(page_index)
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             serializer = Emailgroupsendlistserializer(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':serializer.data}))
         except InvestError as err:

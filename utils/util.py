@@ -137,16 +137,22 @@ def setrequestuser(request):#根据token设置request.user
     else:
         pass
 
+def add_perm(perm,user_or_group,obj=None):
+    if user_or_group:
+        assign_perm(perm,user_or_group,obj)
+def rem_perm(perm,user_or_group,obj=None):
+    if user_or_group:
+        remove_perm(perm,user_or_group,obj)
 
 
 def setUserObjectPermission(user,obj,permissions,touser=None):
     if touser is None:
         for permission in permissions:
-            assign_perm(permission, user, obj)
+            add_perm(permission, user, obj)
     else:
         for permission in permissions:
-            remove_perm(permission, user, obj)
-            assign_perm(permission, touser, obj)
+            rem_perm(permission, user, obj)
+            add_perm(permission, touser, obj)
 
 
 def checkConformType(data,type):

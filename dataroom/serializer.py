@@ -21,15 +21,21 @@ class DataroomSerializer(serializers.ModelSerializer):
         exclude = ('is_deleted', 'deleteduser', 'deletedtime', 'lastmodifyuser', 'lastmodifytime',)
 
 class DataroomdirectoryorfileCreateSerializer(serializers.ModelSerializer):
+    fileurl = serializers.SerializerMethodField()
     class Meta:
         model = dataroomdirectoryorfile
         fields = '__all__'
+    def get_fileurl(self, obj):
+        if obj.bucket and obj.key:
+            return getUrlWithBucketAndKey(obj.bucket, obj.key)
+        else:
+            return None
 
 class DataroomdirectoryorfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = dataroomdirectoryorfile
         fields = '__all__'
-        read_only_fields = ('datasource','createuser','createtime','isFile','isShadow','shadowdirectory','dataroom')
+        read_only_fields = ('datasource','createuser','createtime','isFile','isShadow','shadowdirectory','dataroom','key')
 
 class DataroomdirectoryorfileSerializer(serializers.ModelSerializer):
     fileurl = serializers.SerializerMethodField()
