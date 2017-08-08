@@ -169,7 +169,7 @@ class ProjectView(viewsets.ModelViewSet):
             projdata['createuser'] = request.user.id
             projdata['createdtime'] = datetime.datetime.now()
             projdata['datasource'] = request.user.datasource_id
-            projdata['projstatus'] = 1
+            projdata['projstatus'] = 2
             tagsdata = projdata.pop('tags',None)
             industrydata = projdata.pop('industries',None)
             transactiontypedata = projdata.pop('transactionType',None)

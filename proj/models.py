@@ -26,7 +26,7 @@ class project(models.Model):
     id = models.AutoField(primary_key=True)
     projtitleC = models.CharField(max_length=128,db_index=True,default='标题')
     projtitleE = models.CharField(max_length=256,blank=True,null=True,db_index=True)
-    projstatus = MyForeignKey(ProjectStatus,help_text='项目状态',default=1)
+    projstatus = MyForeignKey(ProjectStatus,help_text='项目状态',default=2)
     c_descriptionC = models.TextField(blank=True, default='公司介绍')
     c_descriptionE = models.TextField(blank=True, default='company description')
     p_introducteC = models.TextField(blank=True, default='项目介绍')
