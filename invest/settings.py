@@ -104,6 +104,12 @@ CORS_ALLOW_HEADERS = (
     'source',
 )
 
+APILOG_PATH = {
+    'excptionlogpath':'/Users/investarget/Desktop/django_server/excption_log',
+    'qiniuuploadprogresspath':'/Users/investarget/Desktop/django_server/qiniu_uploadprogress',
+}
+
+
 
 ROOT_URLCONF = 'invest.urls'
 

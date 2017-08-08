@@ -1,11 +1,10 @@
 from django.db import models
 from django.http import HttpResponse
 from qiniu.services.storage.upload_progress_recorder import UploadProgressRecorder
-from rest_framework import filters
 from rest_framework.permissions import BasePermission
 from rest_framework.renderers import JSONRenderer
 
-
+from invest.settings import APILOG_PATH
 from utils.responsecode import responsecode
 from django_filters import Filter
 import json
@@ -68,7 +67,7 @@ class MyForeignKey(models.ForeignKey):
 
 class MyUploadProgressRecorder(UploadProgressRecorder):
     def __init__(self):
-        self.record_folder = '/Users/investarget/Desktop/django_server/qiniu_uploadprogress'
+        self.record_folder = APILOG_PATH['qiniuuploadprogresspath']
     #
     def get_upload_record(self, file_name, key):
 

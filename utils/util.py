@@ -6,13 +6,11 @@ import traceback
 
 from guardian.shortcuts import assign_perm, remove_perm
 
+from invest.settings import APILOG_PATH
 from usersys.models import MyToken
 from utils.customClass import JSONResponse, InvestError
 
 REDIS_TIMEOUT = 1 * 24 * 60 * 60
-weixinfilepath = '/Users/investarget/Desktop/django_server/third_header/weixin'
-linkedinfilepath = '/Users/investarget/Desktop/django_server/third_header/Linkedin'
-excptionlogpath = '/Users/investarget/Desktop/django_server/excption_log'
 
 def SuccessResponse(data,msg=None):
     response = {'code':1000,'errormsg':msg,'result':data}
@@ -46,7 +44,7 @@ def catchexcption(request):
         ip = request.META['HTTP_X_FORWARDED_FOR']
     else:
         ip = request.META['REMOTE_ADDR']
-    filepath = excptionlogpath + '/' + now.strftime('%Y-%m-%d')
+    filepath = APILOG_PATH['excptionlogpath'] + '/' + now.strftime('%Y-%m-%d')
     f = open(filepath, 'a')
     f.writelines(now.strftime('%H:%M:%S') + '请求用户ip:%s'%ip +'  user_agent:'+request.META['HTTP_USER_AGENT']+ '  请求发起用户id:'+str(request.user.id)+'  path: '+request.path + 'method:' + request.method +'\n'+ traceback.format_exc()+'\n\n')
     f.close()
@@ -54,7 +52,7 @@ def catchexcption(request):
 #记录error
 def logexcption():
     now = datetime.datetime.now()
-    filepath = excptionlogpath + '/' + now.strftime('%Y-%m-%d')
+    filepath = APILOG_PATH['excptionlogpath'] + '/' + now.strftime('%Y-%m-%d')
     f = open(filepath, 'a')
     f.writelines(now.strftime('%H:%M:%S')+'\n'+ traceback.format_exc()+'\n\n')
     f.close()

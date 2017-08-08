@@ -105,6 +105,12 @@ class organization(models.Model):
             if self.orgcode:
                 if organization.objects.filter(is_deleted=False,orgcode=self.orgcode,datasource=self.datasource).exists():
                     raise InvestError(code=5001,msg='orgcode已存在')
+            if self.orgnameC:
+                if organization.objects.filter(is_deleted=False,orgnameC=self.orgnameC,datasource=self.datasource).exists():
+                    raise InvestError(code=5001,msg='同名机构已存在')
+            if self.orgnameE:
+                if organization.objects.filter(is_deleted=False,orgnameE=self.orgnameE,datasource=self.datasource).exists():
+                    raise InvestError(code=5001,msg='同名机构已存在')
         super(organization,self).save(force_insert,force_update,using,update_fields)
 
 class orgTransactionPhase(models.Model):
