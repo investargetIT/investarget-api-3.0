@@ -23,7 +23,7 @@ def rndColor3():
 def makeAvatar(name):
     width = 100
     height = 100
-    font = ImageFont.truetype('PingFang.ttc', size=50)
+    font = ImageFont.truetype(APILOG_PATH['fontPath'], size=50)
     backcolor = rndColor3()
     image = Image.new('RGB', (width, height), backcolor)
     (letterWidth, letterHeight) = font.getsize(name)
