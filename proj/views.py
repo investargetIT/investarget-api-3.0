@@ -18,7 +18,8 @@ from proj.serializer import ProjSerializer, FinanceSerializer, ProjCreatSerializ
     ProjCommonSerializer, FinanceChangeSerializer, FinanceCreateSerializer, FavoriteSerializer, \
     FavoriteCreateSerializer, ProjAttachmentSerializer, ProjListSerializer_admin , ProjListSerializer_user, \
     ProjDetailSerializer_admin_withoutsecretinfo, ProjDetailSerializer_admin_withsecretinfo, ProjDetailSerializer_user_withoutsecretinfo, \
-    ProjDetailSerializer_user_withsecretinfo, ProjAttachmentCreateSerializer, ProjServiceCreateSerializer
+    ProjDetailSerializer_user_withsecretinfo, ProjAttachmentCreateSerializer, ProjServiceCreateSerializer, \
+    ProjIndustryCreateSerializer
 from sourcetype.models import Tag, Industry, TransactionType, DataSource, Service
 from third.views.qiniufile import deleteqiniufile
 from usersys.models import MyUser
@@ -199,7 +200,7 @@ class ProjectView(viewsets.ModelViewSet):
                         if not isinstance(industrydata,list):
                             raise InvestError(2007,msg='industries must be a  list')
                         for industryid in industrydata:
-                            industrylist.append(projectIndustries(proj=pro, industry_id=industryid,createuser=request.user))
+                            industrylist.append(projectIndustries(proj=pro, industry_id=industryid.get('id',None),createuser=request.user,bucket=industryid.get('id',None),key=industryid.get('id',None)))
                         pro.project_industries.bulk_create(industrylist)
                     if transactiontypedata:
                         transactiontypelist = []
@@ -347,16 +348,14 @@ class ProjectView(viewsets.ModelViewSet):
                         pro.proj_services.bulk_create(projservicelist)
 
                     if industrydata:
-                        industrylist = Industry.objects.in_bulk(industrydata)
-                        addlist = [item for item in industrylist if item not in pro.industries.all()]
-                        removelist = [item for item in pro.industries.all() if item not in industrylist]
-                        pro.project_industries.filter(industry__in=removelist, is_deleted=False).update(is_deleted=True,
-                                                                                           deletedtime=datetime.datetime.now(),
-                                                                                           deleteduser=request.user)
-                        projindustrylist = []
-                        for industry in addlist:
-                            projindustrylist.append(projectIndustries(proj=pro, industry_id=industry, createuser=request.user))
-                        pro.project_industries.bulk_create(projindustrylist)
+                        if not isinstance(industrydata, list) or len(industrydata) == 0:
+                            raise InvestError(2007, msg='industrydata must be a not null list')
+                        pro.project_industries.filter(is_deleted=False).update(is_deleted=True, deletedtime=datetime.datetime.now(), deleteduser=request.user)
+                        for oneindustrydata in industrydata:
+                            oneindustrydata['proj'] = pro.id
+                            industrydataSerializer = ProjIndustryCreateSerializer(data=oneindustrydata)
+                            if industrydataSerializer.is_valid():
+                                industrydataSerializer.save()
 
                     if transactiontypedata:
                         transactionTypelist = TransactionType.objects.in_bulk(transactiontypedata)
@@ -373,7 +372,7 @@ class ProjectView(viewsets.ModelViewSet):
                     if projAttachmentdata:
                         if not isinstance(projAttachmentdata, list) or len(projAttachmentdata) == 0:
                             raise InvestError(2007, msg='transactionType must be a not null list')
-                        pro.proj_attachment.update(is_deleted=True, deletedtime=datetime.datetime.now(), deleteduser=request.user)
+                        pro.proj_attachment.filter(is_deleted=False).update(is_deleted=True, deletedtime=datetime.datetime.now(), deleteduser=request.user)
                         for oneprojAttachmentdata in projAttachmentdata:
                             oneprojAttachmentdata['proj'] = pro.id
                             projAttachmentSerializer = ProjAttachmentCreateSerializer(data=oneprojAttachmentdata)
@@ -383,7 +382,7 @@ class ProjectView(viewsets.ModelViewSet):
                     if financedata:
                         if not isinstance(financedata, list):
                             raise InvestError(2007, msg='transactionType must be a not null list')
-                        pro.proj_finances.update(is_deleted=True, deletedtime=datetime.datetime.now(), deleteduser=request.user)
+                        pro.proj_finances.filter(is_deleted=False).update(is_deleted=True, deletedtime=datetime.datetime.now(), deleteduser=request.user)
                         for onefinancedata in financedata:
                             onefinancedata['proj'] = pro.id
                             financeSerializer = FinanceCreateSerializer(data=onefinancedata)

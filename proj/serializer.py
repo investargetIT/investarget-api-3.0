@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
-from proj.models import project, finance, favoriteProject, attachment, projServices
-from sourcetype.serializer import tagSerializer, industrySerializer, transactionTypeSerializer, serviceSerializer
+from proj.models import project, finance, favoriteProject, attachment, projServices, projectIndustries
+from sourcetype.serializer import tagSerializer, transactionTypeSerializer, serviceSerializer
 from third.views.qiniufile import getUrlWithBucketAndKey
 from usersys.serializer import UserCommenSerializer
 
@@ -9,6 +9,25 @@ class ProjSimpleSerializer(serializers.ModelSerializer):
     class Meta:
         model = project
         fields = ('id','projtitleC','projtitleE','financeAmount','financeAmount_USD','country','projstatus','isHidden','ismarketplace')
+
+
+class ProjIndustrySerializer(serializers.ModelSerializer):
+    nameC = serializers.CharField(source='projectIndustries.industry__industryC', read_only=True)
+    nameE = serializers.CharField(source='projectIndustries.industry__industryE', read_only=True)
+    url = serializers.SerializerMethodField()
+    class Meta:
+        model = projectIndustries
+        fields = ('industry','bucket','key','url','nameC','nameE')
+    def get_url(self, obj):
+        if obj.key:
+            return 'https://o79atf82v.qnssl.com/' + obj.key
+        return None
+
+class ProjIndustryCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = projectIndustries
+        fields = '__all__'
+
 class FinanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = finance
@@ -24,7 +43,7 @@ class FinanceCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = finance
         fields = '__all__'
-        # read_only_fields = ('deletedtime', 'lastmodifyuser', 'lastmodifytime', 'is_deleted', 'deleteduser')
+
 class ProjServiceCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = projServices
@@ -34,7 +53,6 @@ class ProjFinanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = finance
         exclude = ('deleteduser','deletedtime','createuser','createdtime','lastmodifyuser','lastmodifytime',)
-
 
 class ProjAttachmentCreateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -70,9 +88,9 @@ class ProjCommonSerializer(serializers.ModelSerializer):
             return tagSerializer(qs,many=True).data
         return None
     def get_industries(self, obj):
-        qs = obj.industries.filter(industry_projects__is_deleted=False)
+        qs = obj.project_industries.filter(is_deleted=False)
         if qs.exists():
-            return industrySerializer(qs,many=True).data
+            return ProjIndustrySerializer(qs,many=True).data
         return None
 
 class ProjCreatSerializer(serializers.ModelSerializer):
@@ -113,9 +131,9 @@ class ProjListSerializer_admin(serializers.ModelSerializer):
             return tagSerializer(qs,many=True).data
         return None
     def get_industries(self, obj):
-        qs = obj.industries.filter(industry_projects__is_deleted=False)
+        qs = obj.project_industries.filter(is_deleted=False)
         if qs.exists():
-            return industrySerializer(qs,many=True).data
+            return ProjIndustrySerializer(qs,many=True).data
         return None
     def get_transactionType(self, obj):
         qs = obj.transactionType.filter(transactionType_projects__is_deleted=False)
@@ -149,10 +167,11 @@ class ProjListSerializer_user(serializers.ModelSerializer):
             return tagSerializer(qs,many=True).data
         return None
     def get_industries(self, obj):
-        qs = obj.industries.filter(industry_projects__is_deleted=False)
+        qs = obj.project_industries.filter(is_deleted=False)
         if qs.exists():
-            return industrySerializer(qs,many=True).data
+            return ProjIndustrySerializer(qs,many=True).data
         return None
+
     def get_transactionType(self, obj):
         qs = obj.transactionType.filter(transactionType_projects__is_deleted=False)
         if qs.exists():
@@ -187,9 +206,9 @@ class ProjDetailSerializer_admin_withsecretinfo(serializers.ModelSerializer):
         return None
 
     def get_industries(self, obj):
-        qs = obj.industries.filter(industry_projects__is_deleted=False)
+        qs = obj.project_industries.filter(is_deleted=False)
         if qs.exists():
-            return industrySerializer(qs,many=True).data
+            return ProjIndustrySerializer(qs,many=True).data
         return None
     def get_transactionType(self, obj):
         qs = obj.transactionType.filter(transactionType_projects__is_deleted=False)
@@ -232,9 +251,9 @@ class ProjDetailSerializer_user_withsecretinfo(serializers.ModelSerializer):
             return tagSerializer(qs,many=True).data
         return None
     def get_industries(self, obj):
-        qs = obj.industries.filter(industry_projects__is_deleted=False)
+        qs = obj.project_industries.filter(is_deleted=False)
         if qs.exists():
-            return industrySerializer(qs,many=True).data
+            return ProjIndustrySerializer(qs,many=True).data
         return None
     def get_transactionType(self, obj):
         qs = obj.transactionType.filter(transactionType_projects__is_deleted=False)
@@ -285,9 +304,9 @@ class ProjDetailSerializer_admin_withoutsecretinfo(serializers.ModelSerializer):
             return tagSerializer(qs,many=True).data
         return None
     def get_industries(self, obj):
-        qs = obj.industries.filter(industry_projects__is_deleted=False)
+        qs = obj.project_industries.filter(is_deleted=False)
         if qs.exists():
-            return industrySerializer(qs,many=True).data
+            return ProjIndustrySerializer(qs,many=True).data
         return None
     def get_transactionType(self, obj):
         qs = obj.transactionType.filter(transactionType_projects__is_deleted=False)
@@ -331,9 +350,9 @@ class ProjDetailSerializer_user_withoutsecretinfo(serializers.ModelSerializer):
             return tagSerializer(qs,many=True).data
         return None
     def get_industries(self, obj):
-        qs = obj.industries.filter(industry_projects__is_deleted=False)
+        qs = obj.project_industries.filter(is_deleted=False)
         if qs.exists():
-            return industrySerializer(qs,many=True).data
+            return ProjIndustrySerializer(qs,many=True).data
         return None
     def get_transactionType(self, obj):
         qs = obj.transactionType.filter(transactionType_projects__is_deleted=False)

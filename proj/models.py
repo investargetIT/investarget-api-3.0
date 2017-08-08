@@ -201,6 +201,8 @@ class projectTags(models.Model):
 class projectIndustries(models.Model):
     proj = MyForeignKey(project,related_name='project_industries')
     industry = MyForeignKey(Industry, related_name='industry_projects')
+    bucket = models.CharField(max_length=16,blank=True,null=True)
+    key = models.TextField(blank=True,null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_projIndustries')
     deletedtime = models.DateTimeField(blank=True, null=True)
