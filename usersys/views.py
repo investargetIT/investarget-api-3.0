@@ -420,6 +420,8 @@ class UserView(viewsets.ModelViewSet):
                 rel_fileds = [f for f in MyUser._meta.get_fields() if isinstance(f, ForeignObjectRel)]
                 links = [f.get_accessor_name() for f in rel_fileds]
                 for userid in useridlist:
+                    if userid == request.user.id:
+                        raise InvestError(2007,msg='不能删除自己')
                     instance = self.get_object(userid)
                     if request.user.has_perm('usersys.admin_deleteuser') or request.user.has_perm('usersys.user_deleteuser',instance):
                         pass
