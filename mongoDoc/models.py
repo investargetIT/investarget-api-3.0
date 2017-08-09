@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 import datetime
 from mongoengine import *
-
+from invest.settings import MongoTableName
 
 
 # class WXContentData(Document):
@@ -15,11 +15,10 @@ from mongoengine import *
 
 
 
-
 class GroupEmailData(Document):
     users = ListField(DictField())
     projtitle = StringField()
     proj = DictField()
     savetime = DateTimeField(default=datetime.datetime.now())
     datasource = IntField()
-    meta = {"collection": "groupemaildata"}
+    meta = {"collection": MongoTableName}
