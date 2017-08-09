@@ -85,6 +85,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     cardKey = models.CharField(max_length=128,blank=True,null=True)
     wechat = models.CharField(max_length=64,blank=True,null=True)
     country = MyForeignKey(Country,blank=True,null=True)
+    department = models.CharField(max_length=64,blank=True,null=True,help_text='部门')
     orgarea = MyForeignKey(OrgArea,blank=True,null=True,help_text='机构地区')
     userstatus = MyForeignKey(AuditStatus,help_text='审核状态',blank=True,default=1)
     org = MyForeignKey('org.organization',help_text='所属机构',blank=True,null=True,related_name='org_users')

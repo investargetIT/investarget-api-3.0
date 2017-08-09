@@ -56,7 +56,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
     photourl = serializers.SerializerMethodField()
     class Meta:
         model = MyUser
-        fields = ('usernameC', 'usernameE', 'org', 'mobile', 'email', 'title', 'id','tags','userstatus','photourl','orgarea')
+        fields = ('usernameC', 'usernameE', 'org','department', 'mobile', 'email', 'title', 'id','tags','userstatus','photourl','orgarea')
         depth = 1
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_usertags__is_deleted=False)
@@ -156,7 +156,7 @@ class UserListSerializer(serializers.ModelSerializer):
     photourl = serializers.SerializerMethodField()
     class Meta:
         model = MyUser
-        fields = ('id','groups','tags','usernameC','usernameE','mobile','email','title','userstatus','org','trader_relation','investor_relation','photourl')
+        fields = ('id','groups','tags','department','usernameC','usernameE','mobile','email','title','userstatus','org','trader_relation','investor_relation','photourl')
         depth = 1
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_usertags__is_deleted=False)
@@ -189,7 +189,7 @@ class UserListSerializer_admin(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
     class Meta:
         model = MyUser
-        fields = ('id', 'groups', 'tags', 'usernameC', 'usernameE', 'mobile', 'email', 'title', 'userstatus', 'org',
+        fields = ('id', 'groups', 'tags', 'usernameC', 'department', 'usernameE', 'mobile', 'email', 'title', 'userstatus', 'org',
                   'trader_relation', 'investor_relation')
         depth = 1
     def get_tags(self, obj):

@@ -399,7 +399,6 @@ class UserView(viewsets.ModelViewSet):
                 for user,sendmsg in messagelist:
                     if sendmsg:
                         sendmessage_userauditstatuchange(user,user,['app','email','webmsg'],sender=request.user)
-
                 return JSONResponse(SuccessResponse(returnListChangeToLanguage(userlist,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
