@@ -155,7 +155,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
             raise InvestError(code=8888,msg='datasource有误')
         if self.pk and self.groups.exists() and self.groups.first().datasource != self.datasource:
             raise InvestError(code=8888,msg='group 与 user datasource不同')
-        if self.country.datasource != self.datasource:
+        if self.country.datasource != self.datasource_id:
             raise InvestError(8888)
 
         try:
@@ -243,7 +243,7 @@ class userTags(models.Model):
     class Meta:
         db_table = "user_tags"
     def save(self, *args, **kwargs):
-        if self.tag.datasource != self.user.datasource:
+        if self.tag.datasource != self.user.datasource_id:
             raise InvestError(8888)
         return super(userTags, self).save(*args, **kwargs)
 
