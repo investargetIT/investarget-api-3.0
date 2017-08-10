@@ -199,8 +199,8 @@ class ProjectView(viewsets.ModelViewSet):
                         industrylist = []
                         if not isinstance(industrydata,list):
                             raise InvestError(2007,msg='industries must be a  list')
-                        for industryid in industrydata:
-                            industrylist.append(projectIndustries(proj=pro, industry_id=industryid.get('id',None),createuser=request.user,bucket=industryid.get('bucket',None),key=industryid.get('key',None)))
+                        for oneindustrydata in industrydata:
+                            industrylist.append(projectIndustries(proj=pro, industry_id=oneindustrydata.get('industry',None),createuser=request.user,bucket=oneindustrydata.get('bucket',None),key=oneindustrydata.get('key',None)))
                         pro.project_industries.bulk_create(industrylist)
                     if transactiontypedata:
                         transactiontypelist = []

@@ -86,6 +86,9 @@ class organization(models.Model):
              update_fields=None):
         if not self.datasource:
             raise InvestError(code=8888,msg='机构datasource不能空')
+        if self.industry:
+            if self.industry.datasource != self.datasource_id:
+                raise InvestError(8888)
         if self.pk:
             oldorg = organization.objects.get(pk=self.pk)
             if self.orgcode:
