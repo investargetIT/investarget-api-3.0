@@ -1012,7 +1012,7 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
                 traderuser = self.get_user(traderid)
                 if user.has_perm('usersys.user_interestproj', traderuser):
                     raise InvestError(code=4005)
-            elif ftype not in [1,2]:
+            elif ftype in [1,2]:
                 if request.user.has_perm('proj.admin_addfavorite'):
                     raise InvestError(code=4005)
             elif ftype == 3:
