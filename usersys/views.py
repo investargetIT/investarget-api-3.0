@@ -274,7 +274,7 @@ class UserView(viewsets.ModelViewSet):
                     canNotChangeField = perimissionfields.userpermfield['usersys.admin_adduser']
                 elif request.user.has_perm('usersys.user_adduser'):
                     canNotChangeField = perimissionfields.userpermfield['usersys.trader_adduser']
-                    groupid = data.get('groups', None)
+                    groupid = data.get('groups', [])
                     if len(groupid) == 1:
                         try:
                             group = Group.objects.get(id=groupid[0])
@@ -376,7 +376,7 @@ class UserView(viewsets.ModelViewSet):
                                 canNotChangeField = perimissionfields.userpermfield['changeself']
                             elif request.user.has_perm('usersys.user_changeuser', user):
                                 canNotChangeField = perimissionfields.userpermfield['usersys.trader_changeuser']
-                                groupid = data.get('groups', None)
+                                groupid = data.get('groups', [])
                                 if len(groupid) == 1:
                                     try:
                                         group = Group.objects.get(id=groupid[0])
@@ -540,8 +540,8 @@ class UserView(viewsets.ModelViewSet):
     def changepassword(self, request, *args, **kwargs):
         try:
             data = request.data
-            oldpassword = data.get('oldpassword')
-            password = data.get('newpassword')
+            oldpassword = data.get('oldpassword','')
+            password = data.get('newpassword','')
             user = self.get_object()
             if user == request.user:
                 if not user.check_password(oldpassword):
