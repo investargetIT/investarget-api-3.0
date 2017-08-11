@@ -70,7 +70,8 @@ class MyUploadProgressRecorder(UploadProgressRecorder):
         self.record_folder = APILOG_PATH['qiniuuploadprogresspath']
     #
     def get_upload_record(self, file_name, key):
-
+        if len(file_name) > 5:
+            file_name = file_name[0:4]
         key = '{0}.{1}.doc'.format(key,file_name)
         key = base64.urlsafe_b64encode(key.encode('utf-8'))
         upload_record_file_path = os.path.join(self.record_folder,
@@ -82,6 +83,8 @@ class MyUploadProgressRecorder(UploadProgressRecorder):
         return json_data
 
     def set_upload_record(self, file_name, key, data):
+        if len(file_name) > 5:
+            file_name = file_name[0:4]
         key = '{0}.{1}.doc'.format(key, file_name)
         key = base64.urlsafe_b64encode(key.encode('utf-8'))
         upload_record_file_path = os.path.join(self.record_folder, key)
@@ -89,6 +92,8 @@ class MyUploadProgressRecorder(UploadProgressRecorder):
             json.dump(data, f)
 
     def delete_upload_record(self, file_name, key):
+        if len(file_name) > 5:
+            file_name = file_name[0:4]
         key = '{0}.{1}.doc'.format(key, file_name)
         key = base64.urlsafe_b64encode(key.encode('utf-8'))
         record_file_path = os.path.join(self.record_folder,

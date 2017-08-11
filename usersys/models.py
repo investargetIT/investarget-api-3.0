@@ -282,7 +282,7 @@ class UserRelation(models.Model):
                                    on_delete=models.SET_NULL)
     lastmodifytime = models.DateTimeField(blank=True, null=True)
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_relations',)
-    datasource = MyForeignKey(DataSource, help_text='数据源')
+    datasource = MyForeignKey(DataSource, blank=True,default=1, help_text='数据源')
     def save(self, *args, **kwargs):
         if not self.datasource:
             raise InvestError(code=8888,msg='datasource有误')
@@ -386,7 +386,7 @@ class UserFriendship(models.Model):
     deletedtime = models.DateTimeField(blank=True, null=True)
     createdtime = models.DateTimeField(auto_created=True, blank=True,null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_userfriends',)
-    datasource = MyForeignKey(DataSource, help_text='数据源')
+    datasource = MyForeignKey(DataSource,blank=True,default=1, help_text='数据源')
     class Meta:
         db_table = "user_friendship"
         permissions =  (

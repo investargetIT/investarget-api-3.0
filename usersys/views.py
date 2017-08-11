@@ -833,17 +833,10 @@ class UserRelationView(viewsets.ModelViewSet):
 
     def get_object(self,pk=None):
         if pk:
-            lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-            assert lookup_url_kwarg in self.kwargs, (
-                'Expected view %s to be called with a URL keyword argument '
-                'named "%s". Fix your URL conf, or set the `.lookup_field` '
-                'attribute on the view correctly.' %
-                (self.__class__.__name__, lookup_url_kwarg)
-            )
             try:
-                obj = UserRelation.objects.get(id=self.kwargs[lookup_url_kwarg], is_deleted=False)
+                obj = UserRelation.objects.get(id=pk, is_deleted=False)
             except UserRelation.DoesNotExist:
-                raise InvestError(code=2011, msg='relation with pk = "%s" is not exist' % self.kwargs[lookup_url_kwarg])
+                raise InvestError(code=2011, msg='relation with pk = "%s" is not exist' % pk)
         else:
             lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
             assert lookup_url_kwarg in self.kwargs, (
@@ -884,33 +877,31 @@ class UserRelationView(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 lang = request.GET.get('lang')
-                relationidlist =  request.data['relationlist']
-                if not isinstance(relationidlist,list) or not relationidlist:
-                    raise InvestError(2007,msg='expect a not null relation id list')
-                relationlist = self.get_queryset().in_bulk(relationidlist)
+                relationdatalist = request.data
+                if not isinstance(relationdatalist,list) or not relationdatalist:
+                    raise InvestError(2007,msg='expect a not null relation data list')
                 newlist = []
                 sendmessagelist = []
-                for relation in relationlist:
+                for relationdata in relationdatalist:
                     sendmsg = False
-                    data =  request.data['newdata']
-                    data.pop('investoruser')
-                    if data.get('traderuser',None) and data.get('traderuser') != relation.traderuser_id:
+                    relation = self.get_object(relationdata['id'])
+                    if relationdata.get('traderuser',None) and relationdata.get('traderuser') != relation.traderuser_id:
                         sendmsg = True
                     if request.user.has_perm('usersys.admin_changeuserrelation'):
                         pass
                     elif request.user.has_perm('usersys.user_changeuserrelation', relation):
-                        data['traderuser'] = request.user.id
-                        data.pop('relationtype', None)
+                        relationdata['traderuser'] = request.user.id
+                        relationdata.pop('relationtype', None)
                     else:
                         raise InvestError(code=2009,msg='没有权限')
-                    data['lastmodifyuser'] = request.user.id
-                    data['lastmodifytime'] = datetime.datetime.now()
-                    newrelationseria = UserRelationSerializer(relation,data=data)
+                    relationdata['lastmodifyuser'] = request.user.id
+                    relationdata['lastmodifytime'] = datetime.datetime.now()
+                    newrelationseria = UserRelationDetailSerializer(relation,data=relationdata)
                     if newrelationseria.is_valid():
                         newrelation = newrelationseria.save()
                     else:
                         raise InvestError(code=20071,msg=newrelationseria.errors)
-                    newlist.append(newrelationseria.data)
+                    newlist.append(UserRelationSerializer(newrelation).data)
                     sendmessagelist.append((newrelation,sendmsg))
                 for newrelation, sendmsg in sendmessagelist:
                     if sendmsg:

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from proj.models import project, finance, favoriteProject, attachment, projServices, projectIndustries
-from sourcetype.serializer import tagSerializer, transactionTypeSerializer, serviceSerializer
+from sourcetype.serializer import tagSerializer, transactionTypeSerializer, serviceSerializer, countrySerializer
 from third.views.qiniufile import getUrlWithBucketAndKey
 from usersys.serializer import UserCommenSerializer
 
@@ -118,6 +118,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
 class ProjListSerializer_admin(serializers.ModelSerializer):
     # finance = serializers.SerializerMethodField()
     # attachment = serializers.SerializerMethodField()
+    country = countrySerializer()
     tags = serializers.SerializerMethodField()
     industries = serializers.SerializerMethodField()
     transactionType = serializers.SerializerMethodField()
@@ -156,6 +157,7 @@ class ProjListSerializer_admin(serializers.ModelSerializer):
 class ProjListSerializer_user(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
     industries = serializers.SerializerMethodField()
+    country = countrySerializer()
     transactionType = serializers.SerializerMethodField()
     class Meta:
         model = project
@@ -184,6 +186,7 @@ class ProjDetailSerializer_admin_withsecretinfo(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
     service = serializers.SerializerMethodField()
     industries = serializers.SerializerMethodField()
+    country = countrySerializer()
     transactionType = serializers.SerializerMethodField()
     supportUser = UserCommenSerializer()
     takeUser = UserCommenSerializer()
@@ -235,6 +238,7 @@ class ProjDetailSerializer_user_withsecretinfo(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
     service = serializers.SerializerMethodField()
     industries = serializers.SerializerMethodField()
+    country = countrySerializer()
     transactionType = serializers.SerializerMethodField()
     finance = serializers.SerializerMethodField()
     attachment = serializers.SerializerMethodField()
@@ -282,6 +286,7 @@ class ProjDetailSerializer_admin_withoutsecretinfo(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
     service = serializers.SerializerMethodField()
     industries = serializers.SerializerMethodField()
+    country = countrySerializer()
     transactionType = serializers.SerializerMethodField()
     finance = serializers.SerializerMethodField()
     attachment = serializers.SerializerMethodField()
@@ -331,6 +336,7 @@ class ProjDetailSerializer_user_withoutsecretinfo(serializers.ModelSerializer):
     transactionType = serializers.SerializerMethodField()
     finance = serializers.SerializerMethodField()
     attachment = serializers.SerializerMethodField()
+    country = countrySerializer()
     supportUser = UserCommenSerializer()
     takeUser = UserCommenSerializer()
     makeUser = UserCommenSerializer()

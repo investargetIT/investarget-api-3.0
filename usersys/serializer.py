@@ -3,7 +3,7 @@ from django.contrib.auth.models import Group, Permission
 from rest_framework import serializers
 
 from org.serializer import OrgCommonSerializer
-from sourcetype.serializer import tagSerializer
+from sourcetype.serializer import tagSerializer, countrySerializer
 from third.views.qiniufile import getUrlWithBucketAndKey
 from .models import MyUser, UserRelation, UserFriendship, UnreachUser
 
@@ -153,10 +153,12 @@ class UserListSerializer(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
     trader_relation = serializers.SerializerMethodField()
     investor_relation = serializers.SerializerMethodField()
+    country = countrySerializer()
+    IR = UserCommenSerializer()
     photourl = serializers.SerializerMethodField()
     class Meta:
         model = MyUser
-        fields = ('id','groups','tags','department','usernameC','usernameE','mobile','email','title','userstatus','org','trader_relation','investor_relation','photourl')
+        fields = ('id','groups','tags','country','department','usernameC','usernameE','mobile','IR','email','title','userstatus','org','trader_relation','investor_relation','photourl')
         depth = 1
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_usertags__is_deleted=False)
