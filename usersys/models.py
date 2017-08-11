@@ -295,10 +295,11 @@ class UserRelation(models.Model):
         else:
             userrelation = UserRelation.objects.filter(is_deleted=False,datasource=self.datasource, investoruser=self.investoruser)
         if userrelation.exists():
-            if userrelation.filter(traderuser_id=self.traderuser_id).exists():
-                raise InvestError(code=2012,msg='4.关系已存在')
-            elif userrelation.filter(relationtype=True).exists() and self.relationtype:
-                raise InvestError(code=2013,msg='3.强关系只能有一个,如有必要，先删除，在添加')
+            if not self.is_deleted:
+                if userrelation.filter(traderuser_id=self.traderuser_id).exists():
+                    raise InvestError(code=2012,msg='4.关系已存在')
+                elif userrelation.filter(relationtype=True).exists() and self.relationtype:
+                    raise InvestError(code=2013,msg='3.强关系只能有一个,如有必要，先删除，在添加')
         else:
             self.relationtype = True
         if self.investoruser.id == self.traderuser.id:

@@ -257,14 +257,7 @@ class UserView(viewsets.ModelViewSet):
     def adduser(self, request, *args, **kwargs):
         data = request.data
         try:
-
             lang = request.GET.get('lang')
-            if request.user.has_perm('usersys.admin_adduser'):
-                canCreateField = perimissionfields.userpermfield['usersys.admin_adduser']
-            elif request.user.has_perm('usersys.user_adduser'):
-                canCreateField = perimissionfields.userpermfield['usersys.trader_adduser']
-            else:
-                raise InvestError(2009,msg='没有新增权限')
             with transaction.atomic():
                 email = data.get('email')
                 mobile = data.get('mobile')
@@ -277,7 +270,23 @@ class UserView(viewsets.ModelViewSet):
                 user.set_password('Aa123456')
                 user.save()
                 keylist = data.keys()
-                cannoteditlist = [key for key in keylist if key not in canCreateField]
+                if request.user.has_perm('usersys.admin_adduser'):
+                    canNotChangeField = perimissionfields.userpermfield['usersys.admin_adduser']
+                elif request.user.has_perm('usersys.user_adduser'):
+                    canNotChangeField = perimissionfields.userpermfield['usersys.trader_adduser']
+                    groupid = data.get('groups', None)
+                    if len(groupid) == 1:
+                        try:
+                            group = Group.objects.get(id=groupid[0])
+                        except Exception:
+                            catchexcption(request)
+                            raise InvestError(code=2007, msg='group bust be an available id')
+                        if not group.permissions.filter(codename='as_investor').exists():
+                            raise InvestError(2009,msg='新增用户非投资人类型')
+                        data['groups'] = [group.id]
+                else:
+                    raise InvestError(2009, msg='没有新增权限')
+                cannoteditlist = [key for key in keylist if key in canNotChangeField]
                 if cannoteditlist:
                     raise InvestError(code=2009,msg='没有权限修改%s' % cannoteditlist)
                 data['createuser'] = request.user.id
@@ -356,49 +365,59 @@ class UserView(viewsets.ModelViewSet):
             with transaction.atomic():
                 for userid in useridlist:
                     data = request.data.get('userdata')
-                    user = self.get_object(userid)
-                    olduserdata = UserSerializer(user)
-                    sendmsg = False
-                    if request.user.has_perm('usersys.admin_changeuser'):
-                        canChangeField = perimissionfields.userpermfield['usersys.admin_changeuser']
-                    else:
-                        if request.user == user:
-                            canChangeField = perimissionfields.userpermfield['changeself']
-                        elif request.user.has_perm('usersys.user_changeuser', user):
-                            canChangeField = perimissionfields.userpermfield['usersys.trader_changeuser']
+                    if data is not None:
+                        user = self.get_object(userid)
+                        olduserdata = UserSerializer(user)
+                        sendmsg = False
+                        if request.user.has_perm('usersys.admin_changeuser'):
+                            canNotChangeField = perimissionfields.userpermfield['usersys.admin_changeuser']
                         else:
-                            raise InvestError(code= 2009)
-                    keylist = data.keys()
-                    cannoteditlist = [key for key in keylist if key not in canChangeField]
-                    if cannoteditlist:
-                        raise InvestError(code=2009,msg='没有权限修改_%s' % cannoteditlist)
-                    data['lastmodifyuser'] = request.user.id
-                    data['lastmodifytime'] = datetime.datetime.now()
-                    tags = data.pop('tags', None)
-                    if data.get('userstatus',None) and user.userstatus_id != data.get('userstatus',None):
-                        sendmsg = True
-                    userserializer = UpdateUserSerializer(user, data=data)
-                    if userserializer.is_valid():
-                        user = userserializer.save()
-                        cache_delete_key(self.redis_key + '_%s' % user.id)
-                        if tags:
-                            taglist = Tag.objects.in_bulk(tags)
-                            addlist = [item for item in taglist if item not in user.tags.all()]
-                            removelist = [item for item in user.tags.all() if item not in taglist]
-                            user.user_usertags.filter(tag__in=removelist,is_deleted=False).update(is_deleted=True,deletedtime=datetime.datetime.now(),deleteduser=request.user)
-                            usertaglist = []
-                            for tag in addlist:
-                                usertaglist.append(userTags(user=user, tag_id=tag, createuser=request.user))
-                            user.user_usertags.bulk_create(usertaglist)
-                    else:
-                        raise InvestError(code=20071,msg='userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
-                    newuserdata = UserSerializer(user)
-                    apilog(request, 'MyUser', olduserdata.data, newuserdata.data, modelID=userid, datasource=request.user.datasource_id)
-                    userlist.append(newuserdata.data)
-                    messagelist.append((user,sendmsg))
-                for user,sendmsg in messagelist:
-                    if sendmsg:
-                        sendmessage_userauditstatuchange(user,user,['app','email','webmsg'],sender=request.user)
+                            if request.user == user:
+                                canNotChangeField = perimissionfields.userpermfield['changeself']
+                            elif request.user.has_perm('usersys.user_changeuser', user):
+                                canNotChangeField = perimissionfields.userpermfield['usersys.trader_changeuser']
+                                groupid = data.get('groups', None)
+                                if len(groupid) == 1:
+                                    try:
+                                        group = Group.objects.get(id=groupid[0])
+                                    except Exception:
+                                        raise InvestError(code=2007, msg='group bust be an available id')
+                                    if not group.permissions.filter(codename='as_investor').exists():
+                                        raise InvestError(2009, msg='没有修改为非投资人类型用户的权限')
+                                    data['groups'] = [group.id]
+                            else:
+                                raise InvestError(code= 2009)
+                        keylist = data.keys()
+                        cannoteditlist = [key for key in keylist if key in canNotChangeField]
+                        if cannoteditlist:
+                            raise InvestError(code=2009,msg='没有权限修改_%s' % cannoteditlist)
+                        data['lastmodifyuser'] = request.user.id
+                        data['lastmodifytime'] = datetime.datetime.now()
+                        tags = data.pop('tags', None)
+                        if data.get('userstatus',None) and user.userstatus_id != data.get('userstatus',None):
+                            sendmsg = True
+                        userserializer = UpdateUserSerializer(user, data=data)
+                        if userserializer.is_valid():
+                            user = userserializer.save()
+                            cache_delete_key(self.redis_key + '_%s' % user.id)
+                            if tags:
+                                taglist = Tag.objects.in_bulk(tags)
+                                addlist = [item for item in taglist if item not in user.tags.all()]
+                                removelist = [item for item in user.tags.all() if item not in taglist]
+                                user.user_usertags.filter(tag__in=removelist,is_deleted=False).update(is_deleted=True,deletedtime=datetime.datetime.now(),deleteduser=request.user)
+                                usertaglist = []
+                                for tag in addlist:
+                                    usertaglist.append(userTags(user=user, tag_id=tag, createuser=request.user))
+                                user.user_usertags.bulk_create(usertaglist)
+                        else:
+                            raise InvestError(code=20071,msg='userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
+                        newuserdata = UserSerializer(user)
+                        apilog(request, 'MyUser', olduserdata.data, newuserdata.data, modelID=userid, datasource=request.user.datasource_id)
+                        userlist.append(newuserdata.data)
+                        messagelist.append((user,sendmsg))
+                    for user,sendmsg in messagelist:
+                        if sendmsg:
+                            sendmessage_userauditstatuchange(user,user,['app','email','webmsg'],sender=request.user)
                 return JSONResponse(SuccessResponse(returnListChangeToLanguage(userlist,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -805,7 +824,7 @@ class UserRelationView(viewsets.ModelViewSet):
                     add_perm('usersys.user_deleteuserrelation', relation.traderuser, relation)
                 else:
                     raise InvestError(code=20071,msg='%s'%newrelation.errors)
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(newrelation.data,lang)))
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(UserRelationSerializer(relation).data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
