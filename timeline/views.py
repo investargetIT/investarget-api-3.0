@@ -10,7 +10,8 @@ from rest_framework import filters, viewsets
 
 from timeline.models import timeline, timelineTransationStatu, timelineremark
 from timeline.serializer import TimeLineSerializer, TimeLineStatuSerializer, TimeLineCreateSerializer, \
-    TimeLineStatuCreateSerializer, TimeLineRemarkSerializer, TimeLineListSerializer_admin, TimeLineUpdateSerializer
+    TimeLineStatuCreateSerializer, TimeLineRemarkSerializer, TimeLineListSerializer_admin, TimeLineUpdateSerializer, \
+    TimeLineListSerializer_user, TimeLineListSerializer_anonymous
 from utils.customClass import InvestError, JSONResponse
 from utils.sendMessage import sendmessage_timelineauditstatuchange
 from utils.util import read_from_cache, write_to_cache, returnListChangeToLanguage, loginTokenIsAvailable, \
@@ -99,13 +100,19 @@ class TimelineView(viewsets.ModelViewSet):
             responselist = []
             for instance in queryset:
                 actionlist = {'get': False, 'change': False, 'delete': False}
-                if request.user.has_perm('timeline.admin_getline') or request.user.has_perm('timeline.user_getline', instance):
+                if request.user.has_perm('timeline.admin_getline'):
                     actionlist['get'] = True
+                    serializerclass = TimeLineListSerializer_admin
+                elif request.user.has_perm('timeline.user_getline', instance):
+                    actionlist['get'] = True
+                    serializerclass = TimeLineListSerializer_user
+                else:
+                    serializerclass = TimeLineListSerializer_anonymous
                 if request.user.has_perm('timeline.admin_changeline') or request.user.has_perm('timeline.user_changeline', instance):
                     actionlist['change'] = True
                 if request.user.has_perm('timeline.admin_deleteline') or request.user.has_perm('timeline.user_deleteline', instance):
                     actionlist['delete'] = True
-                instancedata = TimeLineListSerializer_admin(instance).data
+                instancedata = serializerclass(instance).data
                 instancedata['action'] = actionlist
                 responselist.append(instancedata)
             return JSONResponse(SuccessResponse({'count': count, 'data': returnListChangeToLanguage(responselist, lang)}))

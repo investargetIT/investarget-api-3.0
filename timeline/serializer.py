@@ -65,7 +65,7 @@ class TimeLineListSerializer_admin(serializers.ModelSerializer):
     class Meta:
         model = timeline
         # fields = '__all__'
-        exclude = ('is_deleted','deleteduser','deletedtime','lastmodifyuser','lastmodifytime',)
+        exclude = ('is_deleted','deleteduser','deletedtime','lastmodifyuser','lastmodifytime','createuser','createdtime')
 
 
     def get_supportor(self, obj):
@@ -85,12 +85,33 @@ class TimeLineListSerializer_admin(serializers.ModelSerializer):
             return TimeLineRemarkSerializer(qs.last()).data
         return None
 class TimeLineListSerializer_user(serializers.ModelSerializer):
+    investor = UserCommenSerializer()
+    trader = UserCommenSerializer()
+    proj = ProjSimpleSerializer()
+    transationStatu = serializers.SerializerMethodField()
+    supportor = serializers.SerializerMethodField()
+    class Meta:
+        model = timeline
+        # fields = '__all__'
+        exclude = ('is_deleted','deleteduser','deletedtime','lastmodifyuser','lastmodifytime','createuser','createdtime')
+    def get_supportor(self, obj):
+        user = obj.proj.supportUser
+        if user.is_deleted:
+            return None
+        return UserCommenSerializer(user).data
+    def get_transationStatu(self, obj):
+        qs = obj.timeline_transationStatus.all().filter(is_deleted=False,isActive=True)
+        if qs.exists():
+            return TimeLineStatuSerializer(qs.first()).data
+        return None
+
+class TimeLineListSerializer_anonymous(serializers.ModelSerializer):
     proj = ProjSimpleSerializer()
     transationStatu = serializers.SerializerMethodField()
     class Meta:
         model = timeline
         # fields = '__all__'
-        exclude = ('is_deleted','deleteduser','deletedtime','lastmodifyuser','lastmodifytime',)
+        exclude = ('is_deleted','deleteduser','deletedtime','lastmodifyuser','lastmodifytime','createuser','createdtime')
     def get_transationStatu(self, obj):
         qs = obj.timeline_transationStatus.all().filter(is_deleted=False,isActive=True)
         if qs.exists():
