@@ -256,8 +256,10 @@ class ProjectView(viewsets.ModelViewSet):
                 serializerclass = ProjDetailSerializer_user_withoutsecretinfo
             instance = self.get_object()
             if instance.isHidden:
-                if not request.user.has_perm('proj.user_getproj', instance) or not request.user.has_perm(
+                if request.user.has_perm('proj.user_getproj', instance) or request.user.has_perm(
                         'proj.admin_getproj'):
+                    pass
+                else:
                     raise InvestError(code=4004, msg='没有权限查看隐藏项目')
             serializer = serializerclass(instance)
             viewprojlog(userid=request.user.id,projid=instance.id,sourceid=clienttype)

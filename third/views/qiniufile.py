@@ -92,11 +92,7 @@ def bigfileupload(request):
             uploaddata = data_dict[key]
         q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
         filetype = str(uploaddata.name).split('.')[-1]
-        key = str(uploaddata.name)  # key 文件名
-        file_name = key.split('.')[0]
-        if len(file_name) > 6:
-            file_name = file_name[0:5]
-        key = datetime.datetime.now().strftime('%Y%m%d%H%M%s') + ''.join(random.sample(string.ascii_lowercase,5)) + file_name + '.' + filetype
+        key = datetime.datetime.now().strftime('%Y%m%d%H%M%s') + ''.join(random.sample(string.ascii_lowercase,6)) + '.' + filetype
         if filetype != 'pdf' and bucket_name not in ['image', u'image']:
             saveas_key = qiniu.urlsafe_base64_encode('file:%s' % (key.split('.')[0] + '.pdf'))
             persistentOps = fops + '|saveas/' + saveas_key

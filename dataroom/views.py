@@ -409,7 +409,7 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             if dataroomid:
                 dataroomobj = self.get_dataroom(dataroomid)
                 if dataroomobj.isClose:
-                    raise InvestError(7002)
+                    raise InvestError(7012)
                 elif request.user.has_perm('dataroom.admin_adddataroom'):
                     pass
                 elif request.user.has_perm('dataroom.user_adddataroomfile', dataroomobj):
