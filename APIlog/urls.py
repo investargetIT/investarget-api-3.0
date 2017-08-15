@@ -15,8 +15,13 @@ viewprojlog = views.ViewprojLogView.as_view({
         'get': 'list',
 })
 
+userinfoupdatelog = views.UserInfoUpdateLogView.as_view({
+        'get': 'list',
+})
+
 urlpatterns = [
     url(r'^login$', logininlog,name='logininlog',),
     url(r'^api$', apilog,name='apilog'),
     url(r'^viewproj$', viewprojlog,name='viewprojlog'),
+    url(r'^userupdate', userinfoupdatelog,name='userinfoupdatelog'),
 ]

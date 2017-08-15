@@ -12,6 +12,8 @@ from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin, Group
 from django.db import models
 from django.db.models import Q
+
+from APIlog.models import userinfoupdatelog
 from sourcetype.models import AuditStatus, ClientType, TitleType,School,Specialty,Tag, DataSource, Country, OrgArea
 from utils.customClass import InvestError, MyForeignKey
 from utils.makeAvatar import makeAvatar
@@ -175,6 +177,12 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
             pass
         else:
             raise InvestError(code=2004)
+        if not self.usernameC and self.usernameE:
+            self.usernameC = self.usernameE
+        if not self.usernameE and self.usernameC:
+            self.usernameE = hanzizhuanpinpin(self.usernameC,separator='')
+        if not self.createdtime:
+            self.createdtime = datetime.datetime.now()
         if self.pk:
             olduser = MyUser.objects.get(pk=self.pk,datasource=self.datasource)
             if not self.is_deleted:
@@ -187,6 +195,24 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
                     assign_perm('org.user_getorg', self, self.org)
                 if not olduser.createuser and self.createuser:
                     assign_perm('usersys.user_deleteuser', self.createuser, self)
+                if olduser.mobile != self.mobile:
+                    userinfoupdatelog(user_id=self.pk, user_name=self.usernameC.encode(encoding='utf-8'), type='mobile', before=olduser.mobile,
+                                      after=self.mobile,
+                                      requestuser_id=self.lastmodifyuser_id,
+                                      requestuser_name=self.lastmodifyuser.usernameC.encode(encoding='utf-8'),
+                                      datasource=self.datasource_id).save()
+                if olduser.wechat != self.wechat:
+                    userinfoupdatelog(user_id=self.pk, user_name=self.usernameC.encode(encoding='utf-8'), type='wechat', before=olduser.wechat,
+                                      after=self.wechat,
+                                      requestuser_id=self.lastmodifyuser_id,
+                                      requestuser_name=self.lastmodifyuser.usernameC.encode(encoding='utf-8'),
+                                      datasource=self.datasource_id).save()
+                if olduser.email != self.email:
+                    userinfoupdatelog(user_id=self.pk, user_name=self.usernameC.encode(encoding='utf-8'), type='email', before=olduser.email,
+                                      after=self.email,
+                                      requestuser_id=self.lastmodifyuser_id,
+                                      requestuser_name=self.lastmodifyuser.usernameC.encode(encoding='utf-8'),
+                                      datasource=self.datasource_id).save()
             else:
                 if olduser.org:
                     remove_perm('org.user_getorg', self, olduser.org)
@@ -194,12 +220,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
                     remove_perm('usersys.user_getuser', olduser.createuser, self)
                     remove_perm('usersys.user_changeuser', olduser.createuser, self)
                     remove_perm('usersys.user_deleteuser', olduser.createuser, self)
-        if not self.usernameC and self.usernameE:
-            self.usernameC = self.usernameE
-        if not self.usernameE and self.usernameC:
-            self.usernameE = hanzizhuanpinpin(self.usernameC,separator='')
-        if not self.createdtime:
-            self.createdtime = datetime.datetime.now()
+
         if not self.photoKey:
             if self.usernameC:
                 self.photoKey = makeAvatar(self.usernameC[0:1])

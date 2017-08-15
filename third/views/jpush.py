@@ -2,6 +2,8 @@
 # encoding=utf-8
 import time, random, json,  sys, os
 
+from third.thirdconfig import apps
+
 sys.path.insert(0, os.path.dirname(sys.path[0]))
 reload(sys)
 sys.setdefaultencoding('utf8')
@@ -15,16 +17,7 @@ apns_production_boolean = True
 '''''
     极光key配置
 '''
-apps = {
-    'test': {
-        "app_key": u'aeaa17fd17c401b0d0742423',
-        "master_secret": u'257b84b0d8d7941f45fac5e8'
-    },
-    'product': {
-        "app_key": u'aeaa17fd17c401b0d0742423',
-        "master_secret": u'257b84b0d8d7941f45fac5e8'
-    }
-}
+
 
 '''''
    超出频率限制

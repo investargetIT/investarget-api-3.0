@@ -6,7 +6,8 @@ import requests
 from requests.auth import AuthBase
 from rest_framework.decorators import api_view
 
-from MyUserSys.myauth import JSONResponse
+from third.thirdconfig import org, app, client_id, client_secret, password
+from utils.customClass import JSONResponse
 
 JSON_HEADER = {'content-type': 'application/json'}
 # EASEMOB_HOST = "http://localhost:8080"#
@@ -111,9 +112,7 @@ def register_new_user(username, password):
     """注册新的app用户
     POST /{org}/{app}/users {"username":"xxxxx", "password":"yyyyy"}
     """
-    org = 'investarget001'
-    app = 'investarget'
-    auth = AppClientAuth(org, app, 'YXA62bkvUEJeEeaqD9FhbDafdw', 'YXA6XNaEVm4rPYtl6EnrI7B33Jh7s2A')
+    auth = AppClientAuth(org, app, client_id, client_secret)
 
     payload = {"username": username, "password": password}
     url = EASEMOB_HOST + ("/%s/%s/users" % (org, app))
@@ -124,9 +123,7 @@ def delete_user(username):
     """删除app用户
     DELETE /{org}/{app}/users/{username}
     """
-    org = 'investarget001'
-    app = 'investarget'
-    auth = AppClientAuth(org, app, 'YXA62bkvUEJeEeaqD9FhbDafdw', 'YXA6XNaEVm4rPYtl6EnrI7B33Jh7s2A')
+    auth = AppClientAuth(org, app, client_id, client_secret)
 
     url = EASEMOB_HOST + ("/%s/%s/users/%s" % (org, app, username))
     return delete(url, auth)  # bool:success,result:result
@@ -139,7 +136,6 @@ def IMUser(request):
         # data_str = request.body
         # data_dict = json.loads(data_str)
         username = data_dict['username']
-        password = '123456'
         success,result = register_new_user(username,password)
         return JSONResponse({'res':str(result)})
 

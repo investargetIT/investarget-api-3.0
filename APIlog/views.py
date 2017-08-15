@@ -9,8 +9,8 @@ from django.shortcuts import render
 from rest_framework import filters
 from rest_framework import viewsets
 
-from APIlog.models import loginlog, userviewprojlog, APILog
-from APIlog.serializer import APILogSerializer, ViewProjLogSerializer, LoginLogSerializer
+from APIlog.models import loginlog, userviewprojlog, APILog, userinfoupdatelog
+from APIlog.serializer import APILogSerializer, ViewProjLogSerializer, LoginLogSerializer, UserInfoUpdateLogSerializer
 from utils.customClass import JSONResponse, InvestError
 from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse
 
@@ -44,8 +44,8 @@ def apilog(request,modeltype,request_before,request_after,modelID=None,datasourc
 
 
 
-def Checkthedatabeforeandafterthechangeofdifference(before,after):
-    pass
+# def LogUserInfoUpdate(userid,username,fieldtype,before,after,requestuserid,requestusername,datasource):
+#     userinfoupdatelog(user_id=userid,user_name=username,type=fieldtype,before=before,after=after,requestuser_id=requestuserid,requestuser_name=requestusername,datasource=datasource).save()
 
 
 
@@ -109,6 +109,33 @@ class ViewprojLogView(viewsets.ModelViewSet):
 
     queryset = userviewprojlog.objects.filter(is_deleted=False)
     serializer_class = ViewProjLogSerializer
+
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            count = queryset.count()
+            try:
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = self.serializer_class(queryset, many=True)
+            return JSONResponse(SuccessResponse({'count': count, 'data':serializer.data}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+class UserInfoUpdateLogView(viewsets.ModelViewSet):
+
+    queryset = userinfoupdatelog.objects.filter(is_deleted=False)
+    serializer_class = UserInfoUpdateLogSerializer
 
     def list(self, request, *args, **kwargs):
         try:

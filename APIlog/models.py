@@ -52,3 +52,17 @@ class userviewprojlog(models.Model):
     datasource = models.PositiveSmallIntegerField(blank=True, default=1)
     class Meta:
         db_table = 'LOG_userviewproject'
+
+class userinfoupdatelog(models.Model):
+    user_id = models.IntegerField(blank=True,null=True)
+    type = models.CharField(max_length=64,blank=True,null=True)
+    user_name = models.CharField(max_length=64,blank=True,null=True)
+    before = models.CharField(max_length=128,blank=True,null=True)
+    after = models.CharField(max_length=128,blank=True,null=True)
+    requestuser_id = models.IntegerField(blank=True, null=True)
+    requestuser_name = models.CharField(max_length=64, blank=True, null=True)
+    updatetime = models.DateTimeField(auto_now_add=True,blank=True,null=True)
+    is_deleted = models.BooleanField(blank=True, default=False)
+    datasource = models.PositiveSmallIntegerField(blank=True, default=1)
+    class Meta:
+        db_table = 'LOG_userinfoupdate'

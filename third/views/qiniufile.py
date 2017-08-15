@@ -7,28 +7,14 @@ import string
 import traceback
 
 import qiniu
-import time
 
 from qiniu import BucketManager
-from qiniu import put_data
 from qiniu.services.storage.uploader import _Resume, put_file
 from rest_framework.decorators import api_view
 
+from third.thirdconfig import qiniu_url, ACCESS_KEY, SECRET_KEY, fops, pipeline
 from utils.customClass import JSONResponse, InvestError, MyUploadProgressRecorder
 from utils.util import InvestErrorResponse, ExceptionResponse, SuccessResponse
-
-ACCESS_KEY = 'NJkzgfMrIi-wL_gJyeLfU4dSqXyk5eeGrI7COPPu'
-SECRET_KEY = '6hWJqsm9xdAcGFPyr-MHwVKpdrQ25eJbf2JsaQ8U'
-
-qiniu_url = {
-    'file':'o7993llwa.qnssl.com',
-    'image':'o79atf82v.qnssl.com',
-}
-# 是使用的队列名称,不设置代表不使用私有队列，使用公有队列。
-pipeline = 'aszxsddsfcsc'
-# 设置转码参数
-fops = 'yifangyun_preview/v2'
-
 
 #覆盖上传
 @api_view(['POST'])

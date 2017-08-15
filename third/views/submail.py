@@ -9,6 +9,7 @@ from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.message_xsend import M
 from rest_framework.decorators import api_view, throttle_classes
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 from third.models import MobileAuthCode
+from third.thirdconfig import MAIL_CONFIGS, MESSAGE_CONFIGS, INTERNATIONALMESSAGE_CONFIGS
 from utils.customClass import JSONResponse, InvestError
 from utils.util import SuccessResponse, catchexcption, ExceptionResponse, InvestErrorResponse, checkIPAddress
 
@@ -21,68 +22,7 @@ from utils.util import SuccessResponse, catchexcption, ExceptionResponse, Invest
 SMSCODE_projectsign = {'1':'WzSYg','2':'tybmL4'}
 
 
-MAIL_CONFIGS = {}
-'''
-Mail appid
-'''
-MAIL_CONFIGS['appid'] = '11182'
 
-'''
-Mail appkey
-'''
-MAIL_CONFIGS['appkey'] = '06c390e5c2488a2c1e06080f86987f53'
-
-'''
-Mail Sign type
-md5/sha1/normal
-'''
-MAIL_CONFIGS['sign_type'] = 'md5'
-
-'''
-Message configs start
-message_configs['appid']
-message_configs['appkey']
-message_configs['sign_type']
-'''
-MESSAGE_CONFIGS = {}
-'''
-Message appid
-'''
-MESSAGE_CONFIGS['appid'] = '13952'
-
-'''
-Message appkey
-'''
-MESSAGE_CONFIGS['appkey'] = '22a2a05b1a95d9c86079b3ba439466de'
-
-'''
-Message Sign type
-md5/sha1/normal
-'''
-MESSAGE_CONFIGS['sign_type'] = 'md5'
-
-'''
-Message configs end
-'''
-
-
-
-INTERNATIONALMESSAGE_CONFIGS = {}
-'''
-InternationalMessage appid
-'''
-INTERNATIONALMESSAGE_CONFIGS['appid'] = '60060'
-
-'''
-InternationalMessage appkey
-'''
-INTERNATIONALMESSAGE_CONFIGS['appkey'] = '347c8b402222ae2643957c1f5d288058'
-
-'''
-InternationalMessage Sign type
-md5/sha1/normal
-'''
-INTERNATIONALMESSAGE_CONFIGS['sign_type'] = 'md5'
 
 @api_view(['POST'])
 def sendEmail(request):

@@ -135,6 +135,7 @@ class ProjectView(viewsets.ModelViewSet):
                     queryset = queryset.filter(Q(isHidden=False,projstatus_id__in=[4,6,7,8])| Q(createuser=request.user)| Q(supportUser=request.user)| Q(takeUser=request.user)| Q(makeUser=request.user))
                     serializerclass = ProjListSerializer_user
             try:
+                queryset = queryset.order_by('-publishDate', '-createdtime')
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
                 queryset = queryset.page(page_index)

@@ -79,11 +79,6 @@ class TimeLineListSerializer_admin(serializers.ModelSerializer):
             return TimeLineStatuSerializer(qs.first()).data
         return None
 
-    def get_latestremark(self, obj):
-        qs = obj.timeline_remarks.all().filter(is_deleted=False).order_by('lastmodifytime', 'createdtime')
-        if qs.exists():
-            return TimeLineRemarkSerializer(qs.last()).data
-        return None
 class TimeLineListSerializer_user(serializers.ModelSerializer):
     investor = UserCommenSerializer()
     trader = UserCommenSerializer()

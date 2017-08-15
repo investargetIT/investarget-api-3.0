@@ -513,7 +513,7 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
                     instance = self.get_object(fileid)
                     if request.user.has_perm('dataroom.admin_deletedataroom'):
                         pass
-                    elif request.user.has_perm('dataroom.user_deletedataroom', instance):
+                    elif request.user.has_perm('dataroom.user_deletedataroom', instance.dataroom):
                         pass
                     else:
                         raise InvestError(code=2009, msg='没有权限')
