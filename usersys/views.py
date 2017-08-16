@@ -21,11 +21,11 @@ from org.models import organization
 from sourcetype.views import getmenulist
 from third.models import MobileAuthCode
 from timeline.models import timeline
-from usersys.models import MyUser, UserRelation, userTags, UserFriendship, MyToken, UnreachUser
+from usersys.models import MyUser, UserRelation, userTags, UserFriendship, MyToken, UnreachUser, UserRemarks
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
     CreatUserSerializer , UserCommenSerializer , UserRelationDetailSerializer, UserFriendshipSerializer, \
     UserFriendshipDetailSerializer, UserFriendshipUpdateSerializer, GroupSerializer, GroupDetailSerializer, GroupCreateSerializer, PermissionSerializer, \
-    UpdateUserSerializer, UnreachUserSerializer
+    UpdateUserSerializer, UnreachUserSerializer, UserRemarkSerializer, UserRemarkCreateSerializer
 from sourcetype.models import Tag, DataSource
 from utils import perimissionfields
 from utils.customClass import JSONResponse, InvestError, RelationFilter
@@ -446,7 +446,7 @@ class UserView(viewsets.ModelViewSet):
                     else:
                         raise InvestError(code=2009)
                     for link in ['investor_relations','trader_relations','investor_timelines','supportor_timelines','trader_timelines','usersupport_projs','usertake_projs',
-                                 'usermake_projs','user_usertags','user_datarooms','trader_datarooms','investor_datarooms']:
+                                 'usermake_projs','user_usertags','user_datarooms','trader_datarooms','investor_datarooms','user_remarks']:
                         if link in ['investor_relations','trader_relations','investor_timelines','supportor_timelines','trader_timelines','user_datarooms','trader_datarooms','investor_datarooms']:
                             manager = getattr(instance, link, None)
                             if not manager:
@@ -729,6 +729,162 @@ class UnReachUserView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+class UserRemarkView(viewsets.ModelViewSet):
+    """
+            list:用户备注列表
+            create:新建用户备注
+            retrieve:查看具体备注信息
+            update:修改备注信息
+            destroy:删除用户备注
+            """
+    filter_backends = (filters.DjangoFilterBackend,)
+    queryset = UserRemarks.objects.all().filter(is_deleted=False)
+    filter_fields = ('user',)
+    serializer_class = UserRemarkSerializer
+
+    def get_queryset(self):
+        assert self.queryset is not None, (
+            "'%s' should either include a `queryset` attribute, "
+            "or override the `get_queryset()` method."
+            % self.__class__.__name__
+        )
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource=self.request.user.datasource)
+            else:
+                queryset = queryset.all()
+        else:
+            raise InvestError(code=8890)
+        return queryset
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            lang = request.GET.get('lang')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            if request.user.has_perm('usersys.admin_getuser'):
+                pass
+            else:
+                queryset = queryset.filter(createuser_id=request.user.id)
+            sort = request.GET.get('sort')
+            if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
+                queryset = queryset.order_by('-lastmodifytime', '-createdtime')
+            else:
+                queryset = queryset.order_by('lastmodifytime', 'createdtime')
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = UserRemarkSerializer(queryset, many=True)
+            return JSONResponse(
+                SuccessResponse({'count': count, 'data': returnListChangeToLanguage(serializer.data, lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        lang = request.GET.get('lang')
+        data['createuser'] = request.user.id
+        data['datasource'] = request.user.datasource.id
+        try:
+            with transaction.atomic():
+                remarkserializer = UserRemarkCreateSerializer(data=data)
+                if remarkserializer.is_valid():
+                    remark = remarkserializer.save()
+                else:
+                    raise InvestError(code=20071, msg='data有误_%s\n%s' %  remarkserializer.errors)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(remarkserializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            remark = self.get_object()
+            if request.user.has_perm('usersys.admin_getuser'):
+                remarkserializer = UserRemarkCreateSerializer
+            elif remark.createuser == request.user:
+                remarkserializer = UserRemarkSerializer
+            else:
+                raise InvestError(code=2009)
+            serializer = remarkserializer(remark)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            remark = self.get_object()
+            lang = request.GET.get('lang')
+            if request.user.has_perm('usersys.admin_changeuser'):
+                pass
+            elif remark.createuser == request.user:
+                pass
+            else:
+                raise InvestError(code=2009)
+            data = request.data
+            data.pop('createuser',None)
+            data.pop('createdtime',None)
+            data['lastmodifyuser'] = request.user.id
+            data['lastmodifytime'] = datetime.datetime.now()
+            with transaction.atomic():
+                serializer = UserRemarkCreateSerializer(remark, data=data)
+                if serializer.is_valid():
+                    newremark = serializer.save()
+                else:
+                    raise InvestError(code=20071,
+                                      msg='data有误_%s\n%s' % (serializer.error_messages, serializer.errors))
+                return JSONResponse(
+                    SuccessResponse(returnDictChangeToLanguage(UserRemarkSerializer(newremark).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            if request.user.has_perm('usersys.admin_changeuser'):
+                pass
+            elif instance.createuser == request.user:
+                pass
+            else:
+                raise InvestError(code=2009)
+            with transaction.atomic():
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
+                return JSONResponse(
+                    SuccessResponse(returnDictChangeToLanguage(UserRemarkSerializer(instance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 class UserRelationFilter(FilterSet):
     investoruser = RelationFilter(filterstr='investoruser', lookup_method='in')

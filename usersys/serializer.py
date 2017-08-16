@@ -5,7 +5,7 @@ from rest_framework import serializers
 from org.serializer import OrgCommonSerializer
 from sourcetype.serializer import tagSerializer, countrySerializer
 from third.views.qiniufile import getUrlWithBucketAndKey
-from .models import MyUser, UserRelation, UserFriendship, UnreachUser
+from .models import MyUser, UserRelation, UserFriendship, UnreachUser, UserRemarks
 
 
 class UnreachUserSerializer(serializers.ModelSerializer):
@@ -69,6 +69,17 @@ class UserInfoSerializer(serializers.ModelSerializer):
         else:
             return None
 
+class UserRemarkCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserRemarks
+        fields = '__all__'
+
+class UserRemarkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserRemarks
+        fields = ('id','user','remark','createdtime','lastmodifytime')
+
+
 #投资人交易师关系基本信息
 class UserRelationSerializer(serializers.ModelSerializer):
     investoruser = UserInfoSerializer()
@@ -77,7 +88,6 @@ class UserRelationSerializer(serializers.ModelSerializer):
         model = UserRelation
         fields = ('id','investoruser','traderuser','relationtype','score')
         depth = 1
-
 
 #用户关系全部信息
 class UserRelationDetailSerializer(serializers.ModelSerializer):

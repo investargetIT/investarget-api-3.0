@@ -100,7 +100,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(help_text='邮箱', max_length=48,db_index=True,blank=True,null=True)
     title = MyForeignKey(TitleType,blank=True,null=True,related_name='title_users',related_query_name='user_title',on_delete=models.SET_NULL)
     gender = models.BooleanField(blank=True,default=0,help_text=('0=男，1=女'))
-    remark = models.TextField(help_text='备注',blank=True,null=True)
+    remark = models.TextField(help_text='用户个人备注',blank=True,null=True)
     school = MyForeignKey(School,help_text='院校',blank=True,null=True,related_name='school_users',on_delete=models.SET_NULL)
     specialty = MyForeignKey(Specialty,help_text='专业',blank=True,null=True,related_name='profession_users',on_delete=models.SET_NULL)
     targetdemand = models.TextField(help_text='标的需求',blank=True,default='标的需求')
@@ -235,6 +235,24 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
             unreachuser.is_deleted = True
             unreachuser.deletedtime = datetime.datetime.now()
             unreachuser.save()
+
+class UserRemarks(models.Model):
+    id = models.AutoField(primary_key=True)
+    user = MyForeignKey(MyUser, related_name='user_remarks', blank=True, null=True)
+    remark = models.TextField(blank=True, null=True)
+    is_deleted = models.BooleanField(blank=True, default=False)
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_userremarks')
+    deletedtime = models.DateTimeField(blank=True, null=True)
+    createdtime = models.DateTimeField(auto_now_add=True, null=True)
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_userremarks')
+    lastmodifytime = models.DateTimeField(auto_now=True)
+    lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_userremarks')
+    datasource = MyForeignKey(DataSource, help_text='数据源', default=1)
+
+    class Meta:
+        db_table = 'user_remarks'
+
+
 
 
 class UnreachUser(models.Model):
