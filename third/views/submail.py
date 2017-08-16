@@ -17,7 +17,7 @@ from utils.util import SuccessResponse, catchexcption, ExceptionResponse, Invest
 
 
 '''
-（海拓）注册短信验证码模板
+注册短信验证码模板
 '''
 SMSCODE_projectsign = {'1':'WzSYg','2':'tybmL4'}
 

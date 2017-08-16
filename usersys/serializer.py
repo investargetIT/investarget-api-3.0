@@ -119,8 +119,7 @@ class UserSerializer(serializers.ModelSerializer):
     photourl = serializers.SerializerMethodField()
     class Meta:
         model = MyUser
-        exclude = ('is_staff','is_superuser')
-        read_only_fields = ('datasource', 'usercode')
+        exclude = ('usercode','is_staff','is_superuser','createuser','createdtime','deletedtime','deleteduser','is_deleted','is_active','lastmodifyuser','lastmodifytime','registersource','datasource')
         depth = 1
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_usertags__is_deleted=False)

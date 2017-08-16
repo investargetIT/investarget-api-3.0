@@ -61,7 +61,6 @@ class TimeLineListSerializer_admin(serializers.ModelSerializer):
     proj = ProjSimpleSerializer()
     transationStatu = serializers.SerializerMethodField()
     supportor = serializers.SerializerMethodField()
-    latestremark = serializers.SerializerMethodField()
     class Meta:
         model = timeline
         # fields = '__all__'
