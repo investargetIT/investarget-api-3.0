@@ -2,6 +2,7 @@
 from django.conf.urls import url
 import views.submail
 import views.qiniufile
+import views.huanxin
 import views.others
 urlpatterns = [
     # url(r'^email$', views.submail.sendEmail ,name='sendmail',),
@@ -12,4 +13,5 @@ urlpatterns = [
     url(r'^currencyrate$', views.others.getcurrencyreat, name='getcurrencyrate', ),
     url(r'^uploadToken$', views.qiniufile.qiniu_uploadtoken, name='getuploadtoken',),
     url(r'^downloadUrl$', views.qiniufile.qiniu_downloadurl, name='getdownloadurl',),
+    url(r'^test/$',views.huanxin.testregistIM)
 ]

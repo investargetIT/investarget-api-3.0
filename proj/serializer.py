@@ -76,6 +76,7 @@ class ProjSerializer(serializers.ModelSerializer):
 
 class ProjCommonSerializer(serializers.ModelSerializer):
     supportUser = ()
+    country = countrySerializer()
     tags = serializers.SerializerMethodField()
     industries = serializers.SerializerMethodField()
     class Meta:

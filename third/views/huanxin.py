@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import hashlib
 import json
 from time import time
 
@@ -7,6 +8,7 @@ from requests.auth import AuthBase
 from rest_framework.decorators import api_view
 
 from third.thirdconfig import org, app, client_id, client_secret, password
+from usersys.models import MyUser
 from utils.customClass import JSONResponse
 
 JSON_HEADER = {'content-type': 'application/json'}
@@ -108,13 +110,12 @@ class AppClientAuth(EasemobAuth):
             pass
 
 
-def register_new_user(username, password):
+def register_new_user(username, password, nickname=None):
     """注册新的app用户
     POST /{org}/{app}/users {"username":"xxxxx", "password":"yyyyy"}
     """
     auth = AppClientAuth(org, app, client_id, client_secret)
-
-    payload = {"username": username, "password": password}
+    payload = {"username": username, "password": password, 'nickname':nickname}
     url = EASEMOB_HOST + ("/%s/%s/users" % (org, app))
     return post(url, payload, auth)    #bool:success,result:result
 
@@ -128,9 +129,9 @@ def delete_user(username):
     url = EASEMOB_HOST + ("/%s/%s/users/%s" % (org, app, username))
     return delete(url, auth)  # bool:success,result:result
 
+
 @api_view(['POST' , 'DELETE'])
 def IMUser(request):
-
     if request.method == 'POST':
         data_dict = request.data
         # data_str = request.body
@@ -138,9 +139,28 @@ def IMUser(request):
         username = data_dict['username']
         success,result = register_new_user(username,password)
         return JSONResponse({'res':str(result)})
-
     else:
         data_dict = request.query_params
         username = data_dict['username']
         success,result = delete_user(username)
         return JSONResponse({'res':str(result)})
+
+def makePaswd(password):
+    m = hashlib.md5()
+    m.update(password)
+    return m.hexdigest()
+
+
+def testregistIM(request):
+    query = MyUser.objects.filter(is_deleted=False)
+    for user in query:
+        username = user.id
+        raw_password = makePaswd(str(user.id))
+        nickname = user.usernameC
+        success, result = register_new_user(username, raw_password, nickname)
+        print '**********'
+        print user.id
+        print success
+        print result
+        print '\n\n\n'
+    return JSONResponse({'res': ''})
