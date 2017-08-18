@@ -327,7 +327,7 @@ class UserRelation(models.Model):
             raise InvestError(code=8888,msg='datasource有误')
         if self.datasource !=self.traderuser.datasource or self.datasource != self.investoruser.datasource:
             raise InvestError(code=8888,msg='requestuser.datasource不匹配')
-        if self.traderuser.userstatus != self.investoruser.userstatus and self.traderuser.userstatus_id != 2:
+        if self.investoruser.userstatus_id != 2 or self.traderuser.userstatus_id != 2:
             raise InvestError(code=2022,msg='用户尚未审核通过，无法建立相关联系')
         if self.pk:
             userrelation = UserRelation.objects.exclude(pk=self.pk).filter(is_deleted=False,datasource=self.datasource,investoruser=self.investoruser)

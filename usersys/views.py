@@ -371,20 +371,31 @@ class UserView(viewsets.ModelViewSet):
                         sendmsg = False
                         if request.user.has_perm('usersys.admin_changeuser'):
                             canNotChangeField = perimissionfields.userpermfield['usersys.admin_changeuser']
+                            groupid = data.pop('groups', [])
+                            if len(groupid) == 1:
+                                try:
+                                    group = Group.objects.get(id=groupid[0])
+                                except Exception:
+                                    raise InvestError(code=2007, msg='group bust be an available id')
+                                if group not in user.groups.all():
+                                    if user.trader_relations.all().filter(is_deleted=False).exists():
+                                        raise InvestError(2010, msg='该用户名下有对接投资人，请先处理')
+                                    if user.investor_relations.all().filter(is_deleted=False).exists():
+                                        raise InvestError(2010, msg='该用户名下有对接交易师，请先处理')
+                                    if user.investor_timelines.all().filter(is_deleted=False).exists():
+                                        raise InvestError(2010, msg='该用户名下有对接时间轴，请先处理')
+                                    if user.trader_timelines.all().filter(is_deleted=False).exists():
+                                        raise InvestError(2010, msg='该用户名下有对接时间轴，请先处理')
+                                    if user.investor_datarooms.all().filter(is_deleted=False).exists():
+                                        raise InvestError(2010, msg='该用户名下有对接dataroom，请先处理')
+                                    if user.trader_datarooms.all().filter(is_deleted=False).exists():
+                                        raise InvestError(2010, msg='该用户名下有对接dataroom，请先处理')
+                                    data['groups'] = [group.id]
                         else:
                             if request.user == user:
                                 canNotChangeField = perimissionfields.userpermfield['changeself']
                             elif request.user.has_perm('usersys.user_changeuser', user):
                                 canNotChangeField = perimissionfields.userpermfield['usersys.trader_changeuser']
-                                groupid = data.get('groups', [])
-                                if len(groupid) == 1:
-                                    try:
-                                        group = Group.objects.get(id=groupid[0])
-                                    except Exception:
-                                        raise InvestError(code=2007, msg='group bust be an available id')
-                                    if not group.permissions.filter(codename='as_investor').exists():
-                                        raise InvestError(2009, msg='没有修改为非投资人类型用户的权限')
-                                    data['groups'] = [group.id]
                             else:
                                 raise InvestError(code= 2009)
                         keylist = data.keys()
