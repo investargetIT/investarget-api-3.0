@@ -20,6 +20,7 @@ from emailmanage.views import sendEmailToUser, getAllProjectsNeedToSendMail
 from org.models import organization
 from sourcetype.views import getmenulist
 from third.models import MobileAuthCode
+from third.views.huanxin import registHuanXinIMWithUser
 from timeline.models import timeline
 from usersys.models import MyUser, UserRelation, userTags, UserFriendship, MyToken, UnreachUser, UserRemarks
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
@@ -246,6 +247,7 @@ class UserView(viewsets.ModelViewSet):
                 returndic = CreatUserSerializer(user).data
                 sendmessage_userregister(user,user,['email','webmsg','app'])
                 apilog(request, 'MyUser', None, None, datasource=source)
+                registHuanXinIMWithUser(user)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(returndic,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -308,6 +310,7 @@ class UserView(viewsets.ModelViewSet):
                     add_perm('usersys.user_changeuser', user.createuser, user)
                     add_perm('usersys.user_deleteuser', user.createuser, user)
                 apilog(request, 'MyUser', None, None, datasource=request.user.datasource_id)
+                registHuanXinIMWithUser(user)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(UserSerializer(user).data,lang=lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))

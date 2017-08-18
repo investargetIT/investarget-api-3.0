@@ -9,7 +9,7 @@ from rest_framework.decorators import api_view
 
 from third.thirdconfig import org, app, client_id, client_secret, password
 from usersys.models import MyUser
-from utils.customClass import JSONResponse
+from utils.customClass import JSONResponse, InvestError
 
 JSON_HEADER = {'content-type': 'application/json'}
 # EASEMOB_HOST = "http://localhost:8080"#
@@ -151,16 +151,23 @@ def makePaswd(password):
     return m.hexdigest()
 
 
-def testregistIM(request):
-    query = MyUser.objects.filter(is_deleted=False)
-    for user in query:
-        username = user.id
-        raw_password = makePaswd(str(user.id))
-        nickname = user.usernameC
-        success, result = register_new_user(username, raw_password, nickname)
-        print '**********'
-        print user.id
-        print success
-        print result
-        print '\n\n\n'
-    return JSONResponse({'res': ''})
+# def registHuanXinIM(request):
+#     query = MyUser.objects.filter(is_deleted=False)
+#     for user in query:
+#         result = registHuanXinIMWithUser(user)
+#         print '**********'
+#         print user.id
+#         print success
+#         print result
+#         print '\n\n\n'
+#     return JSONResponse({'res': ''})
+
+
+def registHuanXinIMWithUser(user):
+    username = user.id
+    raw_password = makePaswd(str(user.id))
+    nickname = user.usernameC
+    success, result = register_new_user(username, raw_password, nickname)
+    if not success:
+        raise InvestError(2023,msg=result)
+    return result

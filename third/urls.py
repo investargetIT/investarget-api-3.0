@@ -13,5 +13,5 @@ urlpatterns = [
     url(r'^currencyrate$', views.others.getcurrencyreat, name='getcurrencyrate', ),
     url(r'^uploadToken$', views.qiniufile.qiniu_uploadtoken, name='getuploadtoken',),
     url(r'^downloadUrl$', views.qiniufile.qiniu_downloadurl, name='getdownloadurl',),
-    url(r'^test/$',views.huanxin.testregistIM)
+    # url(r'^test/$',views.huanxin.registHuanXinIM)
 ]
