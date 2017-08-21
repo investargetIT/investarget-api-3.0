@@ -285,16 +285,13 @@ class OrganizationView(viewsets.ModelViewSet):
                             if hasattr(manager, 'is_deleted') and not manager.is_deleted:
                                 manager.is_deleted = True
                                 manager.save()
-                            else:
-                                manager.delete()
                         else:
                             try:
                                 manager.model._meta.get_field('is_deleted')
                                 if manager.all().filter(is_deleted=False).count():
                                     manager.all().update(is_deleted=True)
                             except FieldDoesNotExist:
-                                if manager.all().count():
-                                    manager.all().delete()
+                                pass
                 instance.is_deleted = True
                 instance.deleteduser = request.user
                 instance.deletetime = datetime.datetime.utcnow()

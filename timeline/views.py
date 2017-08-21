@@ -265,8 +265,6 @@ class TimelineView(viewsets.ModelViewSet):
             if not timelineidlist or not  isinstance(timelineidlist,list):
                 raise InvestError(code=20071, msg='except a not null list')
             with transaction.atomic():
-                rel_fileds = [f for f in timeline._meta.get_fields() if isinstance(f, ForeignObjectRel)]
-                links = [f.get_accessor_name() for f in rel_fileds]
                 for timelineid in timelineidlist:
                     instance = self.get_object(timelineid)
                     if not (request.user.has_perm('timeline.admin_deleteline') or request.user.has_perm(
@@ -298,16 +296,13 @@ class TimelineView(viewsets.ModelViewSet):
                                 if hasattr(manager, 'is_deleted') and not manager.is_deleted:
                                     manager.is_deleted = True
                                     manager.save()
-                                else:
-                                    manager.delete()
                             else:
                                 try:
                                     manager.model._meta.get_field('is_deleted')
                                     if manager.all().filter(is_deleted=False).count():
                                         manager.all().update(is_deleted=True)
                                 except FieldDoesNotExist:
-                                    if manager.all().count():
-                                        manager.all().delete()
+                                    pass
                     instance.is_deleted = True
                     instance.deleteduser = request.user
                     instance.deletedtime = datetime.datetime.now()

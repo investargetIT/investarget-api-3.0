@@ -97,6 +97,8 @@ class UserRelationDetailSerializer(serializers.ModelSerializer):
 
 # 用户好友关系基本信息
 class UserFriendshipSerializer(serializers.ModelSerializer):
+    user = UserInfoSerializer()
+    friend = UserInfoSerializer()
     class Meta:
         model = UserFriendship
         fields = ('id', 'user', 'friend', 'isaccept','datasource')

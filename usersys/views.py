@@ -486,16 +486,13 @@ class UserView(viewsets.ModelViewSet):
                                 if hasattr(manager, 'is_deleted') and not manager.is_deleted:
                                     manager.is_deleted = True
                                     manager.save()
-                                else:
-                                    manager.delete()
                             else:
                                 try:
                                     manager.model._meta.get_field('is_deleted')
                                     if manager.all().filter(is_deleted=False).count():
                                         manager.all().update(is_deleted=True)
                                 except FieldDoesNotExist:
-                                    if manager.all().count():
-                                        manager.all().delete()
+                                    pass
                     instance.is_deleted = True
                     instance.deleteduser = request.user
                     instance.deletedtime = datetime.datetime.now()
@@ -1337,7 +1334,7 @@ class GroupPermissionView(viewsets.ModelViewSet):
     def get_object(self):
         lookup_url_kwarg = 'pk'
         try:
-            obj = self.get_queryset().get(id=self.kwargs[lookup_url_kwarg])
+            obj = self.get_queryset().get(id=self.kwargs[lookup_url_kwarg],is_deleted=False)
         except Group.DoesNotExist:
             raise InvestError(code=5002)
         assert self.request.user.is_authenticated, (
@@ -1356,7 +1353,7 @@ class GroupPermissionView(viewsets.ModelViewSet):
                 page_size = 10
             if not page_index:
                 page_index = 1
-            queryset = self.get_queryset()
+            queryset = self.get_queryset().filter(is_deleted=False)
             grouptype = request.GET.get('type', None)
             if grouptype in [u'trader','trader']:
                 queryset = queryset.filter(permissions__codename__in=['as_trader'])
@@ -1455,7 +1452,8 @@ class GroupPermissionView(viewsets.ModelViewSet):
                 if groupuserset.exists():
                     raise InvestError(2008)
                 else:
-                    group.delete()
+                    group.is_deleted = True
+                    group.save()
                 return JSONResponse(SuccessResponse(GroupSerializer(group).data))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
