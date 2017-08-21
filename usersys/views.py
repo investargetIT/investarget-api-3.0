@@ -1311,7 +1311,7 @@ class GroupPermissionView(viewsets.ModelViewSet):
     update:修改权限组信息
     delete:删除权限组
     """
-    queryset = Group.objects.all()
+    queryset = Group.objects.all().filter(is_deleted=False)
     serializer_class = GroupDetailSerializer
 
     def get_queryset(self):

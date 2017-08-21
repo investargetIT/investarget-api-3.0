@@ -452,5 +452,13 @@ class UserFriendship(models.Model):
                 raise InvestError(2017)
         if not self.createdtime:
             self.createdtime = datetime.datetime.now()
+        if self.friendallowgetfavoriteproj:
+            assign_perm('usersys.user_getfavorite', self.user, self.friend)
+        else:
+            remove_perm('usersys.user_getfavorite', self.user, self.friend)
+        if self.userallowgetfavoriteproj:
+            assign_perm('usersys.user_getfavorite', self.friend, self.user)
+        else:
+            remove_perm('usersys.user_getfavorite', self.friend, self.user)
         super(UserFriendship,self).save(*args, **kwargs)
 

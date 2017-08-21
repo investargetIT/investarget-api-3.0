@@ -121,12 +121,13 @@ def sendProjEmailToUser(proj,user,datasource):
             'TransactionType': " ".join(proj['TransactionType']),
             'B_introducteC': proj.p_introducteC,
         }
-        response = xsendEmail(emailaddress, Email_project_sign, varsdict)
-        if response.get('status'):
-            data['isSend'] = True
-            data['sendtime'] = datetime.datetime.now()
-        else:
-            data['errmsg'] = response
+        # response = xsendEmail(emailaddress, Email_project_sign, varsdict)
+        # if response.get('status'):
+        #     data['isSend'] = True
+        #     data['sendtime'] = datetime.datetime.now()
+        # else:
+        #     data['errmsg'] = response
+        data['errmsg'] = 'test group send'
     else:
         data['errmsg'] = 'email 缺失'
     emailsend = Emailgroupsendlistserializer(data=data)
