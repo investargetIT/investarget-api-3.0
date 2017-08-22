@@ -133,6 +133,8 @@ def sendProjEmailToUser(proj,user,datasource):
     emailsend = Emailgroupsendlistserializer(data=data)
     if emailsend.is_valid():
         emailsend.save()
+    else:
+        logexcption(msg=emailsend.error_messages)
 
 class EmailgroupsendlistView(viewsets.ModelViewSet):
     """

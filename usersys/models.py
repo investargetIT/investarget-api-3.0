@@ -434,31 +434,36 @@ class UserFriendship(models.Model):
             ('admin_deletefriend', u'管理员删除用户好友关系'),
             ('admin_getfriend', u'管理员查看用户好友关系'),
 
-            ('user_addfriend', u'用户建立用户好友关系（未审核用户不知道给不给）'),
-
+            ('user_addfriend', u'用户建立用户好友关系（未审核用户不要给）'),
         )
 
     def save(self, *args, **kwargs):
         if not self.datasource:
             raise InvestError(code=8888,msg='datasource有误')
-        if self.datasource !=self.user.datasource or self.datasource !=self.friend.datasource:
-            raise InvestError(code=8888,msg='requestuser.datasource不匹配')
+        if self.datasource != self.user.datasource or self.datasource != self.friend.datasource:
+            raise InvestError(code=8888,msg='user.datasource不匹配')
         if self.user == self.friend:
             raise InvestError(2016)
         if not self.accepttime and self.isaccept:
             self.accepttime = datetime.datetime.now()
+        if self.user.userstatus_id != 2 or self.friend.userstatus_id != 2:
+            raise InvestError(2022,msg='未审核用户不能添加好友')
         if not self.pk:
             if UserFriendship.objects.filter(Q(user=self.user,friend=self.friend,is_deleted=False) | Q(friend=self.user,user=self.friend,is_deleted=False)).exists():
                 raise InvestError(2017)
         if not self.createdtime:
             self.createdtime = datetime.datetime.now()
-        if self.friendallowgetfavoriteproj:
-            assign_perm('usersys.user_getfavorite', self.user, self.friend)
-        else:
-            remove_perm('usersys.user_getfavorite', self.user, self.friend)
-        if self.userallowgetfavoriteproj:
-            assign_perm('usersys.user_getfavorite', self.friend, self.user)
-        else:
-            remove_perm('usersys.user_getfavorite', self.friend, self.user)
+        if self.pk:
+            if self.isaccept is False:
+                self.is_deleted = True
+        if self.is_deleted is False:
+            if self.isaccept and self.friendallowgetfavoriteproj:
+                assign_perm('usersys.user_getfavorite', self.user, self.friend)
+            else:
+                remove_perm('usersys.user_getfavorite', self.user, self.friend)
+            if self.isaccept and self.userallowgetfavoriteproj:
+                assign_perm('usersys.user_getfavorite', self.friend, self.user)
+            else:
+                remove_perm('usersys.user_getfavorite', self.friend, self.user)
         super(UserFriendship,self).save(*args, **kwargs)
 

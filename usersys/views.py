@@ -1216,7 +1216,8 @@ class UserFriendshipView(viewsets.ModelViewSet):
                 raise InvestError(code=20071,msg='\'friends\' need a not null list')
             lang = request.GET.get('lang')
             if request.user.has_perm('usersys.admin_addfriend'):
-                pass
+                if data.get('user',None) is None:
+                    data['user'] = request.user.id
             else:
                 data['user'] = request.user.id
                 data['isaccept'] = False
@@ -1253,7 +1254,7 @@ class UserFriendshipView(viewsets.ModelViewSet):
             elif request.user == instance.user:
                 canChangeField = ['userallowgetfavoriteproj']
             elif request.user == instance.friend:
-                canChangeField = ['friendallowgetfavoriteproj']
+                canChangeField = ['friendallowgetfavoriteproj','isaccept']
             else:
                 raise InvestError(code=2009)
             keylist = data.keys()

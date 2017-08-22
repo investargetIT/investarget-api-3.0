@@ -50,11 +50,11 @@ def catchexcption(request):
     f.close()
 
 #记录error
-def logexcption():
+def logexcption(msg=None):
     now = datetime.datetime.now()
     filepath = APILOG_PATH['excptionlogpath'] + '/' + now.strftime('%Y-%m-%d')
     f = open(filepath, 'a')
-    f.writelines(now.strftime('%H:%M:%S')+'\n'+ traceback.format_exc()+'\n\n')
+    f.writelines(now.strftime('%H:%M:%S')+'\n'+ traceback.format_exc()+ msg +'\n\n')
     f.close()
 
 def checkIPAddress(ip):

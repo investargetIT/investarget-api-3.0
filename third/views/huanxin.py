@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
+import gzip
 import hashlib
 import json
 from time import time
 
+import datetime
 import requests
 from requests.auth import AuthBase
 from rest_framework.decorators import api_view
 
 from third.thirdconfig import org, app, client_id, client_secret, password
-from usersys.models import MyUser
 from utils.customClass import JSONResponse, InvestError
 
 JSON_HEADER = {'content-type': 'application/json'}
@@ -41,6 +42,10 @@ def delete(url, auth=None):
 
 def post(url, payload, auth=None):
     r = requests.post(url, data=json.dumps(payload), headers=JSON_HEADER, auth=auth)
+    return http_result(r)
+
+def get(url, auth=None):
+    r = requests.get(url, headers=JSON_HEADER, auth=auth)
     return http_result(r)
 
 
@@ -171,3 +176,33 @@ def registHuanXinIMWithUser(user):
     if not success:
         raise InvestError(2023,msg=result)
     return result
+
+def downloadChatMessages(request):
+    auth = AppClientAuth(org, app, client_id, client_secret)
+    times = datetime.datetime.now() - datetime.timedelta(hours=29 * 1)
+    strtime = times.strftime('%Y%m%d%H')
+    url = 'http://a1.easemob.com/%s/%s/chatmessages/%s' % (org, app, strtime)
+    success, res = get(url, auth)
+    if success:
+        fileurllist = res.get('data')
+        for fileurldic in fileurllist:
+            fileurl = fileurldic.get('url')
+            s = getmsg(fileurl)
+    return JSONResponse({'res': res})
+
+def getmsg(url):
+    r = requests.get(url)
+    file_name = "chatmsg.gz"
+    with open(file_name, "wb") as code:
+        code.write(r.content)
+    un_gz(file_name)
+    return r.content
+
+def un_gz(file_name):
+    """ungz zip file"""
+    f_name = file_name.replace(".gz", "")
+    g_file = gzip.GzipFile(file_name)
+    open(f_name, "wb").write(g_file.read())
+    g_file.close()
+
+

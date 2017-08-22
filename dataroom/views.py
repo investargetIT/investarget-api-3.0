@@ -63,12 +63,10 @@ class DataroomView(viewsets.ModelViewSet):
         else:
             raise InvestError(code=8890)
         return queryset
-
     def get_object(self):
-
         lookup_url_kwarg = 'pk'
         try:
-             obj = dataroom.objects.get(id=self.kwargs[lookup_url_kwarg], is_deleted=False)
+            obj = dataroom.objects.get(id=self.kwargs[lookup_url_kwarg], is_deleted=False)
         except dataroom.DoesNotExist:
             raise InvestError(code=6002,msg='timeline with this "%s" is not exist' % self.kwargs[lookup_url_kwarg])
         if obj.datasource != self.request.user.datasource:

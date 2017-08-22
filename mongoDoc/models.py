@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 import datetime
 from mongoengine import *
-from invest.settings import MongoTableName
+from invest.settings import groupemailMongoTableName, chatMessagegMongoTableName
 
 
 # class WXContentData(Document):
@@ -21,4 +21,15 @@ class GroupEmailData(Document):
     proj = DictField()
     savetime = DateTimeField(default=datetime.datetime.now())
     datasource = IntField()
-    meta = {"collection": MongoTableName}
+    meta = {"collection": groupemailMongoTableName}
+
+
+class IMChatMessages(Document):
+    msg_id = StringField()
+    timestamp = StringField()
+    direction = StringField()
+    to = StringField()
+    chatfrom = StringField()
+    chat_type = StringField()
+    payload = DictField()
+    meta = {"collection": chatMessagegMongoTableName}
