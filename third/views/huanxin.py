@@ -191,7 +191,7 @@ def downloadChatMessages():
             fileurl = fileurldic.get('url')
             getmsg(fileurl)
     else:
-        logexcption(msg={'downloadchatmsg':res})
+        logexcption(msg=str({'downloadchatmsg':res}))
 
 def getmsg(url):
     r = requests.get(url)
@@ -228,4 +228,8 @@ def saveMsgToMongo(msgdata):
 
 def test2(request):
     readMsgFromFile('chatmsg')
+    return JSONResponse({'s':'s'})
+
+def test1(request):
+    downloadChatMessages()
     return JSONResponse({'s':'s'})

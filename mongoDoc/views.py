@@ -115,7 +115,7 @@ class IMChatMessagesView(viewsets.ModelViewSet):
             if chatto:
                 queryset = queryset(Q(to=chatto, chatfrom=chatfrom)|Q(to=chatfrom, chatfrom=chatto))
             else:
-                raise InvestError(2007, msg='to cannot be null')
+                queryset = queryset(Q(chatfrom=chatfrom) | Q(to=chatfrom))
             if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
                 queryset = queryset.order_by('-timestamp',)
             else:
