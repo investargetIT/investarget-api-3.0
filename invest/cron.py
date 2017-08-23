@@ -2,6 +2,7 @@
 import threading
 
 from emailmanage.views import getAllProjectsNeedToSendMail, sendEmailToUser
+from third.views.huanxin import downloadChatMessages
 
 
 def task1_loadsendmailproj():
@@ -17,3 +18,9 @@ def task2_sendmailprojtouser():
         def run(self):
             sendEmailToUser()
     task2_Thread().start()
+
+def task3_loadchatmessageandsave():
+    class task3_Thread(threading.Thread):
+        def run(self):
+            downloadChatMessages()
+    task3_Thread().start()

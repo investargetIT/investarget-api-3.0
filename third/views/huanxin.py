@@ -9,8 +9,10 @@ import requests
 from requests.auth import AuthBase
 from rest_framework.decorators import api_view
 
+from mongoDoc.views import saveChatMessageDataToMongo
 from third.thirdconfig import org, app, client_id, client_secret, password
 from utils.customClass import JSONResponse, InvestError
+from utils.util import logexcption
 
 JSON_HEADER = {'content-type': 'application/json'}
 # EASEMOB_HOST = "http://localhost:8080"#
@@ -177,9 +179,9 @@ def registHuanXinIMWithUser(user):
         raise InvestError(2023,msg=result)
     return result
 
-def downloadChatMessages(request):
+def downloadChatMessages():
     auth = AppClientAuth(org, app, client_id, client_secret)
-    times = datetime.datetime.now() - datetime.timedelta(hours=29 * 1)
+    times = datetime.datetime.now() - datetime.timedelta(hours=25 * 1)
     strtime = times.strftime('%Y%m%d%H')
     url = 'http://a1.easemob.com/%s/%s/chatmessages/%s' % (org, app, strtime)
     success, res = get(url, auth)
@@ -187,8 +189,9 @@ def downloadChatMessages(request):
         fileurllist = res.get('data')
         for fileurldic in fileurllist:
             fileurl = fileurldic.get('url')
-            s = getmsg(fileurl)
-    return JSONResponse({'res': res})
+            getmsg(fileurl)
+    else:
+        logexcption(msg={'downloadchatmsg':res})
 
 def getmsg(url):
     r = requests.get(url)
@@ -196,13 +199,33 @@ def getmsg(url):
     with open(file_name, "wb") as code:
         code.write(r.content)
     un_gz(file_name)
-    return r.content
+
 
 def un_gz(file_name):
     """ungz zip file"""
     f_name = file_name.replace(".gz", "")
     g_file = gzip.GzipFile(file_name)
-    open(f_name, "wb").write(g_file.read())
+    msgfile = open(f_name, "wb")
+    msgfile.write(g_file.read())
     g_file.close()
+    msgfile.close()
+    readMsgFromFile(f_name)
 
+def readMsgFromFile(file_name):
+    file = open(file_name,'r+')
+    msgdatalist = file.readlines()
+    if len(msgdatalist) > 0:
+        for onemsgdata in msgdatalist:
+            saveMsgToMongo(json.loads(onemsgdata))
+        file.truncate()
+    file.close()
 
+def saveMsgToMongo(msgdata):
+    if isinstance(msgdata,dict) and msgdata.get('msg_id',None) is not None:
+        chatfrom = msgdata.pop('from')
+        msgdata['chatfrom'] = chatfrom
+        saveChatMessageDataToMongo(msgdata)
+
+def test2(request):
+    readMsgFromFile('chatmsg')
+    return JSONResponse({'s':'s'})
