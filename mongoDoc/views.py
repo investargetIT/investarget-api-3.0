@@ -97,7 +97,6 @@ def readSendEmailDataFromMongo():
 class IMChatMessagesView(viewsets.ModelViewSet):
     queryset = IMChatMessages.objects.all()
     serializer_class = IMChatMessagesSerializer
-    filter_fields = ('chatfrom','to')
 
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):

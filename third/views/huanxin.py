@@ -192,6 +192,7 @@ def downloadChatMessages():
             getmsg(fileurl)
     else:
         logexcption(msg=str({'downloadchatmsg':res}))
+    return success,res
 
 def getmsg(url):
     r = requests.get(url)
@@ -231,5 +232,5 @@ def test2(request):
     return JSONResponse({'s':'s'})
 
 def test1(request):
-    downloadChatMessages()
-    return JSONResponse({'s':'s'})
+    suc,res = downloadChatMessages()
+    return JSONResponse({'success':suc, 'result':res})
