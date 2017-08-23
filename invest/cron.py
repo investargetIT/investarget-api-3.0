@@ -11,8 +11,6 @@ def task1_loadsendmailproj():
             getAllProjectsNeedToSendMail()
     task1_Thread().start()
 
-
-
 def task2_sendmailprojtouser():
     class task2_Thread(threading.Thread):
         def run(self):
