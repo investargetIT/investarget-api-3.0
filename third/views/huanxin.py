@@ -181,7 +181,7 @@ def registHuanXinIMWithUser(user):
 
 def downloadChatMessages():
     auth = AppClientAuth(org, app, client_id, client_secret)
-    times = datetime.datetime.now() - datetime.timedelta(hours=25 * 1)
+    times = datetime.datetime.now() - datetime.timedelta(hours=2 * 1)
     strtime = times.strftime('%Y%m%d%H')
     url = 'http://a1.easemob.com/%s/%s/chatmessages/%s' % (org, app, strtime)
     success, res = get(url, auth)
