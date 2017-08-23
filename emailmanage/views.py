@@ -107,7 +107,7 @@ def sendProjEmailToUser(proj,user,datasource):
         'isRead': False,
         'readtime' : None,
         'isSend' : False,
-        'sendtime' : None,
+        'sendtime' : datetime.datetime.now(),
         'errmsg' : None,
         'datasource' : datasource,
     }
@@ -119,7 +119,7 @@ def sendProjEmailToUser(proj,user,datasource):
             'Tags': " ".join(proj['Tags']),
             'FAUSD': proj['FAUSD'],
             'TransactionType': " ".join(proj['TransactionType']),
-            'B_introducteC': proj.p_introducteC,
+            'B_introducteC': proj['B_introducteC'],
         }
         # response = xsendEmail(emailaddress, Email_project_sign, varsdict)
         # if response.get('status'):
@@ -190,4 +190,3 @@ class EmailgroupsendlistView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-

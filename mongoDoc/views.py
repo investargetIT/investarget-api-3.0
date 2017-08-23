@@ -99,13 +99,11 @@ class IMChatMessagesView(viewsets.ModelViewSet):
     serializer_class = IMChatMessagesSerializer
     filter_fields = ('chatfrom','to')
 
-    # @loginTokenIsAvailable()
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            # chatto = request.GET.get('to')
-            # chatfrom = str(request.user.id)
-            chatto = '9'
-            chatfrom = '102'
+            chatto = request.GET.get('to')
+            chatfrom = str(request.user.id)
             page_size = request.GET.get('page_size')
             page_index = request.GET.get('page_index')  # 从第一页开始
             if not page_size:
