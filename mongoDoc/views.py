@@ -108,8 +108,8 @@ class IMChatMessagesView(viewsets.ModelViewSet):
             if not page_size:
                 page_size = 20
             if not timestamp:
-                timestamp = int(time.time())
-            queryset = self.queryset(timestamp__lt=timestamp)
+                timestamp = int(time.time())*1000
+            queryset = self.queryset(timestamp__lt=str(timestamp))
             sort = request.GET.get('sort')
             if chatto:
                 queryset = queryset(Q(to=chatto, chatfrom=chatfrom)|Q(to=chatfrom, chatfrom=chatto))
