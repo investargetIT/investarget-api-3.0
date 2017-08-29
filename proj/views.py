@@ -105,8 +105,8 @@ class ProjectView(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
+            max_size = request.GET.get('max_size')
+            skip_count = request.GET.get('skip_count')  # 从第一页开始
             lang = request.GET.get('lang')
             source = request.META.get('HTTP_SOURCE')
             if source:
@@ -118,10 +118,10 @@ class ProjectView(viewsets.ModelViewSet):
                     raise InvestError(code=8888)
             else:
                 raise InvestError(code=8888, msg='source field is required')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            if not max_size:
+                max_size = 10
+            if not skip_count or skip_count < 1:
+                skip_count = 0
             setrequestuser(request)
             queryset = self.filter_queryset(queryset)
             if request.user.is_anonymous:
@@ -134,13 +134,8 @@ class ProjectView(viewsets.ModelViewSet):
                 else:
                     queryset = queryset.filter(Q(isHidden=False,projstatus_id__in=[4,6,7,8])| Q(createuser=request.user)| Q(supportUser=request.user)| Q(takeUser=request.user)| Q(makeUser=request.user))
                     serializerclass = ProjListSerializer_user
-            try:
-                queryset = queryset.order_by('-publishDate', '-createdtime')
-                count = queryset.count()
-                queryset = Paginator(queryset, page_size)
-                queryset = queryset.page(page_index)
-            except EmptyPage:
-                return JSONResponse(SuccessResponse([],msg='没有符合条件的结果'))
+            count = queryset.count()
+            queryset = queryset.order_by('-publishDate', '-createdtime')[int(skip_count):int(max_size)+int(skip_count)]
             responselist = []
             for instance in queryset:
                 actionlist = {'get': False, 'change': False, 'delete': False}

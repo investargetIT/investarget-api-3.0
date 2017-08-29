@@ -38,11 +38,11 @@ class organization(models.Model):
     transactionAmountF_USD = models.BigIntegerField(blank=True,null=True)
     transactionAmountT_USD = models.BigIntegerField(blank=True,null=True)
     partnerOrInvestmentCommiterMember = models.TextField(blank=True,null=True)
-    mobile = models.CharField(max_length=16,blank=True,null=True)
+    mobile = models.CharField(max_length=100,blank=True,null=True)
     mobileAreaCode = models.CharField(max_length=10, blank=True, null=True, default='86',help_text='电话区号')
     industry = MyForeignKey(Industry,help_text='机构行业',blank=True,null=True)
-    webSite = models.CharField(max_length=64,blank=True,null=True)
-    companyEmail = models.EmailField(blank=True,null=True,max_length=32)
+    webSite = models.CharField(max_length=128,blank=True,null=True)
+    companyEmail = models.EmailField(blank=True,null=True,max_length=50)
     orgstatus = MyForeignKey(AuditStatus, blank=True, default=1)
     auditUser = MyForeignKey(MyUser, blank=True, null=True, related_name='useraudit_orgs')
     is_deleted = models.BooleanField(blank=True, default=False)
@@ -91,29 +91,17 @@ class organization(models.Model):
                 raise InvestError(8888)
         if self.pk:
             oldorg = organization.objects.get(pk=self.pk)
-            if self.orgcode:
-                if organization.objects.exclude(pk=self.pk).filter(is_deleted=False,orgcode=self.orgcode,datasource=self.datasource).exists():
-                    raise InvestError(code=5001,msg='orgcode已存在')
             if self.orgnameC:
                 if organization.objects.exclude(pk=self.pk).filter(is_deleted=False,orgnameC=self.orgnameC,datasource=self.datasource).exists():
-                    raise InvestError(code=5001,msg='同名机构已存在')
-            if self.orgnameE:
-                if organization.objects.exclude(pk=self.pk).filter(is_deleted=False,orgnameE=self.orgnameE,datasource=self.datasource).exists():
-                    raise InvestError(code=5001,msg='同名机构已存在')
+                    raise InvestError(code=5001,msg='同名机构已存在,修改')
             if self.is_deleted and oldorg.createuser:
                 remove_perm('org.user_getorg', oldorg.createuser, self)
                 remove_perm('org.user_changeorg', oldorg.createuser, self)
                 remove_perm('org.user_deleteorg', oldorg.createuser, self)
         else:
-            if self.orgcode:
-                if organization.objects.filter(is_deleted=False,orgcode=self.orgcode,datasource=self.datasource).exists():
-                    raise InvestError(code=5001,msg='orgcode已存在')
             if self.orgnameC:
                 if organization.objects.filter(is_deleted=False,orgnameC=self.orgnameC,datasource=self.datasource).exists():
-                    raise InvestError(code=5001,msg='同名机构已存在')
-            if self.orgnameE:
-                if organization.objects.filter(is_deleted=False,orgnameE=self.orgnameE,datasource=self.datasource).exists():
-                    raise InvestError(code=5001,msg='同名机构已存在')
+                    raise InvestError(code=5001,msg='同名机构已存在，新增')
         super(organization,self).save(force_insert,force_update,using,update_fields)
 
 class orgTransactionPhase(models.Model):

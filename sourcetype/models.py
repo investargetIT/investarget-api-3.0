@@ -208,6 +208,12 @@ class OrgArea(models.Model):
 
     def __str__(self):
         return self.nameC
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if OrgArea.objects.filter(nameC=self.nameC).exists():
+            pass
+        else:
+            super(OrgArea, self).save(force_insert, force_update, using, update_fields)
 
 
 class School(models.Model):

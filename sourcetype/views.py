@@ -22,7 +22,7 @@ class TagView(viewsets.ModelViewSet):
         update:修改标签
         destroy:删除标签
     """
-    permission_classes = (IsSuperUser,)
+    # permission_classes = (IsSuperUser,)
     queryset = Tag.objects.all().filter(is_deleted=False)
     serializer_class = tagSerializer
 
@@ -45,7 +45,7 @@ class ProjectStatusView(viewsets.ModelViewSet):
         update:修改标签
         destroy:删除标签
     """
-    permission_classes = (IsSuperUser,)
+    # permission_classes = (IsSuperUser,)
     queryset = ProjectStatus.objects.all().filter(is_deleted=False)
     serializer_class = ProjectStatusSerializer
 
@@ -67,7 +67,7 @@ class ServiceView(viewsets.ModelViewSet):
         update:修改service
         destroy:删除service
     """
-    permission_classes = (IsSuperUser,)
+    # permission_classes = (IsSuperUser,)
     queryset = Service.objects.all().filter(is_deleted=False)
     serializer_class = serviceSerializer
     def list(self, request, *args, **kwargs):
@@ -101,7 +101,7 @@ class CountryView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
     filter_fields = ('level', 'parent',)
-    permission_classes = (IsSuperUser,)
+    # permission_classes = (IsSuperUser,)
     queryset = Country.objects.all().filter(is_deleted=False)
     serializer_class = countrySerializer
 
@@ -136,7 +136,7 @@ class CharacterTypeView(viewsets.ModelViewSet):
         update:修改角色类型
         destroy:删除角色类型
     """
-    permission_classes = (IsSuperUser,)
+    # permission_classes = (IsSuperUser,)
     queryset = CharacterType.objects.all().filter(is_deleted=False)
     serializer_class = characterTypeSerializer
     def list(self, request, *args, **kwargs):
@@ -159,7 +159,7 @@ class IndustryView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.DjangoFilterBackend,)
     filter_fields = ('isPindustry','Pindustry')
-    permission_classes = (IsSuperUser,)
+    # permission_classes = (IsSuperUser,)
     queryset = Industry.objects.all().filter(is_deleted=False)
     serializer_class = industrySerializer
 
@@ -182,7 +182,7 @@ class TitleView(viewsets.ModelViewSet):
         update:修改职位
         destroy:删除职位
     """
-    permission_classes = (IsSuperUser,)
+    # permission_classes = (IsSuperUser,)
     queryset = TitleType.objects.all().filter(is_deleted=False)
     serializer_class = titleTypeSerializer
     def list(self, request, *args, **kwargs):
@@ -203,7 +203,7 @@ class DatasourceView(viewsets.ModelViewSet):
         update:修改datasource
         destroy:删除datasource
     """
-    permission_classes = (IsSuperUser,)
+    # permission_classes = (IsSuperUser,)
     queryset = DataSource.objects.all().filter(is_deleted=False)
     serializer_class = DataSourceSerializer
 
@@ -228,7 +228,7 @@ class OrgAreaView(viewsets.ModelViewSet):
         update:修改机构地区
         destroy:删除机构地区
     """
-    permission_classes = (IsSuperUser,)
+    # permission_classes = (IsSuperUser,)
     queryset = OrgArea.objects.all().filter(is_deleted=False)
     serializer_class = orgAreaSerializer
     def list(self, request, *args, **kwargs):
@@ -248,7 +248,7 @@ class TransactionTypeView(viewsets.ModelViewSet):
         update:修改交易类型
         destroy:删除交易类型
     """
-    permission_classes = (IsSuperUser,)
+    # permission_classes = (IsSuperUser,)
     queryset = TransactionType.objects.all().filter(is_deleted=False)
     serializer_class = transactionTypeSerializer
     def list(self, request, *args, **kwargs):
@@ -269,7 +269,7 @@ class TransactionPhasesView(viewsets.ModelViewSet):
         update:修改机构轮次
         destroy:删除机构轮次
     """
-    permission_classes = (IsSuperUser,)
+    # permission_classes = (IsSuperUser,)
     queryset = TransactionPhases.objects.all().filter(is_deleted=False)
     serializer_class = transactionPhasesSerializer
     def list(self, request, *args, **kwargs):
@@ -290,7 +290,7 @@ class TransactionStatusView(viewsets.ModelViewSet):
         update:修改时间轴状态
         destroy:删除时间轴状态
     """
-    permission_classes = (IsSuperUser,)
+    # permission_classes = (IsSuperUser,)
     queryset = TransactionStatus.objects.all().filter(is_deleted=False)
     serializer_class = transactionStatuSerializer
     def list(self, request, *args, **kwargs):
@@ -311,7 +311,7 @@ class OrgTypeView(viewsets.ModelViewSet):
         update:修改机构类型
         destroy:删除机构类型
     """
-    permission_classes = (IsSuperUser,)
+    # permission_classes = (IsSuperUser,)
     queryset = OrgType.objects.all().filter(is_deleted=False)
     serializer_class = orgTypeSerializer
     def list(self, request, *args, **kwargs):
@@ -333,7 +333,7 @@ class CurrencyTypeView(viewsets.ModelViewSet):
         update:修改货币类型
         destroy:删除货币类型
     """
-    permission_classes = (IsSuperUser,)
+    # permission_classes = (IsSuperUser,)
     queryset = CurrencyType.objects.all().filter(is_deleted=False)
     serializer_class = currencyTypeSerializer
     def list(self, request, *args, **kwargs):
@@ -354,7 +354,7 @@ class OrgtitletableView(viewsets.ModelViewSet):
         update:修改机构类型职位对照
         destroy:删除机构类型职位对照
     """
-    permission_classes = (IsSuperUser,)
+    # permission_classes = (IsSuperUser,)
     queryset = orgtitletable.objects.all().filter(is_deleted=False)
     serializer_class = OrgtitletableSerializer
     def list(self, request, *args, **kwargs):

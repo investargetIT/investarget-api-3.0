@@ -3,7 +3,7 @@
 import traceback
 
 import datetime
-
+import time
 # Create your views here.
 from django.core.paginator import Paginator, EmptyPage
 from mongoengine import Q
@@ -103,13 +103,13 @@ class IMChatMessagesView(viewsets.ModelViewSet):
         try:
             chatto = request.GET.get('to')
             chatfrom = str(request.user.id)
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
+            page_size = request.GET.get('max_size')
+            timestamp = request.GET.get('timestamp')
             if not page_size:
                 page_size = 20
-            if not page_index:
-                page_index = 1
-            queryset = self.queryset
+            if not timestamp:
+                timestamp = int(time.time())
+            queryset = self.queryset(timestamp__lt=timestamp)
             sort = request.GET.get('sort')
             if chatto:
                 queryset = queryset(Q(to=chatto, chatfrom=chatfrom)|Q(to=chatfrom, chatfrom=chatto))
@@ -119,12 +119,8 @@ class IMChatMessagesView(viewsets.ModelViewSet):
                 queryset = queryset.order_by('-timestamp',)
             else:
                 queryset = queryset.order_by('timestamp',)
-            try:
-                count = queryset.count()
-                queryset = Paginator(queryset, page_size)
-                queryset = queryset.page(page_index)
-            except EmptyPage:
-                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            count = queryset.count()
+            queryset = queryset[0:page_size]
             serializer = self.serializer_class(queryset,many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':serializer.data}))
         except InvestError as err:
