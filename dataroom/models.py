@@ -106,8 +106,7 @@ class dataroom(models.Model):
                     rem_perm('dataroom.user_changedataroom', self.user, self)
                 else:
                     oldrela = dataroom.objects.get(pk=self.pk)
-                    userlist1 = [oldrela.investor, oldrela.trader, oldrela.createuser, oldrela.proj.makeUser,
-                                 oldrela.proj.takeUser, ]
+                    userlist1 = [oldrela.createuser, oldrela.proj.makeUser,oldrela.proj.takeUser, ]
                     userlist2 = [ self.createuser, self.proj.makeUser, self.proj.takeUser, ]
                     userset1 = set(userlist1)
                     userset2 = set(userlist2)

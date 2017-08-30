@@ -79,7 +79,7 @@ class ProjSerializer(serializers.ModelSerializer):
     proj_attachment = ProjAttachmentSerializer(many=True)
     class Meta:
         model = project
-        exclude = ('isSendEmail','datasource','takeUser','makeUser','phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime')
+        exclude = ('isSendEmail','datasource')
         depth = 1
 
 class ProjCommonSerializer(serializers.ModelSerializer):
@@ -171,7 +171,7 @@ class ProjListSerializer_user(serializers.ModelSerializer):
     class Meta:
         model = project
         depth = 1
-        fields = ('id','industries','projtitleC','projtitleE','tags','transactionType','financeAmount','financeAmount_USD','country','projstatus', 'ismarketplace','makeUser','takeUser')
+        fields = ('id','industries','projtitleC','projtitleE','tags','transactionType','financeAmount','financeAmount_USD','country','projstatus', 'ismarketplace')
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_projects__is_deleted=False)
         if qs.exists():
@@ -252,9 +252,11 @@ class ProjDetailSerializer_user_withsecretinfo(serializers.ModelSerializer):
     finance = serializers.SerializerMethodField()
     attachment = serializers.SerializerMethodField()
     supportUser = UserCommenSerializer()
+    takeUser = UserCommenSerializer()
+    makeUser = UserCommenSerializer()
     class Meta:
         model = project
-        exclude = ('createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail','makeUser','takeUser')
+        exclude = ('createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail')
         depth = 1
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_projects__is_deleted=False)
@@ -345,9 +347,11 @@ class ProjDetailSerializer_user_withoutsecretinfo(serializers.ModelSerializer):
     attachment = serializers.SerializerMethodField()
     country = countrySerializer()
     supportUser = UserCommenSerializer()
+    takeUser = UserCommenSerializer()
+    makeUser = UserCommenSerializer()
     class Meta:
         model = project
-        exclude = ('phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail','makeUser','takeUser')
+        exclude = ('phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail',)
         depth = 1
 
     def get_service(self, obj):

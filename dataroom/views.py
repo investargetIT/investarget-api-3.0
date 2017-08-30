@@ -145,6 +145,9 @@ class DataroomView(viewsets.ModelViewSet):
                     supportordataroomserializer = DataroomCreateSerializer(data=dataroomdata)
                     if supportordataroomserializer.is_valid():
                         supportdataroom = supportordataroomserializer.save()
+                        userlist1 = [supportdataroom.createuser, proj.makeUser, proj.takeUser, ]
+                        for user in userlist1:
+                            add_perm('dataroom.user_getdataroom', user, supportdataroom)
                         add_perm('dataroom.user_getdataroom', supportdataroom.user, supportdataroom)
                         add_perm('dataroom.user_changedataroom', supportdataroom.user, supportdataroom)
                         responselist.append(supportordataroomserializer.data)
@@ -301,17 +304,22 @@ def pulishProjectCreateDataroom(proj,user):
             pass
         else:
             dataroomdata = {}
+            dataroomdata['proj'] = proj.id
             dataroomdata['user'] = proj.supportUser_id
             dataroomdata['isPublic'] = False
             supportordataroomserializer = DataroomCreateSerializer(data=dataroomdata)
             if supportordataroomserializer.is_valid():
                 supportdataroom = supportordataroomserializer.save()
+                userlist1 = [supportdataroom.createuser, proj.makeUser, proj.takeUser, ]
+                for user in userlist1:
+                    add_perm('dataroom.user_getdataroom', user, supportdataroom)
                 add_perm('dataroom.user_getdataroom', supportdataroom.user, supportdataroom)
                 add_perm('dataroom.user_changedataroom', supportdataroom.user, supportdataroom)
         if publicdataroom.exists():
             pass
         else:
             dataroomdata = {}
+            dataroomdata['proj'] = proj.id
             dataroomdata['user'] = proj.supportUser_id
             dataroomdata['isPublic'] = True
             publicdataroomserializer = DataroomCreateSerializer(data=dataroomdata)
