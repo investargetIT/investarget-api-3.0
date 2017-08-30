@@ -77,8 +77,7 @@ class dataroom(models.Model):
         if self.pk:
             if self.isPublic == False and self.user is None:
                 if self.is_deleted:
-                    userlist = [self.investor, self.trader, self.createuser, self.proj.makeUser, self.proj.takeUser,
-                                self.proj.supportUser]
+                    userlist = [self.investor, self.trader, self.createuser, self.proj.makeUser, self.proj.takeUser,]
                     userlist = set(userlist)
                     for user in userlist:
                         rem_perm('dataroom.user_getdataroom', user, self)
@@ -87,10 +86,8 @@ class dataroom(models.Model):
                 else:
                     oldrela = dataroom.objects.get(pk=self.pk)
                     userlist1 = [oldrela.investor, oldrela.trader, oldrela.createdtime, oldrela.proj.makeUser,
-                                 oldrela.proj.takeUser,
-                                 oldrela.proj.supportUser]
-                    userlist2 = [self.investor, self.trader, self.createdtime, self.proj.makeUser, self.proj.takeUser,
-                                 self.proj.supportUser]
+                                 oldrela.proj.takeUser,]
+                    userlist2 = [self.investor, self.trader, self.createdtime, self.proj.makeUser, self.proj.takeUser,]
                     userset1 = set(userlist1)
                     userset2 = set(userlist2)
                     if userset1 != userset2:

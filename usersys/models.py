@@ -23,7 +23,8 @@ registersourcechoice = (
     (1,'pc'),
     (2,'ios'),
     (3,'android'),
-    (4,'mobileweb')
+    (4,'mobileweb'),
+    (5,'unknown')
 )
 
 class MyUserBackend(ModelBackend):
@@ -195,19 +196,19 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
                     assign_perm('org.user_getorg', self, self.org)
                 if not olduser.createuser and self.createuser:
                     assign_perm('usersys.user_deleteuser', self.createuser, self)
-                if olduser.mobile != self.mobile:
+                if olduser.mobile != self.mobile and self.lastmodifyuser:
                     userinfoupdatelog(user_id=self.pk, user_name=self.usernameC.encode(encoding='utf-8'), type='mobile', before=olduser.mobile,
                                       after=self.mobile,
                                       requestuser_id=self.lastmodifyuser_id,
                                       requestuser_name=self.lastmodifyuser.usernameC.encode(encoding='utf-8'),
                                       datasource=self.datasource_id).save()
-                if olduser.wechat != self.wechat:
+                if olduser.wechat != self.wechat and self.lastmodifyuser:
                     userinfoupdatelog(user_id=self.pk, user_name=self.usernameC.encode(encoding='utf-8'), type='wechat', before=olduser.wechat,
                                       after=self.wechat,
                                       requestuser_id=self.lastmodifyuser_id,
                                       requestuser_name=self.lastmodifyuser.usernameC.encode(encoding='utf-8'),
                                       datasource=self.datasource_id).save()
-                if olduser.email != self.email:
+                if olduser.email != self.email and self.lastmodifyuser:
                     userinfoupdatelog(user_id=self.pk, user_name=self.usernameC.encode(encoding='utf-8'), type='email', before=olduser.email,
                                       after=self.email,
                                       requestuser_id=self.lastmodifyuser_id,
@@ -327,8 +328,8 @@ class UserRelation(models.Model):
             raise InvestError(code=8888,msg='datasource有误')
         if self.datasource !=self.traderuser.datasource or self.datasource != self.investoruser.datasource:
             raise InvestError(code=8888,msg='requestuser.datasource不匹配')
-        if self.investoruser.userstatus_id != 2 or self.traderuser.userstatus_id != 2:
-            raise InvestError(code=2022,msg='用户尚未审核通过，无法建立相关联系')
+        if self.traderuser.userstatus_id != 2:
+            raise InvestError(code=2022,msg='用户尚未审核通过，无法建立联系')
         if self.pk:
             userrelation = UserRelation.objects.exclude(pk=self.pk).filter(is_deleted=False,datasource=self.datasource,investoruser=self.investoruser)
         else:

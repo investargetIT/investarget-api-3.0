@@ -449,8 +449,6 @@ class UserView(viewsets.ModelViewSet):
             if not useridlist or not isinstance(useridlist,list):
                 raise InvestError(code=20071,msg='except a not null user id list')
             with transaction.atomic():
-                rel_fileds = [f for f in MyUser._meta.get_fields() if isinstance(f, ForeignObjectRel)]
-                links = [f.get_accessor_name() for f in rel_fileds]
                 for userid in useridlist:
                     if userid == request.user.id:
                         raise InvestError(2007,msg='不能删除自己')
@@ -515,7 +513,7 @@ class UserView(viewsets.ModelViewSet):
             mobilecodetoken = data.pop('mobilecodetoken', None)
             mobile = data.get('mobile')
             password = data.get('password')
-            source = data.pop('datasource', None)
+            source = request.META.get('HTTP_SOURCE')
             if source:
                 datasource = DataSource.objects.filter(id=source, is_deleted=False)
                 if datasource.exists():
@@ -1210,7 +1208,7 @@ class UserFriendshipView(viewsets.ModelViewSet):
         try:
             data = request.data
             data['createuser'] = request.user.id
-            data['datasource'] = 1
+            data['datasource'] = request.user.datasource.id
             friendlist = data.pop('friend',None)
             if not friendlist or not isinstance(friendlist,list):
                 raise InvestError(code=20071,msg='\'friends\' need a not null list')
@@ -1384,7 +1382,7 @@ class GroupPermissionView(viewsets.ModelViewSet):
                 raise InvestError(2009)
             data = request.data
             with transaction.atomic():
-                data['datasource'] = request.user.datasource_id
+                data['datasource'] = request.user.datasource.id
                 permissionsIdList = data.get('permissions',None)
                 if not isinstance(permissionsIdList,list):
                     raise InvestError(2007,msg='permissions must be an ID list')
@@ -1510,6 +1508,8 @@ def login(request):
                 raise InvestError(code=2003,msg='登录类型不可用')
             else:
                 raise InvestError(code=2001,msg='密码错误')
+        if user.userstatus_id != 2:
+            raise InvestError(20021)
         user.last_login = datetime.datetime.now()
         if not user.is_active:
             user.is_active = True
