@@ -98,7 +98,7 @@ class DataroomView(viewsets.ModelViewSet):
                 queryset = queryset
             else:
                 if not isPublic:
-                    queryset = queryset.filter(Q(user=request.user) | Q(trader=request.user) | Q(investor=request.user))
+                    queryset = queryset.filter(Q(user=request.user) | Q(trader=request.user) | Q(investor=request.user) | Q(proj__takeUser=request.user) | Q(proj__makeUser=request.user) | Q(createuser=request.user))
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)

@@ -81,33 +81,43 @@ class dataroom(models.Model):
                     userlist = set(userlist)
                     for user in userlist:
                         rem_perm('dataroom.user_getdataroom', user, self)
-                    rem_perm('dataroom.user_changedataroom', self.user, self)
                     rem_perm('dataroom.user_changedataroom', self.investor, self)
                 else:
                     oldrela = dataroom.objects.get(pk=self.pk)
-                    userlist1 = [oldrela.investor, oldrela.trader, oldrela.createdtime, oldrela.proj.makeUser,
+                    userlist1 = [oldrela.investor, oldrela.trader, oldrela.createuser, oldrela.proj.makeUser,
                                  oldrela.proj.takeUser,]
-                    userlist2 = [self.investor, self.trader, self.createdtime, self.proj.makeUser, self.proj.takeUser,]
+                    userlist2 = [self.investor, self.trader, self.createuser, self.proj.makeUser, self.proj.takeUser,]
                     userset1 = set(userlist1)
                     userset2 = set(userlist2)
                     if userset1 != userset2:
                         for user in userset1:
                             rem_perm('dataroom.user_getdataroom', user, self)
-                        rem_perm('dataroom.user_changedataroom', oldrela.user, self)
                         rem_perm('dataroom.user_changedataroom', oldrela.investor, self)
                         for user in userset2:
                             add_perm('dataroom.user_getdataroom', user, self)
-                        add_perm('dataroom.user_changedataroom', self.user, self)
                         add_perm('dataroom.user_changedataroom', self.investor, self)
             elif self.isPublic == False and self.user is not None:
                 if self.is_deleted:
+                    userlist = [self.createuser, self.proj.makeUser, self.proj.takeUser, ]
+                    userlist = set(userlist)
+                    for user in userlist:
+                        rem_perm('dataroom.user_getdataroom', user, self)
                     rem_perm('dataroom.user_getdataroom', self.user, self)
                     rem_perm('dataroom.user_changedataroom', self.user, self)
                 else:
                     oldrela = dataroom.objects.get(pk=self.pk)
-                    if oldrela.user != self.user:
+                    userlist1 = [oldrela.investor, oldrela.trader, oldrela.createuser, oldrela.proj.makeUser,
+                                 oldrela.proj.takeUser, ]
+                    userlist2 = [ self.createuser, self.proj.makeUser, self.proj.takeUser, ]
+                    userset1 = set(userlist1)
+                    userset2 = set(userlist2)
+                    if userset1 != userset2:
+                        for user in userset1:
+                            rem_perm('dataroom.user_getdataroom', user, self)
                         rem_perm('dataroom.user_getdataroom', oldrela.user, self)
                         rem_perm('dataroom.user_changedataroom', oldrela.user, self)
+                        for user in userset2:
+                            add_perm('dataroom.user_getdataroom', user, self)
                         add_perm('dataroom.user_getdataroom', self.user, self)
                         add_perm('dataroom.user_changedataroom', self.user, self)
             else:
