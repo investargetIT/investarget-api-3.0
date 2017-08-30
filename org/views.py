@@ -455,7 +455,7 @@ class OrgRemarkView(viewsets.ModelViewSet):
             data = request.data
             data['lastmodifyuser'] = request.user.id
             data['lastmodifytime'] = datetime.datetime.now()
-            data['datasource'] = request.user.datasource_id
+            data['datasource'] = request.user.datasource.id
             with transaction.atomic():
                 orgserializer = OrgRemarkDetailSerializer(orgremark, data=data)
                 if orgserializer.is_valid():

@@ -114,10 +114,10 @@ class project(models.Model):
         super(project,self).save(force_insert,force_update,using,update_fields)
 
     def checkProjInfo(self):
-        fieldlist = [self.contactPerson,self.financeAmount,self.financeAmount_USD,self.email,self.phoneNumber]
+        fieldlist = ['contactPerson','financeAmount','financeAmount_USD','email','phoneNumber']
         for aa in fieldlist:
-            if aa is None:
-                raise InvestError(4007)
+            if getattr(self,aa) is None:
+                raise InvestError(4007,msg='项目信息未完善—%s'%aa)
 class projServices(models.Model):
     id = models.AutoField(primary_key=True)
     proj = MyForeignKey(project,blank=True,null=True,related_name='proj_services')
