@@ -12,8 +12,8 @@ class ProjSimpleSerializer(serializers.ModelSerializer):
 
 
 class ProjIndustrySerializer(serializers.ModelSerializer):
-    nameC = serializers.CharField(source='projectIndustries.industry__industryC', read_only=True)
-    nameE = serializers.CharField(source='projectIndustries.industry__industryE', read_only=True)
+    nameC = serializers.SerializerMethodField()
+    nameE = serializers.SerializerMethodField()
     url = serializers.SerializerMethodField()
     class Meta:
         model = projectIndustries
@@ -21,6 +21,14 @@ class ProjIndustrySerializer(serializers.ModelSerializer):
     def get_url(self, obj):
         if obj.key:
             return 'https://o79atf82v.qnssl.com/' + obj.key
+        return None
+    def get_nameC(self, obj):
+        if obj.industry.industryC:
+            return obj.industry.industryC
+        return None
+    def get_nameE(self, obj):
+        if obj.industry.industryE:
+            return obj.industry.industryE
         return None
 
 class ProjIndustryCreateSerializer(serializers.ModelSerializer):

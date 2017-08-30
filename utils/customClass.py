@@ -25,16 +25,6 @@ class InvestError(Exception):
         else:
             self.msg = responsecode[str(code)]
 
-class IsSuperUser(BasePermission):
-    """
-    Allows access only to admin users.
-    """
-    def has_permission(self, request, view):
-        return (
-            request.method in ('GET', 'HEAD', 'OPTIONS') or
-            (request.user and
-            request.user.is_superuser)
-        )
 class RelationFilter(Filter):
     def __init__(self, filterstr,lookup_method,relationName=None, **kwargs):
         self.filterstr = filterstr
