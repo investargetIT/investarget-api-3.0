@@ -319,7 +319,7 @@ def pulishProjectCreateDataroom(proj,user):
                 publicdataroom = publicdataroomserializer.save()
                 creatpublicdataroomdirectorywithtemplate(user, publicdataroomid=publicdataroom.id)
     except Exception:
-        logexcption()
+        logexcption(msg='public创建失败')
         pass
 
 

@@ -45,7 +45,7 @@ class project(models.Model):
     companyYear = models.SmallIntegerField(help_text='公司年限', blank=True, null=True)
     financeIsPublic = models.BooleanField(blank=True, default=True)
     code = models.CharField(max_length=128, blank=True, null=True)
-    currency = MyForeignKey(CurrencyType,default=1,on_delete=models.SET_NULL,null=True)
+    currency = MyForeignKey(CurrencyType,default=1,on_delete=models.SET_NULL,null=True,blank=True)
     tags = models.ManyToManyField(Tag, through='projectTags', through_fields=('proj', 'tag'),blank=True)
     industries = models.ManyToManyField(Industry, through='projectIndustries', through_fields=('proj', 'industry'),blank=True)
     transactionType = models.ManyToManyField(TransactionType, through='projectTransactionType',through_fields=('proj', 'transactionType'),blank=True)
@@ -94,12 +94,10 @@ class project(models.Model):
             ('admin_changeproj', '管理员修改项目'),
             ('admin_deleteproj', '管理员删除项目'),
             ('admin_getproj', '管理员查看项目'),
-
             ('user_addproj', '用户上传项目'),
             ('user_changeproj', '用户修改项目(obj级别)'),
             ('user_deleteproj', '用户删除项目(obj级别)'),
             ('user_getproj','用户查看项目(obj级别)'),
-
             ('get_secretinfo','查看项目保密信息')
         )
     def save(self, force_insert=False, force_update=False, using=None,
@@ -111,9 +109,15 @@ class project(models.Model):
                 rem_perm('proj.user_getproj',self.createuser,self)
                 rem_perm('proj.user_changeproj', self.createuser, self)
                 rem_perm('proj.user_deleteproj', self.createuser, self)
-
+        if self.projstatus_id >= 4 and self.is_deleted == False:
+            self.checkProjInfo()
         super(project,self).save(force_insert,force_update,using,update_fields)
 
+    def checkProjInfo(self):
+        fieldlist = [self.contactPerson,self.financeAmount,self.financeAmount_USD,self.email,self.phoneNumber]
+        for aa in fieldlist:
+            if aa is None:
+                raise InvestError(4007)
 class projServices(models.Model):
     id = models.AutoField(primary_key=True)
     proj = MyForeignKey(project,blank=True,null=True,related_name='proj_services')

@@ -173,6 +173,11 @@ class ProjectView(viewsets.ModelViewSet):
             projAttachmentdata = projdata.pop('projAttachment',None)
             financedata = projdata.pop('finance',None)
             servicedata = projdata.pop('service',None)
+            keylist = projdata.keys()
+            editlist2 = [key for key in keylist if key in ['takeUser', 'makeUser', ]]
+            if len(editlist2) > 0:
+                if not request.user.has_perm('proj.admin_addproj'):
+                    raise InvestError(2009, msg='没有权限edit%s' % editlist2)
             with transaction.atomic():
                 proj = ProjCreatSerializer(data=projdata)
                 if proj.is_valid():
@@ -246,10 +251,11 @@ class ProjectView(viewsets.ModelViewSet):
                     serializerclass = ProjDetailSerializer_admin_withsecretinfo
                 else:
                     serializerclass = ProjDetailSerializer_admin_withoutsecretinfo
-            elif request.user.has_perm('proj.get_secretinfo'):
-                serializerclass = ProjDetailSerializer_user_withsecretinfo
             else:
-                serializerclass = ProjDetailSerializer_user_withoutsecretinfo
+                if request.user.has_perm('proj.get_secretinfo'):
+                    serializerclass = ProjDetailSerializer_user_withsecretinfo
+                else:
+                    serializerclass = ProjDetailSerializer_user_withoutsecretinfo
             instance = self.get_object()
             if instance.isHidden:
                 if request.user.has_perm('proj.user_getproj', instance) or request.user.has_perm(
@@ -298,7 +304,7 @@ class ProjectView(viewsets.ModelViewSet):
                 pass
             elif request.user.has_perm('proj.user_changeproj',pro):
                 if projdata.get('projstatus', None) and projdata.get('projstatus', None) >= 4:
-                    raise InvestError(2009,msg='只有管理员权限能修改到该状态')
+                    raise InvestError(2009,msg='只有管理员才能修改到该状态')
             else:
                 raise InvestError(code=2009,msg='非上传方或管理员无法修改项目')
             projdata['lastmodifyuser'] = request.user.id
@@ -315,7 +321,16 @@ class ProjectView(viewsets.ModelViewSet):
                 if projdata.get('projstatus', None) == 4:
                     sendmsg = True
                     projdata['publishDate'] = datetime.datetime.now()
-                    pulishProjectCreateDataroom(request.user,pro)
+                    pulishProjectCreateDataroom(pro,request.user)
+            keylist = projdata.keys()
+            editlist1 = [key for key in keylist if key in ['phoneNumber', 'email', 'contactPerson']]
+            editlist2 = [key for key in keylist if key in ['takeUser', 'makeUser',]]
+            if len(editlist1) > 0:
+                if not request.user.has_perm('proj.get_secretinfo'):
+                    raise  InvestError(2009,msg='没有权限修改%s'%editlist1)
+            if len(editlist2) > 0:
+                if not request.user.has_perm('proj.admin_changeproj'):
+                    raise  InvestError(2009,msg='没有权限修改%s'%editlist2)
             with transaction.atomic():
                 proj = ProjCreatSerializer(pro,data=projdata)
                 if proj.is_valid():
