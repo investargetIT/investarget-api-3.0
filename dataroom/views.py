@@ -304,9 +304,11 @@ def pulishProjectCreateDataroom(proj,user):
             pass
         else:
             dataroomdata = {}
+            dataroomdata['datasource'] = user.datasource_id
             dataroomdata['proj'] = proj.id
             dataroomdata['user'] = proj.supportUser_id
             dataroomdata['isPublic'] = False
+            dataroomdata['createuser'] = user.id
             supportordataroomserializer = DataroomCreateSerializer(data=dataroomdata)
             if supportordataroomserializer.is_valid():
                 supportdataroom = supportordataroomserializer.save()
@@ -322,6 +324,8 @@ def pulishProjectCreateDataroom(proj,user):
             dataroomdata['proj'] = proj.id
             dataroomdata['user'] = proj.supportUser_id
             dataroomdata['isPublic'] = True
+            dataroomdata['datasource'] = user.datasource_id
+            dataroomdata['createuser'] = user.id
             publicdataroomserializer = DataroomCreateSerializer(data=dataroomdata)
             if publicdataroomserializer.is_valid():
                 publicdataroom = publicdataroomserializer.save()

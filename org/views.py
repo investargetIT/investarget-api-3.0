@@ -231,7 +231,7 @@ class OrganizationView(viewsets.ModelViewSet):
                                                                                            deleteduser=request.user)
                         usertaglist = []
                         for transactionPhase in addlist:
-                            usertaglist.append(orgTransactionPhase(org=org, transactionPhase_id=transactionPhase, createuser=request.user))
+                            usertaglist.append(orgTransactionPhase(org=org, transactionPhase_id=transactionPhase, createuser=request.user,createdtime=datetime.datetime.now()))
                         org.org_orgTransactionPhases.bulk_create(usertaglist)
                 else:
                     raise InvestError(code=20071,
@@ -255,10 +255,7 @@ class OrganizationView(viewsets.ModelViewSet):
                 pass
             else:
                 raise InvestError(code=2009)
-            rel_fileds = [f for f in instance._meta.get_fields() if isinstance(f, ForeignObjectRel)]
-            links = [f.get_accessor_name() for f in rel_fileds]
             with transaction.atomic():
-                # for link in links:
                 for link in ['org_users','org_orgTransactionPhases','org_remarks','org_unreachuser']:
                     if link in ['org_users']:
                         manager = getattr(instance, link, None)
@@ -401,7 +398,7 @@ class OrgRemarkView(viewsets.ModelViewSet):
                 raise InvestError(code=2009)
         else:
             raise InvestError(code=20072)
-        data['createuser'] = request.user.id
+        # data['createuser'] = request.user.id
         data['datasource'] = request.user.datasource.id
         try:
             with transaction.atomic():
