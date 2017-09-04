@@ -254,6 +254,7 @@ class ProjDetailSerializer_user_withsecretinfo(serializers.ModelSerializer):
     supportUser = UserCommenSerializer()
     takeUser = UserCommenSerializer()
     makeUser = UserCommenSerializer()
+    linkpdfurl = serializers.SerializerMethodField()
     class Meta:
         model = project
         exclude = ('createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail')
@@ -289,7 +290,10 @@ class ProjDetailSerializer_user_withsecretinfo(serializers.ModelSerializer):
         if qs.exists():
             return serviceSerializer(qs,many=True).data
         return None
-
+    def get_linkpdfurl(self, obj):
+        if obj.linkpdfkey and obj.ismarketplace:
+            return getUrlWithBucketAndKey('file',obj.linkpdfkey)
+        return None
 
 class ProjDetailSerializer_admin_withoutsecretinfo(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
@@ -302,6 +306,7 @@ class ProjDetailSerializer_admin_withoutsecretinfo(serializers.ModelSerializer):
     supportUser = UserCommenSerializer()
     takeUser = UserCommenSerializer()
     makeUser = UserCommenSerializer()
+    linkpdfurl = serializers.SerializerMethodField()
     class Meta:
         model = project
         exclude = ('phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail')
@@ -338,6 +343,10 @@ class ProjDetailSerializer_admin_withoutsecretinfo(serializers.ModelSerializer):
         if usertrader.exists():
             return ProjAttachmentSerializer(usertrader, many=True).data
         return None
+    def get_linkpdfurl(self, obj):
+        if obj.linkpdfkey and obj.ismarketplace:
+            return getUrlWithBucketAndKey('file',obj.linkpdfkey)
+        return None
 class ProjDetailSerializer_user_withoutsecretinfo(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
     service = serializers.SerializerMethodField()
@@ -349,6 +358,7 @@ class ProjDetailSerializer_user_withoutsecretinfo(serializers.ModelSerializer):
     supportUser = UserCommenSerializer()
     takeUser = UserCommenSerializer()
     makeUser = UserCommenSerializer()
+    linkpdfurl = serializers.SerializerMethodField()
     class Meta:
         model = project
         exclude = ('phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail',)
@@ -384,4 +394,8 @@ class ProjDetailSerializer_user_withoutsecretinfo(serializers.ModelSerializer):
         usertrader = obj.proj_attachment.filter(is_deleted=False)
         if usertrader.exists():
             return ProjAttachmentSerializer(usertrader, many=True).data
+        return None
+    def get_linkpdfurl(self, obj):
+        if obj.linkpdfkey and obj.ismarketplace:
+            return getUrlWithBucketAndKey('file',obj.linkpdfkey)
         return None

@@ -111,10 +111,15 @@ class project(models.Model):
                 rem_perm('proj.user_deleteproj', self.createuser, self)
         if self.projstatus_id >= 4 and self.is_deleted == False:
             self.checkProjInfo()
+        if not self.code:
+            self.code = 'P' + datetime.datetime.now().strftime('%Y%m%d%H%M%S')
         super(project,self).save(force_insert,force_update,using,update_fields)
 
     def checkProjInfo(self):
-        fieldlist = ['contactPerson','financeAmount','financeAmount_USD','email','phoneNumber']
+        if self.ismarketplace:
+            fieldlist = ['contactPerson', 'email', 'phoneNumber']
+        else:
+            fieldlist = ['contactPerson', 'financeAmount', 'financeAmount_USD', 'email', 'phoneNumber']
         for aa in fieldlist:
             if getattr(self,aa) is None:
                 raise InvestError(4007,msg='项目信息未完善—%s'%aa)
@@ -205,7 +210,7 @@ class projectTags(models.Model):
         if self.tag.datasource != self.proj.datasource_id:
             raise InvestError(8888)
         if not self.createdtime:
-            self.createdtime =datetime.datetime.now()
+            self.createdtime = datetime.datetime.now()
         return super(projectTags, self).save(*args, **kwargs)
 
 
@@ -226,7 +231,7 @@ class projectIndustries(models.Model):
         if self.industry.datasource != self.proj.datasource_id:
             raise InvestError(8888)
         if not self.createdtime:
-            self.createdtime =datetime.datetime.now()
+            self.createdtime = datetime.datetime.now()
         if not self.key:
             self.bucket = self.industry.bucket
             self.key = self.industry.key

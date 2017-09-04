@@ -87,7 +87,6 @@ class UserRelationSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserRelation
         fields = ('id','investoruser','traderuser','relationtype','score')
-        depth = 1
 
 #用户关系全部信息
 class UserRelationDetailSerializer(serializers.ModelSerializer):

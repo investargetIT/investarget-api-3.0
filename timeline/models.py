@@ -49,7 +49,7 @@ class timeline(models.Model):
         else:
             raise InvestError(20071,msg='datasource/proj/investor/trader cannot be null')
         if self.proj.projstatus_id < 4:
-            raise InvestError(5003,msg='项目状态尚未终审发布')
+            raise InvestError(5003,msg='项目尚未终审发布')
         if self.trader.userstatus_id != 2 or self.investor.userstatus_id != 2:
             raise InvestError(2022)
         try:
