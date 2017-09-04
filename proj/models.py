@@ -227,6 +227,9 @@ class projectIndustries(models.Model):
             raise InvestError(8888)
         if not self.createdtime:
             self.createdtime =datetime.datetime.now()
+        if not self.key:
+            self.bucket = self.industry.bucket
+            self.key = self.industry.key
         return super(projectIndustries, self).save(*args, **kwargs)
 
 

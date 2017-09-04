@@ -269,6 +269,25 @@ class UserView(viewsets.ModelViewSet):
                     raise InvestError(code=2007)
                 if self.get_queryset().filter(Q(mobile=mobile) | Q(email=email)).exists():
                     raise InvestError(code=2004)
+                orgname = data.pop('orgname', None)
+                if orgname:
+                    if lang == 'en':
+                        field = 'orgnameE'
+                        filters = Q(orgnameE=orgname)
+                    else:
+                        field = 'orgnameC'
+                        filters = Q(orgnameC=orgname)
+                    orgset = organization.objects.filter(filters, is_deleted=False, datasource=request.user.datasource)
+                    if orgset.exists():
+                        org = orgset.first()
+                    else:
+                        org = organization()
+                        setattr(org, field, orgname)
+                        org.datasource = request.user.datasource
+                        org.orgstatus_id = 1
+                        org.createdtime = datetime.datetime.now()
+                        org.save()
+                    data['org'] = org.id
                 user = MyUser(email=email, mobile=mobile, datasource_id=request.user.datasource.id)
                 data.pop('password', None)
                 user.set_password('Aa123456')
@@ -371,6 +390,25 @@ class UserView(viewsets.ModelViewSet):
                 for userid in useridlist:
                     data = request.data.get('userdata')
                     if data is not None:
+                        orgname = data.pop('orgname', None)
+                        if orgname:
+                            if lang == 'en':
+                                field = 'orgnameE'
+                                filters = Q(orgnameE=orgname)
+                            else:
+                                field = 'orgnameC'
+                                filters = Q(orgnameC=orgname)
+                            orgset = organization.objects.filter(filters, is_deleted=False, datasource=request.user.datasource)
+                            if orgset.exists():
+                                org = orgset.first()
+                            else:
+                                org = organization()
+                                setattr(org, field, orgname)
+                                org.datasource = request.user.datasource
+                                org.orgstatus_id = 1
+                                org.createdtime = datetime.datetime.now()
+                                org.save()
+                            data['org'] = org.id
                         user = self.get_object(userid)
                         olduserdata = UserSerializer(user)
                         sendmsg = False

@@ -285,7 +285,7 @@ class ProjectView(viewsets.ModelViewSet):
                     raise InvestError(4004,msg='token无效')
             else:
                 raise InvestError(code=4004, msg='没有权限查看隐藏项目')
-            serializer = ProjSerializer(instance)
+            serializer = ProjDetailSerializer_user_withoutsecretinfo(instance)
             viewprojlog(userid=None,projid=instance.id,sourceid=clienttype)
             return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
@@ -424,12 +424,12 @@ class ProjectView(viewsets.ModelViewSet):
                 pass
             else:
                 raise InvestError(code=2009)
+            if instance.proj_datarooms.filter(is_deleted=False,proj=instance,user=None,isPublic=False).exists():
+                raise InvestError(code=2010, msg=u'{} 上有关联数据'.format('proj_datarooms'))
             with transaction.atomic():
-                rel_fileds = [f for f in instance._meta.get_fields() if isinstance(f, ForeignObjectRel)]
-                links = [f.get_accessor_name() for f in rel_fileds]
                 for link in ['proj_timelines','proj_finances','proj_attachment','project_tags','project_industries','project_TransactionTypes',
                              'proj_favorite','proj_sharetoken','proj_datarooms','proj_services']:
-                    if link in ['proj_timelines','proj_datarooms']:
+                    if link in ['proj_timelines']:
                         manager = getattr(instance, link, None)
                         if not manager:
                             continue
