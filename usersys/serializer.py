@@ -163,13 +163,12 @@ class UserListSerializer(serializers.ModelSerializer):
     org = OrgCommonSerializer(MyUser.org)
     tags = serializers.SerializerMethodField()
     trader_relation = serializers.SerializerMethodField()
-    investor_relation = serializers.SerializerMethodField()
     country = countrySerializer()
     IR = UserCommenSerializer()
     photourl = serializers.SerializerMethodField()
     class Meta:
         model = MyUser
-        fields = ('id','groups','tags','country','department','usernameC','usernameE','mobile','IR','email','title','userstatus','org','trader_relation','investor_relation','photourl')
+        fields = ('id','groups','tags','country','department','usernameC','usernameE','mobile','IR','email','title','userstatus','org','trader_relation','photourl')
         depth = 1
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_usertags__is_deleted=False)
@@ -182,108 +181,8 @@ class UserListSerializer(serializers.ModelSerializer):
             return UserRelationSerializer(usertrader.first()).data
         return None
 
-    def get_investor_relation(self, obj):
-        usertrader = obj.trader_relations.filter(relationtype=True, is_deleted=False)
-        if usertrader.exists():
-            return UserRelationSerializer(usertrader,many=True).data
-        return None
     def get_photourl(self, obj):
         if obj.photoKey:
             return getUrlWithBucketAndKey('image',obj.photoKey)
         else:
             return None
-
-#list
-class UserListSerializer_admin(serializers.ModelSerializer):
-    groups = GroupSerializer(MyUser.groups, many=True)
-    org = OrgCommonSerializer(MyUser.org)
-    trader_relation = serializers.SerializerMethodField()
-    investor_relation = serializers.SerializerMethodField()
-    tags = serializers.SerializerMethodField()
-    class Meta:
-        model = MyUser
-        fields = ('id', 'groups', 'tags', 'usernameC', 'department', 'usernameE', 'mobile', 'email', 'title', 'userstatus', 'org',
-                  'trader_relation', 'investor_relation')
-        depth = 1
-    def get_tags(self, obj):
-        qs = obj.tags.filter(tag_usertags__is_deleted=False)
-        if qs.exists():
-            return tagSerializer(qs,many=True).data
-        return None
-    def get_trader_relation(self, obj):
-        usertrader = obj.investor_relations.filter(relationtype=True, is_deleted=False)
-        if usertrader.exists():
-            return UserRelationSerializer(usertrader.first()).data
-        return None
-
-    def get_investor_relation(self, obj):
-        usertrader = obj.trader_relations.filter(relationtype=True, is_deleted=False)
-        if usertrader.exists():
-            return UserRelationSerializer(usertrader, many=True).data
-        return None
-class UserListSerializer_user(serializers.ModelSerializer):
-    class Meta:
-        model = MyUser
-        fields = ('id', 'usernameC', 'usernameE')
-#detail
-class UserDetailSerializer_admin_withsecretinfo(serializers.ModelSerializer):
-    groups = GroupSerializer(MyUser.groups, many=True)
-    org = OrgCommonSerializer(MyUser.org)
-    trader_relation = serializers.SerializerMethodField()
-    investor_relation = serializers.SerializerMethodField()
-
-    class Meta:
-        model = MyUser
-        fields = '__all__'
-        depth = 1
-
-    def get_trader_relation(self, obj):
-        usertrader = obj.investor_relations.filter(relationtype=True, is_deleted=False)
-        if usertrader.exists():
-            return UserRelationSerializer(usertrader.first()).data
-        return None
-
-    def get_investor_relation(self, obj):
-        usertrader = obj.trader_relations.filter(relationtype=True, is_deleted=False)
-        if usertrader.exists():
-            return UserRelationSerializer(usertrader, many=True).data
-        return None
-class UserDetailSerializer_user_withsecretinfo(serializers.ModelSerializer):
-    groups = GroupSerializer(MyUser.groups, many=True)
-    org = OrgCommonSerializer(MyUser.org)
-    class Meta:
-        model = MyUser
-        fields = '__all__'
-        depth = 1
-
-
-class UserDetailSerializer_admin_withoutsecretinfo(serializers.ModelSerializer):
-    groups = GroupSerializer(MyUser.groups, many=True)
-    org = OrgCommonSerializer(MyUser.org)
-    trader_relation = serializers.SerializerMethodField()
-    investor_relation = serializers.SerializerMethodField()
-
-    class Meta:
-        model = MyUser
-        fields = '__all__'
-        depth = 1
-
-    def get_trader_relation(self, obj):
-        usertrader = obj.investor_relations.filter(relationtype=True, is_deleted=False)
-        if usertrader.exists():
-            return UserRelationSerializer(usertrader.first()).data
-        return None
-
-    def get_investor_relation(self, obj):
-        usertrader = obj.trader_relations.filter(relationtype=True, is_deleted=False)
-        if usertrader.exists():
-            return UserRelationSerializer(usertrader, many=True).data
-        return None
-class UserDetailSerializer_user_withoutsecretinfo(serializers.ModelSerializer):
-    groups = GroupSerializer(MyUser.groups, many=True)
-    org = OrgCommonSerializer(MyUser.org)
-
-    class Meta:
-        model = MyUser
-        exclude = ('password','datasource','email','mobile')
-        depth = 1

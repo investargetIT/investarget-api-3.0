@@ -244,7 +244,7 @@ class UserRemarks(models.Model):
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_userremarks')
     deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_now_add=True, null=True)
+    createdtime = models.DateTimeField(blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_userremarks')
     lastmodifytime = models.DateTimeField(auto_now=True)
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_userremarks')
@@ -253,6 +253,10 @@ class UserRemarks(models.Model):
     class Meta:
         db_table = 'user_remarks'
 
+    def save(self, *args, **kwargs):
+        if not self.createdtime:
+           self.createdtime = datetime.datetime.now()
+        return super(UserRemarks, self).save(*args, **kwargs)
 
 
 

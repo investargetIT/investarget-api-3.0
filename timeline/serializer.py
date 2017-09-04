@@ -101,6 +101,7 @@ class TimeLineListSerializer_user(serializers.ModelSerializer):
 
 class TimeLineListSerializer_anonymous(serializers.ModelSerializer):
     proj = ProjSimpleSerializer()
+    investor = UserCommenSerializer()
     transationStatu = serializers.SerializerMethodField()
     class Meta:
         model = timeline

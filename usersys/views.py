@@ -41,6 +41,7 @@ from django_filters import FilterSet
 class UserFilter(FilterSet):
     groups = RelationFilter(filterstr='groups', lookup_method='in')
     org = RelationFilter(filterstr='org',lookup_method='in')
+    usercode = RelationFilter(filterstr='usercode', lookup_method='in')
     orgarea = RelationFilter(filterstr='orgarea', lookup_method='in')
     tags = RelationFilter(filterstr='tags',lookup_method='in',relationName='user_usertags__is_deleted')
     userstatus = RelationFilter(filterstr='userstatus',lookup_method='in')
@@ -48,7 +49,7 @@ class UserFilter(FilterSet):
     orgtransactionphases = RelationFilter(filterstr='org__orgtransactionphase', lookup_method='in',relationName='org__org_orgTransactionPhases__is_deleted')
     class Meta:
         model = MyUser
-        fields = ('groups','org','tags','userstatus','currency','orgtransactionphases','orgarea')
+        fields = ('groups','org','tags','userstatus','currency','orgtransactionphases','orgarea','usercode')
 
 
 class UserView(viewsets.ModelViewSet):
@@ -226,6 +227,7 @@ class UserView(viewsets.ModelViewSet):
                         setattr(org,field,orgname)
                         org.datasource= userdatasource
                         org.orgstatus_id = 1
+                        org.createdtime = datetime.datetime.now()
                         org.save()
                     data['org'] = org.id
                 user = MyUser(email=email,mobile=mobile,datasource=userdatasource)
@@ -421,7 +423,7 @@ class UserView(viewsets.ModelViewSet):
                                 user.user_usertags.filter(tag__in=removelist,is_deleted=False).update(is_deleted=True,deletedtime=datetime.datetime.now(),deleteduser=request.user)
                                 usertaglist = []
                                 for tag in addlist:
-                                    usertaglist.append(userTags(user=user, tag_id=tag, createuser=request.user))
+                                    usertaglist.append(userTags(user=user, tag_id=tag, createuser=request.user,createdtime=datetime.datetime.now()))
                                 user.user_usertags.bulk_create(usertaglist)
                         else:
                             raise InvestError(code=20071,msg='userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
@@ -598,13 +600,16 @@ class UserView(viewsets.ModelViewSet):
             if account:
                 if self.queryset.filter(mobile=account, datasource_id=source).exists():
                     result = True
+                    user = UserSerializer(self.queryset.filter(mobile=account, datasource_id=source).first()).data
                 elif self.queryset.filter(email=account, datasource_id=source).exists():
                     result = True
+                    user = UserSerializer(self.queryset.filter(email=account, datasource_id=source).first()).data
                 else:
                     result = False
+                    user = None
             else:
                 raise InvestError(20072)
-            return JSONResponse(SuccessResponse({'result':result}))
+            return JSONResponse(SuccessResponse({'result':result,'user':user}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
