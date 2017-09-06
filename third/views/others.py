@@ -33,3 +33,18 @@ def getcurrencyreat(request):
         catchexcption(request)
         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+
+@api_view(['POST'])
+def ccupload(request):
+    try:
+        data_dict = request.FILES
+        uploaddata = None
+        for keya in data_dict.keys():
+            uploaddata = data_dict[keya]
+        urlstr = 'http://bcr2.intsig.net/BCRService/BCR_VCF2?user=summer.xia@investarget.com&pass=P8YSCG7AQLM66S7M&json=1&lang=15'
+        response = requests.post(urlstr,uploaddata)
+        return JSONResponse(SuccessResponse(response.content))
+    except InvestError as err:
+        return JSONResponse(InvestErrorResponse(err))
+    except Exception:
+        return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))

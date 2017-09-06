@@ -121,7 +121,7 @@ class DataroomView(viewsets.ModelViewSet):
             investorid = data.get('investor', None)
             traderid = data.get('trader', None)
             ispublic = data.get('isPublic',False)
-            if not projid or not isinstance(projid,int):
+            if not projid:
                 raise InvestError(20072,msg='proj 不能为空 int类型')
             try:
                 proj = project.objects.get(id=projid,datasource=request.user.datasource,is_deleted=False)
@@ -186,6 +186,95 @@ class DataroomView(viewsets.ModelViewSet):
                         else:
                             raise InvestError(code=20071,msg=investordataroomserializer.errors)
                 return JSONResponse(SuccessResponse(returnListChangeToLanguage(responselist, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def addDataroom(self, request, *args, **kwargs):
+        #导数据专用   1 public  2 support 3 investor
+        try:
+            data = request.data
+            lang = request.GET.get('lang')
+            projid = data.get('proj',None)
+            investorid = data.get('investor', None)
+            traderid = data.get('trader', None)
+            dataroomtype = data.get('type',False)
+
+            if data.get('createuser', None) is None:
+                createuser = request.user.id
+            else:
+                createuser = data.get('createuser')
+            createdtime = data.pop('createdtime', None)
+            if createdtime not in ['None', None, u'None', 'none']:
+                createdtime = datetime.datetime.strptime(createdtime.encode('utf-8')[0:19], "%Y-%m-%d %H:%M:%S")
+            else:
+                createdtime = datetime.datetime.now()
+            try:
+                proj = project.objects.get(id=projid,datasource=request.user.datasource,is_deleted=False)
+            except project.DoesNotExist:
+                raise InvestError(code=4002)
+            with transaction.atomic():
+                if dataroomtype == 1:
+                    dataroomdata = {'proj':projid,'datasource':request.user.datasource.id,'createuser':createuser,'createdtime':createdtime}
+                    publicdataroom = self.get_queryset().filter(proj=proj, isPublic=True)
+                    if publicdataroom.exists():
+                        responsedic = DataroomCreateSerializer(publicdataroom.first()).data
+                    else:
+                        dataroomdata['user'] = proj.supportUser_id
+                        dataroomdata['isPublic'] = True
+                        publicdataroomserializer = DataroomCreateSerializer(data=dataroomdata)
+                        if publicdataroomserializer.is_valid():
+                            publicdataroom = publicdataroomserializer.save()
+                            responsedic =  publicdataroomserializer.data
+                        else:
+                            raise InvestError(code=20071, msg=publicdataroomserializer.errors)
+                elif dataroomtype == 2:
+                    dataroomdata = {'proj': projid, 'datasource': request.user.datasource.id,'createuser': createuser,'createdtime':createdtime}
+                    projdataroom = self.get_queryset().filter(proj=proj, user_id=proj.supportUser_id, isPublic=False)
+                    if projdataroom.exists():
+                        responsedic = DataroomCreateSerializer(projdataroom.first()).data
+                    else:
+                        dataroomdata['user'] = proj.supportUser_id
+                        dataroomdata['isPublic'] = False
+                        supportordataroomserializer = DataroomCreateSerializer(data=dataroomdata)
+                        if supportordataroomserializer.is_valid():
+                            supportdataroom = supportordataroomserializer.save()
+                            userlist1 = [supportdataroom.createuser, proj.makeUser, proj.takeUser, ]
+                            for user in userlist1:
+                                add_perm('dataroom.user_getdataroom', user, supportdataroom)
+                            add_perm('dataroom.user_getdataroom', supportdataroom.user, supportdataroom)
+                            add_perm('dataroom.user_changedataroom', supportdataroom.user, supportdataroom)
+                            responsedic = supportordataroomserializer.data
+                        else:
+                            raise InvestError(code=20071, msg=supportordataroomserializer.errors)
+                elif dataroomtype == 3:
+                    dataroomdata = {'proj': projid, 'datasource': request.user.datasource.id,
+                                    'createuser': createuser,'createdtime':createdtime}
+                    investordataroom = self.get_queryset().filter(proj=proj, user_id=investorid, trader_id=traderid,investor_id=investorid)
+                    if investordataroom.exists():
+                        responsedic = DataroomCreateSerializer(investordataroom.first()).data
+                    else:
+                        dataroomdata['user'] = None
+                        dataroomdata['isPublic'] = False
+                        dataroomdata['investor'] = investorid
+                        dataroomdata['trader'] = traderid
+                        investordataroomserializer = DataroomCreateSerializer(data=dataroomdata)
+                        if investordataroomserializer.is_valid():
+                            investordata = investordataroomserializer.save()
+                            userlist = [investordata.investor, investordata.trader, investordata.createuser, investordata.proj.makeUser,
+                                        investordata.proj.takeUser, investordata.proj.supportUser]
+                            for user in userlist:
+                                add_perm('dataroom.user_getdataroom', user, investordata)
+                            add_perm('dataroom.user_changedataroom', investordata.investor, investordata)
+                            responsedic = investordataroomserializer.data
+                        else:
+                            raise InvestError(code=20071,msg=investordataroomserializer.errors)
+                else:
+                    responsedic = None
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(responsedic, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -429,6 +518,14 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             else:
                 raise InvestError(code=20072)
             data['createuser'] = request.user.id
+            # createdtime = data.pop('createdtime', None)
+            # if createdtime not in ['None', None, u'None', 'none']:
+            #     data['createdtime'] = datetime.datetime.strptime(createdtime.encode('utf-8')[0:19], "%Y-%m-%d %H:%M:%S")
+            # else:
+            #     data['createdtime'] = datetime.datetime.now()
+            # lastmodifytime = data.pop('lastmodifytime', None)
+            # if lastmodifytime not in ['None', None, u'None', 'none']:
+            #     data['lastmodifytime'] = datetime.datetime.strptime(lastmodifytime.encode('utf-8')[0:19], "%Y-%m-%d %H:%M:%S")
             data['datasource'] = request.user.datasource.id
             if data.get('parent', None):
                 parentfile = self.get_object(data['parent'])

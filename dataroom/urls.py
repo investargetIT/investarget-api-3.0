@@ -21,11 +21,14 @@ dataroomfile = views.DataroomdirectoryorfileView.as_view({
 })
 
 
+# dataroomadddata = views.DataroomView.as_view({
+#     'post':'addDataroom'
+# })
 
 
 urlpatterns = [
     url(r'^$', dataroom,name='dataroom-list',),
     url(r'^(?P<pk>\d+)/$', dataroom_one,name='dataroom-detail'),
     url(r'^file/$', dataroomfile,name='dataroom-fileordirectory'),
-
+    # url(r'^add/$', dataroomadddata, name='dataroom-add-dataroom'),
 ]

@@ -128,6 +128,23 @@ class TimelineView(viewsets.ModelViewSet):
             timelinedata = data.pop('timelinedata', None)
             statudata = data.pop('statusdata', None)
             lang = request.GET.get('lang')
+            # if data.get('createuser', None) is None:
+            #     data['createuser'] = request.user.id
+            # closeDate = timelinedata.pop('closeDate', None)
+            # if closeDate not in ['None', None, u'None', 'none']:
+            #     timelinedata['closeDate'] = datetime.datetime.strptime(closeDate.encode('utf-8')[0:19], "%Y-%m-%d %H:%M:%S")
+            # createdtime = timelinedata.pop('createdtime', None)
+            # if createdtime not in ['None', None, u'None', 'none']:
+            #     timelinedata['createdtime'] = datetime.datetime.strptime(createdtime.encode('utf-8')[0:19],
+            #                                                              "%Y-%m-%d %H:%M:%S")
+            # turnoverTime = timelinedata.pop('turnoverTime', None)
+            # if turnoverTime not in ['None', None, u'None', 'none']:
+            #     timelinedata['turnoverTime'] = datetime.datetime.strptime(turnoverTime.encode('utf-8')[0:19],
+            #                                                              "%Y-%m-%d %H:%M:%S")
+            # contractedServiceTime = timelinedata.pop('contractedServiceTime', None)
+            # if contractedServiceTime not in ['None', None, u'None', 'none']:
+            #     timelinedata['contractedServiceTime'] = datetime.datetime.strptime(contractedServiceTime.encode('utf-8')[0:19],
+            #                                                              "%Y-%m-%d %H:%M:%S")
             timelinedata['createuser'] = request.user.id
             timelinedata['datasource'] = request.user.datasource_id
             if timelinedata.get('isClose', None) in ['true','True','1',1,'Yes','yes']:
@@ -139,6 +156,10 @@ class TimelineView(viewsets.ModelViewSet):
                     if statudata:
                         statudata['timeline'] = newtimeline.id
                         statudata['datasource'] = request.user.datasource_id
+                        # inDate = statudata.pop('inDate', None)
+                        # if inDate not in ['None', None, u'None', 'none']:
+                        #     timelinedata['inDate'] = datetime.datetime.strptime(inDate.encode('utf-8')[0:19],
+                        #                                                              "%Y-%m-%d %H:%M:%S")
                         timelinestatu = TimeLineStatuCreateSerializer(data=statudata)
                         if timelinestatu.is_valid():
                            timelinestatu.save()
@@ -418,6 +439,14 @@ class TimeLineRemarkView(viewsets.ModelViewSet):
         else:
             raise InvestError(code=20072)
         data['createuser'] = request.user.id
+        # if data.get('createuser',None) is None:
+        #     data['createuser'] = request.user.id
+        # createdtime = data.pop('createdtime',None)
+        # if createdtime not in ['None', None, u'None', 'none']:
+        #     data['createdtime'] = datetime.datetime.strptime(createdtime.encode('utf-8')[0:19], "%Y-%m-%d %H:%M:%S")
+        # lastmodifytime = data.pop('lastmodifytime', None)
+        # if lastmodifytime not in ['None', None, u'None', 'none']:
+        #     data['lastmodifytime'] = datetime.datetime.strptime(lastmodifytime.encode('utf-8')[0:19], "%Y-%m-%d %H:%M:%S")
         data['datasource'] = request.user.datasource.id
         try:
             with transaction.atomic():
