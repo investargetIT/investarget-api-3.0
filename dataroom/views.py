@@ -88,7 +88,7 @@ class DataroomView(viewsets.ModelViewSet):
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
             if not userid and not isPublic:
-                queryset = queryset.filter(isPublic=False).exclude(trader__isnull=True,investor__isnull=True)
+                queryset = queryset.filter(isPublic=False).exclude(Q(trader__isnull=True) | Q(investor__isnull=True))
             sort = request.GET.get('sort')
             if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
                 queryset = queryset.order_by('-lastmodifytime', '-createdtime')

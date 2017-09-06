@@ -102,6 +102,8 @@ class project(models.Model):
         )
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
+        if not self.createdtime:
+            self.createdtime = datetime.datetime.now()
         if not self.datasource or not self.createuser or self.datasource != self.createuser.datasource:
             raise InvestError(code=8888,msg='项目datasource不合法')
         if self.pk:
@@ -137,6 +139,8 @@ class projServices(models.Model):
         db_table = "project_services"
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
+        if not self.createdtime:
+            self.createdtime = datetime.datetime.now()
         super(projServices,self).save(force_insert,force_update,using,update_fields)
 
 class finance(models.Model):
@@ -170,6 +174,8 @@ class finance(models.Model):
         db_table = 'projectFinance'
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
+        if not self.createdtime:
+            self.createdtime = datetime.datetime.now()
         if not self.datasource or self.datasource != self.proj.datasource:
             raise InvestError(code=8888,msg='项目财务信息datasource不合法')
         super(finance,self).save(force_insert,force_update,using,update_fields)
@@ -192,6 +198,8 @@ class attachment(models.Model):
         db_table = 'projectAttachment'
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
+        if not self.createdtime:
+            self.createdtime = datetime.datetime.now()
         super(attachment,self).save(force_insert,force_update,using,update_fields)
 
 class projectTags(models.Model):

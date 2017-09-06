@@ -44,6 +44,8 @@ class timeline(models.Model):
         return self.timeline_transationStatus.all().filter(isActive=True,is_deleted=False)
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
+        if not self.createdtime:
+            self.createdtime = datetime.datetime.now()
         if self.datasource:
             pass
         else:
@@ -107,6 +109,8 @@ class timelineTransationStatu(models.Model):
         db_table = 'timelineTransationStatus'
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
+        if not self.createdtime:
+            self.createdtime = datetime.datetime.now()
         if self.timeline.isClose:
             raise InvestError(6004)
         if self.alertCycle:
@@ -140,6 +144,8 @@ class timelineremark(models.Model):
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
+        if not self.createdtime:
+            self.createdtime = datetime.datetime.now()
         if self.pk:
             if self.is_deleted:
                 rem_perm('timeline.user_getlineremark', self.createuser, self)
