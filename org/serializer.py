@@ -13,7 +13,7 @@ class OrgSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = organization
-        fields = ('id','orgnameC','orgnameE','orgcode','orgstatus',)
+        fields = ('id','orgnameC','orgnameE','stockcode','orgstatus',)
 
 
 
@@ -39,12 +39,9 @@ class OrgTransactionPhaseSerializer(serializers.ModelSerializer):
 
 class OrgDetailSerializer(serializers.ModelSerializer):
     orgtransactionphase = serializers.SerializerMethodField()
-    # orgtransactionphase = OrgTransactionPhaseSerializer(source='org_orgTransactionPhases',many=True)
-
 
     class Meta:
         model = organization
-        # fields = ('id','orgnameC','orgnameE','industry','currency','decisionCycle','orgcode','orgtransactionphase','orgtype',)
         depth = 1
         exclude = ('datasource', 'createuser', 'createdtime','is_deleted','deleteduser','deletedtime','lastmodifyuser','lastmodifytime',)
 

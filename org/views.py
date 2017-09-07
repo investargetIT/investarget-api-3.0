@@ -44,7 +44,7 @@ class OrganizationView(viewsets.ModelViewSet):
     filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
     queryset = organization.objects.filter(is_deleted=False)
     filter_class = OrganizationFilter
-    search_fields = ('orgnameC','orgnameE','orgcode','org_users__orgarea__nameC','org_users__orgarea__nameE')
+    search_fields = ('orgnameC','orgnameE','stockcode','org_users__orgarea__nameC','org_users__orgarea__nameE')
     serializer_class = OrgDetailSerializer
     redis_key = 'organization'
 

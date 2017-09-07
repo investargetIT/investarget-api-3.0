@@ -7,11 +7,11 @@ from rest_framework import viewsets
 
 from sourcetype.models import Tag, TitleType, DataSource,Country,Industry, TransactionType, \
     TransactionPhases, OrgArea, CurrencyType, OrgType, CharacterType, ProjectStatus, TransactionStatus, orgtitletable, \
-    webmenu, Service
+    webmenu, Service, OrgAttribute
 from sourcetype.serializer import tagSerializer, countrySerializer, industrySerializer, \
     titleTypeSerializer, DataSourceSerializer, orgAreaSerializer, transactionTypeSerializer, transactionPhasesSerializer, \
     currencyTypeSerializer, orgTypeSerializer, characterTypeSerializer, ProjectStatusSerializer, \
-    transactionStatuSerializer, OrgtitletableSerializer, WebMenuSerializer, serviceSerializer
+    transactionStatuSerializer, OrgtitletableSerializer, WebMenuSerializer, serviceSerializer, orgAttributeSerializer
 from utils.customClass import  JSONResponse, InvestError
 from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, returnListChangeToLanguage
 
@@ -32,7 +32,7 @@ class TagView(viewsets.ModelViewSet):
             lang = request.GET.get('lang')
             source = request.META.get('HTTP_SOURCE', 1)
             queryset = self.filter_queryset(self.get_queryset()).filter(datasource=source)
-            serializer = tagSerializer(queryset, many=True)
+            serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -72,7 +72,7 @@ class ProjectStatusView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             queryset = self.filter_queryset(self.get_queryset())
-            serializer = ProjectStatusSerializer(queryset, many=True)
+            serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -92,7 +92,7 @@ class ServiceView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             queryset = self.filter_queryset(self.get_queryset())
-            serializer = serviceSerializer(queryset, many=True)
+            serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -127,7 +127,7 @@ class CountryView(viewsets.ModelViewSet):
             lang = request.GET.get('lang')
             source = request.META.get('HTTP_SOURCE',1)
             queryset = self.filter_queryset(self.get_queryset()).filter(datasource=source)
-            serializer = countrySerializer(queryset, many=True)
+            serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -160,7 +160,7 @@ class CharacterTypeView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             queryset = self.filter_queryset(self.get_queryset())
-            serializer = characterTypeSerializer(queryset, many=True)
+            serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -184,7 +184,7 @@ class IndustryView(viewsets.ModelViewSet):
             lang = request.GET.get('lang')
             source = request.META.get('HTTP_SOURCE', 1)
             queryset = self.filter_queryset(self.get_queryset()).filter(datasource=source)
-            serializer = industrySerializer(queryset, many=True)
+            serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -204,7 +204,7 @@ class TitleView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             queryset = self.filter_queryset(self.get_queryset())
-            serializer = titleTypeSerializer(queryset, many=True)
+            serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -226,7 +226,7 @@ class DatasourceView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             queryset = self.filter_queryset(self.get_queryset())
-            serializer = DataSourceSerializer(queryset, many=True)
+            serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -248,7 +248,7 @@ class OrgAreaView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             queryset = self.filter_queryset(self.get_queryset())
-            serializer = orgAreaSerializer(queryset, many=True)
+            serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -267,7 +267,7 @@ class TransactionTypeView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             queryset = self.filter_queryset(self.get_queryset())
-            serializer = transactionTypeSerializer(queryset, many=True)
+            serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -287,7 +287,7 @@ class TransactionPhasesView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             queryset = self.filter_queryset(self.get_queryset())
-            serializer = transactionPhasesSerializer(queryset, many=True)
+            serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -307,7 +307,7 @@ class TransactionStatusView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             queryset = self.filter_queryset(self.get_queryset())
-            serializer = transactionStatuSerializer(queryset, many=True)
+            serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -348,12 +348,31 @@ class CurrencyTypeView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             queryset = self.filter_queryset(self.get_queryset())
-            serializer = currencyTypeSerializer(queryset, many=True)
+            serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+class OrgAttributeView(viewsets.ModelViewSet):
+    """
+        list:获取所有机构属性
+        create:新增机构属性
+    """
+    queryset = OrgAttribute.objects.all().filter(is_deleted=False)
+    serializer_class = orgAttributeSerializer
+    def list(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = self.serializer_class(queryset, many=True)
+            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
 
 class OrgtitletableView(viewsets.ModelViewSet):
     """
@@ -368,7 +387,7 @@ class OrgtitletableView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             queryset = self.filter_queryset(self.get_queryset())
-            serializer = OrgtitletableSerializer(queryset, many=True)
+            serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))

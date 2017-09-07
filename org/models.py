@@ -7,7 +7,7 @@ import sys
 from django.db.models import Q
 from guardian.shortcuts import assign_perm, remove_perm
 
-from sourcetype.models import AuditStatus, OrgType , TransactionPhases,CurrencyType, Industry, DataSource
+from sourcetype.models import AuditStatus, OrgType , TransactionPhases,CurrencyType, Industry, DataSource, OrgAttribute
 from usersys.models import MyUser
 from utils.customClass import InvestError, MyForeignKey
 
@@ -26,8 +26,16 @@ class organization(models.Model):
     decisionMakingProcess = models.TextField(blank=True,null=True)
     orgnameC = models.CharField(max_length=128,blank=True,null=True)
     orgnameE = models.CharField(max_length=128,blank=True,null=True)
-    orgcode = models.CharField(max_length=128,blank=True,null=True)
-    orgtype = MyForeignKey(OrgType,blank=True,null=True)
+    stockcode = models.CharField(max_length=128,blank=True,null=True,help_text='证券代码')
+    stockshortname = models.CharField(max_length=128,blank=True,null=True,help_text='证券简称')
+    launchdate = models.DateTimeField(blank=True,null=True,help_text='上市日期')
+    orgattribute = MyForeignKey(OrgAttribute,blank=True,null=True,help_text='机构属性（国有、民营、地方、中央）')
+    businessscope = models.TextField(blank=True,null=True,help_text='经营范围')
+    mainproductname = models.TextField(blank=True,null=True,help_text='主营产品名称')
+    mainproducttype = models.TextField(blank=True,null=True,help_text='主营产品类别')
+    totalemployees = models.IntegerField(blank=True,null=True,help_text='员工总数')
+    officeaddress = models.TextField(blank=True,null=True,help_text='办公地址')
+    orgtype = MyForeignKey(OrgType,blank=True,null=True,help_text='机构类型（基金、证券、上市公司）')
     transactionAmountF = models.BigIntegerField(blank=True,null=True)
     transactionAmountT = models.BigIntegerField(blank=True,null=True)
     weChat = models.CharField(max_length=32,blank=True,null=True)

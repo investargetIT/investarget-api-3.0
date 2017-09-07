@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from sourcetype.models import TransactionType, TransactionPhases, Specialty, School, OrgArea, Tag, Industry, CurrencyType, \
     AuditStatus, ProjectStatus, OrgType, FavoriteType, MessageType, ClientType, TitleType, Country, \
-    DataSource, TransactionStatus, webmenu, CharacterType, orgtitletable, Service
+    DataSource, TransactionStatus, webmenu, CharacterType, orgtitletable, Service, OrgAttribute
 
 
 class AuditStatusSerializer(serializers.ModelSerializer):
@@ -58,6 +58,11 @@ class countrySerializer(serializers.ModelSerializer):
             return 'https://o79atf82v.qnssl.com/' + '040.jpg'
         return 'https://o79atf82v.qnssl.com/' + obj.key
 
+
+class orgAttributeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrgAttribute
+        exclude = ('is_deleted',)
 
 class currencyTypeSerializer(serializers.ModelSerializer):
     class Meta:

@@ -164,6 +164,18 @@ class CurrencyType(models.Model):
     def __str__(self):
         return self.currencyC
 
+class OrgAttribute(models.Model):
+    '''
+    机构属性（地方国有，民营企业。。。）
+    '''
+    id = models.AutoField(primary_key=True)
+    attributeC = models.CharField(max_length=32,blank=True,null=True)
+    attributeE = models.CharField(max_length=128,blank=True,null=True)
+    is_deleted = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.attributeC
+
 
 class Industry(models.Model):
     '''
