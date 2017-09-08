@@ -1551,8 +1551,6 @@ def login(request):
                 raise InvestError(code=2003,msg='登录类型不可用')
             else:
                 raise InvestError(code=2001,msg='密码错误')
-        if user.userstatus_id != 2:
-            raise InvestError(20021)
         user.last_login = datetime.datetime.now()
         if not user.is_active:
             user.is_active = True
