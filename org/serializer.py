@@ -7,13 +7,13 @@ from sourcetype.serializer import transactionPhasesSerializer
 class OrgCommonSerializer(serializers.ModelSerializer):
     class Meta:
         model = organization
-        fields = ('id','orgnameC','orgnameE',)
+        fields = ('id','orgnameC','orgnameE','description')
 
 class OrgSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = organization
-        fields = ('id','orgnameC','orgnameE','stockcode','orgstatus',)
+        fields = ('id','orgnameC','orgnameE','stockcode','orgstatus','description')
 
 
 
