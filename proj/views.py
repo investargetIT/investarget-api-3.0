@@ -962,10 +962,6 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
             lang = request.GET.get('lang')
             userid = request.GET.get('user')
             traderid = request.GET.get('trader')
-            ftype = request.GET.get('favoritetype')
-            if not ftype or (not userid and not traderid):
-                if not request.user.has_perm('proj.admin_getfavorite'):
-                    raise InvestError(code=20072,msg='favoritetype and user cannot be null')
             if not page_size:
                 page_size = 10
             if not page_index:
@@ -979,13 +975,25 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
             if request.user.has_perm('proj.admin_getfavorite'):
                 pass
             else:
-                user = self.get_user(userid if userid else traderid)
-                if request.user == user:
-                    pass
-                elif request.user.has_perm('usersys.user_getfavorite',user):
-                    pass
+                if not userid and not traderid:
+                    queryset = queryset.filter(Q(user=request.user) |Q(trader=request.user))
+                elif userid and not traderid:
+                    user = self.get_user(userid)
+                    if not request.user.has_perm('usersys.user_getfavorite',user):
+                        raise InvestError(code=2009)
+                    else:
+                        queryset = queryset.filter(Q(trader=request.user) | Q(trader=None))
+                elif not userid and traderid:
+                    user = self.get_user(traderid)
+                    if not request.user.has_perm('usersys.user_getfavorite', user):
+                        raise InvestError(code=2009)
+                    else:
+                        queryset = queryset.filter(user=request.user)
                 else:
-                    raise InvestError(code=2009)
+                    if userid == request.user.id or traderid == request.user.id:
+                        pass
+                    else:
+                        raise InvestError(code=2009)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)

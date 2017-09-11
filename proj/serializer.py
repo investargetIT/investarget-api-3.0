@@ -116,6 +116,7 @@ class FavoriteCreateSerializer(serializers.ModelSerializer):
 
 class FavoriteSerializer(serializers.ModelSerializer):
     user = UserCommenSerializer()
+    trader = UserCommenSerializer()
     proj = ProjCommonSerializer()
     class Meta:
         model = favoriteProject

@@ -22,6 +22,7 @@ from django_filters import FilterSet
 
 class OrganizationFilter(FilterSet):
     stockcode = RelationFilter(filterstr='stockcode',lookup_method='in')
+    stockshortname = RelationFilter(filterstr='stockshortname',lookup_method='in')
     industrys = RelationFilter(filterstr='industry',lookup_method='in')
     currencys = RelationFilter(filterstr='currency',lookup_method='in')
     orgtransactionphases = RelationFilter(filterstr='orgtransactionphase',lookup_method='in',relationName='org_orgTransactionPhases__is_deleted')
@@ -32,7 +33,7 @@ class OrganizationFilter(FilterSet):
     trader = RelationFilter(filterstr='org_users__investor_relations__traderuser',lookup_method='in',relationName='org_users__investor_relations__is_deleted')
     class Meta:
         model = organization
-        fields = ['orgstatus','currencys','industrys','orgtransactionphases','orgtypes','tags','area','trader','stockcode']
+        fields = ['orgstatus','currencys','industrys','orgtransactionphases','orgtypes','tags','area','trader','stockcode','stockshortname']
 
 class OrganizationView(viewsets.ModelViewSet):
     """
