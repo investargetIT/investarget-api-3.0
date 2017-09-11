@@ -157,6 +157,9 @@ class OrganizationView(viewsets.ModelViewSet):
         lang = request.GET.get('lang')
         data['createuser'] = request.user.id
         data['datasource'] = request.user.datasource.id
+        IPOdate = data.pop('IPOdate', None)
+        if IPOdate not in ['None', None, u'None', 'none']:
+            data['IPOdate'] = datetime.datetime.strptime(IPOdate[0:10],'%Y-%m-%d')
         try:
             with transaction.atomic():
                 orgTransactionPhases = data.pop('orgtransactionphase', None)
@@ -208,6 +211,9 @@ class OrganizationView(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         data = request.data
         lang = request.GET.get('lang')
+        IPOdate = data.pop('IPOdate', None)
+        if IPOdate not in ['None', None, u'None', 'none']:
+            data['IPOdate'] = datetime.datetime.strptime(IPOdate[0:10], '%Y-%m-%d')
         data['lastmodifyuser'] = request.user.id
         data['lastmodifytime'] = datetime.datetime.now()
         try:

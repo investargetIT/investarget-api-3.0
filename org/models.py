@@ -29,6 +29,7 @@ class organization(models.Model):
     stockcode = models.CharField(max_length=128,blank=True,null=True,help_text='证券代码')
     stockshortname = models.CharField(max_length=128,blank=True,null=True,help_text='证券简称')
     IPOdate = models.DateTimeField(blank=True,null=True,help_text='上市日期')
+    marketvalue = models.BigIntegerField(blank=True,null=True,help_text='总市值')
     orgattribute = MyForeignKey(OrgAttribute,blank=True,null=True,help_text='机构属性（国有、民营、地方、中央）')
     businessscope = models.TextField(blank=True,null=True,help_text='经营范围')
     mainproductname = models.TextField(blank=True,null=True,help_text='主营产品名称')

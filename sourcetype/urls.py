@@ -62,7 +62,10 @@ orgtype = views.OrgTypeView.as_view({
         # 'post':'create',
 })
 
-
+orgAttribute = views.OrgAttributeView.as_view({
+        'get': 'list',
+        # 'post':'create',
+})
 
 transactionType = views.TransactionTypeView.as_view({
         'get': 'list',
@@ -98,6 +101,8 @@ urlpatterns = [
     url(r'^tag$', tag,name='tagsource',),
 
     url(r'^service', service,name='servicesource',),
+
+    url(r'^orgAttribute', orgAttribute,name='orgAttributesource',),
 
     url(r'^projstatus$', projstatus, name='projstatus', ),
 
