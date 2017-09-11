@@ -109,7 +109,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     ishasfundorplan = models.TextField(help_text='是否有产业基金或成立计划', blank=True, default='是否有产业基金或成立计划')
     IR = MyForeignKey('self',blank=True,null=True,help_text='IR')
     registersource = models.SmallIntegerField(help_text='注册来源',choices=registersourcechoice,default=1)
-    lastmodifytime = models.DateTimeField(blank=True,null=True)
+    lastmodifytime = models.DateTimeField(auto_now=True,null=True)
     lastmodifyuser = MyForeignKey('self',help_text='修改者',blank=True,null=True,related_name='usermodify_users',related_query_name='user_modifyuser',on_delete=models.SET_NULL)
     is_staff = models.BooleanField(help_text='登录admin', default=False, blank=True,)
     is_active = models.BooleanField(help_text='是否活跃', default=True, blank=True,)
@@ -439,7 +439,7 @@ class UserFriendship(models.Model):
             ('admin_deletefriend', u'管理员删除用户好友关系'),
             ('admin_getfriend', u'管理员查看用户好友关系'),
 
-            ('user_addfriend', u'用户建立用户好友关系（未审核用户不要给）'),
+            ('user_addfriend', u'用户主动建立用户好友关系（未审核用户不要给）'),
         )
 
     def save(self, *args, **kwargs):
@@ -451,8 +451,6 @@ class UserFriendship(models.Model):
             raise InvestError(2016)
         if not self.accepttime and self.isaccept:
             self.accepttime = datetime.datetime.now()
-        if self.user.userstatus_id != 2 or self.friend.userstatus_id != 2:
-            raise InvestError(2022,msg='未审核用户不能添加好友')
         if not self.pk:
             if UserFriendship.objects.filter(Q(user=self.user,friend=self.friend,is_deleted=False) | Q(friend=self.user,user=self.friend,is_deleted=False)).exists():
                 raise InvestError(2017)

@@ -9,38 +9,31 @@ from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.message_xsend import M
 from rest_framework.decorators import api_view, throttle_classes
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 from third.models import MobileAuthCode
-from third.thirdconfig import MAIL_CONFIGS, MESSAGE_CONFIGS, INTERNATIONALMESSAGE_CONFIGS
+from third.thirdconfig import MAIL_CONFIGS, MESSAGE_CONFIGS, INTERNATIONALMESSAGE_CONFIGS, SMSCODE_projectsign
 from utils.customClass import JSONResponse, InvestError
 from utils.util import SuccessResponse, catchexcption, ExceptionResponse, InvestErrorResponse, checkIPAddress
 
 
 
 
-'''
-注册短信验证码模板
-'''
-SMSCODE_projectsign = {'1':'WzSYg','2':'tybmL4'}
 
-
-
-
-@api_view(['POST'])
-def sendEmail(request):
-    try:
-        destination = request.data.get('destination')
-        projectsign = 'evsM7'
-        varsdict = {'NameC':'c','NameE':'e'}
-        response = xsendEmail(destination,projectsign,varsdict)
-        if response.get('status'):
-            pass
-        else:
-            raise InvestError(code=3002,msg=response)
-        return JSONResponse(SuccessResponse(response))
-    except InvestError as err:
-            return JSONResponse(InvestErrorResponse(err))
-    except Exception:
-        catchexcption(request)
-        return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+# @api_view(['POST'])
+# def sendEmail(request):
+#     try:
+#         destination = request.data.get('destination')
+#         projectsign = 'evsM7'
+#         varsdict = {'NameC':'c','NameE':'e'}
+#         response = xsendEmail(destination,projectsign,varsdict)
+#         if response.get('status'):
+#             pass
+#         else:
+#             raise InvestError(code=3002,msg=response)
+#         return JSONResponse(SuccessResponse(response))
+#     except InvestError as err:
+#             return JSONResponse(InvestErrorResponse(err))
+#     except Exception:
+#         catchexcption(request)
+#         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 def xsendEmail(destination,projectsign,vars=None):
     '''

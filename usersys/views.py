@@ -1259,10 +1259,12 @@ class UserFriendshipView(viewsets.ModelViewSet):
             if request.user.has_perm('usersys.admin_addfriend'):
                 if data.get('user',None) is None:
                     data['user'] = request.user.id
-            else:
+            elif request.user.has_perm('usersys.user_addfriend'):
                 data['user'] = request.user.id
                 data['isaccept'] = False
                 data['accepttime'] = None
+            else:
+                raise InvestError(2009)
             with transaction.atomic():
                 newfriendlist = []
                 sendmessagelist = []

@@ -74,6 +74,8 @@ class dataroom(models.Model):
             raise InvestError(5003,msg='项目尚未终审发布')
         if self.proj.supportUser and self.proj.supportUser == self.investor:
             raise InvestError(7003,msg='项目上传者不能作为投资人')
+        if self.trader.userstatus_id != 2 or self.investor.userstatus_id != 2:
+            raise InvestError(2022)
         if self.pk:
             if self.isPublic == False and self.user is None:
                 if self.is_deleted:
