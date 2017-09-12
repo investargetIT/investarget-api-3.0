@@ -406,7 +406,7 @@ class OrgRemarkView(viewsets.ModelViewSet):
                 raise InvestError(code=2009)
         else:
             raise InvestError(code=20072)
-        # data['createuser'] = request.user.id
+        data['createuser'] = request.user.id
         data['datasource'] = request.user.datasource.id
         try:
             with transaction.atomic():
