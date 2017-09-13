@@ -49,10 +49,9 @@ class RelationFilter(Filter):
 
 class MyForeignKey(models.ForeignKey):
     def get_extra_descriptor_filter(self,instance):
-        if hasattr(instance,'is_deleted'):
-            return {'is_deleted':False}
+        # if hasattr(instance,'is_deleted'):
+        #     return {'is_deleted':False}
         return {}
-
 
 
 class MyUploadProgressRecorder(UploadProgressRecorder):
