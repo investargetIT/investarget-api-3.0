@@ -160,7 +160,7 @@ def checkConformType(data,type):
         raise InvestError(2007,msg='data type error')
 
 def returnDictChangeToLanguage(dictdata,lang=None):
-    newdict = {}
+    newdict = {'timezone':'+08:00'}
     if lang == 'en':
         for key,value in dictdata.items():
             if key[-1] == 'E' and dictdata.has_key(key[0:-1]+'C'):
