@@ -1,6 +1,8 @@
 from django.db import models
 from django.http import HttpResponse
 from qiniu.services.storage.upload_progress_recorder import UploadProgressRecorder
+from rest_framework import throttling
+from rest_framework.compat import is_authenticated
 from rest_framework.permissions import BasePermission
 from rest_framework.renderers import JSONRenderer
 
@@ -46,6 +48,19 @@ class RelationFilter(Filter):
             return qs.filter(**{'%s__%s' % (self.filterstr, self.lookup_method): value}).distinct()
 
 
+# class AppEventRateThrottle(throttling.SimpleRateThrottle):
+#     scope = 'getProjectPDF'
+#
+#     def get_cache_key(self, request, view):
+#         if is_authenticated(request.user):
+#             ident = request.user.pk
+#         else:
+#             ident = self.get_ident(request)
+#
+#         return self.cache_format % {
+#             'scope': self.scope,
+#             'ident': ident
+#         }
 
 class MyForeignKey(models.ForeignKey):
     def get_extra_descriptor_filter(self,instance):

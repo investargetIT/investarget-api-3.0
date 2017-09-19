@@ -476,6 +476,7 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
+            lang = request.GET.get('lang',None)
             dataroomid = request.GET.get('dataroom',None)
             queryset = self.filter_queryset(self.get_queryset())
             if dataroomid and isinstance(dataroomid,(int,str,unicode)):
@@ -492,7 +493,7 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
                 raise InvestError(code=20072,msg='dataroom 不能空')
             count = queryset.count()
             serializer = DataroomdirectoryorfileSerializer(queryset, many=True)
-            return JSONResponse(SuccessResponse({'count':count,'data':serializer.data,}))
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:

@@ -1593,14 +1593,21 @@ def maketoken(user,clienttype):
     }
 
 
-def testsendmsg(request):
-    # print datetime.datetime.now()
-    # sendmessage_userauditstatuchange(MyUser.objects.get(id=8),MyUser.objects.get(id=8),['app'])
-    # print datetime.datetime.now()
-    # with open('/Users/investarget/Desktop/django_server/qiniu_uploadprogress/5qC86JOd54m5546v5L+d5bel56iL77yI5YyX5LqsKeaciemZkOWFrOWPuOW3peWVhuaho+ahiOi1hOaWmS3miKrmraIyMDE2LTA3LTEyLnBkZi.moLzok53nibnnjq.kv53lt6XnqIvvvIjljJfkuqwp5pyJ6ZmQ5YWs5Y+45bel5ZWG5qGj5qGI6LWE5paZLeaIquatojIwMTYtMDctMTIucGRm', 'w') as f:
-    #     import json
-    #     json.dump('aaaa', f)
-
-    getAllProjectsNeedToSendMail()
-    # sendEmailToUser()
-    return JSONResponse({'xxx':'sss'})
+# def testsendmsg(request):
+#     # id = request.GET.get('id')
+#     # lang = request.GET.get('lang', 'cn')
+#     # proj = project.objects.get(id=id)
+#     # index = 'proj_template_cn.html'
+#     # aaa = {
+#     #     'project':ProjDetailSerializer_user_withoutsecretinfo(proj).data,
+#     #     'finance':FinanceSerializer(proj.proj_finances.filter(is_deleted=False),many=True).data
+#     # }
+#     # res = render(request, index, aaa)
+#     # datenow1 = django.utils.timezone.now()
+#     # print datenow1
+#     # datenow2 = datetime.datetime.now()
+#     # print datenow2
+#     # orgremark = orgRemarks.objects.get(id=694)
+#     # orgremark.deletedtime = datenow1
+#     # orgremark.save()
+#     return JSONResponse({'da':datenow1,'da2':datenow2})

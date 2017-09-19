@@ -4,6 +4,8 @@ import traceback
 
 import datetime
 
+import requests
+from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.mail_send import MAILSend
 from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.mail_xsend import MAILXsend
 from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.message_xsend import MESSAGEXsend
 from rest_framework.decorators import api_view, throttle_classes
@@ -34,6 +36,23 @@ from utils.util import SuccessResponse, catchexcption, ExceptionResponse, Invest
 #     except Exception:
 #         catchexcption(request)
 #         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+def sendEmail(destination,subject,text,attachmentpath=None):
+    data = {'appid':MAIL_CONFIGS['appid'],
+            'to':destination,
+            'subject':subject,
+            'text':text,
+            'from':MAIL_CONFIGS['from'],
+            'signature':MAIL_CONFIGS['appkey'],
+            }
+    files = None
+    if attachmentpath:
+        files = {'attachments': open(attachmentpath)}
+    res = requests.post('https://api.mysubmail.com/mail/send.json',data,files=files).content
+    return res
+
+
+
 
 def xsendEmail(destination,projectsign,vars=None):
     '''

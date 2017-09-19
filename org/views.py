@@ -159,7 +159,7 @@ class OrganizationView(viewsets.ModelViewSet):
         data['createuser'] = request.user.id
         data['datasource'] = request.user.datasource.id
         IPOdate = data.pop('IPOdate', None)
-        if IPOdate not in ['None', None, u'None', 'none']:
+        if IPOdate not in ['None', None, u'None', 'none','',' ']:
             data['IPOdate'] = datetime.datetime.strptime(IPOdate[0:10],'%Y-%m-%d')
         try:
             with transaction.atomic():
@@ -178,7 +178,7 @@ class OrganizationView(viewsets.ModelViewSet):
                     add_perm('org.user_getorg', org.createuser, org)
                     add_perm('org.user_changeorg', org.createuser, org)
                     add_perm('org.user_deleteorg', org.createuser, org)
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgSerializer(org).data,lang)))
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgDetailSerializer(org).data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:

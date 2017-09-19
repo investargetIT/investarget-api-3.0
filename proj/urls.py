@@ -42,6 +42,9 @@ getshareproj = views.ProjectView.as_view({
         'get':'getshareprojdetail'
 })
 
+getprojpdf = views.ProjectView.as_view({
+        'get':'sendPDFMail'
+})
 
 urlpatterns = [
         url(r'^$', proj_list , name='proj_list'),
@@ -50,5 +53,7 @@ urlpatterns = [
         url(r'^attachment/$', proj_attachment, name='proj_attachment'),
         url(r'^favorite/$' , userfavorite_proj,name='user_favoriteproj'),
         url(r'^share/(?P<pk>\d+)/$',getshareprojtoken,name='getshareprojtoken'),
-        url(r'^shareproj/$',getshareproj,name='getshareprojdetail')
+        url(r'^shareproj/$',getshareproj,name='getshareprojdetail'),
+        url(r'^pdf/(?P<pk>\d+)/$',getprojpdf,name='getprojpdf'),
+        url(r'^test/$',views.testPdf),
 ]

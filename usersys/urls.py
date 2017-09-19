@@ -119,5 +119,5 @@ urlpatterns = [
     url(r'^unuser/(?P<pk>\d+)/$', unreachuser_deteil, name='unreachuser_-detail'),
     url(r'^remark/$',userremark_list, name='userremark-list'),
     url(r'^remark/(?P<pk>\d+)/$', userremark_detail, name='userremark-detail'),
-    url(r'^test/$',views.testsendmsg)
+    # url(r'^test/$',views.testsendmsg)
 ]

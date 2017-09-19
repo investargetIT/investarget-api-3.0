@@ -1,10 +1,14 @@
 #coding=utf-8
+import os
 import traceback
+
+import pdfkit
 from django.core.paginator import Paginator, EmptyPage
 from django.db import models,transaction
 from django.db.models import Q,QuerySet
 from django.core.exceptions import FieldDoesNotExist
-from django.db.models.fields.reverse_related import ForeignObjectRel
+from django.http import HttpResponse
+from django.shortcuts import render
 from rest_framework import filters, viewsets
 import datetime
 
@@ -12,16 +16,17 @@ from rest_framework.decorators import detail_route
 
 from APIlog.views import viewprojlog
 from dataroom.views import pulishProjectCreateDataroom
+from invest.settings import PROJECTPDF_URLPATH
 from proj.models import project, finance, projectTags, projectIndustries, projectTransactionType, favoriteProject, \
     ShareToken, attachment, projServices
 from proj.serializer import ProjSerializer, FinanceSerializer, ProjCreatSerializer, \
     ProjCommonSerializer, FinanceChangeSerializer, FinanceCreateSerializer, FavoriteSerializer, \
     FavoriteCreateSerializer, ProjAttachmentSerializer, ProjListSerializer_admin , ProjListSerializer_user, \
     ProjDetailSerializer_admin_withoutsecretinfo, ProjDetailSerializer_admin_withsecretinfo, ProjDetailSerializer_user_withoutsecretinfo, \
-    ProjDetailSerializer_user_withsecretinfo, ProjAttachmentCreateSerializer, ProjServiceCreateSerializer, \
-    ProjIndustryCreateSerializer
+    ProjDetailSerializer_user_withsecretinfo, ProjAttachmentCreateSerializer, ProjIndustryCreateSerializer
 from sourcetype.models import Tag, Industry, TransactionType, DataSource, Service
 from third.views.qiniufile import deleteqiniufile
+from third.views.submail import sendEmail
 from usersys.models import MyUser
 from utils.sendMessage import sendmessage_favoriteproject, sendmessage_projectpublish
 from utils.util import catchexcption, read_from_cache, write_to_cache, loginTokenIsAvailable, returnListChangeToLanguage, \
@@ -486,6 +491,40 @@ class ProjectView(viewsets.ModelViewSet):
                     sharetoken = ShareToken(user=request.user,proj=proj)
                     sharetoken.save()
                 return JSONResponse(SuccessResponse(sharetoken.key))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @detail_route(methods=['get'])
+    @loginTokenIsAvailable()
+    def sendPDFMail(self, request, *args, **kwargs):
+        try:
+            destination = request.GET.get('to')
+            proj = self.get_object()
+            if proj.isHidden:
+                if request.user not in [proj.createuser,proj.takeUser,proj.makeUser,proj.supportUser]:
+                    raise InvestError(2009,msg='没有权限获取相关项目信息')
+            options = {
+                'dpi': 1400,
+                'page-size': 'A4',
+                'margin-top': '0.75in',
+                'margin-right': '0.75in',
+                'margin-bottom': '0.75in',
+                'margin-left': '0.75in',
+                'encoding': "UTF-8",
+                'no-outline': None,
+            }
+            pdfpath = 'P' + datetime.datetime.now().strftime('%Y%m%d%H%M%S') + '.pdf'
+            config = pdfkit.configuration(wkhtmltopdf='/usr/local/bin/wkhtmltopdf')
+            aaa = pdfkit.from_url(PROJECTPDF_URLPATH + str(proj.id), pdfpath, configuration=config, options=options)
+            if aaa:
+                res = sendEmail(destination=destination, subject='text', text='summer', attachmentpath=pdfpath)
+                os.remove(pdfpath)
+            else:
+                raise InvestError(50010,msg='pdf生成失败')
+            return JSONResponse(SuccessResponse(res))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -1089,3 +1128,17 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+def testPdf(request):
+    id = request.GET.get('id')
+    lang = request.GET.get('lang', 'cn')
+    proj = project.objects.get(id=id)
+    aaa = {
+        'project': ProjDetailSerializer_user_withoutsecretinfo(proj).data,
+        'finance': FinanceSerializer(proj.proj_finances.filter(is_deleted=False), many=True).data
+    }
+    if lang == 'cn':
+        res = render(request, 'proj_template_cn.html', aaa)
+    else:
+        res = render(request, 'proj_template_en.html', aaa)
+    return HttpResponse(res)

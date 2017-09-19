@@ -274,6 +274,10 @@ class UnreachUser(models.Model):
     datasource = MyForeignKey(DataSource, blank=True,default=1)
     class Meta:
         db_table = "unreachuser"
+    def save(self, *args, **kwargs):
+        if self.org.datasource != self.datasource:
+           raise InvestError(8888,msg='org 与 user非同源')
+        return super(UnreachUser, self).save(*args, **kwargs)
 
 
 class userTags(models.Model):
