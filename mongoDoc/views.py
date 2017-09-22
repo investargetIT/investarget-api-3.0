@@ -9,8 +9,9 @@ from django.core.paginator import Paginator, EmptyPage
 from mongoengine import Q
 from rest_framework import viewsets
 
-from mongoDoc.models import GroupEmailData, IMChatMessages
-from mongoDoc.serializers import GroupEmailDataSerializer, IMChatMessagesSerializer
+from mongoDoc.models import GroupEmailData, IMChatMessages, ProjectData, MergeFinanceData, CompanyCatData
+from mongoDoc.serializers import GroupEmailDataSerializer, IMChatMessagesSerializer, ProjectDataSerializer, \
+    MergeFinanceDataSerializer, CompanyCatDataSerializer
 from utils.customClass import JSONResponse, InvestError
 from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, catchexcption, logexcption, \
     loginTokenIsAvailable
@@ -19,8 +20,144 @@ APPID = '9845160'
 APIKEY = 'xxnuhuvogLrRR7jCH9vKh2Tt'
 APISECRET = 'pmnYqjuzEXpnzi96FbNlm4PxvWUw460y'
 
+class CompanyCatDataView(viewsets.ModelViewSet):
+    queryset = CompanyCatData.objects.all()
+    serializer_class = CompanyCatDataSerializer
+
+    def list(self, request, *args, **kwargs):
+        try:
+            p_cat_name = request.GET.get('p_cat_name')
+            queryset = self.queryset
+            if p_cat_name:
+                queryset = queryset(p_cat_name__icontains=p_cat_name)
+            count = queryset.count()
+            serializer = self.serializer_class(queryset,many=True)
+            return JSONResponse(SuccessResponse({'count':count,'data':serializer.data}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            serializer = self.serializer_class(data=data)
+            if serializer.is_valid():
+                serializer.save()
+            else:
+                raise InvestError(2001, msg=serializer.error_messages)
+            return JSONResponse(SuccessResponse(serializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
+class MergeFinanceDataView(viewsets.ModelViewSet):
+    queryset = MergeFinanceData.objects.all()
+    serializer_class = MergeFinanceDataSerializer
+    def list(self, request, *args, **kwargs):
+        try:
+            invsest_with = request.GET.get('invsest_with')
+            merger_with = request.GET.get('merger_with')
+            com_name = request.GET.get('com_name')
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.queryset
+            sort = request.GET.get('sort')
+            if invsest_with:
+                queryset = queryset(invsest_with__in=[invsest_with])
+            if merger_with:
+                queryset = queryset(merger_with__icontains=merger_with)
+            if com_name:
+                queryset = queryset(com_name__icontains=com_name)
+            if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
+                queryset = queryset.order_by('-date',)
+            else:
+                queryset = queryset.order_by('date',)
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = self.serializer_class(queryset,many=True)
+            return JSONResponse(SuccessResponse({'count':count,'data':serializer.data}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            serializer = self.serializer_class(data=data)
+            if serializer.is_valid():
+                serializer.save()
+            else:
+                raise InvestError(2001, msg=serializer.error_messages)
+            return JSONResponse(SuccessResponse(serializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+class ProjectDataView(viewsets.ModelViewSet):
+    queryset = ProjectData.objects.all()
+    serializer_class = ProjectDataSerializer
+    def list(self, request, *args, **kwargs):
+        try:
+            com_name = request.GET.get('com_name')
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.queryset
+            sort = request.GET.get('sort')
+            if com_name:
+                queryset = queryset(com_name__icontains=com_name)
+            if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
+                queryset = queryset.order_by('-com_born_date',)
+            else:
+                queryset = queryset.order_by('com_born_date',)
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = self.serializer_class(queryset,many=True)
+            return JSONResponse(SuccessResponse({'count':count,'data':serializer.data}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            serializer = self.serializer_class(data=data)
+            if serializer.is_valid():
+                serializer.save()
+            else:
+                raise InvestError(2001, msg=serializer.error_messages)
+            return JSONResponse(SuccessResponse(serializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
 class GroupEmailDataView(viewsets.ModelViewSet):
@@ -49,7 +186,7 @@ class GroupEmailDataView(viewsets.ModelViewSet):
                 queryset = queryset.page(page_index)
             except EmptyPage:
                 return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
-            serializer = GroupEmailDataSerializer(queryset,many=True)
+            serializer = self.serializer_class(queryset,many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':serializer.data}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))

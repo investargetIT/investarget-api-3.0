@@ -1,12 +1,23 @@
 from rest_framework_mongoengine.serializers import DynamicDocumentSerializer, DocumentSerializer, EmbeddedDocumentSerializer
 
-from mongoDoc.models import GroupEmailData, IMChatMessages
+from mongoDoc.models import GroupEmailData, IMChatMessages, ProjectData, MergeFinanceData, CompanyCatData
 
 
-# class WXContentDataSerializer(DocumentSerializer):
-#     class Meta:
-#         model = WXContentData
-#         fields = '__all__'
+class CompanyCatDataSerializer(DocumentSerializer):
+    class Meta:
+        model = CompanyCatData
+        fields = '__all__'
+
+
+class MergeFinanceDataSerializer(DocumentSerializer):
+    class Meta:
+        model = MergeFinanceData
+        fields = '__all__'
+
+class ProjectDataSerializer(DocumentSerializer):
+    class Meta:
+        model = ProjectData
+        fields = '__all__'
 
 class GroupEmailDataSerializer(DocumentSerializer):
     class Meta:

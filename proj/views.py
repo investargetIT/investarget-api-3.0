@@ -1129,6 +1129,7 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+
 def testPdf(request):
     id = request.GET.get('id')
     lang = request.GET.get('lang', 'cn')
