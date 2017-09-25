@@ -16,14 +16,12 @@ from utils.customClass import JSONResponse, InvestError
 from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, catchexcption, logexcption, \
     loginTokenIsAvailable
 
-APPID = '9845160'
-APIKEY = 'xxnuhuvogLrRR7jCH9vKh2Tt'
-APISECRET = 'pmnYqjuzEXpnzi96FbNlm4PxvWUw460y'
 
 class CompanyCatDataView(viewsets.ModelViewSet):
     queryset = CompanyCatData.objects.all()
     serializer_class = CompanyCatDataSerializer
 
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             p_cat_name = request.GET.get('p_cat_name')
@@ -39,6 +37,7 @@ class CompanyCatDataView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+    @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
@@ -58,6 +57,8 @@ class CompanyCatDataView(viewsets.ModelViewSet):
 class MergeFinanceDataView(viewsets.ModelViewSet):
     queryset = MergeFinanceData.objects.all()
     serializer_class = MergeFinanceDataSerializer
+
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             invsest_with = request.GET.get('invsest_with')
@@ -95,6 +96,7 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+    @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
@@ -113,6 +115,8 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
 class ProjectDataView(viewsets.ModelViewSet):
     queryset = ProjectData.objects.all()
     serializer_class = ProjectDataSerializer
+
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             com_name = request.GET.get('com_name')
@@ -144,6 +148,7 @@ class ProjectDataView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+    @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
@@ -163,6 +168,8 @@ class ProjectDataView(viewsets.ModelViewSet):
 class GroupEmailDataView(viewsets.ModelViewSet):
     queryset = GroupEmailData.objects.all()
     serializer_class = GroupEmailDataSerializer
+
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             projtitle = request.GET.get('title')
@@ -209,26 +216,6 @@ def readSendEmailDataFromMongo():
     start = datetime.datetime.now() - datetime.timedelta(hours=23, minutes=59, seconds=59)
     qs = GroupEmailData.objects.filter(savetime__gt=start)
     return GroupEmailDataSerializer(qs,many=True).data
-
-#
-# from aip import AipNlp
-# aipNlp = AipNlp(APPID, APIKEY, APISECRET)
-#
-# @api_view(['GET'])
-# def getBaiDuNLP_Accesstoken(request):
-#     text = '项目地区: 德国，欧洲 项目行业: 消费品 项目类型: 兼并收购 拟交易规模：$ 393,781,776 营业收入（2016）:  $ 273,583,923 EBITDA（2016）：$ 32,830,070'
-#     # result = aipNlp.depParser(text, {'mode': 0})
-#     # print 'depParser mode 0'
-#     # print result
-#     # result = aipNlp.depParser(text, {'mode': 1})
-#     # print '******\n'
-#     # print 'depParser mode 1'
-#     # print result
-#     # print '******'+'\n'+'lexer'
-#     result = aipNlp.lexer(text)
-#     print result
-#
-#     return JSONResponse({'ss':'ss'})
 
 
 class IMChatMessagesView(viewsets.ModelViewSet):

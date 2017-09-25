@@ -378,6 +378,8 @@ class TimeLineRemarkView(viewsets.ModelViewSet):
             obj = self.get_queryset().get(id=self.kwargs[lookup_url_kwarg])
         except timelineremark.DoesNotExist:
             raise InvestError(code=60021, msg='remark with this "%s" is not exist' % self.kwargs[lookup_url_kwarg])
+        if obj.datasource != self.request.user.datasource:
+            raise InvestError(code=8888,msg='资源非同源')
         return obj
 
     @loginTokenIsAvailable()

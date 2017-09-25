@@ -1023,11 +1023,7 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
                     else:
                         queryset = queryset.filter(Q(trader=request.user) | Q(trader=None))
                 elif not userid and traderid:
-                    user = self.get_user(traderid)
-                    if not request.user.has_perm('usersys.user_getfavorite', user):
-                        raise InvestError(code=2009)
-                    else:
-                        queryset = queryset.filter(user=request.user)
+                    queryset = queryset.filter(user=request.user,trader_id=traderid)
                 else:
                     if userid == request.user.id or traderid == request.user.id:
                         pass
