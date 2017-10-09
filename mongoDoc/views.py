@@ -58,12 +58,13 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
     queryset = MergeFinanceData.objects.all()
     serializer_class = MergeFinanceDataSerializer
 
-    @loginTokenIsAvailable()
+    # @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             invsest_with = request.GET.get('invsest_with')
             merger_with = request.GET.get('merger_with')
             com_name = request.GET.get('com_name')
+            com_id = request.GET.get('com_id')
             page_size = request.GET.get('page_size')
             page_index = request.GET.get('page_index')  # 从第一页开始
             if not page_size:
@@ -78,6 +79,8 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
                 queryset = queryset(merger_with__icontains=merger_with)
             if com_name:
                 queryset = queryset(com_name__icontains=com_name)
+            if com_id:
+                queryset = queryset(com_id=com_id)
             if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
                 queryset = queryset.order_by('-date',)
             else:
@@ -116,10 +119,12 @@ class ProjectDataView(viewsets.ModelViewSet):
     queryset = ProjectData.objects.all()
     serializer_class = ProjectDataSerializer
 
-    @loginTokenIsAvailable()
+    # @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             com_name = request.GET.get('com_name')
+            com_cat_name = request.GET.get('cat')
+            com_sub_cat_name = request.GET.get('sub_cat')
             page_size = request.GET.get('page_size')
             page_index = request.GET.get('page_index')  # 从第一页开始
             if not page_size:
@@ -130,6 +135,10 @@ class ProjectDataView(viewsets.ModelViewSet):
             sort = request.GET.get('sort')
             if com_name:
                 queryset = queryset(com_name__icontains=com_name)
+            if com_cat_name:
+                queryset = queryset(com_cat_name=com_cat_name)
+            if com_sub_cat_name:
+                queryset = queryset(com_sub_cat_name=com_sub_cat_name)
             if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
                 queryset = queryset.order_by('-com_born_date',)
             else:

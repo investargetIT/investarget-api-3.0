@@ -736,7 +736,7 @@ def sendmessage_usermakefriends(model,receiver,types,sender=None):
     :return: None
     """
     class sendmessage_usermakefriendsThread(threading.Thread):
-        def __init__(self, model, receiver, types, sender=None):
+        def __init__(self, model, receiver, types, sender = None):
             self.model = model
             self.receiver = receiver
             self.types = types
@@ -756,22 +756,13 @@ def sendmessage_usermakefriends(model,receiver,types,sender=None):
                     bdage = 1
                     n_extras = {}
                     pushnotification(content, receiver_alias, platform, bdage, n_extras)
-                if 'email' in types:
-                    destination = receiver.email
-                    projectsign = 'J6VK41'
-                    vars = {}
-                    xsendEmail(destination, projectsign, vars)
-                if 'sms' in types:
-                    destination = receiver.mobile
-                    projectsign = 'WzSYg'
-                    vars = {'code': 'sss', 'time': '10'}
-                    xsendSms(destination, projectsign, vars)
                 if 'webmsg' in types:
                     content = 'test 3.0 content'
                     title = 'test 3.0'
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
-    # sendmessage_usermakefriendsThread(model,receiver,types,sender).start()
+    # if receiver is not None:
+    #     sendmessage_usermakefriendsThread(model,receiver,types,sender).start()
 
 #暂无
 def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):

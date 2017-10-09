@@ -100,7 +100,7 @@ def jpush_v3(app_key, payload):
 def pushnotification(receiver_alias,content,platform,bdage,n_extras=None):
     # receiver_alias = data_dict.get('receiver_alias')
     # content = data_dict.get('content')
-    # platform = data_dict.get('platform')   #"ios,android,winphone"
+    # platform = data_dict.get('platform')   #"ios,android,winphone"  ["android", "ios"]
     # bdage = data_dict.get('bdage')
     # n_extras = data_dict.get('n_extras',{})
     # n_extras = {
