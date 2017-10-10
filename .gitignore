@@ -6,3 +6,15 @@ third/thirdconfig.py
 chatmsg
 chatmsg.gz
 requirements.txt
+APIlog/migrations/
+activity/migrations/
+dataroom/migrations/
+emailmanage/migrations/
+mongoDoc/migrations/
+msg/migrations/
+org/migrations/
+proj/migrations/
+sourcetype/migrations/
+third/migrations/
+timeline/migrations/
+usersys/migrations/
