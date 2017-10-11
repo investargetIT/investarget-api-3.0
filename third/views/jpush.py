@@ -74,7 +74,7 @@ def push_params_v3(content, receiver_value, platform, bdage, n_extras):
     # 离线消息
     payload['message'] = {
         "msg_content": content,
-        "extras": n_extras if n_extras else {},
+        "extras": n_extras
     }
     # 在线通知
     payload['notification'] = {
@@ -98,14 +98,12 @@ def jpush_v3(app_key, payload):
 
 
 def pushnotification(receiver_alias,content,bdage,n_extras=None):
-    # receiver_alias = data_dict.get('receiver_alias')
-    # content = data_dict.get('content')
-    platform = ["android", "ios", "winphone"]
-    # bdage = data_dict.get('bdage')
-    # n_extras = data_dict.get('n_extras',{})
-    # n_extras = {
-    #     # 'ass':'sss',
-    # }
+    platform = [
+        "android",
+        "ios",
+        # "winphone"
+        ]
+    n_extras = n_extras if n_extras else {}
     payload = push_params_v3(content=content,receiver_value=receiver_alias,platform=platform,bdage=bdage,n_extras=n_extras)
     return jpush_v3(apps['product'],payload)
 
