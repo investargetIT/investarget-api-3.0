@@ -74,7 +74,7 @@ def push_params_v3(content, receiver_value, platform, bdage, n_extras):
     # 离线消息
     payload['message'] = {
         "msg_content": content,
-        "extras": n_extras
+        "extras": n_extras if n_extras else {},
     }
     # 在线通知
     payload['notification'] = {

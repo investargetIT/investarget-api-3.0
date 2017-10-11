@@ -21,6 +21,7 @@ from org.models import organization
 from sourcetype.views import getmenulist
 from third.models import MobileAuthCode
 from third.views.huanxin import registHuanXinIMWithUser
+from third.views.jpush import pushnotification
 from timeline.models import timeline
 from usersys.models import MyUser, UserRelation, userTags, UserFriendship, MyToken, UnreachUser, UserRemarks
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
@@ -1595,20 +1596,6 @@ def maketoken(user,clienttype):
 
 
 # def testsendmsg(request):
-#     # id = request.GET.get('id')
-#     # lang = request.GET.get('lang', 'cn')
-#     # proj = project.objects.get(id=id)
-#     # index = 'proj_template_cn.html'
-#     # aaa = {
-#     #     'project':ProjDetailSerializer_user_withoutsecretinfo(proj).data,
-#     #     'finance':FinanceSerializer(proj.proj_finances.filter(is_deleted=False),many=True).data
-#     # }
-#     # res = render(request, index, aaa)
-#     # datenow1 = django.utils.timezone.now()
-#     # print datenow1
-#     # datenow2 = datetime.datetime.now()
-#     # print datenow2
-#     # orgremark = orgRemarks.objects.get(id=694)
-#     # orgremark.deletedtime = datenow1
-#     # orgremark.save()
-#     return JSONResponse({'da':datenow1,'da2':datenow2})
+#     res = pushnotification('18637760716', 'contentsssssssstest', 0)
+#     print res
+#     return JSONResponse({'da':'dd'})
