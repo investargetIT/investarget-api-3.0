@@ -25,6 +25,7 @@ from proj.serializer import ProjSerializer, FinanceSerializer, ProjCreatSerializ
     ProjDetailSerializer_admin_withoutsecretinfo, ProjDetailSerializer_admin_withsecretinfo, ProjDetailSerializer_user_withoutsecretinfo, \
     ProjDetailSerializer_user_withsecretinfo, ProjAttachmentCreateSerializer, ProjIndustryCreateSerializer
 from sourcetype.models import Tag, Industry, TransactionType, DataSource, Service
+from third.views.jpush import pushnotification
 from third.views.qiniufile import deleteqiniufile
 from third.views.submail import sendEmail
 from usersys.models import MyUser
@@ -1056,6 +1057,7 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
             data['datasource'] = request.user.datasource.id
             projidlist = data.pop('projs',None)
             user = self.get_user(userid)
+            push_alias = None
             if ftype == 4:
                 pass
             elif ftype == 5:
@@ -1065,12 +1067,15 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
                 traderuser = self.get_user(traderid)
                 if not user.has_perm('usersys.user_interestproj', traderuser):
                     raise InvestError(code=4005)
+                push_alias = traderuser.mobile
             elif ftype in [1,2]:
                 if not request.user.has_perm('proj.admin_addfavorite'):
                     raise InvestError(code=4005)
+                push_alias = user.mobile
             elif ftype == 3:
                 if not request.user.has_perm('usersys.user_addfavorite', user):
                     raise InvestError(code=4005)
+                push_alias = user.mobile
             else:
                 raise InvestError(code=2009)
             with transaction.atomic():
@@ -1090,6 +1095,8 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
                         raise InvestError(code=20071,msg='%s'%newfavorite.errors)
                 for proj in projlist:
                     sendmessage_favoriteproject(proj,proj.user,sender=request.user)
+                if push_alias:
+                    pushnotification(push_alias,'contentsssssssstest',0)
                 return JSONResponse(SuccessResponse(returnListChangeToLanguage(favoriteProjectList,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
