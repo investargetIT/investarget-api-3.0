@@ -78,7 +78,7 @@ def push_params_v3(content, receiver_value, platform, bdage, n_extras):
     }
     # 在线通知
     payload['notification'] = {
-        # "android": {"alert": content, "extras": n_extras},
+        "android": {"alert": content, "extras": n_extras},
         "ios": {"alert": content, "sound": "default", "extras": n_extras,"badge":bdage},  # "badge":1,
     }
     payload['options'] = {"apns_production": apns_production_boolean, "time_to_live": 86400 * 3, 'sendno': sendno}

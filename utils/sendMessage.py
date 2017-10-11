@@ -356,11 +356,10 @@ def sendmessage_withtypes(configtype,model,receiver,types,sender=None):
                     if 'app' in types:
                         appdata = data['app']
                         content = appdata['content']
-                        receiver_alias = receiver.usercode
-                        platform = appdata['platform']
+                        receiver_alias = receiver.id
                         bdage = appdata['bdage']
                         n_extras = appdata['n_extras']
-                        pushnotification(content, receiver_alias, platform, bdage, n_extras)
+                        pushnotification(content, receiver_alias, bdage, n_extras)
                     if 'email' in types:
                         emaildata = data['email']
                         destination = receiver.email
@@ -412,11 +411,10 @@ def sendmessage_favoriteproject(model,receiver,sender=None):
                     paths = msgconfig['paths']
                     if 'app' in paths:
                         content = (msgconfig['app']['content']) % model.proj.projtitleC
-                        receiver_alias = receiver.usercode
-                        platform = 'ios'
+                        receiver_alias = receiver.id
                         bdage = 1
                         n_extras = {}
-                        pushnotification(content, receiver_alias, platform, bdage, n_extras)
+                        pushnotification(content, receiver_alias, bdage, n_extras)
                     if 'email' in paths:
                         destination = receiver.email
                         projectsign = msgconfig['email']['projectsign']
@@ -468,11 +466,10 @@ def sendmessage_traderchange(model,receiver,types,sender=None):
             if isinstance(model, UserRelation):
                 if 'app' in types:
                     content = '交易师已更换'
-                    receiver_alias = receiver.usercode
-                    platform = 'ios'
+                    receiver_alias = receiver.id
                     bdage = 1
                     n_extras = {}
-                    pushnotification(content, receiver_alias, platform, bdage, n_extras)
+                    pushnotification(content, receiver_alias,  bdage, n_extras)
                 if 'email' in types:
                     destination = receiver.email
                     projectsign = 'evsM7'
@@ -518,11 +515,10 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                         content = '您在海拓注册的%s账号已经通过审核，欢迎加入海拓交易平台。'% model.usernameC
                     else:
                         content = '您在海拓注册的%s账号%s，如有疑问，请咨询相关工作人员。。'%(model.usernameC, model.userstatu.nameC)
-                    receiver_alias = receiver.mobile
-                    platform = 'ios'
+                    receiver_alias = receiver.id
                     bdage = 1
                     n_extras = {}
-                    pushnotification(content=content, receiver_alias=receiver_alias, platform=platform, bdage=bdage, n_extras=n_extras)
+                    pushnotification(content=content, receiver_alias=receiver_alias,  bdage=bdage, n_extras=n_extras)
                 if 'email' in types:
                     if model.userstatus.id == 2:
                         destination = receiver.email
@@ -576,11 +572,10 @@ def sendmessage_userregister(model,receiver,types,sender=None):
             if isinstance(model, MyUser):
                 if 'app' in types:
                     content = '我们已收到您提交的注册申请。我们将在24小时内与您取得联系，进行用户信息审核，并明确您的意向和需求。请您耐心等待！审核结果将通过邮件和短信通知您。感谢您对多维海拓的关注！'
-                    receiver_alias = receiver.mobile
-                    platform = 'ios'
+                    receiver_alias = receiver.id
                     bdage = 1
                     n_extras = {}
-                    pushnotification(content=content, receiver_alias=receiver_alias, platform=platform, bdage=bdage, n_extras=n_extras)
+                    pushnotification(content=content, receiver_alias=receiver_alias, bdage=bdage, n_extras=n_extras)
                 if 'email' in types:
                     destination = receiver.email
                     projectsign = 'J6VK41'
@@ -620,11 +615,10 @@ def sendmessage_timelineauditstatuchange(model,receiver,types,sender=None):
             if isinstance(model, timelineTransationStatu):
                 if 'app' in types:
                     content = '您的项目%s时间轴状态已更新，点击查看最新状态'%model.timeline.proj.projtitleC
-                    receiver_alias = receiver.usercode
-                    platform = 'ios'
+                    receiver_alias = receiver.id
                     bdage = 1
                     n_extras = {}
-                    pushnotification(content, receiver_alias, platform, bdage, n_extras)
+                    pushnotification(content, receiver_alias, bdage, n_extras)
                 if 'email' in types:
                     destination = receiver.email
                     projectsign = 'LkZix2'
@@ -667,11 +661,10 @@ def sendmessage_dataroomfileupdate(model,receiver,types,sender=None):
             if isinstance(model, dataroomdirectoryorfile):
                 if 'app' in types:
                     content = 'DataRoom有文件更新，点击查看详情'
-                    receiver_alias = receiver.usercode
-                    platform = 'ios'
+                    receiver_alias = receiver.id
                     bdage = 1
                     n_extras = {}
-                    pushnotification(content, receiver_alias, platform, bdage, n_extras)
+                    pushnotification(content, receiver_alias, bdage, n_extras)
                 if 'email' in types:
                     destination = receiver.email
                     projectsign = 'umZlP3'
@@ -751,11 +744,10 @@ def sendmessage_usermakefriends(model,receiver,types,sender=None):
             if isinstance(model, UserFriendship):
                 if 'app' in types:
                     content = 'test 3.0'
-                    receiver_alias = receiver.mobile
-                    platform = 'ios'
+                    receiver_alias = receiver.id
                     bdage = 1
                     n_extras = {}
-                    pushnotification(content, receiver_alias, platform, bdage, n_extras)
+                    pushnotification(content, receiver_alias, bdage, n_extras)
                 if 'webmsg' in types:
                     content = 'test 3.0 content'
                     title = 'test 3.0'
@@ -789,11 +781,10 @@ def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
             if isinstance(model, timelineTransationStatu):
                 if 'app' in types:
                     content = ''
-                    receiver_alias = receiver.usercode
-                    platform = 'ios'
+                    receiver_alias = receiver.id
                     bdage = 1
                     n_extras = {}
-                    pushnotification(content, receiver_alias, platform, bdage, n_extras)
+                    pushnotification(content, receiver_alias, bdage, n_extras)
                 if 'email' in types:
                     destination = receiver.email
                     projectsign = ''
