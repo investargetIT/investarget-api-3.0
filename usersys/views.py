@@ -8,7 +8,6 @@ from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction,models
 from django.db.models import Q
 from django.db.models import QuerySet
-from django.db.models.fields.reverse_related import ForeignObjectRel
 from rest_framework import filters
 from rest_framework import viewsets
 
@@ -16,12 +15,10 @@ from rest_framework.decorators import api_view, detail_route, list_route
 
 from APIlog.views import logininlog, apilog
 from dataroom.models import dataroom
-from emailmanage.views import sendEmailToUser, getAllProjectsNeedToSendMail
 from org.models import organization
 from sourcetype.views import getmenulist
 from third.models import MobileAuthCode
 from third.views.huanxin import registHuanXinIMWithUser
-from third.views.jpush import pushnotification
 from timeline.models import timeline
 from usersys.models import MyUser, UserRelation, userTags, UserFriendship, MyToken, UnreachUser, UserRemarks
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\

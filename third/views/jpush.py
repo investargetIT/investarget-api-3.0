@@ -69,7 +69,7 @@ def push_params_v3(content, receiver_value, platform, bdage, n_extras):
     payload['platform'] = platform
 
     payload['audience'] = {
-        "alias": [receiver_value]
+        "alias": [str(receiver_value)]
     }
     # 离线消息
     payload['message'] = {

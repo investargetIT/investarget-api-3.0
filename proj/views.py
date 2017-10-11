@@ -1067,15 +1067,15 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
                 traderuser = self.get_user(traderid)
                 if not user.has_perm('usersys.user_interestproj', traderuser):
                     raise InvestError(code=4005)
-                push_alias = traderuser.mobile
+                push_alias = traderuser.id
             elif ftype in [1,2]:
                 if not request.user.has_perm('proj.admin_addfavorite'):
                     raise InvestError(code=4005)
-                push_alias = user.mobile
+                push_alias = user.id
             elif ftype == 3:
                 if not request.user.has_perm('usersys.user_addfavorite', user):
                     raise InvestError(code=4005)
-                push_alias = user.mobile
+                push_alias = user.id
             else:
                 raise InvestError(code=2009)
             with transaction.atomic():
