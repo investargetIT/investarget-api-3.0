@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import datetime
 from mongoengine import *
 from invest.settings import groupemailMongoTableName, chatMessagegMongoTableName, projectDataMongoTableName, \
-    mergeandfinanceeventMongoTableName, com_catMongoTableName
+    mergeandfinanceeventMongoTableName, com_catMongoTableName, projremarkMongoTableName
 from utils.customClass import InvestError
 
 
@@ -21,7 +21,7 @@ class ProjectData(Document):
     com_name = StringField()   #公司名称
     com_status = StringField(null=True)  #公司运营状态
     com_scale= StringField(null=True)    #公司规模
-    invse_round_id = StringField(null=True)  #公司融资轮次
+    invse_round_id = StringField(null=True)  #公司获投状态
     com_cat_name = StringField(null=True)  #行业
     com_sub_cat_name = StringField(null=True) #子行业
     com_born_date = StringField(null=True)   #成立日期
@@ -39,7 +39,7 @@ class ProjectData(Document):
              write_concern=None, cascade=None, cascade_kwargs=None,
              _refs=None, save_condition=None, signal_kwargs=None, **kwargs):
         if len(ProjectData.objects.filter(com_id=self.com_id)) > 0:
-            raise InvestError(8001)
+            raise InvestError(8001,msg='数据重复')
         super(ProjectData,self).save(force_insert,validate,clean,write_concern,cascade,cascade_kwargs,_refs,save_condition,signal_kwargs,**kwargs)
 
 class MergeFinanceData(Document):
@@ -75,6 +75,14 @@ class MergeFinanceData(Document):
             raise InvestError(8001,msg='未知的类型')
         super(MergeFinanceData,self).save(force_insert,validate,clean,write_concern,cascade,cascade_kwargs,_refs,save_condition,signal_kwargs,**kwargs)
 
+class ProjRemark(Document):
+    com_id = StringField(null=True)  # 公司id
+    com_name = StringField(null=True)  # 公司名称
+    remark = StringField(null=True)
+    createuser_id = IntField()
+    datasource = IntField()
+    date = DateTimeField(default=datetime.datetime.now())
+    meta = {"collection": projremarkMongoTableName}
 
 
 class GroupEmailData(Document):

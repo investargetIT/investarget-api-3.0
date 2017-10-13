@@ -5,7 +5,6 @@ from django.core.paginator import Paginator, EmptyPage
 from django.db.models import Q, FieldDoesNotExist
 # Create your views here.
 from django.db.models import QuerySet
-from django.db.models.fields.reverse_related import ForeignObjectRel
 from rest_framework import filters , viewsets
 
 from org.models import organization, orgTransactionPhase, orgRemarks

@@ -8,10 +8,10 @@ import time
 from django.core.paginator import Paginator, EmptyPage
 from mongoengine import Q
 from rest_framework import viewsets
-
-from mongoDoc.models import GroupEmailData, IMChatMessages, ProjectData, MergeFinanceData, CompanyCatData
+from bson.objectid import ObjectId
+from mongoDoc.models import GroupEmailData, IMChatMessages, ProjectData, MergeFinanceData, CompanyCatData, ProjRemark
 from mongoDoc.serializers import GroupEmailDataSerializer, IMChatMessagesSerializer, ProjectDataSerializer, \
-    MergeFinanceDataSerializer, CompanyCatDataSerializer
+    MergeFinanceDataSerializer, CompanyCatDataSerializer, ProjRemarkSerializer
 from utils.customClass import JSONResponse, InvestError
 from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, catchexcption, logexcption, \
     loginTokenIsAvailable
@@ -57,30 +57,33 @@ class CompanyCatDataView(viewsets.ModelViewSet):
 class MergeFinanceDataView(viewsets.ModelViewSet):
     queryset = MergeFinanceData.objects.all()
     serializer_class = MergeFinanceDataSerializer
+    filter_class = {'com_name': 'icontains',
+                    'currency': 'in',
+                    'date': 'startswith',
+                    'invsest_with': 'in',
+                    'round': 'in',
+                    'merger_with': 'icontains', }
+
+    def filterqueryset(self, request, queryset):
+        for key, method in self.filter_class.items():
+            value = request.GET.get(key)
+            if value:
+                if method == 'in':
+                    value = value.split(',')
+                queryset = queryset.filter(**{'%s__%s' % (key, method): value})
+        return queryset
 
     # @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            invsest_with = request.GET.get('invsest_with')
-            merger_with = request.GET.get('merger_with')
-            com_name = request.GET.get('com_name')
-            com_id = request.GET.get('com_id')
             page_size = request.GET.get('page_size')
             page_index = request.GET.get('page_index')  # 从第一页开始
             if not page_size:
                 page_size = 10
             if not page_index:
                 page_index = 1
-            queryset = self.queryset
+            queryset = self.filterqueryset(request, self.queryset)
             sort = request.GET.get('sort')
-            if invsest_with:
-                queryset = queryset(invsest_with__in=[invsest_with])
-            if merger_with:
-                queryset = queryset(merger_with__icontains=merger_with)
-            if com_name:
-                queryset = queryset(com_name__icontains=com_name)
-            if com_id:
-                queryset = queryset(com_id=com_id)
             if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
                 queryset = queryset.order_by('-date',)
             else:
@@ -116,29 +119,39 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 class ProjectDataView(viewsets.ModelViewSet):
+
     queryset = ProjectData.objects.all()
     serializer_class = ProjectDataSerializer
+    filter_class = {'com_id': 'in',
+                    'com_name':'icontains',
+                    'com_cat_name': 'in',
+                    'com_sub_cat_name': 'in',
+                    'com_addr': 'in',
+                    'com_fund_needs_name': 'in',
+                    'invse_round_id': 'in',
+                    'com_status': 'in',
+                    'com_born_date':'startswith',}
+
+    def filterqueryset(self, request, queryset):
+        for key, method in self.filter_class.items():
+            value = request.GET.get(key)
+            if value:
+                if method == 'in':
+                    value = value.split(',')
+                queryset = queryset.filter(**{'%s__%s' % (key, method): value})
+        return queryset
 
     # @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            com_name = request.GET.get('com_name')
-            com_cat_name = request.GET.get('cat')
-            com_sub_cat_name = request.GET.get('sub_cat')
             page_size = request.GET.get('page_size')
             page_index = request.GET.get('page_index')  # 从第一页开始
             if not page_size:
                 page_size = 10
             if not page_index:
                 page_index = 1
-            queryset = self.queryset
+            queryset = self.filterqueryset(request, self.queryset)
             sort = request.GET.get('sort')
-            if com_name:
-                queryset = queryset(com_name__icontains=com_name)
-            if com_cat_name:
-                queryset = queryset(com_cat_name=com_cat_name)
-            if com_sub_cat_name:
-                queryset = queryset(com_sub_cat_name=com_sub_cat_name)
             if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
                 queryset = queryset.order_by('-com_born_date',)
             else:
@@ -172,6 +185,113 @@ class ProjectDataView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+class ProjectRemarkView(viewsets.ModelViewSet):
+
+    queryset = ProjRemark.objects.all()
+    serializer_class = ProjRemarkSerializer
+
+    filter_class = {'com_name': 'in',
+                    'com_id': 'in',}
+
+    def filterqueryset(self, request, queryset):
+        for key, method in self.filter_class.items():
+            value = request.GET.get(key)
+            if value:
+                if method == 'in':
+                    value = value.split(',')
+                queryset = queryset.filter(**{'%s__%s' % (key, method): value})
+        return queryset
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filterqueryset(request,self.queryset)
+            if not request.user.has_perm('usersys.admin_getmongoprojremark'):
+                queryset = queryset(datasource=request.user.datasource_id)
+            else:
+                queryset = queryset(createuser_id=request.user.id)
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = self.serializer_class(queryset,many=True)
+            return JSONResponse(SuccessResponse({'count':count,'data':serializer.data}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            data['createuser_id'] = request.user.id
+            data['datasource'] = request.user.datasource_id
+            serializer = self.serializer_class(data=data)
+            if serializer.is_valid():
+                serializer.save()
+            else:
+                raise InvestError(2001, msg=serializer.error_messages)
+            return JSONResponse(SuccessResponse(serializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            if instance.createuser_id == request.user.id:
+                pass
+            else:
+                raise InvestError(2009)
+            data = request.data
+            data.poo('createuser_id')
+            data.pop('datasource')
+            serializer = self.serializer_class(instance,data=data)
+            if serializer.is_valid():
+                serializer.save()
+            else:
+                raise InvestError(2001, msg=serializer.error_messages)
+            return JSONResponse(SuccessResponse(serializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            id = request.GET.get('id')
+            instance = self.queryset.get(id=ObjectId(id))
+            if instance.createuser_id == request.user.id:
+                pass
+            elif request.user.has_perm('usersys.admin_deletemongoprojremark'):
+                pass
+            else:
+                raise InvestError(2009)
+            instance.delete()
+            return JSONResponse(SuccessResponse({'isDeleted':True}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
 
 
 class GroupEmailDataView(viewsets.ModelViewSet):

@@ -150,6 +150,9 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
             ('user_addfavorite', '用户主动推荐favorite(obj级别——给交易师的)'),
             ('user_getfavorite', '用户查看favorite(obj级别——给交易师的)'),
             ('user_interestproj', '用户主动联系favorite(obj级别——给投资人的)'),
+
+            ('admin_getmongoprojremark', u'管理员查看mongo项目备注'),
+            ('admin_deletemongoprojremark', u'管理员删除mongo项目备注'),
         )
     def save(self, *args, **kwargs):
         if not self.usercode:

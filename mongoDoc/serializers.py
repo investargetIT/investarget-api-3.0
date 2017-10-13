@@ -1,6 +1,6 @@
 from rest_framework_mongoengine.serializers import DynamicDocumentSerializer, DocumentSerializer, EmbeddedDocumentSerializer
 
-from mongoDoc.models import GroupEmailData, IMChatMessages, ProjectData, MergeFinanceData, CompanyCatData
+from mongoDoc.models import GroupEmailData, IMChatMessages, ProjectData, MergeFinanceData, CompanyCatData, ProjRemark
 
 
 class CompanyCatDataSerializer(DocumentSerializer):
@@ -17,6 +17,11 @@ class MergeFinanceDataSerializer(DocumentSerializer):
 class ProjectDataSerializer(DocumentSerializer):
     class Meta:
         model = ProjectData
+        fields = '__all__'
+
+class ProjRemarkSerializer(DocumentSerializer):
+    class Meta:
+        model = ProjRemark
         fields = '__all__'
 
 class GroupEmailDataSerializer(DocumentSerializer):
