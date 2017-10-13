@@ -11,7 +11,7 @@ from django.db import models
 # Create your models here.
 
 from sourcetype.models import FavoriteType, ProjectStatus,CurrencyType,Tag,Country,TransactionType,Industry, DataSource, \
-    CharacterType, Service
+    CharacterType, Service, TitleType, BDStatus
 from usersys.models import MyUser
 import sys
 
@@ -324,3 +324,47 @@ class ShareToken(models.Model):
 
     def __str__(self):
         return self.key
+
+class ProjectBD(models.Model):
+    location = MyForeignKey(Country,blank=True,null=True,help_text='项目地区')
+    com_name = models.TextField(blank=True,null=True,help_text='公司名称/项目名称')
+    usertitle = MyForeignKey(TitleType,blank=True,null=True,help_text='职位')
+    username = models.CharField(max_length=64,blank=True,null=True,help_text='姓名')
+    usermobile = models.CharField(max_length=64,blank=True,null=True,help_text='电话')
+    source = models.TextField(blank=True,null=True,help_text='来源')
+    manager = MyForeignKey(MyUser,blank=True,null=True,help_text='负责人')
+    bd_status = MyForeignKey(BDStatus,blank=True,null=True,help_text='bd状态')
+    is_deleted = models.BooleanField(blank=True,default=False)
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_ProjectBD')
+    deletedtime = models.DateTimeField(blank=True, null=True)
+    createdtime = models.DateTimeField(auto_created=True, blank=True, null=True)
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_ProjectBD')
+    datasource = models.IntegerField(blank=True,null=True)
+
+    class Meta:
+        db_table = 'project_BD'
+    def save(self, *args, **kwargs):
+        if self.manager is None:
+            raise InvestError(2007,msg='manager can`t be null')
+        self.datasource = self.manager.datasource_id
+        return super(ProjectBD, self).save(*args, **kwargs)
+
+
+class ProjectBDComments(models.Model):
+    comments = models.TextField(blank=True, default=False, help_text='内容')
+    projectBD = MyForeignKey(ProjectBD,blank=True,null=True,help_text='bd项目',related_name='ProjectBD_comments')
+    is_deleted = models.BooleanField(blank=True,default=False)
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_ProjectBDComments')
+    deletedtime = models.DateTimeField(blank=True, null=True)
+    createdtime = models.DateTimeField(auto_created=True, blank=True, null=True)
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_ProjectBDComments')
+    datasource = models.IntegerField(blank=True,null=True)
+
+    class Meta:
+        db_table = 'project_BDMsg'
+
+    def save(self, *args, **kwargs):
+        if self.projectBD is None:
+            raise InvestError(2007,msg='projectBD can`t be null')
+        self.datasource = self.projectBD.datasource
+        return super(ProjectBDComments, self).save(*args, **kwargs)

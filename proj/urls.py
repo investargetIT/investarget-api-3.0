@@ -46,6 +46,23 @@ getprojpdf = views.ProjectView.as_view({
         'get':'sendPDFMail'
 })
 
+projbd_list = views.ProjectBDView.as_view({
+        'get': 'list',
+        'post': 'create'
+})
+
+projbd_detail = views.ProjectBDView.as_view({
+        'get': 'retrieve',
+        'delete': 'destroy'
+})
+projdbcomment_list = views.ProjectBDCommentsView.as_view({
+        # 'get': 'list',
+        'post': 'create'
+})
+projbdcomment_detail = views.ProjectBDCommentsView.as_view({
+        'delete': 'destroy'
+})
+
 urlpatterns = [
         url(r'^$', proj_list , name='proj_list'),
         url(r'^(?P<pk>\d+)/$', proj_detail, name='proj_detail'),
@@ -55,5 +72,9 @@ urlpatterns = [
         url(r'^share/(?P<pk>\d+)/$',getshareprojtoken,name='getshareprojtoken'),
         url(r'^shareproj/$',getshareproj,name='getshareprojdetail'),
         url(r'^pdf/(?P<pk>\d+)/$',getprojpdf,name='getprojpdf'),
+        url(r'^BD/$', projbd_list , name='projbd_list'),
+        url(r'^BD/(?P<pk>\d+)/$', projbd_detail, name='projbd_detail'),
+        url(r'^BDCom/$', projdbcomment_list , name='projdbcomment_list'),
+        url(r'^BDCom/(?P<pk>\d+)/$', projbdcomment_detail, name='projbdcomment_detail'),
         url(r'^test/$',views.testPdf),
 ]

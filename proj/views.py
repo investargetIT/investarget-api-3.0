@@ -18,12 +18,13 @@ from APIlog.views import viewprojlog
 from dataroom.views import pulishProjectCreateDataroom
 from invest.settings import PROJECTPDF_URLPATH
 from proj.models import project, finance, projectTags, projectIndustries, projectTransactionType, favoriteProject, \
-    ShareToken, attachment, projServices
+    ShareToken, attachment, projServices, ProjectBD, ProjectBDComments
 from proj.serializer import ProjSerializer, FinanceSerializer, ProjCreatSerializer, \
     ProjCommonSerializer, FinanceChangeSerializer, FinanceCreateSerializer, FavoriteSerializer, \
     FavoriteCreateSerializer, ProjAttachmentSerializer, ProjListSerializer_admin , ProjListSerializer_user, \
     ProjDetailSerializer_admin_withoutsecretinfo, ProjDetailSerializer_admin_withsecretinfo, ProjDetailSerializer_user_withoutsecretinfo, \
-    ProjDetailSerializer_user_withsecretinfo, ProjAttachmentCreateSerializer, ProjIndustryCreateSerializer
+    ProjDetailSerializer_user_withsecretinfo, ProjAttachmentCreateSerializer, ProjIndustryCreateSerializer, \
+    ProjectBDCreateSerializer, ProjectBDSerializer, ProjectBDCommentsCreateSerializer, ProjectBDCommentsSerializer
 from sourcetype.models import Tag, Industry, TransactionType, DataSource, Service
 from third.views.jpush import pushnotification
 from third.views.qiniufile import deleteqiniufile
@@ -503,6 +504,7 @@ class ProjectView(viewsets.ModelViewSet):
     def sendPDFMail(self, request, *args, **kwargs):
         try:
             destination = request.GET.get('to')
+            lang = request.GET.get('lang','cn')
             proj = self.get_object()
             if proj.isHidden:
                 if request.user not in [proj.createuser,proj.takeUser,proj.makeUser,proj.supportUser]:
@@ -519,7 +521,7 @@ class ProjectView(viewsets.ModelViewSet):
             }
             pdfpath = 'P' + datetime.datetime.now().strftime('%Y%m%d%H%M%S') + '.pdf'
             config = pdfkit.configuration(wkhtmltopdf='/usr/local/bin/wkhtmltopdf')
-            aaa = pdfkit.from_url(PROJECTPDF_URLPATH + str(proj.id), pdfpath, configuration=config, options=options)
+            aaa = pdfkit.from_url(PROJECTPDF_URLPATH + str(proj.id)+'&lang=%s'%lang, pdfpath, configuration=config, options=options)
             if aaa:
                 res = sendEmail(destination=destination, subject='text', text='summer', attachmentpath=pdfpath)
                 os.remove(pdfpath)
@@ -940,7 +942,7 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
     serializer_class = FavoriteSerializer
     Model = favoriteProject
 
-    def get_queryset(self,datasource=None):
+    def get_queryset(self):
         assert self.queryset is not None, (
             "'%s' should either include a `queryset` attribute, "
             "or override the `get_queryset()` method."
@@ -948,10 +950,10 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
         )
         queryset = self.queryset
         if isinstance(queryset, QuerySet):
-            if datasource:
-                queryset = queryset.filter(datasource=datasource)
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource=self.request.user.datasource)
             else:
-                queryset = queryset
+                queryset = queryset.all()
         else:
             raise InvestError(code=8890)
         return queryset
@@ -1148,3 +1150,211 @@ def testPdf(request):
     else:
         res = render(request, 'proj_template_en.html', aaa)
     return HttpResponse(res)
+
+class ProjectBDView(viewsets.ModelViewSet):
+    """
+    list:获取BD
+    create:增加BD
+    destroy:删除BD
+    """
+    filter_backends = (filters.DjangoFilterBackend,)
+    queryset = ProjectBD.objects.filter(is_deleted=False)
+    filter_fields = ('com_name','location','username','usermobile','source','manager','bd_status')
+    serializer_class = ProjectBDSerializer
+
+    def get_queryset(self):
+        assert self.queryset is not None, (
+            "'%s' should either include a `queryset` attribute, "
+            "or override the `get_queryset()` method."
+            % self.__class__.__name__
+        )
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource=self.request.user.datasource_id)
+            else:
+                queryset = queryset
+        else:
+            raise InvestError(code=8890)
+        return queryset
+
+
+    #获取收藏列表，GET参数'user'，'trader'，'favoritetype'
+    @loginTokenIsAvailable(['usersys.as_admin',])
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            lang = request.GET.get('lang')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = ProjectBDSerializer(queryset, many=True)
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    # 批量增加，接受modeldata，proj=projs=projidlist
+    @loginTokenIsAvailable(['usersys.as_admin',])
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            lang = request.GET.get('lang')
+            comments = data.get('comments',None)
+            data['createuser'] = request.user.id
+            data['datasource'] = request.user.datasource.id
+            with transaction.atomic():
+                projectBD = ProjectBDCreateSerializer(data=data)
+                if projectBD.is_valid():
+                    newprojectBD = projectBD.save()
+                else:
+                    raise InvestError(4009,msg='项目BD创建失败——%s'%projectBD.error_messages)
+                if comments:
+                    data['projectBD'] = newprojectBD.id
+                    commentinstance = ProjectBDCommentsCreateSerializer(data=data)
+                    if commentinstance.is_valid():
+                        commentinstance.save()
+                return JSONResponse(SuccessResponse(returnListChangeToLanguage(ProjectBDSerializer(newprojectBD).data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            serializer = self.serializer_class(instance)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    #批量删除（参数传收藏model的idlist）
+    @loginTokenIsAvailable(['usersys.as_admin',])
+    def destroy(self, request, *args, **kwargs):
+        try:
+            with transaction.atomic():
+                instance = self.get_object()
+                # instance.is_deleted = True
+                # instance.deleteduser = request.user
+                # instance.deletedtime = datetime.datetime.now()
+                # instance.save()
+                instance.delete()
+            return JSONResponse(SuccessResponse({'isDeleted': True,}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+class ProjectBDCommentsView(viewsets.ModelViewSet):
+    """
+    list:获取BD
+    create:增加BD
+    destroy:删除BD
+    """
+    filter_backends = (filters.DjangoFilterBackend,)
+    queryset = ProjectBDComments.objects.filter(is_deleted=False)
+    filter_fields = ('projectBD',)
+    serializer_class = ProjectBDCommentsSerializer
+
+    def get_queryset(self):
+        assert self.queryset is not None, (
+            "'%s' should either include a `queryset` attribute, "
+            "or override the `get_queryset()` method."
+            % self.__class__.__name__
+        )
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource=self.request.user.datasource_id)
+            else:
+                queryset = queryset
+        else:
+            raise InvestError(code=8890)
+        return queryset
+
+
+    # 获取收藏列表，GET参数'user'，'trader'，'favoritetype'
+    @loginTokenIsAvailable(['usersys.as_admin', ])
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            lang = request.GET.get('lang')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = ProjectBDCommentsSerializer(queryset, many=True)
+            return JSONResponse(
+                SuccessResponse({'count': count, 'data': returnListChangeToLanguage(serializer.data, lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    # 批量增加，接受modeldata，proj=projs=projidlist
+    @loginTokenIsAvailable(['usersys.as_admin', ])
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            lang = request.GET.get('lang')
+            data['createuser'] = request.user.id
+            data['datasource'] = request.user.datasource.id
+            with transaction.atomic():
+                commentinstance = ProjectBDCommentsCreateSerializer(data=data)
+                if commentinstance.is_valid():
+                    newcommentinstance = commentinstance.save()
+                else:
+                    raise InvestError(4009, msg='创建comments失败--%s' % commentinstance.error_messages)
+                return JSONResponse(SuccessResponse(returnListChangeToLanguage(ProjectBDCommentsSerializer(newcommentinstance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    # 批量删除（参数传收藏model的idlist）
+    @loginTokenIsAvailable(['usersys.as_admin', ])
+    def destroy(self, request, *args, **kwargs):
+        try:
+
+            lang = request.GET.get('lang')
+            with transaction.atomic():
+                instance = self.get_object()
+                # instance.is_deleted = True
+                # instance.deleteduser = request.user
+                # instance.deletedtime = datetime.datetime.now()
+                # instance.save()
+                instance.delete()
+            return JSONResponse(SuccessResponse({'isDeleted': True, }))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))

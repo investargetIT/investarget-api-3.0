@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from proj.models import project, finance, favoriteProject, attachment, projServices, projectIndustries
+from proj.models import project, finance, favoriteProject, attachment, projServices, projectIndustries, ProjectBD, \
+    ProjectBDComments
 from sourcetype.serializer import tagSerializer, transactionTypeSerializer, serviceSerializer, countrySerializer
 from third.views.qiniufile import getUrlWithBucketAndKey
 from usersys.serializer import UserCommenSerializer
@@ -123,6 +124,33 @@ class FavoriteSerializer(serializers.ModelSerializer):
         fields = '__all__'
         # fields = ('id','proj','user','trader','favoritetype')
         # depth = 1
+
+class ProjectBDCommentsCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjectBDComments
+        fields = '__all__'
+
+class ProjectBDCommentsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjectBDComments
+        fields = ('comments','id','createdtime')
+
+class ProjectBDCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjectBD
+        fields = '__all__'
+
+class ProjectBDSerializer(serializers.ModelSerializer):
+    BDComments = serializers.SerializerMethodField()
+    manager = UserCommenSerializer()
+    class Meta:
+        model = ProjectBD
+        exclude = ('deleteduser', 'deletedtime', 'datasource', 'is_deleted','createuser')
+    def get_BDComments(self, obj):
+        qs = obj.ProjectBD_comments.filter(is_deleted=False)
+        if qs.exists():
+            return ProjectBDCommentsSerializer(qs,many=True).data
+        return None
 
 #list
 class ProjListSerializer_admin(serializers.ModelSerializer):
