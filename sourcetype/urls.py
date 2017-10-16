@@ -55,7 +55,10 @@ orgarea = views.OrgAreaView.as_view({
         # 'post':'create',
 })
 
-
+bdStatus = views.BDStatusView.as_view({
+        'get': 'list',
+        # 'post':'create',
+})
 
 orgtype = views.OrgTypeView.as_view({
         'get': 'list',
@@ -117,6 +120,8 @@ urlpatterns = [
     url(r'^orgarea$', orgarea,name='orgareasource',),
 
     url(r'^orgtype$', orgtype,name='orgtypesource',),
+
+    url(r'^bdStatus$', bdStatus,name='bdStatussource',),
 
     url(r'^transactionType$', transactionType,name='transactionTypesource',),
 

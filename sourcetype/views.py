@@ -7,11 +7,12 @@ from rest_framework import viewsets
 
 from sourcetype.models import Tag, TitleType, DataSource,Country,Industry, TransactionType, \
     TransactionPhases, OrgArea, CurrencyType, OrgType, CharacterType, ProjectStatus, TransactionStatus, orgtitletable, \
-    webmenu, Service, OrgAttribute
+    webmenu, Service, OrgAttribute, BDStatus
 from sourcetype.serializer import tagSerializer, countrySerializer, industrySerializer, \
     titleTypeSerializer, DataSourceSerializer, orgAreaSerializer, transactionTypeSerializer, transactionPhasesSerializer, \
     currencyTypeSerializer, orgTypeSerializer, characterTypeSerializer, ProjectStatusSerializer, \
-    transactionStatuSerializer, OrgtitletableSerializer, WebMenuSerializer, serviceSerializer, orgAttributeSerializer
+    transactionStatuSerializer, OrgtitletableSerializer, WebMenuSerializer, serviceSerializer, orgAttributeSerializer, \
+    BDStatusSerializer
 from utils.customClass import  JSONResponse, InvestError
 from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, returnListChangeToLanguage
 
@@ -200,6 +201,27 @@ class TitleView(viewsets.ModelViewSet):
     """
     queryset = TitleType.objects.all().filter(is_deleted=False)
     serializer_class = titleTypeSerializer
+    def list(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = self.serializer_class(queryset, many=True)
+            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+class BDStatusView(viewsets.ModelViewSet):
+    """
+        list:获取所有BD状态
+        create:新增BD状态
+        update:修改BD状态
+        destroy:删除BD状态
+    """
+    queryset = BDStatus.objects.all().filter(is_deleted=False)
+    serializer_class = BDStatusSerializer
     def list(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')

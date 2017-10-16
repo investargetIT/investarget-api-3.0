@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from sourcetype.models import TransactionType, TransactionPhases, Specialty, School, OrgArea, Tag, Industry, CurrencyType, \
     AuditStatus, ProjectStatus, OrgType, FavoriteType, MessageType, ClientType, TitleType, Country, \
-    DataSource, TransactionStatus, webmenu, CharacterType, orgtitletable, Service, OrgAttribute
+    DataSource, TransactionStatus, webmenu, CharacterType, orgtitletable, Service, OrgAttribute, BDStatus
 
 
 class AuditStatusSerializer(serializers.ModelSerializer):
@@ -18,6 +18,11 @@ class ProjectStatusSerializer(serializers.ModelSerializer):
 class orgTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrgType
+        exclude = ('is_deleted',)
+
+class BDStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BDStatus
         exclude = ('is_deleted',)
 
 class characterTypeSerializer(serializers.ModelSerializer):
