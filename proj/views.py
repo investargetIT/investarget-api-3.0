@@ -1153,9 +1153,11 @@ def testPdf(request):
 
 class ProjectBDView(viewsets.ModelViewSet):
     """
-    list:获取BD
-    create:增加BD
-    destroy:删除BD
+    list:获取新项目BD
+    create:增加新项目BD
+    retrieve:查看新项目BD信息
+    update:修改bd信息
+    destroy:删除新项目BD
     """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = ProjectBD.objects.filter(is_deleted=False)
@@ -1244,6 +1246,27 @@ class ProjectBDView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+    @loginTokenIsAvailable(['usersys.as_admin', ])
+    def update(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            data['createuser'] = request.user.id
+            data['datasource'] = request.user.datasource.id
+            with transaction.atomic():
+                projectBD = ProjectBDCreateSerializer(instance,data=data)
+                if projectBD.is_valid():
+                    newprojectBD = projectBD.save()
+                else:
+                    raise InvestError(4009, msg='项目BD修改失败——%s' % projectBD.error_messages)
+                return JSONResponse(
+                    SuccessResponse(returnListChangeToLanguage(ProjectBDSerializer(newprojectBD).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     #批量删除（参数传收藏model的idlist）
     @loginTokenIsAvailable(['usersys.as_admin',])
@@ -1266,9 +1289,9 @@ class ProjectBDView(viewsets.ModelViewSet):
 
 class ProjectBDCommentsView(viewsets.ModelViewSet):
     """
-    list:获取BD
-    create:增加BD
-    destroy:删除BD
+    list:获取BDcomments
+    create:增加BDcomments
+    destroy:删除BDcomments
     """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = ProjectBDComments.objects.filter(is_deleted=False)

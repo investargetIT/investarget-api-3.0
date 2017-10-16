@@ -53,6 +53,7 @@ projbd_list = views.ProjectBDView.as_view({
 
 projbd_detail = views.ProjectBDView.as_view({
         'get': 'retrieve',
+        'put': 'update',
         'delete': 'destroy'
 })
 projdbcomment_list = views.ProjectBDCommentsView.as_view({

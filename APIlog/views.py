@@ -147,7 +147,7 @@ class UserInfoUpdateLogView(viewsets.ModelViewSet):
                 page_size = 10
             if not page_index:
                 page_index = 1
-            queryset = self.filter_queryset(self.get_queryset())
+            queryset = self.filter_queryset(self.get_queryset()).order_by('-updatetime')
             count = queryset.count()
             try:
                 queryset = Paginator(queryset, page_size)
