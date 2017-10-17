@@ -16,6 +16,9 @@ from utils.customClass import JSONResponse, InvestError
 from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, catchexcption, logexcption, \
     loginTokenIsAvailable
 
+ChinaList = ['北京','上海','广东','浙江','江苏','天津','福建','湖北','湖南','四川','河北','山西','内蒙古',
+             '辽宁','吉林','黑龙江','安徽','江西','山东','河南','广西','海南','重庆','贵州','云南','西藏',
+             '陕西','甘肃','青海','宁夏','新疆','香港','澳门','台湾']
 
 class CompanyCatDataView(viewsets.ModelViewSet):
     queryset = CompanyCatData.objects.all()
@@ -126,7 +129,6 @@ class ProjectDataView(viewsets.ModelViewSet):
                     'com_name':'icontains',
                     'com_cat_name': 'in',
                     'com_sub_cat_name': 'in',
-                    'com_addr': 'in',
                     'com_fund_needs_name': 'in',
                     'invse_round_id': 'in',
                     'com_status': 'in',
@@ -141,7 +143,7 @@ class ProjectDataView(viewsets.ModelViewSet):
                 queryset = queryset.filter(**{'%s__%s' % (key, method): value})
         return queryset
 
-    # @loginTokenIsAvailable()
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')
@@ -151,6 +153,13 @@ class ProjectDataView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filterqueryset(request, self.queryset)
+            com_addr = request.GET.get('com_addr')
+            if com_addr:
+                com_addr = com_addr.split(',')
+                if '其他' in com_addr:
+                    queryset = queryset.filter(Q(com_addr__nin=ChinaList)|Q(com_addr__in=com_addr))
+                else:
+                    queryset = queryset(Q(com_addr__in=com_addr))
             sort = request.GET.get('sort')
             if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
                 queryset = queryset.order_by('-com_born_date',)
@@ -170,7 +179,7 @@ class ProjectDataView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['usersys.as_admin'])
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
@@ -252,7 +261,8 @@ class ProjectRemarkView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
         try:
-            instance = self.get_object()
+            id = request.GET.get('id')
+            instance = self.queryset.get(id=ObjectId(id))
             if instance.createuser_id == request.user.id:
                 pass
             else:

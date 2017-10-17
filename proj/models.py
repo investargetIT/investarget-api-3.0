@@ -343,6 +343,11 @@ class ProjectBD(models.Model):
 
     class Meta:
         db_table = 'project_BD'
+        permissions = (
+            ('manageBD', '管理项目BD'),
+            ('getBD', '查看项目BD'),
+        )
+
     def save(self, *args, **kwargs):
         if self.manager is None:
             raise InvestError(2007,msg='manager can`t be null')

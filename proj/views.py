@@ -1182,7 +1182,7 @@ class ProjectBDView(viewsets.ModelViewSet):
 
 
     #获取收藏列表，GET参数'user'，'trader'，'favoritetype'
-    @loginTokenIsAvailable(['usersys.as_admin',])
+    @loginTokenIsAvailable(['usersys.getBD','usersys.manageBD'])
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')
@@ -1207,7 +1207,7 @@ class ProjectBDView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     # 批量增加，接受modeldata，proj=projs=projidlist
-    @loginTokenIsAvailable(['usersys.as_admin',])
+    @loginTokenIsAvailable(['usersys.manageBD',])
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
@@ -1233,7 +1233,7 @@ class ProjectBDView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['usersys.getBD','usersys.manageBD'])
     def retrieve(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
@@ -1246,7 +1246,7 @@ class ProjectBDView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['usersys.as_admin', ])
+    @loginTokenIsAvailable(['usersys.manageBD',])
     def update(self, request, *args, **kwargs):
         try:
             data = request.data
@@ -1269,7 +1269,7 @@ class ProjectBDView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     #批量删除（参数传收藏model的idlist）
-    @loginTokenIsAvailable(['usersys.as_admin',])
+    @loginTokenIsAvailable(['usersys.manageBD',])
     def destroy(self, request, *args, **kwargs):
         try:
             with transaction.atomic():
@@ -1316,7 +1316,7 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
 
 
     # 获取收藏列表，GET参数'user'，'trader'，'favoritetype'
-    @loginTokenIsAvailable(['usersys.as_admin', ])
+    @loginTokenIsAvailable(['usersys.getBD','usersys.manageBD'])
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')
@@ -1342,7 +1342,7 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     # 批量增加，接受modeldata，proj=projs=projidlist
-    @loginTokenIsAvailable(['usersys.as_admin', ])
+    @loginTokenIsAvailable(['usersys.getBD','usersys.manageBD'])
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
@@ -1363,7 +1363,7 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     # 批量删除（参数传收藏model的idlist）
-    @loginTokenIsAvailable(['usersys.as_admin', ])
+    @loginTokenIsAvailable(['usersys.getBD','usersys.manageBD'])
     def destroy(self, request, *args, **kwargs):
         try:
 
