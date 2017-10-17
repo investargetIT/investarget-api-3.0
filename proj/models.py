@@ -349,6 +349,8 @@ class ProjectBD(models.Model):
         )
 
     def save(self, *args, **kwargs):
+        if self.createdtime is None:
+            self.createdtime = datetime.datetime.now()
         if self.manager is None:
             raise InvestError(2007,msg='manager can`t be null')
         self.datasource = self.manager.datasource_id
@@ -369,6 +371,8 @@ class ProjectBDComments(models.Model):
         db_table = 'project_BDMsg'
 
     def save(self, *args, **kwargs):
+        if self.createdtime is None:
+            self.createdtime = datetime.datetime.now()
         if self.projectBD is None:
             raise InvestError(2007,msg='projectBD can`t be null')
         self.datasource = self.projectBD.datasource
