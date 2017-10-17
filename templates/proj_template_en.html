@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>多维海拓 Investarget</title>
+    <link rel="shortcut icon" href="/static/image/logo.png" type="image/x-icon">
+    <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+    <div class="ant-layout" style="padding: 0px 24px 24px;">
+        <div class="ant-layout-content" style="background: rgb(255, 255, 255); padding: 24px; margin: 0px; min-height: 280px;">
+            <h1>{{ project.projtitleE }}</h1>
+            <div style="margin-bottom: 24px;">
+                <span>Release Time {{ project.createdtime }}</span>
+            </div>
+            <div style="margin-bottom: 24px;">
+                <h2 style="margin: 16px 0px;">Deal Audit Process</h2>
+                <div>
+                    <div data-show="true" class="ant-tag {% if project.projstatus.id == 2 %}ant-tag-pink{% endif %}">
+                        <span class="ant-tag-text">Reviewing</span>
+                    </div>
+                    <div data-show="true" class="ant-tag {% if project.projstatus.id == 3 %}ant-tag-pink{% endif %}">
+                        <span class="ant-tag-text">Check</span>
+                    </div>
+                    <div data-show="true" class="ant-tag {% if project.projstatus.id == 4 %}ant-tag-pink{% endif %}">
+                        <span class="ant-tag-text">Published</span>
+                    </div>
+                    <div data-show="true" class="ant-tag {% if project.projstatus.id == 5 %}ant-tag-pink{% endif %}">
+                        <span class="ant-tag-text">Contacting</span>
+                    </div>
+                    <div data-show="true" class="ant-tag {% if project.projstatus.id == 6 %}ant-tag-pink{% endif %}">
+                        <span class="ant-tag-text">Completed</span>
+                    </div>
+                    <div data-show="true" class="ant-tag {% if project.projstatus.id == 7 %}ant-tag-pink{% endif %}">
+                        <span class="ant-tag-text">Removed</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <img src="{{ project.industries.0.url }}" style="width: 400px;">
+            </div>
+            <div style="margin-bottom: 24px;">
+                <h2 style="margin: 16px 0px;">Project Profile</h2>
+                <div>
+                    <div>{{ project.p_introducteE }}</div>
+                    <div>
+                        {% for tag in project.tags %}
+                        <div data-show="true" class="ant-tag ant-tag-orange">
+                            <span class="ant-tag-text">{{ tag.nameE }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div>
+                        <div style="display: flex;">
+                            <span style="width: 150px;">Region : </span><span>{{ project.country.countryE }}</span>
+                        </div>
+                        <div style="display: flex;">
+                            <span style="width: 150px;">Industry : </span><span>{{ project.industries.0.nameE }}</span>
+                        </div>
+                        <div style="display: flex;">
+                            <span style="width: 150px;">Type of Transaction : </span><span>{{ project.transactionType.0.nameE }}</span>
+                        </div>
+                        <div style="display: flex;">
+                            <span style="width: 150px;">Engagement in Transaction: </span><span>{{ project.character.characterE }} </span>
+                        </div>
+                        <div style="display: flex;">
+                            <span style="width: 150px;">TransactionSize : </span><span>$ {{ project.financeAmount_USD }}</span>
+                        </div>
+                        <div style="display: flex;">
+                            <span style="width: 150px;">Post Money Valuation : </span><span>$ {{ project.companyValuation_USD }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-bottom: 24px;">
+                <div>
+                    <h2>Financials</h2>
+                    <div>
+                        {% for item in finance %}
+                        <div>
+                            <h3>
+                                <!-- react-text: 143 -->Fiscal Year
+                                <!-- /react-text -->
+                                <!-- react-text: 144 -->
+                                <!-- /react-text -->
+                                <!-- react-text: 145 -->{{ item.fYear }}
+                                <!-- /react-text -->
+                            </h3>
+                            <div>
+                                <div style="display: flex;"><span style="width: 150px;">Revenue(USD)</span><span>$ {{ item.revenue_USD }}</span></div>
+                                <div style="display: flex;"><span style="width: 150px;">Profits(USD)</span><span>$ {{ item.netIncome_USD }}</span></div>
+                                <div style="display: flex;"><span style="width: 150px;">Gross Profits(USD)</span><span>$ {{ item.grossProfit }}</span></div>
+                                <div style="display: flex;"><span style="width: 150px;">Total Assets(USD)</span><span>$ {{ item.totalAsset }}</span></div>
+                                <div style="display: flex;"><span style="width: 150px;">Net Assets(USD)</span><span>$ {{ item.stockholdersEquity }}</span></div>
+                                <div style="display: flex;"><span style="width: 150px;">Net Cash Flow(USD)</span><span>$ {{ item.grossMerchandiseValue }}</span></div>
+                                <div style="display: flex;"><span style="width: 150px;">Operating Cash Flow(USD)</span><span>$ {{ item.operationalCashFlow }}</span></div>
+                                <div style="display: flex;"><span style="width: 150px;">EBITDA(USD)</span><span>$ {{ item.EBITDA }}</span></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div style="margin-bottom: 24px;">
+                <h2 style="margin: 16px 0px;">Details</h2>
+                <div>
+                    {% if project.targetMarketE != None %}
+                    <div>
+                        <h3>Target Market</h3>
+                        <p>
+                            {{ project.targetMarketE }}
+                        </p>
+                    </div>
+                    {%  endif %}
+                    {% if project.productTechnologyE != None %}
+                    <div>
+                        <h3>Product/Technology</h3>
+                        <p>
+                            {{ project.productTechnologyE }}
+                        </p>
+                    </div>
+                    {%  endif %}
+                    {% if project.businessModelE != None %}
+                    <div>
+                        <h3>Business Model</h3>
+                        <p>
+                            {{ project.businessModelE }}
+                        </p>
+                    </div>
+                    {%  endif %}
+                    {% if project.brandChannelE != None %}
+                    <div>
+                        <h3>Brand Channel</h3>
+                        <p>
+                            {{ project.brandChannelE }}
+                        </p>
+                    </div>
+                    {%  endif %}
+                    {% if project.managementTeamE != None %}
+                    <div>
+                        <h3>Management Team</h3>
+                        <p>{{ project.managementTeamE }}</p>
+                    </div>
+                    {%  endif %}
+                    {% if project.BusinesspartnersE != None %}
+                    <div>
+                        <h3>Business Partners</h3>
+                        <p>{{ project.BusinesspartnersE }}</p>
+                    </div>
+                    {%  endif %}
+                    {% if project.useOfProceedC != None %}
+                    <div>
+                        <h3>Use of Proceeds</h3>
+                        <p>{{ project.useOfProceedC }}</p>
+                    </div>
+                    {%  endif %}
+                    {% if project.financingHistoryE != None %}
+                    <div>
+                        <h3>Financing History</h3>
+                        <p>{{ project.financingHistoryE }}</p>
+                    </div>
+                    {%  endif %}
+                    {% if project.operationalDataE != None %}
+                    <div>
+                        <h3>Operational Data</h3>
+                        <p>{{ project.operationalDataE }}</p>
+                    </div>
+                    {%  endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

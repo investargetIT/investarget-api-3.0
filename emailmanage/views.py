@@ -124,6 +124,7 @@ def sendProjEmailToUser(proj,user,datasource):
         # response = xsendEmail(emailaddress, Email_project_sign, varsdict)
         # if response.get('status'):
         #     data['isSend'] = True
+        #     data['send_id'] = response.get('send_id')
         #     data['sendtime'] = datetime.datetime.now()
         # else:
         #     data['errmsg'] = response
@@ -157,7 +158,7 @@ class EmailgroupsendlistView(viewsets.ModelViewSet):
                 page_size = 10
             if not page_index:
                 page_index = 1
-            queryset = self.filter_queryset(self.queryset)
+            queryset = self.filter_queryset(self.queryset).filter(datasource=request.user.datasource_id)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -173,20 +174,20 @@ class EmailgroupsendlistView(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         try:
-            emailgroupsend = self.get_object()
+            data = request.data
+            send_id = data.get('send_id')
+            emailgroupsend = self.queryset.get(send_id=send_id)
             with transaction.atomic():
-                data = {
-                    'isRead':True,
-                    'readtime':datetime.datetime.now(),
-                }
+                data['isRead'] = True,
+                data['readtime'] = datetime.datetime.now(),
                 emailserializer = Emailgroupsendlistserializer(emailgroupsend, data=data)
                 if emailserializer.is_valid():
                     emailserializer.save()
                 else:
                     raise InvestError(code=20071,msg='data有误_%s' % emailserializer.errors)
-                return JSONResponse(SuccessResponse(emailserializer.data))
+                return JSONResponse({'OK?':'OK!'})
         except InvestError as err:
-            return JSONResponse(InvestErrorResponse(err))
+            return JSONResponse({'OK?':'OK!'})
         except Exception:
             catchexcption(request)
-            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+            return JSONResponse({'OK?':'OK!'})

@@ -76,7 +76,7 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
                 queryset = queryset.filter(**{'%s__%s' % (key, method): value})
         return queryset
 
-    # @loginTokenIsAvailable()
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')
@@ -105,7 +105,7 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['usersys.as_admin'])
     def create(self, request, *args, **kwargs):
         try:
             data = request.data

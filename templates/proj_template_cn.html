@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>多维海拓 Investarget</title>
+    <link rel="shortcut icon" href="/static/image/logo.png" type="image/x-icon">
+    <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+    <div class="ant-layout" style="padding: 0px 24px 24px;">
+        <div class="ant-layout-content" style="background: rgb(255, 255, 255); padding: 24px; margin: 0px; min-height: 280px;">
+            <h1>{{ project.projtitleC }}</h1>
+            <div style="margin-bottom: 24px;">
+                <span>发布时间 {{ project.createdtime }}</span>
+            </div>
+            <div style="margin-bottom: 24px;">
+                <h2 style="margin: 16px 0px;">项目审核流程</h2>
+                <div>
+                    <div data-show="true" class="ant-tag {% if project.projstatus.id == 2 %}ant-tag-pink{% endif %}">
+                        <span class="ant-tag-text">内容完善</span>
+                    </div>
+                    <div data-show="true" class="ant-tag {% if project.projstatus.id == 3 %}ant-tag-pink{% endif %}">
+                        <span class="ant-tag-text">内容校对</span>
+                    </div>
+                    <div data-show="true" class="ant-tag {% if project.projstatus.id == 4 %}ant-tag-pink{% endif %}">
+                        <span class="ant-tag-text">终审发布</span>
+                    </div>
+                    <div data-show="true" class="ant-tag {% if project.projstatus.id == 5 %}ant-tag-pink{% endif %}">
+                        <span class="ant-tag-text">交易中</span>
+                    </div>
+                    <div data-show="true" class="ant-tag {% if project.projstatus.id == 6 %}ant-tag-pink{% endif %}">
+                        <span class="ant-tag-text">已完成</span>
+                    </div>
+                    <div data-show="true" class="ant-tag {% if project.projstatus.id == 7 %}ant-tag-pink{% endif %}">
+                        <span class="ant-tag-text">已下架</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <img src="{{ project.industries.0.url }}" style="width: 400px;">
+            </div>
+            <div style="margin-bottom: 24px;">
+                <h2 style="margin: 16px 0px;">项目简介</h2>
+                <div>
+                    <div>{{ project.p_introducteC }}</div>
+                    <div>
+                        {% for tag in project.tags %}
+                            <div data-show="true" class="ant-tag ant-tag-orange">
+                                <span class="ant-tag-text">{{ tag.nameC }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div>
+                        <div style="display: flex;">
+                            <span style="width: 150px;">项目地区 : </span><span>{{ project.country.countryC }}</span>
+                        </div>
+                        <div style="display: flex;">
+                            <span style="width: 150px;">项目行业 : </span><span>{{ project.industries.0.nameC }}</span>
+                        </div>
+                        <div style="display: flex;">
+                            <span style="width: 150px;">交易类型 : </span><span>{{ project.transactionType.0.nameC }}</span>
+                        </div>
+                        <div style="display: flex;">
+                            <span style="width: 150px;">我的角色 : </span><span>{{ project.character.characterC }} </span>
+                        </div>
+                        <div style="display: flex;">
+                            <span style="width: 150px;">拟交易规模 : </span><span>$ {{ project.financeAmount_USD }}</span>
+                        </div>
+                        <div style="display: flex;">
+                            <span style="width: 150px;">公司估值 : </span><span>$ {{ project.companyValuation_USD }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-bottom: 24px;">
+                <div>
+                    <h2>财务信息</h2>
+                    <div>
+                        {% for item in finance %}
+                        <div>
+                            <h3>
+                                <!-- react-text: 143 -->财务年度
+                                <!-- /react-text -->
+                                <!-- react-text: 144 -->
+                                <!-- /react-text -->
+                                <!-- react-text: 145 -->{{ item.fYear }}
+                                <!-- /react-text -->
+                            </h3>
+                            <div>
+                                <div style="display: flex;"><span style="width: 150px;">营业收入(美元)</span><span>$ {{ item.revenue_USD }}</span></div>
+                                <div style="display: flex;"><span style="width: 150px;">净利润(美元)</span><span>$ {{ item.netIncome_USD }}</span></div>
+                                <div style="display: flex;"><span style="width: 150px;">毛利润(美元)</span><span>$ {{ item.grossProfit }}</span></div>
+                                <div style="display: flex;"><span style="width: 150px;">总资产(美元)</span><span>$ {{ item.totalAsset }}</span></div>
+                                <div style="display: flex;"><span style="width: 150px;">净资产(美元)</span><span>$ {{ item.stockholdersEquity }}</span></div>
+                                <div style="display: flex;"><span style="width: 150px;">净现金流(美元)</span><span>$ {{ item.grossMerchandiseValue }}</span></div>
+                                <div style="display: flex;"><span style="width: 150px;">经营性现金流(美元)</span><span>$ {{ item.operationalCashFlow }}</span></div>
+                                <div style="display: flex;"><span style="width: 150px;">息税折旧摊销前利润(美元)</span><span>$ {{ item.EBITDA }}</span></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div style="margin-bottom: 24px;">
+                <h2 style="margin: 16px 0px;">项目详情</h2>
+                <div>
+                    {% if project.targetMarketC != None %}
+                    <div>
+                        <h3>目标市场</h3>
+                        <p>
+                            {{ project.targetMarketC }}
+                        </p>
+                    </div>
+                    {%  endif %}
+                    {% if project.productTechnologyC != None %}
+                    <div>
+                        <h3>核心产品</h3>
+                        <p>
+                            {{ project.productTechnologyC }}
+                        </p>
+                    </div>
+                    {%  endif %}
+                    {% if project.businessModelC != None %}
+                    <div>
+                        <h3>商业模式</h3>
+                        <p>
+                            {{ project.businessModelC }}
+                        </p>
+                    </div>
+                    {%  endif %}
+                    {% if project.brandChannelC != None %}
+                    <div>
+                        <h3>品牌渠道</h3>
+                        <p>
+                            {{ project.brandChannelC }}
+                        </p>
+                    </div>
+                    {%  endif %}
+                    {% if project.managementTeamC != None %}
+                    <div>
+                        <h3>管理团队</h3>
+                        <p>{{ project.managementTeamC }}</p>
+                    </div>
+                    {%  endif %}
+                    {% if project.BusinesspartnersC != None %}
+                    <div>
+                        <h3>商业伙伴</h3>
+                        <p>{{ project.BusinesspartnersC }}</p>
+                    </div>
+                    {%  endif %}
+                    {% if project.useOfProceedC != None %}
+                    <div>
+                        <h3>资金用途</h3>
+                        <p>{{ project.useOfProceedC }}</p>
+                    </div>
+                    {%  endif %}
+                    {% if project.financingHistoryC != None %}
+                    <div>
+                        <h3>融资历史</h3>
+                        <p>{{ project.financingHistoryC }}</p>
+                    </div>
+                    {%  endif %}
+                    {% if project.operationalDataC != None %}
+                    <div>
+                        <h3>经营数据</h3>
+                        <p>{{ project.operationalDataC }}</p>
+                    </div>
+                    {%  endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
