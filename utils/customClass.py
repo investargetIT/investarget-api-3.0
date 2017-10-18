@@ -28,7 +28,7 @@ class InvestError(Exception):
             self.msg = responsecode[str(code)]
 
 class RelationFilter(Filter):
-    def __init__(self, filterstr,lookup_method,relationName=None, **kwargs):
+    def __init__(self, filterstr,lookup_method='exact',relationName=None, **kwargs):
         self.filterstr = filterstr
         self.lookup_method = lookup_method
         self.relationName = relationName

@@ -1151,6 +1151,19 @@ def testPdf(request):
         res = render(request, 'proj_template_en.html', aaa)
     return HttpResponse(res)
 
+class ProjectBDFilter(FilterSet):
+    com_name = RelationFilter(filterstr='com_name',lookup_method='icontains')
+    location = RelationFilter(filterstr='location', lookup_method='in')
+    username = RelationFilter(filterstr='username', lookup_method='icontains')
+    usermobile = RelationFilter(filterstr='usermobile', lookup_method='contains')
+    source = RelationFilter(filterstr='source',lookup_method='icontains')
+    manager = RelationFilter(filterstr='manager',lookup_method='in')
+    bd_status = RelationFilter(filterstr='bd_status', lookup_method='in')
+    class Meta:
+        model = ProjectBD
+        fields = ('com_name','location','username','usermobile','source','manager','bd_status')
+
+
 class ProjectBDView(viewsets.ModelViewSet):
     """
     list:获取新项目BD
@@ -1161,7 +1174,7 @@ class ProjectBDView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.DjangoFilterBackend,filters.SearchFilter)
     queryset = ProjectBD.objects.filter(is_deleted=False)
-    filter_fields = ('com_name','location','username','usermobile','source','manager','bd_status')
+    filter_class = ProjectBDFilter
     search_fields = ('com_name', 'username', 'source')
     serializer_class = ProjectBDSerializer
 
