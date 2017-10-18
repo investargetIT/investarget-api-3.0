@@ -1159,9 +1159,10 @@ class ProjectBDView(viewsets.ModelViewSet):
     update:修改bd信息
     destroy:删除新项目BD
     """
-    filter_backends = (filters.DjangoFilterBackend,)
+    filter_backends = (filters.DjangoFilterBackend,filters.SearchFilter)
     queryset = ProjectBD.objects.filter(is_deleted=False)
     filter_fields = ('com_name','location','username','usermobile','source','manager','bd_status')
+    search_fields = ('com_name', 'username', 'source')
     serializer_class = ProjectBDSerializer
 
     def get_queryset(self):
