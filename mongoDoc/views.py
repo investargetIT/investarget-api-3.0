@@ -268,8 +268,8 @@ class ProjectRemarkView(viewsets.ModelViewSet):
             else:
                 raise InvestError(2009)
             data = request.data
-            data.pop('createuser_id')
-            data.pop('datasource')
+            data.pop('createuser_id',None)
+            data.pop('datasource',None)
             serializer = self.serializer_class(instance,data=data)
             if serializer.is_valid():
                 serializer.save()
