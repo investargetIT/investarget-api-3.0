@@ -3,6 +3,8 @@ import os
 import traceback
 
 import pdfkit
+from PyPDF2 import PdfFileReader
+from PyPDF2 import PdfFileWriter
 from django.core.paginator import Paginator, EmptyPage
 from django.db import models,transaction
 from django.db.models import Q,QuerySet
@@ -10,6 +12,7 @@ from django.core.exceptions import FieldDoesNotExist
 from django.http import HttpResponse
 from django.http import StreamingHttpResponse
 from django.shortcuts import render
+from reportlab.pdfgen import canvas
 from rest_framework import filters, viewsets
 import datetime
 
@@ -17,7 +20,7 @@ from rest_framework.decorators import detail_route
 
 from APIlog.views import viewprojlog
 from dataroom.views import pulishProjectCreateDataroom
-from invest.settings import PROJECTPDF_URLPATH
+from invest.settings import PROJECTPDF_URLPATH, APILOG_PATH
 from proj.models import project, finance, projectTags, projectIndustries, projectTransactionType, favoriteProject, \
     ShareToken, attachment, projServices, ProjectBD, ProjectBDComments
 from proj.serializer import ProjSerializer, FinanceSerializer, ProjCreatSerializer, \
@@ -504,7 +507,6 @@ class ProjectView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def sendPDFMail(self, request, *args, **kwargs):
         try:
-            type = request.GET.get('type')
             lang = request.GET.get('lang','cn')
             proj = self.get_object()
             if proj.isHidden:
@@ -521,8 +523,9 @@ class ProjectView(viewsets.ModelViewSet):
                 'no-outline': None,
             }
             pdfpath = 'P' + datetime.datetime.now().strftime('%Y%m%d%H%M%S') + '.pdf'
-            config = pdfkit.configuration(wkhtmltopdf='/usr/local/bin/wkhtmltopdf')
+            config = pdfkit.configuration(wkhtmltopdf=APILOG_PATH['wkhtmltopdf'])
             aaa = pdfkit.from_url(PROJECTPDF_URLPATH + str(proj.id)+'&lang=%s'%lang, pdfpath, configuration=config, options=options)
+            self.addWaterMark(pdfpath)
             if aaa:
                 def file_iterator(fn, chunk_size=512):
                     while True:
@@ -543,6 +546,28 @@ class ProjectView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    def addWaterMark(self,pdfpath='water.pdf',watermarkcontent='多维海拓'):
+        watermarkpath = 'water-'+pdfpath
+        c = canvas.Canvas(watermarkpath)
+        c.drawString(15, 720, watermarkcontent)
+        c.drawString(5, 720, watermarkcontent)
+        c.drawString(15, 720, watermarkcontent)
+        c.rotate(45)
+        c.setFont("Helvetica", 80)
+        c.save()
+        watermark = PdfFileReader(open(watermarkpath, "rb"))
+
+        # Get our files ready
+        output_file = PdfFileWriter()
+        input_file = PdfFileReader(open(pdfpath, "rb"))
+        page_count = input_file.getNumPages()
+        for page_number in range(page_count):
+            input_page = input_file.getPage(page_number)
+            input_page.mergePage(watermark.getPage(0))
+            output_file.addPage(input_page)
+        with open(pdfpath, "wb") as outputStream:
+            output_file.write(outputStream)
 
 class ProjAttachmentView(viewsets.ModelViewSet):
     """
