@@ -11,7 +11,8 @@ from utils.util import SuccessResponse, catchexcption, ExceptionResponse, Invest
 @api_view(['GET'])
 def getcurrencyreat(request):
     try:
-        checkrequesttoken(request)
+        tokenkey = request.META.get('HTTP_TOKEN')
+        checkrequesttoken(tokenkey)
         tcur = request.GET.get('tcur', None)
         scur = request.GET.get('scur', None)
         if not tcur or not scur:

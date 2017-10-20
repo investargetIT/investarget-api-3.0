@@ -99,12 +99,11 @@ def loginTokenIsAvailable(permissions=None):#判断class级别权限
         return _token_available
     return token_available
 
-def checkrequesttoken(request):#验证token有效
+def checkrequesttoken(token):#验证token有效
     try:
-        tokenkey = request.META.get('HTTP_TOKEN')
-        if tokenkey:
+        if token:
             try:
-                token = MyToken.objects.get(key=tokenkey, is_deleted=False)
+                token = MyToken.objects.get(key=token, is_deleted=False)
             except MyToken.DoesNotExist:
                 raise InvestError(3000, msg='token不存在')
         else:
@@ -116,9 +115,9 @@ def checkrequesttoken(request):#验证token有效
     else:
         if token.created < datetime.datetime.now() - datetime.timedelta(hours=24 * 1):
             raise InvestError(3000, msg='token过期')
-        request.user = token.user
         if token.user.is_deleted:
             raise InvestError(3000, msg='用户不存在')
+    return token.user
 
 
 def setrequestuser(request):#根据token设置request.user

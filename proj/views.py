@@ -37,7 +37,7 @@ from usersys.models import MyUser
 from utils.sendMessage import sendmessage_favoriteproject, sendmessage_projectpublish
 from utils.util import catchexcption, read_from_cache, write_to_cache, loginTokenIsAvailable, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser, \
-    setUserObjectPermission, checkConformType, cache_delete_key
+    setUserObjectPermission, checkConformType, cache_delete_key, checkrequesttoken
 from utils.customClass import JSONResponse, InvestError, RelationFilter
 from django_filters import FilterSet
 
@@ -504,9 +504,9 @@ class ProjectView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @detail_route(methods=['get'])
-    @loginTokenIsAvailable()
     def sendPDFMail(self, request, *args, **kwargs):
         try:
+            request.user = checkrequesttoken(request.GET.get('acw_tk'))
             lang = request.GET.get('lang','cn')
             proj = self.get_object()
             if proj.isHidden:
@@ -525,7 +525,7 @@ class ProjectView(viewsets.ModelViewSet):
             pdfpath = 'P' + datetime.datetime.now().strftime('%Y%m%d%H%M%S') + '.pdf'
             config = pdfkit.configuration(wkhtmltopdf=APILOG_PATH['wkhtmltopdf'])
             aaa = pdfkit.from_url(PROJECTPDF_URLPATH + str(proj.id)+'&lang=%s'%lang, pdfpath, configuration=config, options=options)
-            self.addWaterMark(pdfpath)
+            out_path = self.addWaterMark(pdfpath)
             if aaa:
                 def file_iterator(fn, chunk_size=512):
                     while True:
@@ -534,10 +534,10 @@ class ProjectView(viewsets.ModelViewSet):
                             yield c
                         else:
                             break
-                fn = open(pdfpath, 'rb')
+                fn = open(out_path, 'rb')
                 response = StreamingHttpResponse(file_iterator(fn))
                 response['Content-Type'] = 'application/octet-stream'
-                os.remove(pdfpath)
+                os.remove(out_path)
             else:
                 raise InvestError(50010,msg='pdf生成失败')
             return response
@@ -549,6 +549,7 @@ class ProjectView(viewsets.ModelViewSet):
 
     def addWaterMark(self,pdfpath='water.pdf',watermarkcontent='多维海拓'):
         watermarkpath = 'water-'+pdfpath
+        out_path = 'out-'+ pdfpath
         c = canvas.Canvas(watermarkpath)
         c.drawString(15, 720, watermarkcontent)
         c.drawString(5, 720, watermarkcontent)
@@ -566,8 +567,11 @@ class ProjectView(viewsets.ModelViewSet):
             input_page = input_file.getPage(page_number)
             input_page.mergePage(watermark.getPage(0))
             output_file.addPage(input_page)
-        with open(pdfpath, "wb") as outputStream:
+        with open(out_path, "wb") as outputStream:
             output_file.write(outputStream)
+        os.remove(pdfpath)
+        os.remove(watermarkpath)
+        return out_path
 
 class ProjAttachmentView(viewsets.ModelViewSet):
     """
@@ -1173,9 +1177,9 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
 
 
 def testPdf(request):
-    id = request.GET.get('id')
+    projid = request.GET.get('id')
     lang = request.GET.get('lang', 'cn')
-    proj = project.objects.get(id=id)
+    proj = project.objects.get(id=projid)
     aaa = {
         'project': ProjDetailSerializer_user_withoutsecretinfo(proj).data,
         'finance': FinanceSerializer(proj.proj_finances.filter(is_deleted=False), many=True).data
