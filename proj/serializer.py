@@ -91,7 +91,7 @@ class ProjCommonSerializer(serializers.ModelSerializer):
     industries = serializers.SerializerMethodField()
     class Meta:
         model = project
-        fields = ('id','industries','projtitleC','projtitleE','tags','financeAmount','financeAmount_USD','country','projstatus','isHidden','ismarketplace','supportUser')
+        fields = ('id','industries','projtitleC','projtitleE','tags', 'currency', 'financeAmount','financeAmount_USD','country','projstatus','isHidden','ismarketplace','supportUser')
         depth = 1
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_projects__is_deleted=False)
@@ -166,7 +166,7 @@ class ProjListSerializer_admin(serializers.ModelSerializer):
     transactionType = serializers.SerializerMethodField()
     class Meta:
         model = project
-        fields = ('id','industries','projtitleC','projtitleE', 'transactionType','tags','financeAmount','financeAmount_USD','country','projstatus','isHidden','ismarketplace')
+        fields = ('id','industries','projtitleC','projtitleE', 'currency','transactionType','tags','financeAmount','financeAmount_USD','country','projstatus','isHidden','ismarketplace')
         depth = 1
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_projects__is_deleted=False)
@@ -204,7 +204,7 @@ class ProjListSerializer_user(serializers.ModelSerializer):
     class Meta:
         model = project
         depth = 1
-        fields = ('id','industries','projtitleC','projtitleE','tags','transactionType','financeAmount','financeAmount_USD','country','projstatus', 'ismarketplace')
+        fields = ('id','industries','projtitleC','projtitleE','tags', 'currency', 'transactionType','financeAmount','financeAmount_USD','country','projstatus', 'ismarketplace')
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_projects__is_deleted=False)
         if qs.exists():
