@@ -65,7 +65,8 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
                     'date': 'startswith',
                     'invsest_with': 'in',
                     'round': 'in',
-                    'merger_with': 'icontains', }
+                    'merger_with': 'icontains',
+                    'com_id':'in'}
 
     def filterqueryset(self, request, queryset):
         for key, method in self.filter_class.items():
@@ -111,7 +112,15 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
             data = request.data
             serializer = self.serializer_class(data=data)
             if serializer.is_valid():
-                serializer.save()
+                event = serializer.save()
+                if event.investormerge == 1:
+                    proj = ProjectData.objects(com_id=data['com_id'])
+                    proj = proj.first()
+                    if proj:
+                        if proj.invse_date < event.date:
+                            proj.update(invse_date=event.date)
+                            proj.update(invse_detail_money=event.money)
+                            proj.update(invse_round_id=event.round)
             else:
                 raise InvestError(2001, msg=serializer.error_messages)
             return JSONResponse(SuccessResponse(serializer.data))

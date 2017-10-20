@@ -81,7 +81,7 @@ class ProjSerializer(serializers.ModelSerializer):
     proj_attachment = ProjAttachmentSerializer(many=True)
     class Meta:
         model = project
-        exclude = ('isSendEmail','datasource')
+        exclude = ('isSendEmail','datasource','realname')
         depth = 1
 
 class ProjCommonSerializer(serializers.ModelSerializer):
@@ -342,7 +342,7 @@ class ProjDetailSerializer_admin_withoutsecretinfo(serializers.ModelSerializer):
     linkpdfurl = serializers.SerializerMethodField()
     class Meta:
         model = project
-        exclude = ('phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail')
+        exclude = ('phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail','realname')
         depth = 1
 
     def get_service(self, obj):
@@ -394,7 +394,7 @@ class ProjDetailSerializer_user_withoutsecretinfo(serializers.ModelSerializer):
     linkpdfurl = serializers.SerializerMethodField()
     class Meta:
         model = project
-        exclude = ('phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail',)
+        exclude = ('phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail','realname')
         depth = 1
 
     def get_service(self, obj):

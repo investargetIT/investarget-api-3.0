@@ -8,6 +8,7 @@ from django.db import models,transaction
 from django.db.models import Q,QuerySet
 from django.core.exceptions import FieldDoesNotExist
 from django.http import HttpResponse
+from django.http import StreamingHttpResponse
 from django.shortcuts import render
 from rest_framework import filters, viewsets
 import datetime
@@ -503,7 +504,7 @@ class ProjectView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def sendPDFMail(self, request, *args, **kwargs):
         try:
-            destination = request.GET.get('to')
+            type = request.GET.get('type')
             lang = request.GET.get('lang','cn')
             proj = self.get_object()
             if proj.isHidden:
@@ -523,11 +524,20 @@ class ProjectView(viewsets.ModelViewSet):
             config = pdfkit.configuration(wkhtmltopdf='/usr/local/bin/wkhtmltopdf')
             aaa = pdfkit.from_url(PROJECTPDF_URLPATH + str(proj.id)+'&lang=%s'%lang, pdfpath, configuration=config, options=options)
             if aaa:
-                res = sendEmail(destination=destination, subject='text', text='summer', attachmentpath=pdfpath)
+                def file_iterator(fn, chunk_size=512):
+                    while True:
+                        c = fn.read(chunk_size)
+                        if c:
+                            yield c
+                        else:
+                            break
+                fn = open(pdfpath, 'rb')
+                response = StreamingHttpResponse(file_iterator(fn))
+                response['Content-Type'] = 'application/octet-stream'
                 os.remove(pdfpath)
             else:
                 raise InvestError(50010,msg='pdf生成失败')
-            return JSONResponse(SuccessResponse(res))
+            return response
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
