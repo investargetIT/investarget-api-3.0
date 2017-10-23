@@ -226,11 +226,3 @@ def saveMsgToMongo(msgdata):
         chatfrom = msgdata.pop('from')
         msgdata['chatfrom'] = chatfrom
         saveChatMessageDataToMongo(msgdata)
-
-def test2(request):
-    readMsgFromFile('chatmsg')
-    return JSONResponse({'s':'s'})
-
-def test1(request):
-    suc,res = downloadChatMessages()
-    return JSONResponse({'success':suc, 'result':res})

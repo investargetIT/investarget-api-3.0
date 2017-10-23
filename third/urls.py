@@ -14,6 +14,5 @@ urlpatterns = [
     url(r'^ccupload', views.others.ccupload, name='ccupload', ),
     url(r'^uploadToken$', views.qiniufile.qiniu_uploadtoken, name='getuploadtoken',),
     url(r'^downloadUrl$', views.qiniufile.qiniu_downloadurl, name='getdownloadurl',),
-    url(r'^test2/$',views.huanxin.test2),
-    url(r'^test1/$',views.huanxin.test1),
+    url(r'^getQRCode$',views.others.getQRCode,name='getQRCode',),
 ]

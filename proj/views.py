@@ -549,8 +549,8 @@ class ProjectView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     def addWaterMark(self,pdfpath='water.pdf',watermarkcontent='多维海拓'):
-        watermarkpath =  pdfpath.split('.')[0] + 'water-'+ '.pdf'
-        out_path = pdfpath.split('.')[0] + 'out-'+ '.pdf'
+        watermarkpath =  pdfpath.split('.')[0] + '-water'+ '.pdf'
+        out_path = pdfpath.split('.')[0] + '-out'+ '.pdf'
         c = canvas.Canvas(watermarkpath)
         c.drawString(15, 720, watermarkcontent)
         c.drawString(5, 720, watermarkcontent)
