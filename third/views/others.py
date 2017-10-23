@@ -77,7 +77,7 @@ def getQRCode(request):
         request.user = checkrequesttoken(request.GET.get('acw_tk'))
         url = request.GET.get('url',None)
         if url:
-            qrcode_path = APILOG_PATH['qrcode']
+            qrcode_path = APILOG_PATH['excptionlogpath'] + 'qrcode.png'
             def file_iterator(fn, chunk_size=512):
                 while True:
                     c = fn.read(chunk_size)
