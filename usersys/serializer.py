@@ -163,11 +163,10 @@ class UserListSerializer(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
     trader_relation = serializers.SerializerMethodField()
     country = countrySerializer()
-    IR = UserCommenSerializer()
     photourl = serializers.SerializerMethodField()
     class Meta:
         model = MyUser
-        fields = ('id','groups','tags','country','department','usernameC','usernameE','mobile','IR','email','title','userstatus','org','trader_relation','photourl')
+        fields = ('id','groups','tags','country','department','usernameC','usernameE','mobile','email','title','userstatus','org','trader_relation','photourl')
         depth = 1
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_usertags__is_deleted=False)

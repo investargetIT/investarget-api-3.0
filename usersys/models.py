@@ -107,7 +107,6 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     targetdemand = models.TextField(help_text='标的需求',blank=True,default='标的需求')
     mergedynamic = models.TextField(help_text='并购动态', blank=True, default='并购动态')
     ishasfundorplan = models.TextField(help_text='是否有产业基金或成立计划', blank=True, default='是否有产业基金或成立计划')
-    IR = MyForeignKey('self',blank=True,null=True,help_text='IR')
     registersource = models.SmallIntegerField(help_text='注册来源',choices=registersourcechoice,default=1)
     lastmodifytime = models.DateTimeField(auto_now=True,null=True)
     lastmodifyuser = MyForeignKey('self',help_text='修改者',blank=True,null=True,related_name='usermodify_users',related_query_name='user_modifyuser',on_delete=models.SET_NULL)

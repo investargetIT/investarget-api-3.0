@@ -234,7 +234,6 @@ class UserView(viewsets.ModelViewSet):
                 user.set_password(password)
                 user.save()
                 tags = data.pop('tags', None)
-                data.pop('IR', None)
                 userserializer = CreatUserSerializer(user, data=data)
                 if userserializer.is_valid():
                     user = userserializer.save()

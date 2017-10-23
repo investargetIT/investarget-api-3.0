@@ -522,7 +522,7 @@ class ProjectView(viewsets.ModelViewSet):
                 'encoding': "UTF-8",
                 'no-outline': None,
             }
-            pdfpath = 'P' + datetime.datetime.now().strftime('%Y%m%d%H%M%S') + '.pdf'
+            pdfpath = APILOG_PATH['pdfpath_base'] + 'P' + datetime.datetime.now().strftime('%Y%m%d%H%M%S') + '.pdf'
             config = pdfkit.configuration(wkhtmltopdf=APILOG_PATH['wkhtmltopdf'])
             aaa = pdfkit.from_url(PROJECTPDF_URLPATH + str(proj.id)+'&lang=%s'%lang, pdfpath, configuration=config, options=options)
             out_path = self.addWaterMark(pdfpath)
@@ -549,8 +549,8 @@ class ProjectView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     def addWaterMark(self,pdfpath='water.pdf',watermarkcontent='多维海拓'):
-        watermarkpath = 'water-'+pdfpath
-        out_path = 'out-'+ pdfpath
+        watermarkpath =  pdfpath.split('.')[0] + 'water-'+ '.pdf'
+        out_path = pdfpath.split('.')[0] + 'out-'+ '.pdf'
         c = canvas.Canvas(watermarkpath)
         c.drawString(15, 720, watermarkcontent)
         c.drawString(5, 720, watermarkcontent)
