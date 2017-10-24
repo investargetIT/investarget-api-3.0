@@ -35,7 +35,7 @@ IMChatMessagesList = views.IMChatMessagesView.as_view({
 
 WXChatDataList = views.WXChatDataView.as_view({
         'get': 'list',
-
+        'put': 'update',
 })
 
 urlpatterns = [

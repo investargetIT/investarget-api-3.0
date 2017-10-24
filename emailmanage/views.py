@@ -187,7 +187,7 @@ class EmailgroupsendlistView(viewsets.ModelViewSet):
                     raise InvestError(code=20071,msg='data有误_%s' % emailserializer.errors)
                 return JSONResponse({'OK?':'OK!'})
         except InvestError as err:
-            return JSONResponse({'OK?':'OK!'})
+            return JSONResponse({'OK?':'NO!'})
         except Exception:
             catchexcption(request)
-            return JSONResponse({'OK?':'OK!'})
+            return JSONResponse({'OK?':'NO!'})

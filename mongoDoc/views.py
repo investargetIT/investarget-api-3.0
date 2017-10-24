@@ -6,6 +6,7 @@ import datetime
 import time
 # Create your views here.
 from django.core.paginator import Paginator, EmptyPage
+from django.db import transaction
 from mongoengine import Q
 from rest_framework import viewsets
 from bson.objectid import ObjectId
@@ -364,7 +365,7 @@ class WXChatDataView(viewsets.ModelViewSet):
                 page_size = 10
             if not page_index:
                 page_index = 1
-            queryset = self.queryset(isShow=True)
+            queryset = self.queryset
             sort = request.GET.get('sort')
             if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
                 queryset = queryset.order_by('-createtime',)
@@ -383,6 +384,26 @@ class WXChatDataView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            id = request.GET.get('id')
+            instance = self.queryset.get(id=ObjectId(id))
+            with transaction.atomic():
+                data = {}
+                data['isShow'] = True,
+                serializer = self.serializer_class(instance, data=data)
+                if serializer.is_valid():
+                    serializer.save()
+                else:
+                    raise InvestError(2001, msg=serializer.error_messages)
+                return JSONResponse({'OK?': 'OK!'})
+        except InvestError as err:
+            return JSONResponse({'OK?': 'NO!'})
+        except Exception:
+            catchexcption(request)
+            return JSONResponse({'OK?': 'NO!'})
 
 
 def saveSendEmailDataToMongo(data):
