@@ -361,11 +361,12 @@ class WXChatDataView(viewsets.ModelViewSet):
         try:
             page_size = request.GET.get('page_size')
             page_index = request.GET.get('page_index')  # 从第一页开始
+            isShow = request.GET.get('isShow',False)
             if not page_size:
                 page_size = 10
             if not page_index:
                 page_index = 1
-            queryset = self.queryset
+            queryset = self.queryset(isShow=isShow)
             sort = request.GET.get('sort')
             if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
                 queryset = queryset.order_by('-createtime',)
@@ -398,12 +399,12 @@ class WXChatDataView(viewsets.ModelViewSet):
                     serializer.save()
                 else:
                     raise InvestError(2001, msg=serializer.error_messages)
-                return JSONResponse({'OK?': 'OK!'})
+                return JSONResponse(SuccessResponse(serializer.data))
         except InvestError as err:
-            return JSONResponse({'OK?': 'NO!'})
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
-            return JSONResponse({'OK?': 'NO!'})
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
 def saveSendEmailDataToMongo(data):
