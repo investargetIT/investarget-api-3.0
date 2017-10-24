@@ -46,9 +46,10 @@ class UserFilter(FilterSet):
     userstatus = RelationFilter(filterstr='userstatus',lookup_method='in')
     currency = RelationFilter(filterstr='org__currency', lookup_method='in')
     orgtransactionphases = RelationFilter(filterstr='org__orgtransactionphase', lookup_method='in',relationName='org__org_orgTransactionPhases__is_deleted')
+    trader = RelationFilter(filterstr='investor_relations__traderuser', lookup_method='in')
     class Meta:
         model = MyUser
-        fields = ('groups','org','tags','userstatus','currency','orgtransactionphases','orgarea','usercode','title')
+        fields = ('groups','org','tags','userstatus','currency','orgtransactionphases','orgarea','usercode','title','trader')
 
 
 class UserView(viewsets.ModelViewSet):

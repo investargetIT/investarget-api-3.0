@@ -392,7 +392,7 @@ class WXChatDataView(viewsets.ModelViewSet):
             instance = self.queryset.get(id=ObjectId(id))
             with transaction.atomic():
                 data = {}
-                data['isShow'] = True,
+                data['isShow'] = not instance.isShow,
                 serializer = self.serializer_class(instance, data=data)
                 if serializer.is_valid():
                     serializer.save()
