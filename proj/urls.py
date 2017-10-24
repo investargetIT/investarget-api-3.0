@@ -43,7 +43,7 @@ getshareproj = views.ProjectView.as_view({
 })
 
 getprojpdf = views.ProjectView.as_view({
-        'get':'sendPDFMail'
+        'get':'sendPDF'
 })
 
 projbd_list = views.ProjectBDView.as_view({

@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import datetime
 from mongoengine import *
 from invest.settings import groupemailMongoTableName, chatMessagegMongoTableName, projectDataMongoTableName, \
-    mergeandfinanceeventMongoTableName, com_catMongoTableName, projremarkMongoTableName
+    mergeandfinanceeventMongoTableName, com_catMongoTableName, projremarkMongoTableName, wxchatdataMongoTableName
 from utils.customClass import InvestError
 
 
@@ -103,3 +103,11 @@ class IMChatMessages(Document):
     chat_type = StringField()
     payload = DictField()
     meta = {"collection": chatMessagegMongoTableName}
+
+class WXChatdata(Document):
+    content = StringField()
+    createtime = DateTimeField()
+    name = StringField()
+    group_name = StringField()
+    isShow = BooleanField(default=True)
+    meta = {"collection": wxchatdataMongoTableName}

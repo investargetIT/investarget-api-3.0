@@ -134,7 +134,7 @@ class ProjectBDCommentsCreateSerializer(serializers.ModelSerializer):
 class ProjectBDCommentsSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectBDComments
-        fields = ('comments','id','createdtime','projectBD')
+        fields = ('comments','id','createdtime','projectBD','address')
 
 class ProjectBDCreateSerializer(serializers.ModelSerializer):
     class Meta:

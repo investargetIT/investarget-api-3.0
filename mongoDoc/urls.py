@@ -32,6 +32,12 @@ IMChatMessagesList = views.IMChatMessagesView.as_view({
         'get': 'list',
 
 })
+
+WXChatDataList = views.WXChatDataView.as_view({
+        'get': 'list',
+
+})
+
 urlpatterns = [
     url(r'^cat', CompanyCatDataList, name='CompanyCatData-list', ),
     url(r'^event$', MergeFinanceDataList, name='MergeFinanceData-list', ),
@@ -39,4 +45,5 @@ urlpatterns = [
     url(r'^projremark$', ProjectRemarkList, name='ProjectRemark-list',),
     url(r'^email$', EmailGroupList,name='WXContent-list',),
     url(r'^chatmsg$', IMChatMessagesList, name='IMChatMessages-list', ),
+    url(r'^wxmsg$', WXChatDataList, name='WXChatData-list', ),
 ]

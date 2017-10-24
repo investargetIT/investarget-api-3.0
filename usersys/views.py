@@ -496,7 +496,7 @@ class UserView(viewsets.ModelViewSet):
                     else:
                         raise InvestError(code=2009)
                     for link in ['investor_relations','trader_relations','investor_timelines','supportor_timelines','trader_timelines','usersupport_projs','usertake_projs',
-                                 'usermake_projs','user_usertags','user_datarooms','trader_datarooms','investor_datarooms','user_remarks']:
+                                 'usermake_projs','user_usertags','user_datarooms','trader_datarooms','investor_datarooms','user_remarks','userreceive_msgs','usersend_msgs']:
                         if link in ['investor_relations','trader_relations','investor_timelines','supportor_timelines','trader_timelines','user_datarooms','trader_datarooms','investor_datarooms']:
                             manager = getattr(instance, link, None)
                             if not manager:

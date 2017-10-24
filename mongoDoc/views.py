@@ -9,9 +9,10 @@ from django.core.paginator import Paginator, EmptyPage
 from mongoengine import Q
 from rest_framework import viewsets
 from bson.objectid import ObjectId
-from mongoDoc.models import GroupEmailData, IMChatMessages, ProjectData, MergeFinanceData, CompanyCatData, ProjRemark
+from mongoDoc.models import GroupEmailData, IMChatMessages, ProjectData, MergeFinanceData, CompanyCatData, ProjRemark, \
+    WXChatdata
 from mongoDoc.serializers import GroupEmailDataSerializer, IMChatMessagesSerializer, ProjectDataSerializer, \
-    MergeFinanceDataSerializer, CompanyCatDataSerializer, ProjRemarkSerializer
+    MergeFinanceDataSerializer, CompanyCatDataSerializer, ProjRemarkSerializer, WXChatdataSerializer
 from utils.customClass import JSONResponse, InvestError
 from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, catchexcption, logexcption, \
     loginTokenIsAvailable
@@ -335,6 +336,40 @@ class GroupEmailDataView(viewsets.ModelViewSet):
                 queryset = queryset.order_by('-savetime',)
             else:
                 queryset = queryset.order_by('savetime',)
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = self.serializer_class(queryset,many=True)
+            return JSONResponse(SuccessResponse({'count':count,'data':serializer.data}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+class WXChatDataView(viewsets.ModelViewSet):
+    queryset = WXChatdata.objects.all()
+    serializer_class = WXChatdataSerializer
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.queryset(isShow=True)
+            sort = request.GET.get('sort')
+            if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
+                queryset = queryset.order_by('-createtime',)
+            else:
+                queryset = queryset.order_by('createtime',)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)

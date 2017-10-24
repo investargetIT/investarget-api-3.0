@@ -1,10 +1,12 @@
 #coding=utf-8
 from __future__ import unicode_literals
 
+import datetime
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
 # Create your models here.
+from proj.models import project
 from sourcetype.models import MessageType, DataSource
 from usersys.models import MyUser
 
@@ -35,3 +37,34 @@ class message(models.Model):
         return self.messagetitle
     class Meta:
         db_table = 'msg'
+
+class schedule(models.Model):
+    user = MyForeignKey(MyUser,blank=True,null=True,help_text='日程对象',related_name='user_beschedule')
+    scheduledtime = models.DateTimeField(blank=True,null=True,help_text='日程预定时间',)
+    comments = models.TextField(blank=True, default=False, help_text='内容')
+    address = models.TextField(blank=True, null=True, help_text='具体地址')
+    proj = MyForeignKey(project,blank=True,null=True,help_text='日程项目',related_name='proj_schedule')
+    projtitle = models.CharField(max_length=128,blank=True,null=True)
+    createdtime = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_schedule')
+    is_deleted = models.BooleanField(blank=True, default=False)
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_schedule')
+    deletedtime = models.DateTimeField(blank=True, null=True)
+    datasource = models.IntegerField(blank=True, null=True)
+    class Meta:
+        db_table = 'schedule'
+        permissions = (
+            ('admin_manageSchedule', '管理员管理日程'),
+        )
+
+    def save(self, *args, **kwargs):
+        if self.createdtime is None:
+            self.createdtime = datetime.datetime.now()
+        if self.createuser is None:
+            raise InvestError(2007,msg='createuser can`t be null')
+        if self.scheduledtime < datetime.datetime.now():
+            raise InvestError(2007,msg='日程时间不能是过去的时间')
+        if self.projtitle is None:
+            self.projtitle = self.proj.projtitleC
+        self.datasource = self.createuser.datasource_id
+        return super(schedule, self).save(*args, **kwargs)

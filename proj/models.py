@@ -360,6 +360,7 @@ class ProjectBD(models.Model):
 
 class ProjectBDComments(models.Model):
     comments = models.TextField(blank=True, default=False, help_text='内容')
+    address = models.TextField(blank=True, null=True, help_text='具体地址')
     projectBD = MyForeignKey(ProjectBD,blank=True,null=True,help_text='bd项目',related_name='ProjectBD_comments')
     is_deleted = models.BooleanField(blank=True,default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_ProjectBDComments')
