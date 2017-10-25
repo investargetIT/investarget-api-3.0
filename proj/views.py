@@ -439,7 +439,7 @@ class ProjectView(viewsets.ModelViewSet):
                 raise InvestError(code=2010, msg=u'{} 上有关联数据'.format('proj_datarooms'))
             with transaction.atomic():
                 for link in ['proj_timelines','proj_finances','proj_attachment','project_tags','project_industries','project_TransactionTypes',
-                             'proj_favorite','proj_sharetoken','proj_datarooms','proj_services']:
+                             'proj_favorite','proj_sharetoken','proj_datarooms','proj_services','proj_schedule']:
                     if link in ['proj_timelines']:
                         manager = getattr(instance, link, None)
                         if not manager:

@@ -25,12 +25,6 @@ class publicdirectorytemplate(models.Model):
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_publicdirectorytemplate')
     class Meta:
         db_table = 'dataroompublicdirectorytemplate'
-        permissions = (
-            # ('admin_getdataroomtemplate','管理员查看dataroomtemplate'),
-            # ('admin_changedataroomtemplate', '管理员修改dataroomtemplate'),
-            # ('admin_deletedataroomtemplate', '管理员删除dataroomtemplate'),
-            # ('admin_adddataroomtemplate', '管理员添加dataroomtemplate'),
-        )
 
 class dataroom(models.Model):
     id = models.AutoField(primary_key=True)
@@ -175,3 +169,17 @@ class dataroomdirectoryorfile(models.Model):
                 return res
             else:
                 return False
+
+class dataroom_User_file(models.Model):
+    dataroom = MyForeignKey(dataroom, blank=True, null=True)
+    user = MyForeignKey(MyUser, blank=True, null=True)
+    file = models.ManyToManyField(dataroomdirectoryorfile)
+    is_deleted = models.BooleanField(blank=True, default=False)
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_dataroomdirectories')
+    deletedtime = models.DateTimeField(blank=True, null=True)
+    createdtime = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_dataroomdirectories')
+    datasource = MyForeignKey(DataSource, help_text='数据源')
+
+    class Meta:
+        db_table = 'dataroom_user'

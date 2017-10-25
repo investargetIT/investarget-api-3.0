@@ -30,7 +30,7 @@ Email_project_sign = 'y0dQe4'
 #收集邮件群发任务名单
 def getAllProjectsNeedToSendMail():
     try:
-        proj_qs = project.objects.filter(isSendEmail=True, is_deleted=False)
+        proj_qs = project.objects.filter(isSendEmail=True, is_deleted=False, datasource_id=1)
         saveEmailGroupSendData(proj_qs)
         proj_qs.update(**{'isSendEmail': False})
     except Exception as err:
@@ -73,9 +73,11 @@ def saveEmailGroupSendData(projs):
                 'Tags': QStoList(tagsname),
                 'Location': proj.country.countryC,
                 'Industry': QStoList(industriesname),
-                'FAUSD': proj.financeAmount_USD,
+                'financeAmount_USD': proj.financeAmount_USD,
+                'financeAmount': proj.financeAmount,
                 'TransactionType': QStoList(transactionTypeName),
                 'B_introducteC' : proj.p_introducteC,
+                'currency': proj.currency.currencyC,
             },
             'datasource': proj.datasource_id,
             'users': UserQSToList(user_qs),
@@ -98,6 +100,10 @@ def sendEmailToUser():
 #发送邮件
 def sendProjEmailToUser(proj,user,datasource):
     emailaddress = user['email']
+    financeAmount = '$' + str(proj.get('financeAmount_USD','xxxxxxxx'))+'(美元)'
+    if proj['Location'] == '中国':
+        if proj['currency'] == '人民币':
+            financeAmount = '$' + str(proj.get('financeAmount','xxxxxxxx'))+'(美元)'
     data = {
         'proj' : proj['id'],
         'projtitle': proj['Title'],
@@ -117,7 +123,7 @@ def sendProjEmailToUser(proj,user,datasource):
             'Location':proj['Location'],
             'Industry': " ".join(proj['Industry']),
             'Tags': " ".join(proj['Tags']),
-            'FAUSD': proj['FAUSD'],
+            'FAUSD': financeAmount,
             'TransactionType': " ".join(proj['TransactionType']),
             'B_introducteC': proj['B_introducteC'],
         }

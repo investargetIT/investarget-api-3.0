@@ -440,7 +440,9 @@ def sendmessage_favoriteproject(model,receiver,sender=None):
                         messagetype = msgconfig['webmsg']['messagetype']
                         saveMessage(content, messagetype, title, receiver, sender)
     # if receiver is not None:
-    # sendmessage_favoriteprojectThread(model,receiver,sender).start()
+    #     if hasattr(receiver, 'datasource'):
+    #         if getattr(receiver, 'datasource_id') == 1:
+    #             sendmessage_favoriteprojectThread(model,receiver,sender).start()
 
 def sendmessage_traderchange(model,receiver,types,sender=None):
     """
@@ -477,7 +479,7 @@ def sendmessage_traderchange(model,receiver,types,sender=None):
                     xsendEmail(destination, projectsign, vars)
                 if 'sms' in types:
                     destination = receiver.mobile
-                    projectsign = 'WzSYg'
+                    projectsign = 'pT0yA4'
                     vars = {'user': model.traderuser.usernameC}
                     xsendSms(destination, projectsign, vars)
                 if 'webmsg' in types:
@@ -486,6 +488,8 @@ def sendmessage_traderchange(model,receiver,types,sender=None):
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
     # if receiver is not None:
+    #                 if hasattr(receiver, 'datasource'):
+    #                     if getattr(receiver, 'datasource_id') == 1:
     # sendmessage_traderchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
@@ -533,7 +537,7 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                 if 'sms' in types:
                     if model.userstatus.id == 2:
                         destination = receiver.mobile
-                        projectsign = 'WzSYg'
+                        projectsign = 'EXIDv1'
                         vars = {'user': model.usernameC}
                         xsendSms(destination, projectsign, vars)
                 if 'webmsg' in types:
@@ -546,6 +550,8 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
     # if receiver is not None:
+    #                 if hasattr(receiver, 'datasource'):
+                        # if getattr(receiver, 'datasource_id') == 1:
     # sendmessage_auditstatuchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_userregister(model,receiver,types,sender=None):
@@ -587,6 +593,8 @@ def sendmessage_userregister(model,receiver,types,sender=None):
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
     # if receiver is not None:
+    #                 if hasattr(receiver, 'datasource'):
+                        # if getattr(receiver, 'datasource_id') == 1:
     # sendmessage_userregisterThread(model,receiver,types,sender).start()
 
 
@@ -626,7 +634,7 @@ def sendmessage_timelineauditstatuchange(model,receiver,types,sender=None):
                     xsendEmail(destination, projectsign, vars)
                 if 'sms' in types:
                     destination = receiver.mobile
-                    projectsign = 'WzSYg'
+                    projectsign = 'tNEV93'
                     vars = {'project': model.timeline.proj.projtitleC}
                     xsendSms(destination, projectsign, vars)
                 if 'webmsg' in types:
@@ -635,6 +643,8 @@ def sendmessage_timelineauditstatuchange(model,receiver,types,sender=None):
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
     # if receiver is not None:
+    #                 if hasattr(receiver, 'datasource'):
+    #                     if getattr(receiver, 'datasource_id') == 1:
     #     sendmessage_timelineauditstatuchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_dataroomfileupdate(model,receiver,types,sender=None):
@@ -672,7 +682,7 @@ def sendmessage_dataroomfileupdate(model,receiver,types,sender=None):
                     xsendEmail(destination, projectsign, vars)
                 if 'sms' in types:
                     destination = receiver.mobile
-                    projectsign = 'WzSYg'
+                    projectsign = 'huvrW4'
                     vars = {'project': model.dataroom.proj.projtitleC}
                     xsendSms(destination, projectsign, vars)
                 if 'webmsg' in types:
@@ -681,6 +691,8 @@ def sendmessage_dataroomfileupdate(model,receiver,types,sender=None):
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
     # if receiver is not None:
+    #                 if hasattr(receiver, 'datasource'):
+    #                     if getattr(receiver, 'datasource_id') == 1:
     #     sendmessage_dataroomfileupdateThread(model,receiver,types,sender).start()
 
 def sendmessage_projectpublish(model, receiver, types, sender=None):
@@ -717,6 +729,8 @@ def sendmessage_projectpublish(model, receiver, types, sender=None):
                 #     messagetype = 1
                 #     saveMessage(content, messagetype, title, receiver, sender)
     # if receiver is not None:
+    #                 if hasattr(receiver, 'datasource'):
+    #                     if getattr(receiver, 'datasource_id') == 1:
     #     sendmessage_projectpublishThread(model,receiver,types,sender).start()
 
 #暂无
@@ -754,51 +768,55 @@ def sendmessage_usermakefriends(model,receiver,types,sender=None):
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
     # if receiver is not None:
+    #                 if hasattr(model, 'datasource'):
+    #                     if getattr(model, 'datasource_id') == 1:
     #     sendmessage_usermakefriendsThread(model,receiver,types,sender).start()
 
 #暂无
-def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
-    """
-    :param model: timelineTransationStatu type
-    :param receiver: myuser type
-    :param types: list
-    :param sender: myuser type
-    :return: None
-    """
-    class sendmessage_timelinealertcycleexpireThread(threading.Thread):
-        def __init__(self, model, receiver, types, sender=None):
-            self.model = model
-            self.receiver = receiver
-            self.types = types
-            self.sender = sender
-            threading.Thread.__init__(self)
-
-        def run(self):
-            types = self.types
-            receiver = self.receiver
-            model = self.model
-            sender = self.sender
-            if isinstance(model, timelineTransationStatu):
-                if 'app' in types:
-                    content = ''
-                    receiver_alias = receiver.id
-                    bdage = 1
-                    n_extras = {}
-                    pushnotification(content, receiver_alias, bdage, n_extras)
-                if 'email' in types:
-                    destination = receiver.email
-                    projectsign = ''
-                    vars = {}
-                    xsendEmail(destination, projectsign, vars)
-                if 'sms' in types:
-                    destination = receiver.mobile
-                    projectsign = 'WzSYg'
-                    vars = {'code': 'sss', 'time': '10'}
-                    xsendSms(destination, projectsign, vars)
-                if 'webmsg' in types:
-                    content = ''
-                    title = ''
-                    messagetype = 1
-                    saveMessage(content, messagetype, title, receiver, sender)
-
+# def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
+#     """
+#     :param model: timelineTransationStatu type
+#     :param receiver: myuser type
+#     :param types: list
+#     :param sender: myuser type
+#     :return: None
+#     """
+#     class sendmessage_timelinealertcycleexpireThread(threading.Thread):
+#         def __init__(self, model, receiver, types, sender=None):
+#             self.model = model
+#             self.receiver = receiver
+#             self.types = types
+#             self.sender = sender
+#             threading.Thread.__init__(self)
+#
+#         def run(self):
+#             types = self.types
+#             receiver = self.receiver
+#             model = self.model
+#             sender = self.sender
+#             if isinstance(model, timelineTransationStatu):
+#                 if 'app' in types:
+#                     content = ''
+#                     receiver_alias = receiver.id
+#                     bdage = 1
+#                     n_extras = {}
+#                     pushnotification(content, receiver_alias, bdage, n_extras)
+#                 if 'email' in types:
+#                     destination = receiver.email
+#                     projectsign = ''
+#                     vars = {}
+#                     xsendEmail(destination, projectsign, vars)
+#                 if 'sms' in types:
+#                     destination = receiver.mobile
+#                     projectsign = 'zzzz'
+#                     vars = {'code': 'sss', 'time': '10'}
+#                     xsendSms(destination, projectsign, vars)
+#                 if 'webmsg' in types:
+#                     content = ''
+#                     title = ''
+#                     messagetype = 1
+#                     saveMessage(content, messagetype, title, receiver, sender)
+    # if receiver is not None:
+    #                 if hasattr(model, 'datasource'):
+    #                     if getattr(model, 'datasource_id') == 1:
     # sendmessage_timelinealertcycleexpireThread(model,receiver,types,sender).start()
