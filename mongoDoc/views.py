@@ -364,6 +364,8 @@ class WXChatDataView(viewsets.ModelViewSet):
             isShow = request.GET.get('isShow',False)
             if isShow in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
                 isShow = True
+            else:
+                isShow = False
             if not page_size:
                 page_size = 10
             if not page_index:
