@@ -106,7 +106,7 @@ class DataroomView(viewsets.ModelViewSet):
             with transaction.atomic():
                 publicdataroom = self.get_queryset().filter(proj=proj)
                 if publicdataroom.exists():
-                    responsedataroom = DataroomCreateSerializer(publicdataroom).data
+                    responsedataroom = DataroomCreateSerializer(publicdataroom.first()).data
                 else:
                     dataroomdata = {'proj': projid, 'datasource': request.user.datasource.id, 'createuser': request.user.id}
                     publicdataroomserializer = DataroomCreateSerializer(data=dataroomdata)
