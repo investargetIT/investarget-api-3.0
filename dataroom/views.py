@@ -104,7 +104,7 @@ class DataroomView(viewsets.ModelViewSet):
             if proj.projstatus_id < 4:
                 raise InvestError(5003, msg='项目尚未终审发布')
             with transaction.atomic():
-                publicdataroom = self.get_queryset().get(proj=proj)
+                publicdataroom = self.get_queryset().filter(proj=proj)
                 if publicdataroom.exists():
                     responsedataroom = DataroomCreateSerializer(publicdataroom).data
                 else:
