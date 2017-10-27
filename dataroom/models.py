@@ -84,17 +84,16 @@ class dataroomdirectoryorfile(models.Model):
         if self.pk:
             if self.is_deleted:
                 raise InvestError(7002,msg='已删除')
-        try:
-            if self.pk:
-                dataroomdirectoryorfile.objects.exclude(pk=self.pk).get(is_deleted=False, key=self.key)
+        if self.isFile:
+            try:
+                if self.pk:
+                    dataroomdirectoryorfile.objects.exclude(pk=self.pk).get(is_deleted=False, key=self.key)
+                else:
+                    dataroomdirectoryorfile.objects.exclude(pk=self.pk).get(is_deleted=False, key=self.key)
+            except dataroomdirectoryorfile.DoesNotExist:
+                pass
             else:
-                dataroomdirectoryorfile.objects.exclude(pk=self.pk).get(is_deleted=False, key=self.key)
-        except dataroomdirectoryorfile.DoesNotExist:
-            pass
-        else:
-            raise InvestError(code=2004)
-        if dataroomdirectoryorfile.objects.filter(key=self.key).exists():
-            raise InvestError(2007,msg='key is already exist')
+                raise InvestError(code=2004)
         super(dataroomdirectoryorfile, self).save(force_insert, force_update, using, update_fields)
 
     def checkDirectoryHasFile(self):

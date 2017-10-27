@@ -32,7 +32,6 @@ from proj.serializer import ProjSerializer, FinanceSerializer, ProjCreatSerializ
 from sourcetype.models import Tag, Industry, TransactionType, DataSource, Service
 from third.views.jpush import pushnotification
 from third.views.qiniufile import deleteqiniufile
-from third.views.submail import sendEmail
 from usersys.models import MyUser
 from utils.sendMessage import sendmessage_favoriteproject, sendmessage_projectpublish
 from utils.util import catchexcption, read_from_cache, write_to_cache, loginTokenIsAvailable, returnListChangeToLanguage, \
@@ -525,7 +524,7 @@ class ProjectView(viewsets.ModelViewSet):
             pdfpath = APILOG_PATH['pdfpath_base'] + 'P' + datetime.datetime.now().strftime('%Y%m%d%H%M%S') + '.pdf'
             config = pdfkit.configuration(wkhtmltopdf=APILOG_PATH['wkhtmltopdf'])
             aaa = pdfkit.from_url(PROJECTPDF_URLPATH + str(proj.id)+'&lang=%s'%lang, pdfpath, configuration=config, options=options)
-            out_path = self.addWaterMark(pdfpath)
+            out_path = self.addWaterMark(pdfpath,watermarkcontent=request.user.email)
             if aaa:
                 def file_iterator(fn, chunk_size=512):
                     while True:
@@ -548,15 +547,28 @@ class ProjectView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+
     def addWaterMark(self,pdfpath='water.pdf',watermarkcontent='多维海拓'):
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+        from reportlab.lib.units import cm
+        pdfmetrics.registerFont(TTFont('song', APILOG_PATH['pdfwaterfontPath']))
         watermarkpath =  pdfpath.split('.')[0] + '-water'+ '.pdf'
         out_path = pdfpath.split('.')[0] + '-out'+ '.pdf'
         c = canvas.Canvas(watermarkpath)
-        c.drawString(15, 720, watermarkcontent)
-        c.drawString(5, 720, watermarkcontent)
-        c.drawString(15, 720, watermarkcontent)
+        x = 16; y = 1
+        # 设置字体
+        c.setFont("song", 40)
+        # 旋转45度，坐标系被旋转
+        # 旋转45度，坐标系被旋转
         c.rotate(45)
-        c.setFont("Helvetica", 80)
+        # 设置透明度，1为不透明
+        c.setFillAlpha(0.1)
+        c.drawCentredString((x - 3) * cm, (y - 3) * cm, watermarkcontent)
+        c.setFillAlpha(0.1)
+        c.drawCentredString(x * cm, y * cm, watermarkcontent)
+        c.setFillAlpha(0.1)
+        c.drawCentredString((x + 3) * cm, (y + 3) * cm, watermarkcontent)
         c.save()
         watermark = PdfFileReader(open(watermarkpath, "rb"))
 

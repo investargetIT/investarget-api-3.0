@@ -65,6 +65,7 @@ class schedule(models.Model):
         if self.scheduledtime < datetime.datetime.now():
             raise InvestError(2007,msg='日程时间不能是过去的时间')
         if self.projtitle is None:
-            self.projtitle = self.proj.projtitleC
+            if self.proj:
+                self.projtitle = self.proj.projtitleC
         self.datasource = self.createuser.datasource_id
         return super(schedule, self).save(*args, **kwargs)
