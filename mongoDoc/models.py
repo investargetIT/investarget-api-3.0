@@ -9,15 +9,15 @@ from utils.customClass import InvestError
 
 
 class CompanyCatData(Document):
-    p_cat_id = StringField(null=True)
+    p_cat_id = IntField(null=True)
     p_cat_name = StringField(null=True)
-    cat_id = StringField(null=True)
+    cat_id = IntField(null=True)
     cat_name= StringField(null=True)
     meta = {"collection": com_catMongoTableName}
 
 
 class ProjectData(Document):
-    com_id = StringField()      #公司id
+    com_id = IntField()      #公司id
     com_name = StringField()   #公司名称
     com_status = StringField(null=True)  #公司运营状态
     com_scale= StringField(null=True)    #公司规模
@@ -33,7 +33,9 @@ class ProjectData(Document):
     com_des = StringField(null=True)   #公司介绍
     invse_total_money = StringField(null=True)  #融资总额
     com_addr = StringField(null=True)   #公司所在地
-    meta = {"collection": projectDataMongoTableName}
+    meta = {'collection': projectDataMongoTableName,
+            'indexes': ['com_id', 'com_cat_name', 'com_sub_cat_name', 'invse_round_id', 'com_name']
+        }
 
     def save(self, force_insert=False, validate=True, clean=True,
              write_concern=None, cascade=None, cascade_kwargs=None,
@@ -44,7 +46,7 @@ class ProjectData(Document):
 
 class MergeFinanceData(Document):
 
-    com_id = StringField(null=True)  #公司id
+    com_id = IntField(null=True)  #公司id
     com_logo = StringField(null=True)  # 公司logo
     com_name = StringField(null=True)  # 公司名称
     currency= StringField(null=True)    #货币类型
@@ -52,15 +54,17 @@ class MergeFinanceData(Document):
     date = StringField(null=True)  #日期
 
     invsest_with = ListField(null=True)  # 投资方
-    invse_id = StringField(null=True)  # 投资事件id
+    invse_id = IntField(null=True)  # 投资事件id
     round = StringField(null=True)   #公司融资轮次
 
     merger_equity_ratio = StringField(null=True)  #股权比例
     merger_with = StringField(null=True)   #并购方名称
-    merger_id = StringField(null=True)   #并购事件id
+    merger_id = IntField(null=True)   #并购事件id
 
     investormerge = IntField(default=1)   #并购事件（2）or 投资事件（1）
-    meta = {"collection": mergeandfinanceeventMongoTableName}
+    meta = {'collection': mergeandfinanceeventMongoTableName,
+            'indexes': ['com_id', 'com_name', 'date', 'invse_id', 'merger_id','investormerge']
+            }
 
     def save(self, force_insert=False, validate=True, clean=True,
              write_concern=None, cascade=None, cascade_kwargs=None,
@@ -76,13 +80,15 @@ class MergeFinanceData(Document):
         super(MergeFinanceData,self).save(force_insert,validate,clean,write_concern,cascade,cascade_kwargs,_refs,save_condition,signal_kwargs,**kwargs)
 
 class ProjRemark(Document):
-    com_id = StringField(null=True)  # 公司id
+    com_id = IntField(null=True)  # 公司id
     com_name = StringField(null=True)  # 公司名称
     remark = StringField(null=True)
     createuser_id = IntField()
     datasource = IntField()
     date = DateTimeField(default=datetime.datetime.now())
-    meta = {"collection": projremarkMongoTableName}
+    meta = {'collection': projremarkMongoTableName,
+            'indexes': ['com_id', 'com_name']
+            }
 
 
 class GroupEmailData(Document):
