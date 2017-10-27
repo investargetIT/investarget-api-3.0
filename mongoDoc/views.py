@@ -173,9 +173,9 @@ class ProjectDataView(viewsets.ModelViewSet):
                     queryset = queryset(Q(com_addr__in=com_addr))
             sort = request.GET.get('sort')
             if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
-                queryset = queryset.order_by('-_id',)
+                queryset = queryset.order_by('-com_id',)
             else:
-                queryset = queryset.order_by('_id',)
+                queryset = queryset.order_by('com_id',)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
