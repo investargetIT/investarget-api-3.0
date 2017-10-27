@@ -520,14 +520,12 @@ def deleteDirectory(instance, deleteuser):
     if instance.is_deleted:
         raise InvestError(code=7002)
     else:
-        if instance.isShadow:
-            deleteInstance(instance, deleteuser)
-        else:
-            filequery = instance.asparent_directories.filter(is_deleted=False)
-            deleteInstance(instance, deleteuser)
-            if filequery.count():
-                for fileordirectoriey in filequery:
-                    deleteDirectory(fileordirectoriey, deleteuser)
+        filequery = instance.asparent_directories.filter(is_deleted=False)
+        deleteInstance(instance, deleteuser)
+        if filequery.count():
+            for fileordirectoriey in filequery:
+                deleteDirectory(fileordirectoriey, deleteuser)
+
 
 
 def deleteInstance(instance, deleteuser):
@@ -539,25 +537,12 @@ def deleteInstance(instance, deleteuser):
         # instance.deletedtime = datetime.datetime.now()
         # instance.save()
         instance.delete()
-        if instance.isShadow:
+        if not bucket or not key:
             pass
         else:
-            if not bucket or not key:
-                pass
-            else:
-                ret, info = deleteqiniufile(bucket, key)
+            ret, info = deleteqiniufile(bucket, key)
     else:
         instance.is_deleted = True
         instance.deleteduser = deleteuser
         instance.deletedtime = datetime.datetime.now()
         instance.save()
-
-
-def checkDirectoryIsShadow(directory):
-    if directory.isShadow:
-        return True
-    else:
-        subDirs = directory.asparent_directories.filter(is_deleted=False)
-        if subDirs.exists():
-            for subDir in subDirs:
-                checkDirectoryIsShadow(subDir)
