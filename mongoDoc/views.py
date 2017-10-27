@@ -362,6 +362,8 @@ class WXChatDataView(viewsets.ModelViewSet):
             page_size = request.GET.get('page_size')
             page_index = request.GET.get('page_index')  # 从第一页开始
             isShow = request.GET.get('isShow',False)
+            if isShow in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
+                isShow = True
             if not page_size:
                 page_size = 10
             if not page_index:
