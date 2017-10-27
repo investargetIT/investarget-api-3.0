@@ -9,9 +9,10 @@ from django.db.models import Q,QuerySet, FieldDoesNotExist
 from django.db.models.fields.reverse_related import ForeignObjectRel
 from rest_framework import filters, viewsets
 
-from dataroom.models import dataroom, dataroomdirectoryorfile, publicdirectorytemplate
+from dataroom.models import dataroom, dataroomdirectoryorfile, publicdirectorytemplate, dataroom_User_file
 from dataroom.serializer import DataroomSerializer, DataroomCreateSerializer, DataroomdirectoryorfileCreateSerializer, \
-    DataroomdirectoryorfileSerializer, DataroomdirectoryorfileUpdateSerializer
+    DataroomdirectoryorfileSerializer, DataroomdirectoryorfileUpdateSerializer, User_DataroomfileSerializer, \
+    User_DataroomSerializer, User_DataroomfileCreateSerializer
 from proj.models import project
 from third.views.qiniufile import deleteqiniufile
 from utils.customClass import InvestError, JSONResponse, RelationFilter
@@ -24,45 +25,26 @@ from django_filters import FilterSet
 
 class DataroomFilter(FilterSet):
     supportuser = RelationFilter(filterstr='proj__supportUser',lookup_method='in')
-    isPublic = RelationFilter(filterstr='isPublic', lookup_method='in')
     proj = RelationFilter(filterstr='proj', lookup_method='in')
-    investor = RelationFilter(filterstr='investor', lookup_method='in')
-    trader = RelationFilter(filterstr='trader', lookup_method='in')
     isClose = RelationFilter(filterstr='isClose', lookup_method='in')
-    user = RelationFilter(filterstr='user', lookup_method='in')
     class Meta:
         model = dataroom
-        fields = ('proj', 'investor', 'trader', 'isClose','user','isPublic' , 'supportuser')
+        fields = ('proj', 'isClose', 'supportuser')
 
 class DataroomView(viewsets.ModelViewSet):
     """
        list:dataroom列表
        create:新建dataroom
+       retrieve:查看dataroom目录结构
        update:关闭dataroom
        destroy:删除dataroom
     """
     filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
     queryset = dataroom.objects.all().filter(is_deleted=False)
-    search_fields = ('proj__projtitleC', 'investor__usernameC', 'trader__usernameC', 'user__usernameC', 'proj__supportUser__usernameC')
+    search_fields = ('proj__projtitleC', 'proj__supportUser__usernameC')
     filter_class = DataroomFilter
     serializer_class = DataroomSerializer
 
-
-    def get_queryset(self):
-        assert self.queryset is not None, (
-            "'%s' should either include a `queryset` attribute, "
-            "or override the `get_queryset()` method."
-            % self.__class__.__name__
-        )
-        queryset = self.queryset
-        if isinstance(queryset, QuerySet):
-            if self.request.user.is_authenticated:
-                queryset = queryset.filter(datasource=self.request.user.datasource)
-            else:
-                queryset = queryset.all()
-        else:
-            raise InvestError(code=8890)
-        return queryset
     def get_object(self):
         lookup_url_kwarg = 'pk'
         try:
@@ -80,15 +62,11 @@ class DataroomView(viewsets.ModelViewSet):
             page_size = request.GET.get('page_size')
             page_index = request.GET.get('page_index')  # 从第一页开始
             lang = request.GET.get('lang')
-            userid = request.GET.get('user',None)
-            isPublic = request.GET.get('isPublic',None)
             if not page_size:
                 page_size = 10
             if not page_index:
                 page_index = 1
-            queryset = self.filter_queryset(self.get_queryset())
-            if not userid and not isPublic:
-                queryset = queryset.filter(isPublic=False).exclude(Q(trader__isnull=True) | Q(investor__isnull=True))
+            queryset = self.filter_queryset(self.get_queryset()).filter(datasource=self.request.user.datasource)
             sort = request.GET.get('sort')
             if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
                 queryset = queryset.order_by('-lastmodifytime', '-createdtime')
@@ -97,8 +75,7 @@ class DataroomView(viewsets.ModelViewSet):
             if request.user.has_perm('dataroom.admin_getdataroom'):
                 queryset = queryset
             else:
-                if not isPublic:
-                    queryset = queryset.filter(Q(user=request.user) | Q(trader=request.user) | Q(investor=request.user) | Q(proj__takeUser=request.user) | Q(proj__makeUser=request.user) | Q(createuser=request.user))
+                queryset = queryset.filter(id__in=request.user.user_dataroom__dataroom)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -112,80 +89,34 @@ class DataroomView(viewsets.ModelViewSet):
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['dataroom.admin_adddataroom', 'dataroom.user_adddataroom'])
+    @loginTokenIsAvailable(['dataroom.admin_adddataroom'])
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
             lang = request.GET.get('lang')
             projid = data.get('proj',None)
-            investorid = data.get('investor', None)
-            traderid = data.get('trader', None)
-            ispublic = data.get('isPublic',False)
             if not projid:
                 raise InvestError(20072,msg='proj 不能为空 int类型')
             try:
                 proj = project.objects.get(id=projid,datasource=request.user.datasource,is_deleted=False)
             except project.DoesNotExist:
                 raise InvestError(code=4002)
-            if not ispublic:
-                if not traderid or not investorid or not isinstance(investorid,int) or not isinstance(traderid,int):
-                    raise InvestError(code=20072,msg='investor/trader bust be an nunull \'int\'')
             if proj.projstatus_id < 4:
                 raise InvestError(5003, msg='项目尚未终审发布')
             with transaction.atomic():
-                responselist = []
-                dataroomdata = {'proj':projid,'datasource':request.user.datasource.id,'createuser':request.user.id}
-                projdataroom = self.get_queryset().filter(proj=proj,user_id=proj.supportUser_id,isPublic=False)
-                publicdataroom = self.get_queryset().filter(proj=proj, isPublic=True)
-                if projdataroom.exists():
-                    responselist.append(DataroomCreateSerializer(projdataroom.first()).data)
-                else:
-                    dataroomdata['user'] = proj.supportUser_id
-                    dataroomdata['isPublic'] = False
-                    supportordataroomserializer = DataroomCreateSerializer(data=dataroomdata)
-                    if supportordataroomserializer.is_valid():
-                        supportdataroom = supportordataroomserializer.save()
-                        userlist1 = [supportdataroom.createuser, proj.makeUser, proj.takeUser, ]
-                        for user in userlist1:
-                            add_perm('dataroom.user_getdataroom', user, supportdataroom)
-                        add_perm('dataroom.user_getdataroom', supportdataroom.user, supportdataroom)
-                        add_perm('dataroom.user_changedataroom', supportdataroom.user, supportdataroom)
-                        responselist.append(supportordataroomserializer.data)
-                    else:
-                        raise InvestError(code=20071, msg=supportordataroomserializer.errors)
+                publicdataroom = self.get_queryset().get(proj=proj)
                 if publicdataroom.exists():
-                    responselist.append(DataroomCreateSerializer(publicdataroom.first()).data)
+                    responsedataroom = DataroomCreateSerializer(publicdataroom).data
                 else:
-                    dataroomdata['user'] = proj.supportUser_id
-                    dataroomdata['isPublic'] = True
+                    dataroomdata = {'proj': projid, 'datasource': request.user.datasource.id, 'createuser': request.user.id}
                     publicdataroomserializer = DataroomCreateSerializer(data=dataroomdata)
                     if publicdataroomserializer.is_valid():
                         publicdataroom = publicdataroomserializer.save()
                         creatpublicdataroomdirectorywithtemplate(request.user, publicdataroomid=publicdataroom.id)
-                        responselist.append(publicdataroomserializer.data)
+                        responsedataroom = publicdataroomserializer.data
                     else:
                         raise InvestError(code=20071, msg=publicdataroomserializer.errors)
-                if not ispublic:
-                    investordataroom = self.get_queryset().filter(proj=proj, user_id=investorid, trader_id=traderid,investor_id=investorid)
-                    if investordataroom.exists():
-                        responselist.append(DataroomCreateSerializer(investordataroom.first()).data)
-                    else:
-                        dataroomdata['user'] = None
-                        dataroomdata['isPublic'] = False
-                        dataroomdata['investor'] = investorid
-                        dataroomdata['trader'] = traderid
-                        investordataroomserializer = DataroomCreateSerializer(data=dataroomdata)
-                        if investordataroomserializer.is_valid():
-                            investordata = investordataroomserializer.save()
-                            userlist = [investordata.investor, investordata.trader, investordata.createuser, investordata.proj.makeUser,
-                                        investordata.proj.takeUser, investordata.proj.supportUser]
-                            for user in userlist:
-                                add_perm('dataroom.user_getdataroom', user, investordata)
-                            add_perm('dataroom.user_changedataroom', investordata.investor, investordata)
-                            responselist.append(investordataroomserializer.data)
-                        else:
-                            raise InvestError(code=20071,msg=investordataroomserializer.errors)
-                return JSONResponse(SuccessResponse(returnListChangeToLanguage(responselist, lang)))
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(responsedataroom, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -194,15 +125,11 @@ class DataroomView(viewsets.ModelViewSet):
 
     @loginTokenIsAvailable()
     def addDataroom(self, request, *args, **kwargs):
-        #导数据专用   1 public  2 support 3 investor
+        # 导数据专用   1 public
         try:
             data = request.data
             lang = request.GET.get('lang')
-            projid = data.get('proj',None)
-            investorid = data.get('investor', None)
-            traderid = data.get('trader', None)
-            dataroomtype = data.get('type',False)
-
+            projid = data.get('proj', None)
             if data.get('createuser', None) is None:
                 createuser = request.user.id
             else:
@@ -213,67 +140,22 @@ class DataroomView(viewsets.ModelViewSet):
             else:
                 createdtime = datetime.datetime.now()
             try:
-                proj = project.objects.get(id=projid,datasource=request.user.datasource,is_deleted=False)
+                proj = project.objects.get(id=projid, datasource=request.user.datasource, is_deleted=False)
             except project.DoesNotExist:
                 raise InvestError(code=4002)
             with transaction.atomic():
-                if dataroomtype == 1:
-                    dataroomdata = {'proj':projid,'datasource':request.user.datasource.id,'createuser':createuser,'createdtime':createdtime}
-                    publicdataroom = self.get_queryset().filter(proj=proj, isPublic=True)
-                    if publicdataroom.exists():
-                        responsedic = DataroomCreateSerializer(publicdataroom.first()).data
-                    else:
-                        dataroomdata['user'] = proj.supportUser_id
-                        dataroomdata['isPublic'] = True
-                        publicdataroomserializer = DataroomCreateSerializer(data=dataroomdata)
-                        if publicdataroomserializer.is_valid():
-                            publicdataroom = publicdataroomserializer.save()
-                            responsedic =  publicdataroomserializer.data
-                        else:
-                            raise InvestError(code=20071, msg=publicdataroomserializer.errors)
-                elif dataroomtype == 2:
-                    dataroomdata = {'proj': projid, 'datasource': request.user.datasource.id,'createuser': createuser,'createdtime':createdtime}
-                    projdataroom = self.get_queryset().filter(proj=proj, user_id=proj.supportUser_id, isPublic=False)
-                    if projdataroom.exists():
-                        responsedic = DataroomCreateSerializer(projdataroom.first()).data
-                    else:
-                        dataroomdata['user'] = proj.supportUser_id
-                        dataroomdata['isPublic'] = False
-                        supportordataroomserializer = DataroomCreateSerializer(data=dataroomdata)
-                        if supportordataroomserializer.is_valid():
-                            supportdataroom = supportordataroomserializer.save()
-                            userlist1 = [supportdataroom.createuser, proj.makeUser, proj.takeUser, ]
-                            for user in userlist1:
-                                add_perm('dataroom.user_getdataroom', user, supportdataroom)
-                            add_perm('dataroom.user_getdataroom', supportdataroom.user, supportdataroom)
-                            add_perm('dataroom.user_changedataroom', supportdataroom.user, supportdataroom)
-                            responsedic = supportordataroomserializer.data
-                        else:
-                            raise InvestError(code=20071, msg=supportordataroomserializer.errors)
-                elif dataroomtype == 3:
-                    dataroomdata = {'proj': projid, 'datasource': request.user.datasource.id,
-                                    'createuser': createuser,'createdtime':createdtime}
-                    investordataroom = self.get_queryset().filter(proj=proj, user_id=investorid, trader_id=traderid,investor_id=investorid)
-                    if investordataroom.exists():
-                        responsedic = DataroomCreateSerializer(investordataroom.first()).data
-                    else:
-                        dataroomdata['user'] = None
-                        dataroomdata['isPublic'] = False
-                        dataroomdata['investor'] = investorid
-                        dataroomdata['trader'] = traderid
-                        investordataroomserializer = DataroomCreateSerializer(data=dataroomdata)
-                        if investordataroomserializer.is_valid():
-                            investordata = investordataroomserializer.save()
-                            userlist = [investordata.investor, investordata.trader, investordata.createuser, investordata.proj.makeUser,
-                                        investordata.proj.takeUser, investordata.proj.supportUser]
-                            for user in userlist:
-                                add_perm('dataroom.user_getdataroom', user, investordata)
-                            add_perm('dataroom.user_changedataroom', investordata.investor, investordata)
-                            responsedic = investordataroomserializer.data
-                        else:
-                            raise InvestError(code=20071,msg=investordataroomserializer.errors)
+                dataroomdata = {'proj': projid, 'datasource': request.user.datasource.id, 'createuser': createuser,
+                                'createdtime': createdtime}
+                publicdataroom = self.get_queryset().filter(proj=proj)
+                if publicdataroom.exists():
+                    responsedic = DataroomCreateSerializer(publicdataroom.first()).data
                 else:
-                    responsedic = None
+                    publicdataroomserializer = DataroomCreateSerializer(data=dataroomdata)
+                    if publicdataroomserializer.is_valid():
+                        publicdataroomserializer.save()
+                        responsedic = publicdataroomserializer.data
+                    else:
+                        raise InvestError(code=20071, msg=publicdataroomserializer.errors)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(responsedic, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -281,18 +163,13 @@ class DataroomView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+
     @loginTokenIsAvailable()
     def retrieve(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
             instance = self.get_object()
-            if request.user.has_perm('dataroom.admin_getdataroom'):
-                serializerclass = DataroomSerializer
-            elif request.user.has_perm('dataroom.user_getdataroom', instance):
-                serializerclass = DataroomSerializer
-            else:
-                raise InvestError(code=2009)
-            serializer = serializerclass(instance)
+            serializer = DataroomdirectoryorfileSerializer(dataroomdirectoryorfile.objects.filter(is_deleted=False,dataroom=instance,isFile=False),many=True)
             return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -302,132 +179,44 @@ class DataroomView(viewsets.ModelViewSet):
 
 
     #关闭/打开dataroom
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['dataroom.admin_closedataroom'])
     def update(self, request, *args, **kwargs):
         try:
-            data = request.data
-            traderid = data.get('trader', None)
-            investorid = data.get('investor', None)
-            projid = data.get('proj', None)
-            isClose = data.get('isClose',False)
-            if isClose in ['True', 1, '1', 'true', 'TRUE']:
-                isClose = True
-            else:
-                isClose = False
-            if not data or not traderid or not investorid or not projid:
-                raise InvestError(code=20071)
-            dataroomquery = self.get_queryset().filter(isPublic=False, proj_id=projid, investor_id=investorid,trader_id=traderid)
-            if not dataroomquery.exists():
-                raise InvestError(code=6002)
-            if request.user.has_perm('dataroom.admin_closedataroom'):
-                pass
-            elif request.user.has_perm('dataroom.user_closedataroom',dataroomquery.get(user_id=investorid)):
-                pass
-            else:
-                raise InvestError(code=2009)
-            dataroomquery.update(isClose=isClose,closeDate=datetime.datetime.now())
+            instance = self.get_object()
+            instance.isClose = not instance.isClose
+            instance.closeDate=datetime.datetime.now()
+            instance.save()
             return JSONResponse(
-                SuccessResponse(returnListChangeToLanguage(DataroomSerializer(dataroomquery, many=True).data)))
+                SuccessResponse(returnListChangeToLanguage(DataroomSerializer(instance).data)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['dataroom.admin_deletedataroom'])
     def destroy(self, request, *args, **kwargs):
         try:
-            data = request.data
-            traderid = data.get('trader', None)
-            investorid = data.get('investor', None)
-            projid = data.get('proj', None)
-            if not data or not traderid or not investorid:
-                raise InvestError(code=20071)
-            dataroomquery = self.get_queryset().filter(isPublic=False, proj_id=projid, investor_id=investorid, trader_id=traderid)
-            if not dataroomquery.exists():
-                raise InvestError(code=6002)
-            if request.user.has_perm('dataroom.admin_deletedataroom'):
-                pass
-            elif request.user.has_perm('dataroom.user_deletedataroom',dataroomquery.get(investor_id=investorid)):
-                pass
-            else:
-                raise InvestError(code=2009)
+            instance = self.get_object()
             with transaction.atomic():
-                for instance in dataroomquery:
-                    instance.dataroom_directories.all().update(is_deleted=True,deletedtime=datetime.datetime.now())
-                    for fileOrDirectory in instance.dataroom_directories.all():
-                        if fileOrDirectory.isFile and fileOrDirectory.key:
-                            deleteqiniufile(fileOrDirectory.bucket, fileOrDirectory.key)
-                    instance.is_deleted = True
-                    instance.deleteduser = request.user
-                    instance.deletedtime = datetime.datetime.now()
-                    instance.save()
-                return JSONResponse(SuccessResponse(returnListChangeToLanguage(DataroomSerializer(dataroomquery,many=True).data)))
+                instance.dataroom_directories.all().update(is_deleted=True, deletedtime=datetime.datetime.now())
+                for fileOrDirectory in instance.dataroom_directories.all():
+                    deleteInstance(fileOrDirectory, request.user)
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
+                return JSONResponse(SuccessResponse(returnListChangeToLanguage(DataroomSerializer(instance).data)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-#创建public模板
-def creatpublicdataroomdirectorywithtemplate(user,publicdataroomid):
-    templatequery = publicdirectorytemplate.objects.all()
-    topdirectories = templatequery.filter(parent=None)
-    if topdirectories.exists():
-        for directory in topdirectories:
-            create_diractory(user,directoryname=directory.name,dataroom=publicdataroomid,templatedirectoryID=directory.id,orderNO=directory.orderNO,parent=None)
-    #创建public模板
-def create_diractory(user,directoryname,dataroom,templatedirectoryID,orderNO,parent=None):
-    directoryobj = dataroomdirectoryorfile(filename=directoryname, dataroom_id=dataroom,orderNO=orderNO,parent_id=parent,createdtime=datetime.datetime.now(),createuser_id=user.id,datasource_id=user.datasource_id)
-    directoryobj.save()
-    sondirectoryquery = publicdirectorytemplate.objects.filter(parent=templatedirectoryID)
-    if sondirectoryquery.exists():
-        for sondirectory in sondirectoryquery:
-            create_diractory(user,directoryname=sondirectory.name,dataroom=dataroom,templatedirectoryID=sondirectory.id,orderNO=sondirectory.orderNO,parent=directoryobj.id)
-
-def pulishProjectCreateDataroom(proj,user):
-    try:
-        queryset = dataroom.objects.filter(is_deleted=False)
-        projdataroom = queryset.filter(proj=proj, user_id=proj.supportUser_id, isPublic=False)
-        publicdataroom = queryset.filter(proj=proj, isPublic=True)
-        if projdataroom.exists():
-            pass
-        else:
-            dataroomdata = {}
-            dataroomdata['datasource'] = user.datasource_id
-            dataroomdata['proj'] = proj.id
-            dataroomdata['user'] = proj.supportUser_id
-            dataroomdata['isPublic'] = False
-            dataroomdata['createuser'] = user.id
-            supportordataroomserializer = DataroomCreateSerializer(data=dataroomdata)
-            if supportordataroomserializer.is_valid():
-                supportdataroom = supportordataroomserializer.save()
-                userlist1 = [supportdataroom.createuser, proj.makeUser, proj.takeUser, ]
-                for user in userlist1:
-                    add_perm('dataroom.user_getdataroom', user, supportdataroom)
-                add_perm('dataroom.user_getdataroom', supportdataroom.user, supportdataroom)
-                add_perm('dataroom.user_changedataroom', supportdataroom.user, supportdataroom)
-        if publicdataroom.exists():
-            pass
-        else:
-            dataroomdata = {}
-            dataroomdata['proj'] = proj.id
-            dataroomdata['user'] = proj.supportUser_id
-            dataroomdata['isPublic'] = True
-            dataroomdata['datasource'] = user.datasource_id
-            dataroomdata['createuser'] = user.id
-            publicdataroomserializer = DataroomCreateSerializer(data=dataroomdata)
-            if publicdataroomserializer.is_valid():
-                publicdataroom = publicdataroomserializer.save()
-                creatpublicdataroomdirectorywithtemplate(user, publicdataroomid=publicdataroom.id)
-    except Exception:
-        logexcption(msg='public创建失败')
-        pass
-
 
 class DataroomdirectoryorfileView(viewsets.ModelViewSet):
     """
            list:dataroom文件或目录列表
-           create:新建(复制)dataroom文件或目录
+           create:新建dataroom文件或目录
            update:移动目录或文件到目标位置
            destroy:删除dataroom文件或目录
         """
@@ -436,18 +225,6 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
     filter_fields = ('dataroom', 'parent','isFile')
     serializer_class = DataroomdirectoryorfileCreateSerializer
     Model = dataroomdirectoryorfile
-
-
-    def get_queryset(self):
-        queryset = self.queryset
-        if isinstance(queryset, QuerySet):
-            if self.request.user.is_authenticated:
-                queryset = queryset.filter(datasource=self.request.user.datasource)
-            else:
-                queryset = queryset.all()
-        else:
-            raise InvestError(code=8890)
-        return queryset
 
     def get_object(self,pk=None):
         if pk:
@@ -464,33 +241,14 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             raise InvestError(code=8888,msg='资源非同源')
         return obj
 
-    def get_dataroom(self,id):
-        if self.request.user.is_anonymous:
-            raise InvestError(code=8889)
-        try:
-            dataroomobj = dataroom.objects.get(id=id,is_deleted=False,datasource=self.request.user.datasource)
-        except dataroom.DoesNotExist:
-            raise InvestError(code=7002)
-        return dataroomobj
-
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['dataroom.admin_getdataroom',])
     def list(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang',None)
             dataroomid = request.GET.get('dataroom',None)
-            queryset = self.filter_queryset(self.get_queryset())
-            if dataroomid and isinstance(dataroomid,(int,str,unicode)):
-                dataroomobj = self.get_dataroom(dataroomid)
-                if dataroomobj.isPublic:
-                    pass
-                elif request.user.has_perm('dataroom.admin_getdataroom'):
-                    pass
-                elif request.user.has_perm('dataroom.user_getdataroom', dataroomobj):
-                    pass
-                else:
-                    raise InvestError(code=2009)
-            else:
+            if dataroomid is None:
                 raise InvestError(code=20072,msg='dataroom 不能空')
+            queryset = self.filter_queryset(self.get_queryset()).filter(datasource=self.request.user.datasource)
             count = queryset.count()
             serializer = DataroomdirectoryorfileSerializer(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
@@ -500,50 +258,20 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['dataroom.admin_adddataroom',])
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
             lang = request.GET.get('lang')
             dataroomid = data.get('dataroom', None)
-            if dataroomid:
-                dataroomobj = self.get_dataroom(dataroomid)
-                if dataroomobj.isClose:
-                    raise InvestError(7012)
-                elif request.user.has_perm('dataroom.admin_adddataroom'):
-                    pass
-                elif request.user.has_perm('dataroom.user_adddataroomfile', dataroomobj):
-                    pass
-                else:
-                    raise InvestError(code=2009)
-            else:
-                raise InvestError(code=20072)
             data['createuser'] = request.user.id
-            # createdtime = data.pop('createdtime', None)
-            # if createdtime not in ['None', None, u'None', 'none']:
-            #     data['createdtime'] = datetime.datetime.strptime(createdtime.encode('utf-8')[0:19], "%Y-%m-%d %H:%M:%S")
-            # else:
-            #     data['createdtime'] = datetime.datetime.now()
-            # lastmodifytime = data.pop('lastmodifytime', None)
-            # if lastmodifytime not in ['None', None, u'None', 'none']:
-            #     data['lastmodifytime'] = datetime.datetime.strptime(lastmodifytime.encode('utf-8')[0:19], "%Y-%m-%d %H:%M:%S")
             data['datasource'] = request.user.datasource.id
             if data.get('parent', None):
                 parentfile = self.get_object(data['parent'])
                 if parentfile.isFile:
                     raise InvestError(7007, msg='非文件夹类型')
-                if self.checkDirectoryIsShadow(parentfile):
-                    raise InvestError(7009, msg='不能把文件f复制到复制体文件夹内')
                 if parentfile.dataroom_id != dataroomid:
                     raise InvestError(7011, msg='dataroom下没有该目录')
-            if data.get('isShadow', None):
-                if data['shadowdirectory'] is None:
-                    raise InvestError(2007,msg='\"shadowdirectory\" 不能为空')
-                shadowdirectory = self.get_object(data['shadowdirectory'])
-                if shadowdirectory.isShadow:
-                    raise InvestError(7009,msg='影子目录不能复制')
-                if shadowdirectory.dataroom_id == dataroomid:
-                    raise InvestError(7011,msg='文件复制不能再同一个dataroom下')
             with transaction.atomic():
                 directoryorfileserializer = DataroomdirectoryorfileCreateSerializer(data=data)
                 if directoryorfileserializer.is_valid():
@@ -554,30 +282,23 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
                     destquery = directoryorfile.parent.asparent_directories.exclude(pk=directoryorfile.pk).filter(is_deleted=False,orderNO__gte=directoryorfile.orderNO)
                     if destquery.exists():
                         destquery.update(orderNO = F('orderNO') + 1)
-                sendmessage_dataroomfileupdate(directoryorfile,directoryorfile.dataroom.investor,['sms','email','webmsg','app'],sender=request.user)
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(directoryorfileserializer.data, lang)))
+                #sendmessage_dataroomfileupdate(directoryorfile,directoryorfile.dataroom.investor,['sms','email','webmsg','app'],sender=request.user)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(DataroomdirectoryorfileSerializer(directoryorfile).data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['dataroom.admin_changedataroom'])
     def update(self, request, *args, **kwargs):
         try:
             data = request.data
             lang = request.GET.get('lang')
-            fileid = data.get('fileid', None)
-            if fileid:
-                file = self.get_object(fileid)
-                if request.user.has_perm('dataroom.admin_changedataroom'):
-                    pass
-                elif request.user.has_perm('dataroom.user_changedataroom', file.dataroom):
-                    pass
-                else:
-                    raise InvestError(code=2009)
-            else:
-                raise InvestError(code=20072)
+            fileid = data.pop('id',None)
+            if fileid is None:
+                raise InvestError(2007,msg='fileid cannot be null')
+            file = self.get_object(fileid)
             data['lastmodifyuser'] = request.user.id
             data['lastmodifytime'] = datetime.datetime.now()
             if data.get('dataroom', None):
@@ -589,8 +310,6 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
                     raise InvestError(7011, msg='不能移动到其他dataroom下')
                 if parentfile.isFile:
                     raise InvestError(7007, msg='非文件夹类型')
-                if self.checkDirectoryIsShadow(parentfile):
-                    raise InvestError(7009, msg='不能把文件移入复制体文件夹内')
             with transaction.atomic():
                 directoryorfileserializer = DataroomdirectoryorfileUpdateSerializer(file,data=data)
                 if directoryorfileserializer.is_valid():
@@ -610,7 +329,7 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
 
 
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['dataroom.admin_deletedataroom',])
     def destroy(self, request, *args, **kwargs):
         try:
             filelist = request.data.get('filelist',None)
@@ -619,16 +338,10 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             with transaction.atomic():
                 for fileid in filelist:
                     instance = self.get_object(fileid)
-                    if request.user.has_perm('dataroom.admin_deletedataroom'):
-                        pass
-                    elif request.user.has_perm('dataroom.user_deletedataroom', instance.dataroom):
-                        pass
-                    else:
-                        raise InvestError(code=2009, msg='没有权限')
                     if instance.isFile:
-                        self.deleteInstance(instance, request.user)
+                        deleteInstance(instance, request.user)
                     else:
-                        self.deleteDirectory(instance,request.user)
+                        deleteDirectory(instance, request.user)
                 return JSONResponse(SuccessResponse(filelist))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -636,58 +349,215 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    def deleteDirectory(self,instance,deleteuser):
-        if not isinstance(instance,dataroomdirectoryorfile):
-            raise InvestError(7007,msg='expect a dataroomdirectoryorfile type but get a %s type'%type(instance))
-        if instance.is_deleted:
-            raise InvestError(code=7002)
+
+class User_DataroomfileView(viewsets.ModelViewSet):
+    """
+           list:用户可见dataroom列表
+           create:新建用户-dataroom关系
+           retrieve:查看该dataroom用户可见文件列表
+           update:编辑该dataroom用户可见文件列表
+           destroy:减少用户可见dataroom
+        """
+    filter_backends = (filters.DjangoFilterBackend,)
+    queryset = dataroom_User_file.objects.all().filter(is_deleted=False)
+    filter_fields = ('dataroom', 'user')
+    serializer_class = DataroomdirectoryorfileCreateSerializer
+    Model = dataroom_User_file
+
+    def get_object(self,pk=None):
+        if pk:
+            try:
+                obj = self.Model.objects.get(id=pk, is_deleted=False)
+            except self.Model.DoesNotExist:
+                raise InvestError(code=7002, msg='dataroom with this "%s" is not exist' % pk)
         else:
-            if instance.isShadow:
-                self.deleteInstance(instance, deleteuser)
-            else:
-                filequery = instance.asparent_directories.filter(is_deleted=False)
-                self.deleteInstance(instance, deleteuser)
-                if filequery.count():
-                    for fileordirectoriey in filequery:
-                       self.deleteDirectory(fileordirectoriey, deleteuser)
+            try:
+                obj = self.Model.objects.get(id=self.kwargs['pk'], is_deleted=False)
+            except self.Model.DoesNotExist:
+                raise InvestError(code=7002,msg='dataroom with this （"%s"） is not exist' % self.kwargs['pk'])
+        if obj.datasource != self.request.user.datasource:
+            raise InvestError(code=8888,msg='资源非同源')
+        return obj
 
-
-    def deleteInstance(self,instance,deleteuser):
-        if instance.isFile:
-            instance.is_deleted = True
-            instance.deleteduser = deleteuser
-            instance.deletedtime = datetime.datetime.now()
-            instance.save()
-            if instance.isShadow:
-                pass
-            else:
-                if not instance.bucket or not instance.key:
-                    pass
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang',None)
+            user = request.GET.get('user',None)
+            if user:
+                if user != request.user.id:
+                    if request.user.has_perm('dataroom.admin_getdataroom'):
+                        pass
                 else:
-                    deleteqiniufile(instance.bucket, instance.key)
+                    raise InvestError(2009)
+            queryset = self.filter_queryset(self.get_queryset()).filter(datasource=self.request.user.datasource,user=request.user)
+            count = queryset.count()
+            serializer = User_DataroomSerializer(queryset, many=True)
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable()
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            if request.user.has_perm('dataroom.admin_getdataroom'):
+                serializerclass = User_DataroomfileSerializer
+            elif request.user == instance.user:
+                serializerclass = User_DataroomfileSerializer
+            else:
+                raise InvestError(code=2009)
+            serializer = serializerclass(instance)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable(['dataroom.admin_adddataroom'])
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            with transaction.atomic():
+                user_dataroomserializer = User_DataroomfileCreateSerializer(data)
+                if user_dataroomserializer.is_valid():
+                    user_dataroomserializer.save()
+                else:
+                    raise InvestError(code=20071, msg='data有误_%s' % user_dataroomserializer.errors)
+                return JSONResponse(SuccessResponse(user_dataroomserializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable(['dataroom.admin_changedataroom'])
+    def update(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            lang = request.GET.get('lang')
+            user_dataroom = self.get_object()
+            files = data.get('files', [])
+            with transaction.atomic():
+                user_dataroomserializer = User_DataroomfileCreateSerializer(user_dataroom, data={'files': files})
+                if user_dataroomserializer.is_valid():
+                    user_dataroomserializer.save()
+                else:
+                    raise InvestError(code=20071, msg='data有误_%s' % user_dataroomserializer.errors)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(user_dataroomserializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable(['dataroom.admin_deletedataroom'])
+    def destroy(self, request, *args, **kwargs):
+        try:
+            user_dataroom = self.get_object()
+            with transaction.atomic():
+                user_dataroom.delete()
+                return JSONResponse(SuccessResponse({'isDeleted':True}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+# dataroom 公共函数
+# 创建public模板
+def creatpublicdataroomdirectorywithtemplate(user, publicdataroomid):
+    templatequery = publicdirectorytemplate.objects.all()
+    topdirectories = templatequery.filter(parent=None)
+    if topdirectories.exists():
+        for directory in topdirectories:
+            create_diractory(user, directoryname=directory.name, dataroom=publicdataroomid,
+                             templatedirectoryID=directory.id, orderNO=directory.orderNO, parent=None)
+
+
+def create_diractory(user, directoryname, dataroom, templatedirectoryID, orderNO, parent=None):
+    directoryobj = dataroomdirectoryorfile(filename=directoryname, dataroom_id=dataroom, orderNO=orderNO,
+                                           parent_id=parent, createdtime=datetime.datetime.now(), createuser_id=user.id,
+                                           datasource_id=user.datasource_id)
+    directoryobj.save()
+    sondirectoryquery = publicdirectorytemplate.objects.filter(parent=templatedirectoryID)
+    if sondirectoryquery.exists():
+        for sondirectory in sondirectoryquery:
+            create_diractory(user, directoryname=sondirectory.name, dataroom=dataroom,
+                             templatedirectoryID=sondirectory.id, orderNO=sondirectory.orderNO, parent=directoryobj.id)
+
+
+def pulishProjectCreateDataroom(proj, user):
+    try:
+        queryset = dataroom.objects.filter(is_deleted=False, datasource=user.datasource)
+        publicdataroom = queryset.filter(proj=proj)
+        if publicdataroom.exists():
+            pass
         else:
-            instance.is_deleted = True
-            instance.deleteduser = deleteuser
-            instance.deletedtime = datetime.datetime.now()
-            instance.save()
+            dataroomdata = {}
+            dataroomdata['proj'] = proj.id
+            dataroomdata['datasource'] = user.datasource_id
+            dataroomdata['createuser'] = user.id
+            publicdataroomserializer = DataroomCreateSerializer(data=dataroomdata)
+            if publicdataroomserializer.is_valid():
+                publicdataroom = publicdataroomserializer.save()
+                creatpublicdataroomdirectorywithtemplate(user, publicdataroomid=publicdataroom.id)
+    except Exception:
+        logexcption(msg='public创建失败')
+        pass
 
 
-    def checkDirectoryIsShadow(self,directory):
-        if directory.isShadow:
-            return True
+def deleteDirectory(instance, deleteuser):
+    if not isinstance(instance, dataroomdirectoryorfile):
+        raise InvestError(7007, msg='expect a dataroomdirectoryorfile type but get a %s type' % type(instance))
+    if instance.is_deleted:
+        raise InvestError(code=7002)
+    else:
+        if instance.isShadow:
+            deleteInstance(instance, deleteuser)
         else:
-            subDirs = directory.asparent_directories.filter(is_deleted=False)
-            if subDirs.exists():
-                for subDir in subDirs:
-                    self.checkDirectoryIsShadow(subDir)
+            filequery = instance.asparent_directories.filter(is_deleted=False)
+            deleteInstance(instance, deleteuser)
+            if filequery.count():
+                for fileordirectoriey in filequery:
+                    deleteDirectory(fileordirectoriey, deleteuser)
 
-    def gerDirectoryAllSubDirOrFile(self,directory):
-        qs = directory.asparent_directories.filter(is_deleted=False, isShadow=False)
-        for dir in qs:
-            if dir.isFile:
+
+def deleteInstance(instance, deleteuser):
+    if instance.isFile:
+        bucket = instance.bucket
+        key = instance.key
+        # instance.is_deleted = True
+        # instance.deleteduser = deleteuser
+        # instance.deletedtime = datetime.datetime.now()
+        # instance.save()
+        instance.delete()
+        if instance.isShadow:
+            pass
+        else:
+            if not bucket or not key:
                 pass
             else:
-                subqs = self.gerDirectoryAllSubDirOrFile(dir)
-                qs = (qs | subqs).distinct()
-        return qs
+                ret, info = deleteqiniufile(bucket, key)
+    else:
+        instance.is_deleted = True
+        instance.deleteduser = deleteuser
+        instance.deletedtime = datetime.datetime.now()
+        instance.save()
 
+
+def checkDirectoryIsShadow(directory):
+    if directory.isShadow:
+        return True
+    else:
+        subDirs = directory.asparent_directories.filter(is_deleted=False)
+        if subDirs.exists():
+            for subDir in subDirs:
+                checkDirectoryIsShadow(subDir)

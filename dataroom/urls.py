@@ -5,12 +5,12 @@ import views
 dataroom = views.DataroomView.as_view({
         'get': 'list',
         'post': 'create',
-        'put':'update',
-        'delete':'destroy',
 })
 
-dataroom_one = views.DataroomView.as_view({
-        'get': 'retrieve',
+dataroom_one =  views.DataroomView.as_view({
+        'get':'retrieve',
+        'put':'update',
+        'delete':'destroy',
 })
 
 dataroomfile = views.DataroomdirectoryorfileView.as_view({
@@ -21,14 +21,30 @@ dataroomfile = views.DataroomdirectoryorfileView.as_view({
 })
 
 
-# dataroomadddata = views.DataroomView.as_view({
-#     'post':'addDataroom'
-# })
+
+user_dataroom = views.User_DataroomfileView.as_view({
+        'get': 'list',
+        'post': 'create',
+})
+
+user_dataroomone =  views.User_DataroomfileView.as_view({
+        'get':'retrieve',
+        'put':'update',
+        'delete':'destroy',
+})
+
+
+dataroomadddata = views.DataroomView.as_view({
+    'post':'addDataroom'
+})
+
 
 
 urlpatterns = [
     url(r'^$', dataroom,name='dataroom-list',),
     url(r'^(?P<pk>\d+)/$', dataroom_one,name='dataroom-detail'),
     url(r'^file/$', dataroomfile,name='dataroom-fileordirectory'),
-    # url(r'^add/$', dataroomadddata, name='dataroom-add-dataroom'),
+    url(r'^user/$', user_dataroom,name='user_dataroom-list',),
+    url(r'^user/(?P<pk>\d+)/$', user_dataroomone,name='user_dataroom-detail'),
+    url(r'^add/$', dataroomadddata, name='dataroom-add-dataroom'),
 ]

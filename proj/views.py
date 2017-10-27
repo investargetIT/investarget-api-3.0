@@ -435,7 +435,7 @@ class ProjectView(viewsets.ModelViewSet):
                 pass
             else:
                 raise InvestError(code=2009)
-            if instance.proj_datarooms.filter(is_deleted=False,proj=instance,user=None,isPublic=False).exists():
+            if instance.proj_datarooms.filter(is_deleted=False,proj=instance).exists():
                 raise InvestError(code=2010, msg=u'{} 上有关联数据'.format('proj_datarooms'))
             with transaction.atomic():
                 for link in ['proj_timelines','proj_finances','proj_attachment','project_tags','project_industries','project_TransactionTypes',
@@ -1199,9 +1199,10 @@ class ProjectBDFilter(FilterSet):
     source = RelationFilter(filterstr='source',lookup_method='icontains')
     manager = RelationFilter(filterstr='manager',lookup_method='in')
     bd_status = RelationFilter(filterstr='bd_status', lookup_method='in')
+    source_type = RelationFilter(filterstr='source_type', lookup_method='in')
     class Meta:
         model = ProjectBD
-        fields = ('com_name','location','username','usermobile','source','manager','bd_status')
+        fields = ('com_name','location','username','usermobile','source','manager','bd_status','source_type')
 
 
 class ProjectBDView(viewsets.ModelViewSet):

@@ -326,6 +326,10 @@ class ShareToken(models.Model):
     def __str__(self):
         return self.key
 
+bd_sourcetype = (
+    (0,'全库搜索'),
+    (1,'其他')
+)
 class ProjectBD(models.Model):
     location = MyForeignKey(Country,blank=True,null=True,help_text='项目地区')
     com_name = models.TextField(blank=True,null=True,help_text='公司名称/项目名称')
@@ -333,6 +337,7 @@ class ProjectBD(models.Model):
     username = models.CharField(max_length=64,blank=True,null=True,help_text='姓名')
     usermobile = models.CharField(max_length=64,blank=True,null=True,help_text='电话')
     source = models.TextField(blank=True,null=True,help_text='来源')
+    source_type = models.IntegerField(blank=True,null=True,choices=bd_sourcetype)
     manager = MyForeignKey(MyUser,blank=True,null=True,help_text='负责人')
     bd_status = MyForeignKey(BDStatus,blank=True,null=True,help_text='bd状态')
     is_deleted = models.BooleanField(blank=True,default=False)
@@ -355,6 +360,10 @@ class ProjectBD(models.Model):
         if self.manager is None:
             raise InvestError(2007,msg='manager can`t be null')
         self.datasource = self.manager.datasource_id
+        if self.source == '全库搜索':
+            self.source_type = 0
+        else:
+            self.source_type = 1
         return super(ProjectBD, self).save(*args, **kwargs)
 
 
