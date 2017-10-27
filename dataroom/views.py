@@ -361,7 +361,7 @@ class User_DataroomfileView(viewsets.ModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = dataroom_User_file.objects.all().filter(is_deleted=False)
     filter_fields = ('dataroom', 'user')
-    serializer_class = DataroomdirectoryorfileCreateSerializer
+    serializer_class = User_DataroomfileCreateSerializer
     Model = dataroom_User_file
 
     def get_object(self,pk=None):
