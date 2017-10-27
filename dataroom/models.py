@@ -81,9 +81,6 @@ class dataroomdirectoryorfile(models.Model):
         db_table = 'dataroomdirectoryorfile'
 
     def save(self, force_insert=False, force_update=False, using=None,update_fields=None):
-        if self.pk:
-            if self.is_deleted:
-                raise InvestError(7002,msg='已删除')
         if self.isFile:
             try:
                 if self.pk:

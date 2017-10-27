@@ -518,7 +518,7 @@ def deleteDirectory(instance, deleteuser):
     if not isinstance(instance, dataroomdirectoryorfile):
         raise InvestError(7007, msg='expect a dataroomdirectoryorfile type but get a %s type' % type(instance))
     if instance.is_deleted:
-        raise InvestError(code=7002)
+        raise InvestError(code=7002, msg='已删除，%s'%instance.id)
     else:
         filequery = instance.asparent_directories.filter(is_deleted=False)
         deleteInstance(instance, deleteuser)
