@@ -125,11 +125,11 @@ class dataroom_User_file(models.Model):
         db_table = 'dataroom_user'
 
     def save(self, force_insert=False, force_update=False, using=None,update_fields=None):
-        try:
-            if self.pk is None:
+        if self.pk is None:
+            try:
                 dataroom_User_file.objects.get(is_deleted=False, user=self.user, dataroom=self.dataroom)
-        except dataroom_User_file.DoesNotExist:
-            pass
-        else:
-            raise InvestError(code=2004, msg='用户已存在一个相同项目的dataroom了')
+            except dataroom_User_file.DoesNotExist:
+                pass
+            else:
+                raise InvestError(code=2004, msg='用户已存在一个相同项目的dataroom了')
         super(dataroom_User_file, self).save(force_insert, force_update, using, update_fields)

@@ -54,7 +54,7 @@ class User_DataroomSerializer(serializers.ModelSerializer):
         fields = ('id', 'dataroom', 'user')
 
 class User_DataroomfileSerializer(serializers.ModelSerializer):
-    files = DataroomdirectoryorfileSerializer()
+    files = DataroomdirectoryorfileSerializer(many=True)
     class Meta:
         model = dataroom_User_file
         fields = ('id', 'dataroom', 'user', 'files')

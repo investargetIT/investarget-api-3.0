@@ -41,7 +41,7 @@ class DataroomView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
     queryset = dataroom.objects.all().filter(is_deleted=False)
-    search_fields = ('proj__projtitleC', 'proj__supportUser__usernameC')
+    search_fields = ('proj__projtitleC', 'proj__projtitleE', 'proj__supportUser__usernameC')
     filter_class = DataroomFilter
     serializer_class = DataroomSerializer
 
@@ -170,7 +170,7 @@ class DataroomView(viewsets.ModelViewSet):
             lang = request.GET.get('lang')
             instance = self.get_object()
             serializer = DataroomdirectoryorfileSerializer(dataroomdirectoryorfile.objects.filter(is_deleted=False,dataroom=instance,isFile=False),many=True)
-            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data, lang)))
+            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -358,9 +358,10 @@ class User_DataroomfileView(viewsets.ModelViewSet):
            update:编辑该dataroom用户可见文件列表
            destroy:减少用户可见dataroom
         """
-    filter_backends = (filters.DjangoFilterBackend,)
+    filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
     queryset = dataroom_User_file.objects.all().filter(is_deleted=False)
     filter_fields = ('dataroom', 'user')
+    search_fields = ('dataroom__proj__projtitleC','dataroom__proj__projtitleE')
     serializer_class = User_DataroomfileCreateSerializer
     Model = dataroom_User_file
 
@@ -369,12 +370,12 @@ class User_DataroomfileView(viewsets.ModelViewSet):
             try:
                 obj = self.Model.objects.get(id=pk, is_deleted=False)
             except self.Model.DoesNotExist:
-                raise InvestError(code=7002, msg='dataroom with this "%s" is not exist' % pk)
+                raise InvestError(code=7002, msg='dataroom-user with this "%s" is not exist' % pk)
         else:
             try:
                 obj = self.Model.objects.get(id=self.kwargs['pk'], is_deleted=False)
             except self.Model.DoesNotExist:
-                raise InvestError(code=7002,msg='dataroom with this （"%s"） is not exist' % self.kwargs['pk'])
+                raise InvestError(code=7002,msg='dataroom-user with this （"%s"） is not exist' % self.kwargs['pk'])
         if obj.datasource != self.request.user.datasource:
             raise InvestError(code=8888,msg='资源非同源')
         return obj
