@@ -382,18 +382,18 @@ class User_DataroomfileView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            lang = request.GET.get('lang',None)
             user = request.GET.get('user',None)
-            if user:
-                if user != request.user.id:
-                    if request.user.has_perm('dataroom.admin_getdataroom'):
-                        pass
-                else:
-                    raise InvestError(2009)
-            queryset = self.filter_queryset(self.get_queryset()).filter(datasource=self.request.user.datasource,user=request.user)
+            if request.user.has_perm('dataroom.admin_getdataroom'):
+                filters = {'datasource':self.request.user.datasource}
+            else:
+                filters = {'datasource':self.request.user.datasource, 'user':request.user.id}
+                if user:
+                    if user != request.user.id:
+                        raise InvestError(2009)
+            queryset = self.filter_queryset(self.get_queryset()).filter(**filters)
             count = queryset.count()
             serializer = User_DataroomSerializer(queryset, many=True)
-            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
+            return JSONResponse(SuccessResponse({'count':count,'data':serializer.data}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
