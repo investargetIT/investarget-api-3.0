@@ -38,7 +38,7 @@ class dataroom(models.Model):
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_datarooms')
     lastmodifytime = models.DateTimeField(blank=True,null=True)
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_datarooms')
-    datasource = MyForeignKey(DataSource, help_text='数据源')
+    datasource = MyForeignKey(DataSource, blank=True, null=True, help_text='数据源')
     class Meta:
         db_table = 'dataroom'
         permissions = (
@@ -76,7 +76,7 @@ class dataroomdirectoryorfile(models.Model):
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_dataroomdirectories')
     lastmodifytime = models.DateTimeField(blank=True,null=True)
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_dataroomdirectories')
-    datasource = MyForeignKey(DataSource, help_text='数据源')
+    datasource = MyForeignKey(DataSource, blank=True, null=True, help_text='数据源')
     class Meta:
         db_table = 'dataroomdirectoryorfile'
 
@@ -86,7 +86,7 @@ class dataroomdirectoryorfile(models.Model):
                 if self.pk:
                     dataroomdirectoryorfile.objects.exclude(pk=self.pk).get(is_deleted=False, key=self.key)
                 else:
-                    dataroomdirectoryorfile.objects.exclude(pk=self.pk).get(is_deleted=False, key=self.key)
+                    dataroomdirectoryorfile.objects.get(is_deleted=False, key=self.key)
             except dataroomdirectoryorfile.DoesNotExist:
                 pass
             else:
@@ -113,13 +113,23 @@ class dataroomdirectoryorfile(models.Model):
 class dataroom_User_file(models.Model):
     dataroom = MyForeignKey(dataroom, blank=True, null=True, related_name='dataroom_users')
     user = MyForeignKey(MyUser, blank=True, null=True, related_name='user_datatooms')
-    files = models.ManyToManyField(dataroomdirectoryorfile)
+    files = models.ManyToManyField(dataroomdirectoryorfile, blank=True)
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_userdatarooms')
     deletedtime = models.DateTimeField(blank=True, null=True)
     createdtime = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_userdatarooms')
-    datasource = MyForeignKey(DataSource, help_text='数据源')
+    datasource = MyForeignKey(DataSource, blank=True, null=True, help_text='数据源')
 
     class Meta:
         db_table = 'dataroom_user'
+
+    def save(self, force_insert=False, force_update=False, using=None,update_fields=None):
+        try:
+            if self.pk is None:
+                dataroom_User_file.objects.get(is_deleted=False, user=self.user, dataroom=self.dataroom)
+        except dataroom_User_file.DoesNotExist:
+            pass
+        else:
+            raise InvestError(code=2004, msg='用户已存在一个相同项目的dataroom了')
+        super(dataroom_User_file, self).save(force_insert, force_update, using, update_fields)

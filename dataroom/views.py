@@ -425,7 +425,9 @@ class User_DataroomfileView(viewsets.ModelViewSet):
         try:
             data = request.data
             with transaction.atomic():
-                user_dataroomserializer = User_DataroomfileCreateSerializer(data)
+                data['datasource'] = request.user.datasource_id
+                data['createuser'] = request.user.id
+                user_dataroomserializer = User_DataroomfileCreateSerializer(data=data)
                 if user_dataroomserializer.is_valid():
                     user_dataroomserializer.save()
                 else:
