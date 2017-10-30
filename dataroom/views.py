@@ -382,6 +382,7 @@ class User_DataroomfileView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
+            lang = request.GET.get('lang', 'cn')
             user = request.GET.get('user',None)
             if request.user.has_perm('dataroom.admin_getdataroom'):
                 filters = {'datasource':self.request.user.datasource}
@@ -393,7 +394,7 @@ class User_DataroomfileView(viewsets.ModelViewSet):
             queryset = self.filter_queryset(self.get_queryset()).filter(**filters)
             count = queryset.count()
             serializer = User_DataroomSerializer(queryset, many=True)
-            return JSONResponse(SuccessResponse({'count':count,'data':serializer.data}))
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
