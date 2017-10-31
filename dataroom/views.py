@@ -201,6 +201,7 @@ class DataroomView(viewsets.ModelViewSet):
                 instance.dataroom_directories.all().update(is_deleted=True, deletedtime=datetime.datetime.now())
                 for fileOrDirectory in instance.dataroom_directories.all():
                     deleteInstance(fileOrDirectory, request.user)
+                instance.dataroom_users.all().update(is_deleted=True)
                 instance.is_deleted = True
                 instance.deleteduser = request.user
                 instance.deletedtime = datetime.datetime.now()
@@ -359,7 +360,7 @@ class User_DataroomfileView(viewsets.ModelViewSet):
            destroy:减少用户可见dataroom
         """
     filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
-    queryset = dataroom_User_file.objects.all().filter(is_deleted=False)
+    queryset = dataroom_User_file.objects.all().filter(is_deleted=False,dataroom__isClose=False,dataroom__is_deleted=False)
     filter_fields = ('dataroom', 'user')
     search_fields = ('dataroom__proj__projtitleC','dataroom__proj__projtitleE')
     serializer_class = User_DataroomfileCreateSerializer
@@ -368,12 +369,12 @@ class User_DataroomfileView(viewsets.ModelViewSet):
     def get_object(self,pk=None):
         if pk:
             try:
-                obj = self.Model.objects.get(id=pk, is_deleted=False)
+                obj = self.queryset.get(id=pk, is_deleted=False)
             except self.Model.DoesNotExist:
                 raise InvestError(code=7002, msg='dataroom-user with this "%s" is not exist' % pk)
         else:
             try:
-                obj = self.Model.objects.get(id=self.kwargs['pk'], is_deleted=False)
+                obj = self.queryset.get(id=self.kwargs['pk'], is_deleted=False)
             except self.Model.DoesNotExist:
                 raise InvestError(code=7002,msg='dataroom-user with this （"%s"） is not exist' % self.kwargs['pk'])
         if obj.datasource != self.request.user.datasource:

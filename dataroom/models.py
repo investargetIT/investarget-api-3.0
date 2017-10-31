@@ -91,6 +91,9 @@ class dataroomdirectoryorfile(models.Model):
                 pass
             else:
                 raise InvestError(code=2004)
+        if self.pk is None:
+            if self.dataroom.isClose or self.dataroom.is_deleted:
+                raise InvestError(7012, msg='dataroom已关闭/删除，无法添加文件/目录')
         super(dataroomdirectoryorfile, self).save(force_insert, force_update, using, update_fields)
 
     def checkDirectoryHasFile(self):
@@ -126,6 +129,8 @@ class dataroom_User_file(models.Model):
 
     def save(self, force_insert=False, force_update=False, using=None,update_fields=None):
         if self.pk is None:
+            if self.dataroom.isClose or self.dataroom.is_deleted:
+                raise InvestError(7012,msg='dataroom已关闭/删除，无法添加用户')
             try:
                 dataroom_User_file.objects.get(is_deleted=False, user=self.user, dataroom=self.dataroom)
             except dataroom_User_file.DoesNotExist:
