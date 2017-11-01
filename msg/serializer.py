@@ -11,6 +11,7 @@ class ScheduleCreateSerializer(serializers.ModelSerializer):
 
 class ScheduleSerializer(serializers.ModelSerializer):
     user = UserCommenSerializer()
+    createuser = UserCommenSerializer()
     class Meta:
         model = schedule
         fields = ('id','comments','scheduledtime','user','address','projtitle','proj','createuser','createdtime')
