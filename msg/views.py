@@ -106,9 +106,10 @@ class ScheduleView(viewsets.ModelViewSet):
         update:修改日程安排信息
         destroy:删除日程安排
         """
-    filter_backends = (filters.DjangoFilterBackend,)
+    filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
     queryset = schedule.objects.all().filter(is_deleted=False)
     filter_fields = ('proj','createuser','user','projtitle')
+    search_fields = ('user__usernameC','user__mobile')
     serializer_class = ScheduleSerializer
 
 
