@@ -11,9 +11,10 @@ from mongoengine import Q
 from rest_framework import viewsets
 from bson.objectid import ObjectId
 from mongoDoc.models import GroupEmailData, IMChatMessages, ProjectData, MergeFinanceData, CompanyCatData, ProjRemark, \
-    WXChatdata
+    WXChatdata, ProjectNews
 from mongoDoc.serializers import GroupEmailDataSerializer, IMChatMessagesSerializer, ProjectDataSerializer, \
-    MergeFinanceDataSerializer, CompanyCatDataSerializer, ProjRemarkSerializer, WXChatdataSerializer
+    MergeFinanceDataSerializer, CompanyCatDataSerializer, ProjRemarkSerializer, WXChatdataSerializer, \
+    ProjectNewsSerializer
 from utils.customClass import JSONResponse, InvestError
 from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, catchexcption, logexcption, \
     loginTokenIsAvailable
@@ -205,6 +206,65 @@ class ProjectDataView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+class ProjectNewsView(viewsets.ModelViewSet):
+
+    queryset = ProjectNews.objects.all()
+    serializer_class = ProjectNewsSerializer
+    filter_class = {'com_id': 'in', 'com_name':'icontains',}
+
+    def filterqueryset(self, request, queryset):
+        for key, method in self.filter_class.items():
+            value = request.GET.get(key)
+            if value:
+                if method == 'in':
+                    value = value.split(',')
+                queryset = queryset.filter(**{'%s__%s' % (key, method): value})
+        return queryset
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filterqueryset(request, self.queryset)
+            queryset = queryset.order_by('newsdate')
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = self.serializer_class(queryset,many=True)
+            return JSONResponse(SuccessResponse({'count':count,'data':serializer.data}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable(['usersys.as_admin'])
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            serializer = self.serializer_class(data=data)
+            if serializer.is_valid():
+                serializer.save()
+            else:
+                raise InvestError(2001, msg=serializer.error_messages)
+            return JSONResponse(SuccessResponse(serializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+
 
 class ProjectRemarkView(viewsets.ModelViewSet):
 

@@ -4,7 +4,8 @@ from __future__ import unicode_literals
 import datetime
 from mongoengine import *
 from invest.settings import groupemailMongoTableName, chatMessagegMongoTableName, projectDataMongoTableName, \
-    mergeandfinanceeventMongoTableName, com_catMongoTableName, projremarkMongoTableName, wxchatdataMongoTableName
+    mergeandfinanceeventMongoTableName, com_catMongoTableName, projremarkMongoTableName, wxchatdataMongoTableName, \
+    projectNewsMongoTableName
 from utils.customClass import InvestError
 
 
@@ -33,6 +34,9 @@ class ProjectData(Document):
     com_des = StringField(null=True)   #公司介绍
     invse_total_money = StringField(null=True)  #融资总额
     com_addr = StringField(null=True)   #公司所在地
+    mobile = StringField(null=True)  # 公司联系方式
+    email = StringField(null=True)  # 公司邮箱
+    detailaddress = StringField(null=True)  # 公司地址
     meta = {'collection': projectDataMongoTableName,
             'indexes': ['com_id', 'com_cat_name', 'com_sub_cat_name', 'invse_round_id', 'com_name']
         }
@@ -78,6 +82,26 @@ class MergeFinanceData(Document):
         else:
             raise InvestError(8001,msg='未知的类型')
         super(MergeFinanceData,self).save(force_insert,validate,clean,write_concern,cascade,cascade_kwargs,_refs,save_condition,signal_kwargs,**kwargs)
+
+
+class ProjectNews(Document):
+    com_id = IntField(null=True)      #公司id
+    com_name = StringField(null=True)   #公司名称
+    title = StringField(null=True)  #行业
+    linkurl = StringField(null=True) #子行业
+    newsdate = StringField(null=True)   #成立日期
+    meta = {'collection': projectNewsMongoTableName,'indexes': ['com_id','linkurl']}
+
+    def save(self, force_insert=False, validate=True, clean=True,
+             write_concern=None, cascade=None, cascade_kwargs=None,
+             _refs=None, save_condition=None, signal_kwargs=None, **kwargs):
+        if len(ProjectNews.objects.filter(com_id=self.com_id,linkurl=self.linkurl)) > 0:
+            raise InvestError(8001, msg='数据重复')
+        super(ProjectNews,self).save(force_insert,validate,clean,write_concern,cascade,cascade_kwargs,_refs,save_condition,signal_kwargs,**kwargs)
+
+
+
+
 
 class ProjRemark(Document):
     com_id = IntField(null=True)  # 公司id
