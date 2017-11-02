@@ -7,7 +7,7 @@ from django.db import models
 
 # Create your models here.
 from proj.models import project
-from sourcetype.models import MessageType, DataSource
+from sourcetype.models import MessageType, DataSource, Country
 from usersys.models import MyUser
 
 #站内信
@@ -43,6 +43,7 @@ class schedule(models.Model):
     scheduledtime = models.DateTimeField(blank=True,null=True,help_text='日程预定时间',)
     comments = models.TextField(blank=True, default=False, help_text='内容')
     address = models.TextField(blank=True, null=True, help_text='具体地址')
+    country = MyForeignKey(Country,blank=True,null=True,help_text='地区')
     proj = MyForeignKey(project,blank=True,null=True,help_text='日程项目',related_name='proj_schedule')
     projtitle = models.CharField(max_length=128,blank=True,null=True)
     createdtime = models.DateTimeField(auto_now_add=True, blank=True, null=True)

@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from msg.models import message, schedule
+from sourcetype.serializer import countrySerializer
 from usersys.serializer import UserCommenSerializer
 
 
@@ -12,9 +13,10 @@ class ScheduleCreateSerializer(serializers.ModelSerializer):
 class ScheduleSerializer(serializers.ModelSerializer):
     user = UserCommenSerializer()
     createuser = UserCommenSerializer()
+    country = countrySerializer()
     class Meta:
         model = schedule
-        fields = ('id','comments','scheduledtime','user','address','projtitle','proj','createuser','createdtime')
+        fields = ('id','comments','scheduledtime','user','address','projtitle','proj','createuser','createdtime','country')
 
 
 
