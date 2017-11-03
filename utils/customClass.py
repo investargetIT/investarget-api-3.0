@@ -48,19 +48,19 @@ class RelationFilter(Filter):
             return qs.filter(**{'%s__%s' % (self.filterstr, self.lookup_method): value}).distinct()
 
 
-# class AppEventRateThrottle(throttling.SimpleRateThrottle):
-#     scope = 'getProjectPDF'
-#
-#     def get_cache_key(self, request, view):
-#         if is_authenticated(request.user):
-#             ident = request.user.pk
-#         else:
-#             ident = self.get_ident(request)
-#
-#         return self.cache_format % {
-#             'scope': self.scope,
-#             'ident': ident
-#         }
+class AppEventRateThrottle(throttling.SimpleRateThrottle):
+    scope = 'getProjectPDF'
+
+    def get_cache_key(self, request, view):
+        if is_authenticated(request.user):
+            ident = request.user.pk
+        else:
+            ident = self.get_ident(request)
+
+        return self.cache_format % {
+            'scope': self.scope,
+            'ident': ident
+        }
 
 class MyForeignKey(models.ForeignKey):
     def get_extra_descriptor_filter(self,instance):

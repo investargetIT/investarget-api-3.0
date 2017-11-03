@@ -41,7 +41,7 @@ class message(models.Model):
 class schedule(models.Model):
     user = MyForeignKey(MyUser,blank=True,null=True,help_text='日程对象',related_name='user_beschedule')
     scheduledtime = models.DateTimeField(blank=True,null=True,help_text='日程预定时间',)
-    comments = models.TextField(blank=True, default=False, help_text='内容')
+    comments = models.TextField(blank=True, null=True, help_text='内容')
     address = models.TextField(blank=True, null=True, help_text='具体地址')
     country = MyForeignKey(Country,blank=True,null=True,help_text='地区')
     proj = MyForeignKey(project,blank=True,null=True,help_text='日程项目',related_name='proj_schedule')

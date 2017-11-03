@@ -1,7 +1,7 @@
 #coding=utf-8
 import threading
 
-from dataroom.models import dataroomdirectoryorfile
+from dataroom.models import dataroom_User_file
 from proj.models import project, favoriteProject
 from timeline.models import timelineTransationStatu
 from usersys.models import MyUser, UserRelation, UserFriendship
@@ -9,15 +9,15 @@ from org.models import organization
 from msg.views import saveMessage
 from third.views.jpush import pushnotification
 from third.views.submail import xsendSms, xsendEmail
+from utils.util import getProjTitleWithSuperLink
 
 typelist = ['sms','app','email','webmsg']
 
 
+
 favoriteTypeConf = {
 # 1	系统推荐
-# 2	管理员推荐(暂无)
 # 3	交易师推荐
-# 4	主动收藏
 # 5	感兴趣
     '1':{
         'paths':['app','sms','webmsg','email'],
@@ -63,24 +63,6 @@ favoriteTypeConf = {
             'vars' : {},
         },
     },
-    '4':{
-        'paths':['email','app','webmsg'],
-            'app':{
-            'content' : '有投资者收藏了项目(%s)，点击查看详情。',
-            'platform' : 'ios',
-            'bdage' : '1',
-            'n_extras' : {},
-        },
-            'email':{
-            'projectsign' : 'OwV0x',
-            'vars' : {},
-        },
-            'webmsg':{
-            'content' : '您的投资者%s收藏了项目(%s)，。',
-            'title' : '您的投资者收藏了项目，点击查看详情。',
-            'messagetype' : 1,
-        },
-    },
     '5':{
         'paths':['app','sms','webmsg','email'],
         'app':{
@@ -105,283 +87,283 @@ favoriteTypeConf = {
     },
 }
 
-messageconfig = {
-    'favoriteproject':{
-        'modeltype':favoriteProject,
-        'app':{
-            'content' : '',
-            'platform' : 'ios',
-            'bdage' : '1',
-            'n_extras' : {},
-        },
-        'sms':{
-            'projectsign' : '',
-            'vars' : {},
-        },
-        'webmsg':{
-            'content' : '',
-            'title' : '',
-            'messagetype' : 1,
-        },
-        'email':{
-            'projectsign' : '',
-            'vars' : {},
-        },
-    },
-    'traderchange':{
-        'modeltype':UserRelation,
-        'app':{
-            'content' : '',
-            'platform' : 'ios',
-            'bdage' : '1',
-            'n_extras' : {},
-        },
-        'sms':{
-            'projectsign' : '',
-            'vars' : {},
-        },
-        'webmsg':{
-            'content' : '',
-            'title' : '',
-            'messagetype' : 1,
-        },
-        'email':{
-            'projectsign' : '',
-            'vars' : {},
-        },
-    },
-    'userauditstatuschange':{
-        'modeltype':MyUser,
-        'app':{
-            'content' : '',
-            'platform' : 'ios',
-            'bdage' : '1',
-            'n_extras' : {},
-        },
-        'sms':{
-            'projectsign' : '',
-            'vars' : {},
-        },
-        'webmsg':{
-            'content' : '',
-            'title' : '',
-            'messagetype' : 1,
-        },
-        'email':{
-            'projectsign' : '',
-            'vars' : {},
-        },
-    },
-    'userregister':{
-        'modeltype':MyUser,
-        'app':{
-            'content' : '',
-            'platform' : 'ios',
-            'bdage' : '1',
-            'n_extras' : {},
-        },
-        'sms':{
-            'projectsign' : '',
-            'vars' : {},
-        },
-        'webmsg':{
-            'content' : '',
-            'title' : '',
-            'messagetype' : 1,
-        },
-        'email':{
-            'projectsign' : '',
-            'vars' : {},
-        },
-    },
-    'projectauditstatuschange':{
-        'modeltype':project,
-        'app':{
-            'content' : '',
-            'platform' : 'ios',
-            'bdage' : '1',
-            'n_extras' : {},
-        },
-        'sms':{
-            'projectsign' : '',
-            'vars' : {},
-        },
-        'webmsg':{
-            'content' : '',
-            'title' : '',
-            'messagetype' : 1,
-        },
-        'email':{
-            'projectsign' : '',
-            'vars' : {},
-        },
-    },
-    'orgauditstatuschange':{
-        'modeltype':organization,
-        'app':{
-            'content' : '',
-            'platform' : 'ios',
-            'bdage' : '1',
-            'n_extras' : {},
-        },
-        'sms':{
-            'projectsign' : '',
-            'vars' : {},
-        },
-        'webmsg':{
-            'content' : '',
-            'title' : '',
-            'messagetype' : 1,
-        },
-        'email':{
-            'projectsign' : '',
-            'vars' : {},
-        },
-    },
-    'timelinestatuschange':{
-        'modeltype':timelineTransationStatu,
-        'app':{
-            'content' : '',
-            'platform' : 'ios',
-            'bdage' : '1',
-            'n_extras' : {},
-        },
-        'sms':{
-            'projectsign' : '',
-            'vars' : {},
-        },
-        'webmsg':{
-            'content' : '',
-            'title' : '',
-            'messagetype' : 1,
-        },
-        'email':{
-            'projectsign' : '',
-            'vars' : {},
-        },
-    },
-    'timelinealertcycleexpire':{
-        'modeltype':timelineTransationStatu,
-        'app':{
-            'content' : '',
-            'platform' : 'ios',
-            'bdage' : '1',
-            'n_extras' : {},
-        },
-        'sms':{
-            'projectsign' : '',
-            'vars' : {},
-        },
-        'webmsg':{
-            'content' : '',
-            'title' : '',
-            'messagetype' : 1,
-        },
-        'email':{
-            'projectsign' : '',
-            'vars' : {},
-        },
-    },
-    'dataroomfileupdate':{
-        'modeltype':dataroomdirectoryorfile,
-        'app':{
-            'content' : '',
-            'platform' : 'ios',
-            'bdage' : '1',
-            'n_extras' : {},
-        },
-        'sms':{
-            'projectsign' : '',
-            'vars' : {},
-        },
-        'webmsg':{
-            'content' : '',
-            'title' : '',
-            'messagetype' : 1,
-        },
-        'email':{
-            'projectsign' : '',
-            'vars' : {},
-        },
-    },
-    'usermakefriend':{
-        'modeltype':UserFriendship,
-        'app':{
-            'content' : '',
-            'platform' : 'ios',
-            'bdage' : '1',
-            'n_extras' : {},
-        },
-        'sms':{
-            'projectsign' : '',
-            'vars' : {},
-        },
-        'webmsg':{
-            'content' : '',
-            'title' : '',
-            'messagetype' : 1,
-        },
-        'email':{
-            'projectsign' : '',
-            'vars' : {},
-        },
-    },
-}
-
-def sendmessage_withtypes(configtype,model,receiver,types,sender=None):
-    """
-    :param configtype: messageconfig
-    :param model: favoriteProject type
-    :param receiver: myuser type
-    :param types: list
-    :param sender: myuser type
-    :return: None
-    """
-    class sendmessageThread(threading.Thread):
-        def __init__(self, configtype, model, receiver, types, sender=None):
-            self.configtype = configtype
-            self.model = model
-            self.receiver = receiver
-            self.types = types
-            self.sender = sender
-            threading.Thread.__init__(self)
-        def run(self):
-            types = self.types
-            receiver = self.receiver
-            model = self.model
-            sender = self.sender
-            if hasattr(messageconfig,configtype):
-                data = messageconfig[configtype]
-                if isinstance(model, data['modeltype']):
-                    if 'app' in types:
-                        appdata = data['app']
-                        content = appdata['content']
-                        receiver_alias = receiver.id
-                        bdage = appdata['bdage']
-                        n_extras = appdata['n_extras']
-                        pushnotification(content, receiver_alias, bdage, n_extras)
-                    if 'email' in types:
-                        emaildata = data['email']
-                        destination = receiver.email
-                        projectsign = emaildata['projectsign']
-                        vars = emaildata['vars']
-                        xsendEmail(destination, projectsign, vars)
-                    if 'sms' in types:
-                        smsdata = data['sms']
-                        destination = receiver.email
-                        projectsign = smsdata['projectsign']
-                        vars = smsdata['vars']
-                        xsendSms(destination, projectsign, vars)
-                    if 'webmsg' in types:
-                        webmsgdata = data['webmsg']
-                        content = webmsgdata['content']
-                        title = webmsgdata['title']
-                        messagetype = webmsgdata['messagetype']
-                        saveMessage(content, messagetype, title, receiver, sender)
-            else:
-                print u'%s not found'%configtype
-                pass
-    sendmessageThread(model,receiver,types,sender).start()
+# messageconfig = {
+#     'favoriteproject':{
+#         'modeltype':favoriteProject,
+#         'app':{
+#             'content' : '',
+#             'platform' : 'ios',
+#             'bdage' : '1',
+#             'n_extras' : {},
+#         },
+#         'sms':{
+#             'projectsign' : '',
+#             'vars' : {},
+#         },
+#         'webmsg':{
+#             'content' : '',
+#             'title' : '',
+#             'messagetype' : 1,
+#         },
+#         'email':{
+#             'projectsign' : '',
+#             'vars' : {},
+#         },
+#     },
+#     'traderchange':{
+#         'modeltype':UserRelation,
+#         'app':{
+#             'content' : '',
+#             'platform' : 'ios',
+#             'bdage' : '1',
+#             'n_extras' : {},
+#         },
+#         'sms':{
+#             'projectsign' : '',
+#             'vars' : {},
+#         },
+#         'webmsg':{
+#             'content' : '',
+#             'title' : '',
+#             'messagetype' : 1,
+#         },
+#         'email':{
+#             'projectsign' : '',
+#             'vars' : {},
+#         },
+#     },
+#     'userauditstatuschange':{
+#         'modeltype':MyUser,
+#         'app':{
+#             'content' : '',
+#             'platform' : 'ios',
+#             'bdage' : '1',
+#             'n_extras' : {},
+#         },
+#         'sms':{
+#             'projectsign' : '',
+#             'vars' : {},
+#         },
+#         'webmsg':{
+#             'content' : '',
+#             'title' : '',
+#             'messagetype' : 1,
+#         },
+#         'email':{
+#             'projectsign' : '',
+#             'vars' : {},
+#         },
+#     },
+#     'userregister':{
+#         'modeltype':MyUser,
+#         'app':{
+#             'content' : '',
+#             'platform' : 'ios',
+#             'bdage' : '1',
+#             'n_extras' : {},
+#         },
+#         'sms':{
+#             'projectsign' : '',
+#             'vars' : {},
+#         },
+#         'webmsg':{
+#             'content' : '',
+#             'title' : '',
+#             'messagetype' : 1,
+#         },
+#         'email':{
+#             'projectsign' : '',
+#             'vars' : {},
+#         },
+#     },
+#     'projectauditstatuschange':{
+#         'modeltype':project,
+#         'app':{
+#             'content' : '',
+#             'platform' : 'ios',
+#             'bdage' : '1',
+#             'n_extras' : {},
+#         },
+#         'sms':{
+#             'projectsign' : '',
+#             'vars' : {},
+#         },
+#         'webmsg':{
+#             'content' : '',
+#             'title' : '',
+#             'messagetype' : 1,
+#         },
+#         'email':{
+#             'projectsign' : '',
+#             'vars' : {},
+#         },
+#     },
+#     'orgauditstatuschange':{
+#         'modeltype':organization,
+#         'app':{
+#             'content' : '',
+#             'platform' : 'ios',
+#             'bdage' : '1',
+#             'n_extras' : {},
+#         },
+#         'sms':{
+#             'projectsign' : '',
+#             'vars' : {},
+#         },
+#         'webmsg':{
+#             'content' : '',
+#             'title' : '',
+#             'messagetype' : 1,
+#         },
+#         'email':{
+#             'projectsign' : '',
+#             'vars' : {},
+#         },
+#     },
+#     'timelinestatuschange':{
+#         'modeltype':timelineTransationStatu,
+#         'app':{
+#             'content' : '',
+#             'platform' : 'ios',
+#             'bdage' : '1',
+#             'n_extras' : {},
+#         },
+#         'sms':{
+#             'projectsign' : '',
+#             'vars' : {},
+#         },
+#         'webmsg':{
+#             'content' : '',
+#             'title' : '',
+#             'messagetype' : 1,
+#         },
+#         'email':{
+#             'projectsign' : '',
+#             'vars' : {},
+#         },
+#     },
+#     'timelinealertcycleexpire':{
+#         'modeltype':timelineTransationStatu,
+#         'app':{
+#             'content' : '',
+#             'platform' : 'ios',
+#             'bdage' : '1',
+#             'n_extras' : {},
+#         },
+#         'sms':{
+#             'projectsign' : '',
+#             'vars' : {},
+#         },
+#         'webmsg':{
+#             'content' : '',
+#             'title' : '',
+#             'messagetype' : 1,
+#         },
+#         'email':{
+#             'projectsign' : '',
+#             'vars' : {},
+#         },
+#     },
+#     'dataroomfileupdate':{
+#         'modeltype':dataroom_User_file,
+#         'app':{
+#             'content' : '',
+#             'platform' : 'ios',
+#             'bdage' : '1',
+#             'n_extras' : {},
+#         },
+#         'sms':{
+#             'projectsign' : '',
+#             'vars' : {},
+#         },
+#         'webmsg':{
+#             'content' : '',
+#             'title' : '',
+#             'messagetype' : 1,
+#         },
+#         'email':{
+#             'projectsign' : '',
+#             'vars' : {},
+#         },
+#     },
+#     'usermakefriend':{
+#         'modeltype':UserFriendship,
+#         'app':{
+#             'content' : '',
+#             'platform' : 'ios',
+#             'bdage' : '1',
+#             'n_extras' : {},
+#         },
+#         'sms':{
+#             'projectsign' : '',
+#             'vars' : {},
+#         },
+#         'webmsg':{
+#             'content' : '',
+#             'title' : '',
+#             'messagetype' : 1,
+#         },
+#         'email':{
+#             'projectsign' : '',
+#             'vars' : {},
+#         },
+#     },
+# }
+#
+# def sendmessage_withtypes(configtype,model,receiver,types,sender=None):
+#     """
+#     :param configtype: messageconfig
+#     :param model: favoriteProject type
+#     :param receiver: myuser type
+#     :param types: list
+#     :param sender: myuser type
+#     :return: None
+#     """
+#     class sendmessageThread(threading.Thread):
+#         def __init__(self, configtype, model, receiver, types, sender=None):
+#             self.configtype = configtype
+#             self.model = model
+#             self.receiver = receiver
+#             self.types = types
+#             self.sender = sender
+#             threading.Thread.__init__(self)
+#         def run(self):
+#             types = self.types
+#             receiver = self.receiver
+#             model = self.model
+#             sender = self.sender
+#             if hasattr(messageconfig,configtype):
+#                 data = messageconfig[configtype]
+#                 if isinstance(model, data['modeltype']):
+#                     if 'app' in types:
+#                         appdata = data['app']
+#                         content = appdata['content']
+#                         receiver_alias = receiver.id
+#                         bdage = appdata['bdage']
+#                         n_extras = appdata['n_extras']
+#                         pushnotification(content, receiver_alias, bdage, n_extras)
+#                     if 'email' in types:
+#                         emaildata = data['email']
+#                         destination = receiver.email
+#                         projectsign = emaildata['projectsign']
+#                         vars = emaildata['vars']
+#                         xsendEmail(destination, projectsign, vars)
+#                     if 'sms' in types:
+#                         smsdata = data['sms']
+#                         destination = receiver.email
+#                         projectsign = smsdata['projectsign']
+#                         vars = smsdata['vars']
+#                         xsendSms(destination, projectsign, vars)
+#                     if 'webmsg' in types:
+#                         webmsgdata = data['webmsg']
+#                         content = webmsgdata['content']
+#                         title = webmsgdata['title']
+#                         messagetype = webmsgdata['messagetype']
+#                         saveMessage(content, messagetype, title, receiver, sender)
+#             else:
+#                 print u'%s not found'%configtype
+#                 pass
+#     sendmessageThread(model,receiver,types,sender).start()
 
 
 
@@ -419,23 +401,23 @@ def sendmessage_favoriteproject(model,receiver,sender=None):
                         destination = receiver.email
                         projectsign = msgconfig['email']['projectsign']
                         if model.favoritetype_id in [3,5]:
-                            vars = {'NameC': receiver.usernameC, 'NameE': receiver.usernameE, 'projectC': model.proj.projtitleC, 'projectE':model.proj.projtitleE}
+                            vars = {'NameC': sender.usernameC, 'NameE': sender.usernameE, 'projectC': getProjTitleWithSuperLink(model.proj), 'projectE':getProjTitleWithSuperLink(model.proj,'en')}
                         else:
-                            vars = {'projectC':model.proj.projtitleC, 'projectE':model.proj.projtitleE}
+                            vars = {'projectC': getProjTitleWithSuperLink(model.proj), 'projectE':getProjTitleWithSuperLink(model.proj,'en')}
                         xsendEmail(destination, projectsign, vars)
                     if 'sms' in paths:
                         destination = receiver.mobile
                         projectsign = msgconfig['sms']['projectsign']
                         if model.favoritetype_id in [3,5]:
-                            vars = {'user': receiver.usernameC, 'project': model.proj.projtitleC, }
+                            vars = {'user': sender.usernameC, 'project': model.proj.projtitleC, }
                         else:
                             vars = {'project':model.proj.projtitleC}
                         xsendSms(destination, projectsign, vars)
                     if 'webmsg' in paths:
-                        if model.favoritetype_id in [1,]:
-                            content = (msgconfig['webmsg']['content']) % model.proj.projtitleC
+                        if model.favoritetype_id in [3,5]:
+                            content = (msgconfig['webmsg']['content']) % (sender.usernameC, model.proj.projtitleC)
                         else:
-                            content = (msgconfig['webmsg']['content']) % (receiver.usernameC, model.proj.projtitleC)
+                            content = (msgconfig['webmsg']['content']) % model.proj.projtitleC
                         title = msgconfig['webmsg']['title']
                         messagetype = msgconfig['webmsg']['messagetype']
                         saveMessage(content, messagetype, title, receiver, sender)
@@ -488,9 +470,9 @@ def sendmessage_traderchange(model,receiver,types,sender=None):
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
     # if receiver is not None:
-    #                 if hasattr(receiver, 'datasource'):
-    #                     if getattr(receiver, 'datasource_id') == 1:
-    # sendmessage_traderchangeThread(model,receiver,types,sender).start()
+    #     if hasattr(receiver, 'datasource'):
+    #         if getattr(receiver, 'datasource_id') == 1:
+    #             sendmessage_traderchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
     """
@@ -550,9 +532,9 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
     # if receiver is not None:
-    #                 if hasattr(receiver, 'datasource'):
-                        # if getattr(receiver, 'datasource_id') == 1:
-    # sendmessage_auditstatuchangeThread(model,receiver,types,sender).start()
+    #     if hasattr(receiver, 'datasource'):
+    #         if getattr(receiver, 'datasource_id') == 1:
+    #             sendmessage_auditstatuchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_userregister(model,receiver,types,sender=None):
     """
@@ -593,9 +575,9 @@ def sendmessage_userregister(model,receiver,types,sender=None):
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
     # if receiver is not None:
-    #                 if hasattr(receiver, 'datasource'):
-                        # if getattr(receiver, 'datasource_id') == 1:
-    # sendmessage_userregisterThread(model,receiver,types,sender).start()
+    #     if hasattr(receiver, 'datasource'):
+    #         if getattr(receiver, 'datasource_id') == 1:
+    #             sendmessage_userregisterThread(model,receiver,types,sender).start()
 
 
 
@@ -630,7 +612,7 @@ def sendmessage_timelineauditstatuchange(model,receiver,types,sender=None):
                 if 'email' in types:
                     destination = receiver.email
                     projectsign = 'LkZix2'
-                    vars = {'projectC': model.timeline.proj.projtitleC,'projectE': model.timeline.proj.projtitleE}
+                    vars = {'projectC': getProjTitleWithSuperLink(model.timeline.proj),'projectE': getProjTitleWithSuperLink(model.timeline.proj,'en')}
                     xsendEmail(destination, projectsign, vars)
                 if 'sms' in types:
                     destination = receiver.mobile
@@ -643,13 +625,13 @@ def sendmessage_timelineauditstatuchange(model,receiver,types,sender=None):
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
     # if receiver is not None:
-    #                 if hasattr(receiver, 'datasource'):
-    #                     if getattr(receiver, 'datasource_id') == 1:
-    #     sendmessage_timelineauditstatuchangeThread(model,receiver,types,sender).start()
+    #     if hasattr(receiver, 'datasource'):
+    #         if getattr(receiver, 'datasource_id') == 1:
+    #             sendmessage_timelineauditstatuchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_dataroomfileupdate(model,receiver,types,sender=None):
     """
-    :param model: dataroomdirectoryorfile type
+    :param model: dataroom_User_file type
     :param receiver: myuser type
     :param types: list
     :param sender: myuser type
@@ -668,7 +650,7 @@ def sendmessage_dataroomfileupdate(model,receiver,types,sender=None):
             receiver = self.receiver
             model = self.model
             sender = self.sender
-            if isinstance(model, dataroomdirectoryorfile):
+            if isinstance(model, dataroom_User_file):
                 if 'app' in types:
                     content = 'DataRoom有文件更新，点击查看详情'
                     receiver_alias = receiver.id
@@ -691,13 +673,13 @@ def sendmessage_dataroomfileupdate(model,receiver,types,sender=None):
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
     # if receiver is not None:
-    #                 if hasattr(receiver, 'datasource'):
-    #                     if getattr(receiver, 'datasource_id') == 1:
-    #     sendmessage_dataroomfileupdateThread(model,receiver,types,sender).start()
+    #     if hasattr(receiver, 'datasource'):
+    #         if getattr(receiver, 'datasource_id') == 1:
+    #             sendmessage_dataroomfileupdateThread(model,receiver,types,sender).start()
 
 def sendmessage_projectpublish(model, receiver, types, sender=None):
     """
-        :param model: dataroomdirectoryorfile type
+        :param model: project type
         :param receiver: myuser type
         :param types: list
         :param sender: myuser type
@@ -723,20 +705,20 @@ def sendmessage_projectpublish(model, receiver, types, sender=None):
                     projectsign = 'IszFR1'
                     vars = {'projectC': model.dataroom.proj.projtitleC, 'projectE': model.dataroom.proj.projtitleE}
                     xsendEmail(destination, projectsign, vars)
-                # if 'webmsg' in types:
-                #     content = '您的项目%s，DataRoom有文件更新，请登录后查看' % model.dataroom.proj.projtitleC
-                #     title = 'DataRoom有文件更新，点击查看详情'
-                #     messagetype = 1
-                #     saveMessage(content, messagetype, title, receiver, sender)
+                if 'webmsg' in types:
+                    content = '您的项目%s，DataRoom有文件更新。' % model.dataroom.proj.projtitleC
+                    title = 'DataRoom有文件更新。'
+                    messagetype = 1
+                    saveMessage(content, messagetype, title, receiver, sender)
     # if receiver is not None:
-    #                 if hasattr(receiver, 'datasource'):
-    #                     if getattr(receiver, 'datasource_id') == 1:
-    #     sendmessage_projectpublishThread(model,receiver,types,sender).start()
+    #     if hasattr(receiver, 'datasource'):
+    #         if getattr(receiver, 'datasource_id') == 1:
+    #             sendmessage_projectpublishThread(model,receiver,types,sender).start()
 
 #暂无
 def sendmessage_usermakefriends(model,receiver,types,sender=None):
     """
-    :param model: dataroomdirectoryorfile type
+    :param model: UserFriendship type
     :param receiver: myuser type
     :param types: list
     :param sender: myuser type
@@ -757,20 +739,20 @@ def sendmessage_usermakefriends(model,receiver,types,sender=None):
             sender = self.sender
             if isinstance(model, UserFriendship):
                 if 'app' in types:
-                    content = 'test 3.0'
+                    content = '您有一个好友添加申请'
                     receiver_alias = receiver.id
                     bdage = 1
                     n_extras = {}
                     pushnotification(content, receiver_alias, bdage, n_extras)
                 if 'webmsg' in types:
-                    content = 'test 3.0 content'
-                    title = 'test 3.0'
+                    content = '您有一个好友添加申请'
+                    title = '好友添加申请'
                     messagetype = 1
                     saveMessage(content, messagetype, title, receiver, sender)
     # if receiver is not None:
-    #                 if hasattr(model, 'datasource'):
-    #                     if getattr(model, 'datasource_id') == 1:
-    #     sendmessage_usermakefriendsThread(model,receiver,types,sender).start()
+    #     if hasattr(model, 'datasource'):
+    #         if getattr(model, 'datasource_id') == 1:
+    #             sendmessage_usermakefriendsThread(model,receiver,types,sender).start()
 
 #暂无
 # def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):

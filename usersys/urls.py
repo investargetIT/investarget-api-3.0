@@ -42,6 +42,11 @@ checkrealtion = views.UserRelationView.as_view({
         'post': 'checkUserRelation',
 })
 
+checkFriendship = views.UserFriendshipView.as_view({
+        'post': 'checkUserFriendShip',
+})
+
+
 detail_relationone = views.UserRelationView.as_view({
         'get': 'retrieve',
 })
@@ -107,6 +112,7 @@ urlpatterns = [
     url(r'^password/(?P<pk>\d+)/$', change_password ,name='change-password'),
     url(r'^relationship/$', user_relationshiplist, name='user-relationshiplist'),
     url(r'^checkrelation/$', checkrealtion, name='user-checkrealtion'),
+    url(r'^checkfriendship/$', checkFriendship, name='user-checkfriendship'),
     url(r'^relationship/(?P<pk>\d+)/$', detail_relationone, name='user-relationshipone'),
     url(r'^register/$', regist_user),
     url(r'^login/$', views.login),

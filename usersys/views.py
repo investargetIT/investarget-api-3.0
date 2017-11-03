@@ -1140,9 +1140,9 @@ class UserRelationView(viewsets.ModelViewSet):
                     timeline_qs = timeline.objects.filter(investor=userrelation.investoruser,trader=userrelation.traderuser,is_deleted=False,isClose=False)
                     if timeline_qs.exists():
                         raise InvestError(2010, msg='%s,%s有未关闭的timeline' % (userrelation.traderuser.usernameC, userrelation.investoruser.usernameC))
-                    dataroom_qs = dataroom.objects.filter(investor=userrelation.investoruser,trader=userrelation.traderuser,is_deleted=False,isClose=False)
-                    if dataroom_qs.exists():
-                        raise InvestError(2010, msg='%s,%s有未关闭的dataroom' % (userrelation.traderuser.usernameC, userrelation.investoruser.usernameC))
+                    # dataroom_qs = dataroom.objects.filter(investor=userrelation.investoruser,trader=userrelation.traderuser,is_deleted=False,isClose=False)
+                    # if dataroom_qs.exists():
+                    #     raise InvestError(2010, msg='%s,%s有未关闭的dataroom' % (userrelation.traderuser.usernameC, userrelation.investoruser.usernameC))
                     userrelation.is_deleted = True
                     userrelation.deleteduser = request.user
                     userrelation.deletedtime = datetime.datetime.now()
@@ -1345,7 +1345,24 @@ class UserFriendshipView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-
+    @loginTokenIsAvailable()
+    def checkUserFriendShip(self, request, *args, **kwargs):
+        try:
+            userid = request.data.get('user', None)
+            if not userid:
+                raise InvestError(2007, msg='user 不能空')
+            qs = self.get_queryset().filter(
+                Q(user_id=userid, friend_id=request.user.id, is_deleted=False) | Q(friend_id=userid, user_id=request.user.id, is_deleted=False))
+            if qs.exists():
+                res = True
+            else:
+                res = False
+            return JSONResponse(SuccessResponse(res))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 class GroupPermissionView(viewsets.ModelViewSet):
     """

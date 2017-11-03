@@ -1150,7 +1150,11 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
                     else:
                         raise InvestError(code=20071,msg='%s'%newfavorite.errors)
                 for proj in projlist:
-                    sendmessage_favoriteproject(proj,proj.user,sender=request.user)
+                    if ftype == 5:
+                        receiver = proj.trader
+                    else:
+                        receiver = proj.user
+                    sendmessage_favoriteproject(proj, receiver, sender=request.user)
                 if push_alias:
                     pushnotification(receiver_alias=push_alias,content=pushcontent,bdage=1)
                 return JSONResponse(SuccessResponse(returnListChangeToLanguage(favoriteProjectList,lang)))

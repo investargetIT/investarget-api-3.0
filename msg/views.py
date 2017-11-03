@@ -22,7 +22,7 @@ def saveMessage(content,type,title,receiver,sender=None):
         data = {}
         data['content'] = content
         data['messagetitle'] = title
-        data['type'] = type.id
+        data['type'] = type
         data['receiver'] = receiver.id
         data['datasource'] = receiver.datasource_id
         if sender:

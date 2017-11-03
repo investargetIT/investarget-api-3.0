@@ -283,7 +283,6 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
                     destquery = directoryorfile.parent.asparent_directories.exclude(pk=directoryorfile.pk).filter(is_deleted=False,orderNO__gte=directoryorfile.orderNO)
                     if destquery.exists():
                         destquery.update(orderNO = F('orderNO') + 1)
-                #sendmessage_dataroomfileupdate(directoryorfile,directoryorfile.dataroom.investor,['sms','email','webmsg','app'],sender=request.user)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(DataroomdirectoryorfileSerializer(directoryorfile).data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -455,6 +454,8 @@ class User_DataroomfileView(viewsets.ModelViewSet):
                     user_dataroomserializer.save()
                 else:
                     raise InvestError(code=20071, msg='data有误_%s' % user_dataroomserializer.errors)
+                sendmessage_dataroomfileupdate(user_dataroom, user_dataroom.user,
+                                               ['sms', 'email', 'webmsg', 'app'], sender=request.user)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(user_dataroomserializer.data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))

@@ -7,6 +7,7 @@ import traceback
 from guardian.shortcuts import assign_perm, remove_perm
 
 from invest.settings import APILOG_PATH
+from sourcetype.urls import datasource
 from usersys.models import MyToken
 from utils.customClass import JSONResponse, InvestError
 
@@ -54,7 +55,7 @@ def logexcption(msg=None):
     now = datetime.datetime.now()
     filepath = APILOG_PATH['excptionlogpath'] + '/' + now.strftime('%Y-%m-%d')
     f = open(filepath, 'a')
-    f.writelines(now.strftime('%H:%M:%S')+'\n'+ traceback.format_exc()+ msg +'\n\n')
+    f.writelines(now.strftime('%H:%M:%S')+'\n'+ traceback.format_exc()+ msg if msg else ' ' +'\n\n')
     f.close()
 
 def checkIPAddress(ip):
@@ -233,3 +234,14 @@ def requestDictChangeToLanguage(model,dictdata,lang=None):
     return newdict
 
 
+def getbase_domain(model):
+    base_domain = None
+    if isinstance(model, datasource):
+        base_domain = model.domain
+    return base_domain
+
+def getProjTitleWithSuperLink(proj,lang='cn'):
+    if lang == 'cn':
+        proj_superlink = '<a href=\'%s/app/projects/%s\'>%s</a>'%(getbase_domain(proj.datasource), proj.id, proj.projtitleC)
+    else:
+        proj_superlink = '<a href=\'%s/app/projects/%s\'>%s</a>'%(getbase_domain(proj.datasource), proj.id, proj.projtitleE)
