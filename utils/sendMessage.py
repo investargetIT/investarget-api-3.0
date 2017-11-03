@@ -3,13 +3,26 @@ import threading
 
 from dataroom.models import dataroom_User_file
 from proj.models import project, favoriteProject
+from sourcetype.urls import datasource
 from timeline.models import timelineTransationStatu
 from usersys.models import MyUser, UserRelation, UserFriendship
-from org.models import organization
 from msg.views import saveMessage
 from third.views.jpush import pushnotification
 from third.views.submail import xsendSms, xsendEmail
-from utils.util import getProjTitleWithSuperLink
+
+
+def getbase_domain(model):
+    base_domain = None
+    if isinstance(model, datasource):
+        base_domain = model.domain
+    return base_domain
+
+def getProjTitleWithSuperLink(proj,lang='cn'):
+    if lang == 'cn':
+        proj_superlink = '<a href=\'%s/app/projects/%s\'>%s</a>'%(getbase_domain(proj.datasource), proj.id, proj.projtitleC)
+    else:
+        proj_superlink = '<a href=\'%s/app/projects/%s\'>%s</a>'%(getbase_domain(proj.datasource), proj.id, proj.projtitleE)
+    return proj_superlink
 
 typelist = ['sms','app','email','webmsg']
 
