@@ -15,7 +15,7 @@ from mongoDoc.models import GroupEmailData, IMChatMessages, ProjectData, MergeFi
 from mongoDoc.serializers import GroupEmailDataSerializer, IMChatMessagesSerializer, ProjectDataSerializer, \
     MergeFinanceDataSerializer, CompanyCatDataSerializer, ProjRemarkSerializer, WXChatdataSerializer, \
     ProjectNewsSerializer
-from utils.customClass import JSONResponse, InvestError
+from utils.customClass import JSONResponse, InvestError, AppEventRateThrottle
 from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, catchexcption, logexcption, \
     loginTokenIsAvailable
 
@@ -61,6 +61,7 @@ class CompanyCatDataView(viewsets.ModelViewSet):
 
 
 class MergeFinanceDataView(viewsets.ModelViewSet):
+    throttle_classes = (AppEventRateThrottle,)
     queryset = MergeFinanceData.objects.all()
     serializer_class = MergeFinanceDataSerializer
     filter_class = {'com_name': 'icontains',
@@ -134,7 +135,7 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 class ProjectDataView(viewsets.ModelViewSet):
-
+    throttle_classes = (AppEventRateThrottle,)
     queryset = ProjectData.objects.all()
     serializer_class = ProjectDataSerializer
     filter_class = {'com_id': 'in',
@@ -209,6 +210,7 @@ class ProjectDataView(viewsets.ModelViewSet):
 
 class ProjectNewsView(viewsets.ModelViewSet):
 
+    throttle_classes = (AppEventRateThrottle,)
     queryset = ProjectNews.objects.all()
     serializer_class = ProjectNewsSerializer
     filter_class = {'com_id': 'in', 'com_name':'icontains',}

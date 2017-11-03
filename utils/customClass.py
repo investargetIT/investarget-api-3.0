@@ -49,7 +49,7 @@ class RelationFilter(Filter):
 
 
 class AppEventRateThrottle(throttling.SimpleRateThrottle):
-    scope = 'getProjectPDF'
+    scope = 'rw_mongodata'
 
     def get_cache_key(self, request, view):
         if is_authenticated(request.user):
