@@ -789,7 +789,7 @@ def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
             sender = self.sender
             if isinstance(model, timelineTransationStatu):
                 if 'app' in types:
-                    content = ''
+                    content = '您有一个时间轴提醒到期'
                     receiver_alias = receiver.id
                     bdage = 1
                     n_extras = {}

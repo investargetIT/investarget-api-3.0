@@ -75,7 +75,7 @@ def sendExpiredScheduleMsg():
             sendmessage_schedulemsg(instance, receiver=instance.createuser,
                                     types=['app', 'wenmsg'])
 def sendExpiredTimelineMsg():
-    timelineTransationStatu_qs = timelineTransationStatu.objects.all().filter(is_deleted=False,
+    timelineTransationStatu_qs = timelineTransationStatu.objects.all().filter(is_deleted=False,isActive=True,
                                                                inDate__year=datetime.datetime.now().year,
                                                                inDate__month=datetime.datetime.now().month,
                                                                inDate__day=datetime.datetime.now().day)
