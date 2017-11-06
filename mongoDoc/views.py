@@ -178,8 +178,8 @@ class ProjectDataView(viewsets.ModelViewSet):
                 queryset = queryset.order_by('-com_id',)
             else:
                 queryset = queryset.order_by('com_id',)
+            count = queryset.count()
             try:
-                count = queryset.count()
                 queryset = Paginator(queryset, page_size)
                 queryset = queryset.page(page_index)
             except EmptyPage:
@@ -207,6 +207,24 @@ class ProjectDataView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    # @loginTokenIsAvailable(['usersys.as_admin'])
+    # def update(self, request, *args, **kwargs):
+    #     try:
+    #         data = request.data
+    #         com_id = data.get('com_id')
+    #         instance = self.queryset.get(com_id=com_id)
+    #         serializer = self.serializer_class(instance, data=data)
+    #         if serializer.is_valid():
+    #             serializer.save()
+    #         else:
+    #             raise InvestError(2001, msg=serializer.error_messages)
+    #         return JSONResponse(SuccessResponse(serializer.data))
+    #     except InvestError as err:
+    #         return JSONResponse(InvestErrorResponse(err))
+    #     except Exception:
+    #         catchexcption(request)
+    #         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 class ProjectNewsView(viewsets.ModelViewSet):
 

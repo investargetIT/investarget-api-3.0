@@ -2,6 +2,7 @@
 import threading
 
 from dataroom.models import dataroom_User_file
+from msg.models import schedule
 from proj.models import project, favoriteProject
 from sourcetype.urls import datasource
 from timeline.models import timelineTransationStatu
@@ -25,8 +26,6 @@ def getProjTitleWithSuperLink(proj,lang='cn'):
     return proj_superlink
 
 typelist = ['sms','app','email','webmsg']
-
-
 
 favoriteTypeConf = {
 # 1	系统推荐
@@ -480,7 +479,7 @@ def sendmessage_traderchange(model,receiver,types,sender=None):
                 if 'webmsg' in types:
                     content = '您的交易师已更换为%s，感谢您的信任与支持' % model.traderuser.usernameC
                     title = '交易师已更换'
-                    messagetype = 1
+                    messagetype = 2
                     saveMessage(content, messagetype, title, receiver, sender)
     # if receiver is not None:
     #     if hasattr(receiver, 'datasource'):
@@ -542,7 +541,7 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                     else:
                         content = '您在海拓注册的%s账号%s，如有疑问，请咨询相关工作人员。。'%(model.usernameC, model.userstatu.nameC)
                         title = '账号状态更改'
-                    messagetype = 1
+                    messagetype = 3
                     saveMessage(content, messagetype, title, receiver, sender)
     # if receiver is not None:
     #     if hasattr(receiver, 'datasource'):
@@ -585,7 +584,7 @@ def sendmessage_userregister(model,receiver,types,sender=None):
                 if 'webmsg' in types:
                     content = '我们已收到您提交的注册申请。我们将在24小时内与您取得联系，进行用户信息审核，并明确您的意向和需求。请您耐心等待！审核结果将通过邮件和短信通知您。感谢您对多维海拓的关注！'
                     title = '账号注册成功，审核工作会在24小时内开始。'
-                    messagetype = 1
+                    messagetype = 5
                     saveMessage(content, messagetype, title, receiver, sender)
     # if receiver is not None:
     #     if hasattr(receiver, 'datasource'):
@@ -635,7 +634,7 @@ def sendmessage_timelineauditstatuchange(model,receiver,types,sender=None):
                 if 'webmsg' in types:
                     content = '您的项目%s时间轴状态已更新，点击查看最新状态'%model.timeline.proj.projtitleC
                     title = '时间轴状态更新'
-                    messagetype = 1
+                    messagetype = 6
                     saveMessage(content, messagetype, title, receiver, sender)
     # if receiver is not None:
     #     if hasattr(receiver, 'datasource'):
@@ -683,7 +682,7 @@ def sendmessage_dataroomfileupdate(model,receiver,types,sender=None):
                 if 'webmsg' in types:
                     content = '您的项目%s，DataRoom有文件更新，请登录后查看'%model.dataroom.proj.projtitleC
                     title = 'DataRoom有文件更新，点击查看详情'
-                    messagetype = 1
+                    messagetype = 7
                     saveMessage(content, messagetype, title, receiver, sender)
     # if receiver is not None:
     #     if hasattr(receiver, 'datasource'):
@@ -719,16 +718,15 @@ def sendmessage_projectpublish(model, receiver, types, sender=None):
                     vars = {'projectC': model.dataroom.proj.projtitleC, 'projectE': model.dataroom.proj.projtitleE}
                     xsendEmail(destination, projectsign, vars)
                 if 'webmsg' in types:
-                    content = '您的项目%s，DataRoom有文件更新。' % model.dataroom.proj.projtitleC
-                    title = 'DataRoom有文件更新。'
-                    messagetype = 1
+                    content = '您的项目%s，状态变更为已发布。' % model.dataroom.proj.projtitleC
+                    title = '项目状态变更'
+                    messagetype = 8
                     saveMessage(content, messagetype, title, receiver, sender)
     # if receiver is not None:
     #     if hasattr(receiver, 'datasource'):
     #         if getattr(receiver, 'datasource_id') == 1:
     #             sendmessage_projectpublishThread(model,receiver,types,sender).start()
 
-#暂无
 def sendmessage_usermakefriends(model,receiver,types,sender=None):
     """
     :param model: UserFriendship type
@@ -760,7 +758,7 @@ def sendmessage_usermakefriends(model,receiver,types,sender=None):
                 if 'webmsg' in types:
                     content = '您有一个好友添加申请'
                     title = '好友添加申请'
-                    messagetype = 1
+                    messagetype = 9
                     saveMessage(content, messagetype, title, receiver, sender)
     # if receiver is not None:
     #     if hasattr(model, 'datasource'):
@@ -768,50 +766,88 @@ def sendmessage_usermakefriends(model,receiver,types,sender=None):
     #             sendmessage_usermakefriendsThread(model,receiver,types,sender).start()
 
 #暂无
-# def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
-#     """
-#     :param model: timelineTransationStatu type
-#     :param receiver: myuser type
-#     :param types: list
-#     :param sender: myuser type
-#     :return: None
-#     """
-#     class sendmessage_timelinealertcycleexpireThread(threading.Thread):
-#         def __init__(self, model, receiver, types, sender=None):
-#             self.model = model
-#             self.receiver = receiver
-#             self.types = types
-#             self.sender = sender
-#             threading.Thread.__init__(self)
-#
-#         def run(self):
-#             types = self.types
-#             receiver = self.receiver
-#             model = self.model
-#             sender = self.sender
-#             if isinstance(model, timelineTransationStatu):
-#                 if 'app' in types:
-#                     content = ''
-#                     receiver_alias = receiver.id
-#                     bdage = 1
-#                     n_extras = {}
-#                     pushnotification(content, receiver_alias, bdage, n_extras)
-#                 if 'email' in types:
-#                     destination = receiver.email
-#                     projectsign = ''
-#                     vars = {}
-#                     xsendEmail(destination, projectsign, vars)
-#                 if 'sms' in types:
-#                     destination = receiver.mobile
-#                     projectsign = 'zzzz'
-#                     vars = {'code': 'sss', 'time': '10'}
-#                     xsendSms(destination, projectsign, vars)
-#                 if 'webmsg' in types:
-#                     content = ''
-#                     title = ''
-#                     messagetype = 1
-#                     saveMessage(content, messagetype, title, receiver, sender)
+def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
+    """
+    :param model: timelineTransationStatu type
+    :param receiver: myuser type
+    :param types: list
+    :param sender: myuser type
+    :return: None
+    """
+    class sendmessage_timelinealertcycleexpireThread(threading.Thread):
+        def __init__(self, model, receiver, types, sender=None):
+            self.model = model
+            self.receiver = receiver
+            self.types = types
+            self.sender = sender
+            threading.Thread.__init__(self)
+
+        def run(self):
+            types = self.types
+            receiver = self.receiver
+            model = self.model
+            sender = self.sender
+            if isinstance(model, timelineTransationStatu):
+                if 'app' in types:
+                    content = ''
+                    receiver_alias = receiver.id
+                    bdage = 1
+                    n_extras = {}
+                    pushnotification(content, receiver_alias, bdage, n_extras)
+                # if 'email' in types:
+                #     destination = receiver.email
+                #     projectsign = ''
+                #     vars = {}
+                #     xsendEmail(destination, projectsign, vars)
+                # if 'sms' in types:
+                #     destination = receiver.mobile
+                #     projectsign = 'zzzz'
+                #     vars = {'code': 'sss', 'time': '10'}
+                #     xsendSms(destination, projectsign, vars)
+                if 'webmsg' in types:
+                    content = '您有一个时间轴提醒到期'
+                    title = '时间轴到期提醒'
+                    messagetype = 10
+                    saveMessage(content, messagetype, title, receiver, sender)
     # if receiver is not None:
-    #                 if hasattr(model, 'datasource'):
-    #                     if getattr(model, 'datasource_id') == 1:
-    # sendmessage_timelinealertcycleexpireThread(model,receiver,types,sender).start()
+    #     if hasattr(model, 'datasource'):
+    #         if getattr(model, 'datasource_id') == 1:
+    #             sendmessage_timelinealertcycleexpireThread(model,receiver,types,sender).start()
+
+def sendmessage_schedulemsg(model,receiver,types,sender=None):
+    """
+    :param model: UserFriendship type
+    :param receiver: myuser type
+    :param types: list
+    :param sender: myuser type
+    :return: None
+    """
+    class sendmessage_schedulemsgThread(threading.Thread):
+        def __init__(self, model, receiver, types, sender = None):
+            self.model = model
+            self.receiver = receiver
+            self.types = types
+            self.sender = sender
+            threading.Thread.__init__(self)
+
+        def run(self):
+            types = self.types
+            receiver = self.receiver
+            model = self.model
+            sender = self.sender
+            if isinstance(model, schedule):
+                if 'app' in types:
+                    content = '您有一个日程到期'
+                    receiver_alias = receiver.id
+                    bdage = 1
+                    n_extras = {}
+                    pushnotification(content, receiver_alias, bdage, n_extras)
+                if 'webmsg' in types:
+                    content = '您有一个日程到期'
+                    title = '日程到期'
+                    messagetype = 11
+                    saveMessage(content, messagetype, title, receiver, sender)
+    # if receiver is not None:
+    #     if hasattr(model, 'datasource'):
+    #         if getattr(model, 'datasource_id') == 1:
+    #             sendmessage_schedulemsgThread(model,receiver,types,sender).start()

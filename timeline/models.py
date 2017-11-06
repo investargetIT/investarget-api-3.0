@@ -95,7 +95,7 @@ class timelineTransationStatu(models.Model):
     timeline = MyForeignKey(timeline,blank=True,null=True,related_name='timeline_transationStatus')
     transationStatus = MyForeignKey(TransactionStatus,default=1)
     isActive = models.BooleanField(blank=True,default=False)
-    alertCycle = models.SmallIntegerField(blank=True,default=7,help_text='提醒周期')
+    alertCycle = models.SmallIntegerField(blank=True,null=True,help_text='提醒周期')
     inDate = models.DateTimeField(blank=True,null=True,help_text='提醒到期时间')
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_timelinestatus',on_delete=models.SET_NULL)

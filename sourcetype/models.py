@@ -352,5 +352,6 @@ class templatesign(models.Model):
     sms_sign = models.CharField(max_length=32, blank=True, null=True)
     name = models.CharField(max_length=32, blank=True, null=True, help_text='模板名称')
     email_type = models.SmallIntegerField(blank=True, default=1, help_text='邮件类型')
+    webmsg_type = models.SmallIntegerField(blank=True, default=1, help_text='站内信类型')
     datasource = models.SmallIntegerField(blank=True, default=1)
     is_deleted = models.BooleanField(blank=True, default=False)
