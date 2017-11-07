@@ -576,6 +576,8 @@ class UserView(viewsets.ModelViewSet):
             with transaction.atomic():
                 user.set_password(password)
                 user.save(update_fields=['password'])
+                user.user_token.all().update(is_deleted=True)
+                # .filter(created__gte=datetime.datetime.now() - datetime.timedelta(hours=24 * 1))
                 cache_delete_key(self.redis_key + '_%s' % user.id)
                 return JSONResponse(SuccessResponse(password))
         except InvestError as err:
@@ -606,6 +608,7 @@ class UserView(viewsets.ModelViewSet):
             with transaction.atomic():
                 user.set_password(password)
                 user.save(update_fields=['password'])
+                user.user_token.all().update(is_deleted=True)
                 cache_delete_key(self.redis_key + '_%s' % user.id)
                 return JSONResponse(SuccessResponse(password))
         except InvestError as err:
@@ -622,6 +625,7 @@ class UserView(viewsets.ModelViewSet):
             with transaction.atomic():
                 user.set_password('Aa123456')
                 user.save(update_fields=['password'])
+                user.user_token.all().update(is_deleted=True)
                 cache_delete_key(self.redis_key + '_%s' % user.id)
                 return JSONResponse(SuccessResponse('Aa123456'))
         except InvestError as err:

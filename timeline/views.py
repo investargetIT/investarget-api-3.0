@@ -266,6 +266,7 @@ class TimelineView(viewsets.ModelViewSet):
                         newtimeline = timelineseria.save()
                     else:
                         raise InvestError(code=20071, msg=timelineseria.errors)
+                cache_delete_key(self.redis_key + '_%s' % newtimeline.id)
                 if sendmessage:
                     sendmessage_timelineauditstatuchange(newactivetimelinestatu, newtimeline.trader, ['app', 'email', 'webmsg'], sender=request.user)
                     sendmessage_timelineauditstatuchange(newactivetimelinestatu, newtimeline.proj.supportUser, ['app', 'email', 'webmsg'], sender=request.user)
