@@ -264,6 +264,7 @@ class UserView(viewsets.ModelViewSet):
             with transaction.atomic():
                 email = data.get('email')
                 mobile = data.get('mobile')
+                data['registersource'] = 5
                 if not email or not mobile:
                     raise InvestError(code=2007)
                 if self.get_queryset().filter(Q(mobile=mobile) | Q(email=email)).exists():
