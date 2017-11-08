@@ -347,13 +347,13 @@ class UserRelation(models.Model):
         if userrelation.exists():
             if not self.is_deleted:
                 if userrelation.filter(traderuser_id=self.traderuser_id).exists():
-                    raise InvestError(code=2012,msg='4.关系已存在')
+                    raise InvestError(code=2012,msg='关系已存在')
                 elif userrelation.filter(relationtype=True).exists() and self.relationtype:
-                    raise InvestError(code=2013,msg='3.强关系只能有一个,如有必要，先删除，在添加')
+                    raise InvestError(code=2013,msg='强关系只能有一个,如有必要，先删除，在添加')
         else:
             self.relationtype = True
         if self.investoruser.id == self.traderuser.id:
-            raise InvestError(code=2014,msg='1.投资人和交易师不能是同一个人')
+            raise InvestError(code=2014,msg='投资人和交易师不能是同一个人')
         elif not self.investoruser.has_perm('usersys.as_investor') or not self.traderuser.has_perm('usersys.as_trader'):
             raise InvestError(2015)
         else:

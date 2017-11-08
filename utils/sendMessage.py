@@ -433,10 +433,9 @@ def sendmessage_favoriteproject(model,receiver,sender=None):
                         title = msgconfig['webmsg']['title']
                         messagetype = msgconfig['webmsg']['messagetype']
                         saveMessage(content, messagetype, title, receiver, sender)
-    # if receiver is not None:
-    #     if hasattr(receiver, 'datasource'):
-    #         if getattr(receiver, 'datasource_id') == 1:
-    #             sendmessage_favoriteprojectThread(model,receiver,sender).start()
+
+    # if checkReceiverToSendMsg(receiver):
+    #     sendmessage_favoriteprojectThread(model,receiver,sender).start()
 
 def sendmessage_traderchange(model,receiver,types,sender=None):
     """
@@ -481,10 +480,9 @@ def sendmessage_traderchange(model,receiver,types,sender=None):
                     title = '交易师已更换'
                     messagetype = 2
                     saveMessage(content, messagetype, title, receiver, sender)
-    # if receiver is not None:
-    #     if hasattr(receiver, 'datasource'):
-    #         if getattr(receiver, 'datasource_id') == 1:
-    #             sendmessage_traderchangeThread(model,receiver,types,sender).start()
+
+    # if checkReceiverToSendMsg(receiver):
+    #     sendmessage_traderchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
     """
@@ -543,10 +541,9 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                         title = '账号状态更改'
                     messagetype = 3
                     saveMessage(content, messagetype, title, receiver, sender)
-    # if receiver is not None:
-    #     if hasattr(receiver, 'datasource'):
-    #         if getattr(receiver, 'datasource_id') == 1:
-    #             sendmessage_auditstatuchangeThread(model,receiver,types,sender).start()
+
+    # if checkReceiverToSendMsg(receiver):
+    #     sendmessage_auditstatuchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_userregister(model,receiver,types,sender=None):
     """
@@ -586,10 +583,9 @@ def sendmessage_userregister(model,receiver,types,sender=None):
                     title = '账号注册成功，审核工作会在24小时内开始。'
                     messagetype = 5
                     saveMessage(content, messagetype, title, receiver, sender)
-    # if receiver is not None:
-    #     if hasattr(receiver, 'datasource'):
-    #         if getattr(receiver, 'datasource_id') == 1:
-    #             sendmessage_userregisterThread(model,receiver,types,sender).start()
+
+    # if checkReceiverToSendMsg(receiver):
+    #     sendmessage_userregisterThread(model,receiver,types,sender).start()
 
 
 
@@ -636,10 +632,8 @@ def sendmessage_timelineauditstatuchange(model,receiver,types,sender=None):
                     title = '时间轴状态更新'
                     messagetype = 6
                     saveMessage(content, messagetype, title, receiver, sender)
-    # if receiver is not None:
-    #     if hasattr(receiver, 'datasource'):
-    #         if getattr(receiver, 'datasource_id') == 1:
-    #             sendmessage_timelineauditstatuchangeThread(model,receiver,types,sender).start()
+    # if checkReceiverToSendMsg(receiver):
+    #     sendmessage_timelineauditstatuchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_dataroomfileupdate(model,receiver,types,sender=None):
     """
@@ -684,10 +678,9 @@ def sendmessage_dataroomfileupdate(model,receiver,types,sender=None):
                     title = 'DataRoom有文件更新，点击查看详情'
                     messagetype = 7
                     saveMessage(content, messagetype, title, receiver, sender)
-    # if receiver is not None:
-    #     if hasattr(receiver, 'datasource'):
-    #         if getattr(receiver, 'datasource_id') == 1:
-    #             sendmessage_dataroomfileupdateThread(model,receiver,types,sender).start()
+
+    # if checkReceiverToSendMsg(receiver):
+    #     sendmessage_dataroomfileupdateThread(model,receiver,types,sender).start()
 
 def sendmessage_projectpublish(model, receiver, types, sender=None):
     """
@@ -722,10 +715,9 @@ def sendmessage_projectpublish(model, receiver, types, sender=None):
                     title = '项目状态变更'
                     messagetype = 8
                     saveMessage(content, messagetype, title, receiver, sender)
-    # if receiver is not None:
-    #     if hasattr(receiver, 'datasource'):
-    #         if getattr(receiver, 'datasource_id') == 1:
-    #             sendmessage_projectpublishThread(model,receiver,types,sender).start()
+
+    # if checkReceiverToSendMsg(receiver):
+    #     sendmessage_projectpublishThread(model,receiver,types,sender).start()
 
 def sendmessage_usermakefriends(model,receiver,types,sender=None):
     """
@@ -760,10 +752,9 @@ def sendmessage_usermakefriends(model,receiver,types,sender=None):
                     title = '好友添加申请'
                     messagetype = 9
                     saveMessage(content, messagetype, title, receiver, sender)
-    # if receiver is not None:
-    #     if hasattr(model, 'datasource'):
-    #         if getattr(model, 'datasource_id') == 1:
-    #             sendmessage_usermakefriendsThread(model,receiver,types,sender).start()
+
+    # if checkReceiverToSendMsg(receiver):
+    #     sendmessage_usermakefriendsThread(model,receiver,types,sender).start()
 
 #暂无
 def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
@@ -809,10 +800,9 @@ def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
                     title = '时间轴到期提醒'
                     messagetype = 10
                     saveMessage(content, messagetype, title, receiver, sender)
-    # if receiver is not None:
-    #     if hasattr(model, 'datasource'):
-    #         if getattr(model, 'datasource_id') == 1:
-    #             sendmessage_timelinealertcycleexpireThread(model,receiver,types,sender).start()
+
+    # if checkReceiverToSendMsg(receiver):
+    #     sendmessage_timelinealertcycleexpireThread(model,receiver,types,sender).start()
 
 def sendmessage_schedulemsg(model,receiver,types,sender=None):
     """
@@ -847,7 +837,15 @@ def sendmessage_schedulemsg(model,receiver,types,sender=None):
                     title = '日程到期'
                     messagetype = 11
                     saveMessage(content, messagetype, title, receiver, sender)
-    # if receiver is not None:
-    #     if hasattr(model, 'datasource'):
-    #         if getattr(model, 'datasource_id') == 1:
-    #             sendmessage_schedulemsgThread(model,receiver,types,sender).start()
+
+    # if checkReceiverToSendMsg(receiver):
+    #     sendmessage_schedulemsgThread(model,receiver,types,sender).start()
+
+
+
+def checkReceiverToSendMsg(receiver):
+    if receiver is not None:
+        if hasattr(receiver, 'datasource'):
+            if getattr(receiver, 'datasource_id') == 1 and receiver.registersource != 5:
+                return True
+    return False
