@@ -265,6 +265,7 @@ class UserView(viewsets.ModelViewSet):
                 email = data.get('email')
                 mobile = data.get('mobile')
                 data['registersource'] = 5
+                data['is_active'] = False
                 if not email or not mobile:
                     raise InvestError(code=2007)
                 if self.get_queryset().filter(Q(mobile=mobile) | Q(email=email)).exists():

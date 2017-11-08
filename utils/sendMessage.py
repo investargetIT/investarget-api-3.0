@@ -845,7 +845,7 @@ def sendmessage_schedulemsg(model,receiver,types,sender=None):
 
 def checkReceiverToSendMsg(receiver):
     if receiver is not None:
-        if hasattr(receiver, 'datasource'):
-            if getattr(receiver, 'datasource_id') == 1 and receiver.registersource != 5:
+        if isinstance(receiver, MyUser):
+            if getattr(receiver, 'datasource_id') == 1 and receiver.is_active:
                 return True
     return False

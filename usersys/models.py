@@ -20,10 +20,10 @@ from utils.makeAvatar import makeAvatar
 
 
 registersourcechoice = (
-    (1,'pc'),
-    (2,'ios'),
-    (3,'android'),
-    (4,'mobileweb'),
+    (1,'ios'),
+    (2,'android'),
+    (3,'web'),
+    (4,'wechat'),
     (5,'unknown')
 )
 
