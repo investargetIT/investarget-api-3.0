@@ -114,7 +114,20 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
-            serializer = self.serializer_class(data=data)
+            if data['investormerge'] == 1:
+                MergeFinanceData_qs = MergeFinanceData.objects.filter(invse_id=data['invse_id'])
+                if MergeFinanceData_qs.count() > 0:
+                    serializer = self.serializer_class(MergeFinanceData_qs.first(), data=data)
+                else:
+                    serializer = self.serializer_class(data=data)
+            elif data['investormerge'] == 2:
+                MergeFinanceData_qs = MergeFinanceData.objects.filter(merger_id=data['merger_id'])
+                if MergeFinanceData_qs.count() > 0:
+                    serializer = self.serializer_class(MergeFinanceData_qs.first(), data=data)
+                else:
+                    serializer = self.serializer_class(data=data)
+            else:
+                raise InvestError(8001, msg='未知的类型')
             if serializer.is_valid():
                 event = serializer.save()
                 if event.investormerge == 1:
@@ -153,7 +166,7 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
 
 
     @loginTokenIsAvailable()
-    def getCount(self,request):
+    def getCount(self,request, *args, **kwargs):
         try:
             type = request.GET.get('type')
             if type == 'com':
@@ -245,7 +258,11 @@ class ProjectDataView(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
-            serializer = self.serializer_class(data=data)
+            com_qs = ProjectData.objects.filter(com_id=data['com_id'])
+            if com_qs.count() > 0:
+                serializer = self.serializer_class(com_qs.first(),data=data)
+            else:
+                serializer = self.serializer_class(data=data)
             if serializer.is_valid():
                 serializer.save()
             else:
