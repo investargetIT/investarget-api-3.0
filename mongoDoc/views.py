@@ -125,6 +125,8 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
                             proj.update(invse_date=event.date)
                             proj.update(invse_detail_money=event.money)
                             proj.update(invse_round_id=event.round)
+                        event.update(com_cat_name=proj.com_cat_name)
+                        event.update(com_sub_cat_name=proj.com_sub_cat_name)
             else:
                 raise InvestError(2001, msg=serializer.error_messages)
             return JSONResponse(SuccessResponse(serializer.data))
@@ -133,6 +135,53 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable(['usersys.as_admin'])
+    def update(self, request, *args, **kwargs):
+        try:
+            id = request.GET.get('id')
+            instance = self.queryset.get(id=ObjectId(id))
+            proj = ProjectData.objects(com_id=instance.com_id).first()
+            instance.update(com_cat_name=proj.com_cat_name)
+            instance.update(com_sub_cat_name=proj.com_sub_cat_name)
+            return JSONResponse(SuccessResponse(True))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable()
+    def getCount(self,request):
+        try:
+            type = request.GET.get('type')
+            if type == 'com':
+                result = self.companyCountByCat()
+            else:
+                result = self.eventCountByCat()
+            return JSONResponse(SuccessResponse(result))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    def companyCountByCat(self):
+        allCat = CompanyCatData.objects.all().filter(p_cat_name=None)
+        countDic = {}
+        for cat in allCat:
+            count = ProjectData.objects.all().filter(com_cat_name=cat.cat_name).count()
+            countDic[cat.cat_name] = count
+        return countDic
+
+    def eventCountByCat(self):
+        allCat = CompanyCatData.objects.all().filter(p_cat_name=None)
+        countDic = {}
+        for cat in allCat:
+            count = self.queryset.filter(com_cat_name=cat.cat_name).count()
+            countDic[cat.cat_name] = count
+        return countDic
 
 class ProjectDataView(viewsets.ModelViewSet):
     throttle_classes = (AppEventRateThrottle,)
@@ -156,7 +205,7 @@ class ProjectDataView(viewsets.ModelViewSet):
                 queryset = queryset.filter(**{'%s__%s' % (key, method): value})
         return queryset
 
-    @loginTokenIsAvailable()
+    # @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')

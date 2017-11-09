@@ -827,13 +827,13 @@ def sendmessage_schedulemsg(model,receiver,types,sender=None):
             sender = self.sender
             if isinstance(model, schedule):
                 if 'app' in types:
-                    content = '您有一个日程到期'
+                    content = '您有一个日程今天到期'
                     receiver_alias = receiver.id
                     bdage = 1
                     n_extras = {}
                     pushnotification(content, receiver_alias, bdage, n_extras)
                 if 'webmsg' in types:
-                    content = '您有一个日程到期'
+                    content = '您有一个日程今天到期'
                     title = '日程到期'
                     messagetype = 11
                     saveMessage(content, messagetype, title, receiver, sender)

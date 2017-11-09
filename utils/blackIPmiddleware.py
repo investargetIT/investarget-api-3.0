@@ -1,5 +1,5 @@
 from utils.customClass import JSONResponse, InvestError
-from utils.util import InvestErrorResponse
+from utils.util import InvestErrorResponse, setrequestuser
 
 try:
     from django.utils.deprecation import MiddlewareMixin  # Django 1.10.x
@@ -19,6 +19,7 @@ class IpMiddleware(MiddlewareMixin):
         #     pass
         # else:
         #     return JSONResponse(InvestErrorResponse(InvestError(code=3007)))
+        setrequestuser(request)
         if request.META.has_key('HTTP_X_FORWARDED_FOR'):
             ip = request.META['HTTP_X_FORWARDED_FOR']
         else:

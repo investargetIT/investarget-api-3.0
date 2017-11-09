@@ -84,9 +84,9 @@ def loginTokenIsAvailable(permissions=None):#判断class级别权限
             else:
                 if token.created < datetime.datetime.now() - datetime.timedelta(hours=24 * 1):
                     return JSONResponse(InvestErrorResponse(InvestError(3000,msg='token过期')))
-                request.user = token.user
                 if token.user.is_deleted:
                     return JSONResponse(InvestErrorResponse(InvestError(3000,msg='用户不存在')))
+                request.user = token.user
                 user_has_permissions = []
                 if permissions:
                     for permission in permissions:
@@ -100,24 +100,19 @@ def loginTokenIsAvailable(permissions=None):#判断class级别权限
     return token_available
 
 def checkrequesttoken(token):#验证token有效
-    try:
-        if token:
-            try:
-                token = MyToken.objects.get(key=token, is_deleted=False)
-            except MyToken.DoesNotExist:
-                raise InvestError(3000, msg='token不存在')
+    if token:
+        try:
+            token = MyToken.objects.get(key=token, is_deleted=False)
+        except MyToken.DoesNotExist:
+            raise InvestError(3000, msg='token不存在')
         else:
-            raise InvestError(3000, msg='NO TOKEN')
-    except InvestError as err:
-        raise err
-    except Exception as exc:
-        raise InvestError(code=3000, msg=repr(exc))
+            if token.created < datetime.datetime.now() - datetime.timedelta(hours=24 * 1):
+                raise InvestError(3000, msg='token过期')
+            if token.user.is_deleted:
+                raise InvestError(3000, msg='用户不存在')
+            return token.user
     else:
-        if token.created < datetime.datetime.now() - datetime.timedelta(hours=24 * 1):
-            raise InvestError(3000, msg='token过期')
-        if token.user.is_deleted:
-            raise InvestError(3000, msg='用户不存在')
-    return token.user
+        raise InvestError(3000, msg='NO TOKEN')
 
 
 def setrequestuser(request):#根据token设置request.user

@@ -54,6 +54,8 @@ class MergeFinanceData(Document):
     com_logo = StringField(null=True)  # 公司logo
     com_name = StringField(null=True)  # 公司名称
     currency= StringField(null=True)    #货币类型
+    com_cat_name = StringField(null=True) #行业
+    com_sub_cat_name = StringField(null=True)  # 子行业
     money = StringField(null=True)  #金额
     date = StringField(null=True)  #日期
 

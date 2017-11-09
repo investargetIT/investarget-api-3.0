@@ -11,6 +11,7 @@ CompanyCatDataList = views.CompanyCatDataView.as_view({
 MergeFinanceDataList = views.MergeFinanceDataView.as_view({
         'get': 'list',
         'post':'create',
+        'put':'update',
 })
 
 ProjectDataList = views.ProjectDataView.as_view({
@@ -45,6 +46,10 @@ WXChatDataList = views.WXChatDataView.as_view({
         'put': 'update',
 })
 
+getCount = views.MergeFinanceDataView.as_view({
+        'get':'getCount',
+})
+
 urlpatterns = [
     url(r'^cat', CompanyCatDataList, name='CompanyCatData-list', ),
     url(r'^event$', MergeFinanceDataList, name='MergeFinanceData-list', ),
@@ -54,4 +59,5 @@ urlpatterns = [
     url(r'^email$', EmailGroupList,name='WXContent-list',),
     url(r'^chatmsg$', IMChatMessagesList, name='IMChatMessages-list', ),
     url(r'^wxmsg$', WXChatDataList, name='WXChatData-list', ),
+    url(r'^count', getCount, name='count', ),
 ]
