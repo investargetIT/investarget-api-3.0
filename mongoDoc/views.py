@@ -140,7 +140,6 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
                             proj.update(invse_round_id=event.round)
                     event.update(com_cat_name=proj.com_cat_name)
                     event.update(com_sub_cat_name=proj.com_sub_cat_name)
-
             else:
                 raise InvestError(2001, msg=serializer.error_messages)
             return JSONResponse(SuccessResponse(serializer.data))
@@ -265,7 +264,11 @@ class ProjectDataView(viewsets.ModelViewSet):
             else:
                 serializer = self.serializer_class(data=data)
             if serializer.is_valid():
-                serializer.save()
+                proj= serializer.save()
+                event_qs = MergeFinanceData.objects.filter(com_id=proj.com_id)
+                if event_qs.count():
+                    event_qs.update(com_cat_name=proj.com_cat_name)
+                    event_qs.update(com_sub_cat_name=proj.com_sub_cat_name)
             else:
                 raise InvestError(2001, msg=serializer.error_messages)
             return JSONResponse(SuccessResponse(serializer.data))
@@ -319,7 +322,7 @@ class ProjectNewsView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filterqueryset(request, self.queryset)
-            queryset = queryset.order_by('newsdate')
+            queryset = queryset.order_by('-newsdate')
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
