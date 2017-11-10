@@ -130,16 +130,17 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
                 raise InvestError(8001, msg='未知的类型')
             if serializer.is_valid():
                 event = serializer.save()
-                if event.investormerge == 1:
-                    proj = ProjectData.objects(com_id=data['com_id'])
+                proj = ProjectData.objects(com_id=data['com_id'])
+                if proj.count() > 0:
                     proj = proj.first()
-                    if proj:
+                    if event.investormerge == 1:
                         if proj.invse_date < event.date:
                             proj.update(invse_date=event.date)
                             proj.update(invse_detail_money=event.money)
                             proj.update(invse_round_id=event.round)
-                        event.update(com_cat_name=proj.com_cat_name)
-                        event.update(com_sub_cat_name=proj.com_sub_cat_name)
+                    event.update(com_cat_name=proj.com_cat_name)
+                    event.update(com_sub_cat_name=proj.com_sub_cat_name)
+
             else:
                 raise InvestError(2001, msg=serializer.error_messages)
             return JSONResponse(SuccessResponse(serializer.data))
