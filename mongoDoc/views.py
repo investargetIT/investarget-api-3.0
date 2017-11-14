@@ -22,6 +22,8 @@ from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, 
 ChinaList = ['北京','上海','广东','浙江','江苏','天津','福建','湖北','湖南','四川','河北','山西','内蒙古',
              '辽宁','吉林','黑龙江','安徽','江西','山东','河南','广西','海南','重庆','贵州','云南','西藏',
              '陕西','甘肃','青海','宁夏','新疆','香港','澳门','台湾']
+RoundList = ['尚未获投','种子轮','天使轮','Pre-A轮','A轮','A+轮','Pre-B轮','B轮','B+轮','C轮','C+轮','D轮',
+             'D+轮','E轮','F轮-上市前','已上市','新三板','战略投资','已被收购','不明确']
 
 class CompanyCatDataView(viewsets.ModelViewSet):
     queryset = CompanyCatData.objects.all()
@@ -171,8 +173,12 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
             type = request.GET.get('type')
             if type == 'com':
                 result = self.companyCountByCat()
-            else:
+            elif type == 'evecat':
                 result = self.eventCountByCat()
+            elif type == 'everound':
+                result = self.eventCountByRound()
+            else:
+                raise InvestError(2007)
             return JSONResponse(SuccessResponse(result))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -194,6 +200,13 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
         for cat in allCat:
             count = self.queryset.filter(com_cat_name=cat.cat_name).count()
             countDic[cat.cat_name] = count
+        return countDic
+
+    def eventCountByRound(self):
+        countDic = {}
+        for cat in RoundList:
+            count = self.queryset.filter(round=cat).count()
+            countDic[cat] = count
         return countDic
 
 class ProjectDataView(viewsets.ModelViewSet):
