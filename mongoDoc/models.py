@@ -33,7 +33,7 @@ class ProjectData(Document):
     com_fund_needs_name = StringField(null=True) #融资需求
     com_des = StringField(null=True)   #公司介绍
     invse_total_money = StringField(null=True)  #融资总额
-    com_addr = StringField(null=True)   #公司所在地
+    com_addr = StringField(default='其他')   #公司所在地
     mobile = StringField(null=True)  # 公司联系方式
     email = StringField(null=True)  # 公司邮箱
     detailaddress = StringField(null=True)  # 公司地址
@@ -56,7 +56,7 @@ class MergeFinanceData(Document):
     currency= StringField(null=True)    #货币类型
     com_cat_name = StringField(null=True) #行业
     com_sub_cat_name = StringField(null=True)  # 子行业
-    com_addr = StringField(null=True)  # 公司所在地
+    com_addr = StringField(default='其他')  # 公司所在地
     money = StringField(null=True)  #金额
     date = StringField(null=True)  #日期
 

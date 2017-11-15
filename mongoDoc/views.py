@@ -179,6 +179,8 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
                 result = self.eventCountByCat()
             elif type == 'everound':
                 result = self.eventCountByRound()
+            elif type == 'eveaddr':
+                result = self.eventCountByAddress()
             else:
                 raise InvestError(2007)
             return JSONResponse(SuccessResponse(result))
@@ -208,6 +210,13 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
         countDic = {}
         for cat in RoundList:
             count = self.queryset.filter(round=cat).count()
+            countDic[cat] = count
+        return countDic
+
+    def eventCountByAddress(self):
+        countDic = {}
+        for cat in ChinaList:
+            count = self.queryset.filter(com_addr=cat).count()
             countDic[cat] = count
         return countDic
 
