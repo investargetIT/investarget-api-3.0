@@ -62,7 +62,7 @@ class MergeFinanceData(Document):
 
     invsest_with = ListField(null=True)  # 投资方
     invse_id = IntField(null=True)  # 投资事件id
-    round = StringField(null=True)   #公司融资轮次
+    round = StringField(default='不明确')   #公司融资轮次
 
     merger_equity_ratio = StringField(null=True)  #股权比例
     merger_with = StringField(null=True)   #并购方名称
