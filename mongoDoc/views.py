@@ -207,16 +207,15 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
         return countDic
 
     def eventCountByRound(self):
-        timelist = ['2010,2011,2012,2013,2014,2015,2016,2017']
+        timelist = ['2010','2011','2012','2013','2014','2015','2016','2017']
         countList = []
-        roundcount = 0
         for year in timelist:
             qs = self.queryset.filter(date__startswith=year)
             countDic = {}
             for cat in RoundList:
                 count = qs.filter(round=cat).count()
                 countDic[cat] = count
-            countList.append(countDic)
+            countList.append({year:countDic})
         return countList
 
     def eventCountByAddress(self):
