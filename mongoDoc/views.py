@@ -142,6 +142,7 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
                             proj.update(invse_round_id=event.round)
                     event.update(com_cat_name=proj.com_cat_name)
                     event.update(com_sub_cat_name=proj.com_sub_cat_name)
+                    event.update(com_addr=proj.com_addr)
             else:
                 raise InvestError(2001, msg=serializer.error_messages)
             return JSONResponse(SuccessResponse(serializer.data))
@@ -159,6 +160,7 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
             proj = ProjectData.objects(com_id=instance.com_id).first()
             instance.update(com_cat_name=proj.com_cat_name)
             instance.update(com_sub_cat_name=proj.com_sub_cat_name)
+            instance.update(com_addr=proj.com_addr)
             return JSONResponse(SuccessResponse(True))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -282,6 +284,7 @@ class ProjectDataView(viewsets.ModelViewSet):
                 if event_qs.count():
                     event_qs.update(com_cat_name=proj.com_cat_name)
                     event_qs.update(com_sub_cat_name=proj.com_sub_cat_name)
+                    event_qs.update(com_addr=proj.com_addr)
             else:
                 raise InvestError(2001, msg=serializer.error_messages)
             return JSONResponse(SuccessResponse(serializer.data))
