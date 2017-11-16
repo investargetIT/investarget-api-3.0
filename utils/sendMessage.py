@@ -11,6 +11,13 @@ from msg.views import saveMessage
 from third.views.jpush import pushnotification
 from third.views.submail import xsendSms, xsendEmail
 
+sendEmail = False
+sendSms = False
+sendWebmsg = True
+sendAppmsg = False
+
+
+
 
 def getbase_domain(model):
     base_domain = None
@@ -99,285 +106,6 @@ favoriteTypeConf = {
     },
 }
 
-# messageconfig = {
-#     'favoriteproject':{
-#         'modeltype':favoriteProject,
-#         'app':{
-#             'content' : '',
-#             'platform' : 'ios',
-#             'bdage' : '1',
-#             'n_extras' : {},
-#         },
-#         'sms':{
-#             'projectsign' : '',
-#             'vars' : {},
-#         },
-#         'webmsg':{
-#             'content' : '',
-#             'title' : '',
-#             'messagetype' : 1,
-#         },
-#         'email':{
-#             'projectsign' : '',
-#             'vars' : {},
-#         },
-#     },
-#     'traderchange':{
-#         'modeltype':UserRelation,
-#         'app':{
-#             'content' : '',
-#             'platform' : 'ios',
-#             'bdage' : '1',
-#             'n_extras' : {},
-#         },
-#         'sms':{
-#             'projectsign' : '',
-#             'vars' : {},
-#         },
-#         'webmsg':{
-#             'content' : '',
-#             'title' : '',
-#             'messagetype' : 1,
-#         },
-#         'email':{
-#             'projectsign' : '',
-#             'vars' : {},
-#         },
-#     },
-#     'userauditstatuschange':{
-#         'modeltype':MyUser,
-#         'app':{
-#             'content' : '',
-#             'platform' : 'ios',
-#             'bdage' : '1',
-#             'n_extras' : {},
-#         },
-#         'sms':{
-#             'projectsign' : '',
-#             'vars' : {},
-#         },
-#         'webmsg':{
-#             'content' : '',
-#             'title' : '',
-#             'messagetype' : 1,
-#         },
-#         'email':{
-#             'projectsign' : '',
-#             'vars' : {},
-#         },
-#     },
-#     'userregister':{
-#         'modeltype':MyUser,
-#         'app':{
-#             'content' : '',
-#             'platform' : 'ios',
-#             'bdage' : '1',
-#             'n_extras' : {},
-#         },
-#         'sms':{
-#             'projectsign' : '',
-#             'vars' : {},
-#         },
-#         'webmsg':{
-#             'content' : '',
-#             'title' : '',
-#             'messagetype' : 1,
-#         },
-#         'email':{
-#             'projectsign' : '',
-#             'vars' : {},
-#         },
-#     },
-#     'projectauditstatuschange':{
-#         'modeltype':project,
-#         'app':{
-#             'content' : '',
-#             'platform' : 'ios',
-#             'bdage' : '1',
-#             'n_extras' : {},
-#         },
-#         'sms':{
-#             'projectsign' : '',
-#             'vars' : {},
-#         },
-#         'webmsg':{
-#             'content' : '',
-#             'title' : '',
-#             'messagetype' : 1,
-#         },
-#         'email':{
-#             'projectsign' : '',
-#             'vars' : {},
-#         },
-#     },
-#     'orgauditstatuschange':{
-#         'modeltype':organization,
-#         'app':{
-#             'content' : '',
-#             'platform' : 'ios',
-#             'bdage' : '1',
-#             'n_extras' : {},
-#         },
-#         'sms':{
-#             'projectsign' : '',
-#             'vars' : {},
-#         },
-#         'webmsg':{
-#             'content' : '',
-#             'title' : '',
-#             'messagetype' : 1,
-#         },
-#         'email':{
-#             'projectsign' : '',
-#             'vars' : {},
-#         },
-#     },
-#     'timelinestatuschange':{
-#         'modeltype':timelineTransationStatu,
-#         'app':{
-#             'content' : '',
-#             'platform' : 'ios',
-#             'bdage' : '1',
-#             'n_extras' : {},
-#         },
-#         'sms':{
-#             'projectsign' : '',
-#             'vars' : {},
-#         },
-#         'webmsg':{
-#             'content' : '',
-#             'title' : '',
-#             'messagetype' : 1,
-#         },
-#         'email':{
-#             'projectsign' : '',
-#             'vars' : {},
-#         },
-#     },
-#     'timelinealertcycleexpire':{
-#         'modeltype':timelineTransationStatu,
-#         'app':{
-#             'content' : '',
-#             'platform' : 'ios',
-#             'bdage' : '1',
-#             'n_extras' : {},
-#         },
-#         'sms':{
-#             'projectsign' : '',
-#             'vars' : {},
-#         },
-#         'webmsg':{
-#             'content' : '',
-#             'title' : '',
-#             'messagetype' : 1,
-#         },
-#         'email':{
-#             'projectsign' : '',
-#             'vars' : {},
-#         },
-#     },
-#     'dataroomfileupdate':{
-#         'modeltype':dataroom_User_file,
-#         'app':{
-#             'content' : '',
-#             'platform' : 'ios',
-#             'bdage' : '1',
-#             'n_extras' : {},
-#         },
-#         'sms':{
-#             'projectsign' : '',
-#             'vars' : {},
-#         },
-#         'webmsg':{
-#             'content' : '',
-#             'title' : '',
-#             'messagetype' : 1,
-#         },
-#         'email':{
-#             'projectsign' : '',
-#             'vars' : {},
-#         },
-#     },
-#     'usermakefriend':{
-#         'modeltype':UserFriendship,
-#         'app':{
-#             'content' : '',
-#             'platform' : 'ios',
-#             'bdage' : '1',
-#             'n_extras' : {},
-#         },
-#         'sms':{
-#             'projectsign' : '',
-#             'vars' : {},
-#         },
-#         'webmsg':{
-#             'content' : '',
-#             'title' : '',
-#             'messagetype' : 1,
-#         },
-#         'email':{
-#             'projectsign' : '',
-#             'vars' : {},
-#         },
-#     },
-# }
-#
-# def sendmessage_withtypes(configtype,model,receiver,types,sender=None):
-#     """
-#     :param configtype: messageconfig
-#     :param model: favoriteProject type
-#     :param receiver: myuser type
-#     :param types: list
-#     :param sender: myuser type
-#     :return: None
-#     """
-#     class sendmessageThread(threading.Thread):
-#         def __init__(self, configtype, model, receiver, types, sender=None):
-#             self.configtype = configtype
-#             self.model = model
-#             self.receiver = receiver
-#             self.types = types
-#             self.sender = sender
-#             threading.Thread.__init__(self)
-#         def run(self):
-#             types = self.types
-#             receiver = self.receiver
-#             model = self.model
-#             sender = self.sender
-#             if hasattr(messageconfig,configtype):
-#                 data = messageconfig[configtype]
-#                 if isinstance(model, data['modeltype']):
-#                     if 'app' in types:
-#                         appdata = data['app']
-#                         content = appdata['content']
-#                         receiver_alias = receiver.id
-#                         bdage = appdata['bdage']
-#                         n_extras = appdata['n_extras']
-#                         pushnotification(content, receiver_alias, bdage, n_extras)
-#                     if 'email' in types:
-#                         emaildata = data['email']
-#                         destination = receiver.email
-#                         projectsign = emaildata['projectsign']
-#                         vars = emaildata['vars']
-#                         xsendEmail(destination, projectsign, vars)
-#                     if 'sms' in types:
-#                         smsdata = data['sms']
-#                         destination = receiver.email
-#                         projectsign = smsdata['projectsign']
-#                         vars = smsdata['vars']
-#                         xsendSms(destination, projectsign, vars)
-#                     if 'webmsg' in types:
-#                         webmsgdata = data['webmsg']
-#                         content = webmsgdata['content']
-#                         title = webmsgdata['title']
-#                         messagetype = webmsgdata['messagetype']
-#                         saveMessage(content, messagetype, title, receiver, sender)
-#             else:
-#                 print u'%s not found'%configtype
-#                 pass
-#     sendmessageThread(model,receiver,types,sender).start()
-
-
 
 
 def sendmessage_favoriteproject(model,receiver,sender=None):
@@ -434,8 +162,8 @@ def sendmessage_favoriteproject(model,receiver,sender=None):
                         messagetype = msgconfig['webmsg']['messagetype']
                         saveMessage(content, messagetype, title, receiver, sender)
 
-    # if checkReceiverToSendMsg(receiver):
-    #     sendmessage_favoriteprojectThread(model,receiver,sender).start()
+    if checkReceiverToSendMsg(receiver):
+        sendmessage_favoriteprojectThread(model,receiver,sender).start()
 
 def sendmessage_traderchange(model,receiver,types,sender=None):
     """
@@ -459,30 +187,30 @@ def sendmessage_traderchange(model,receiver,types,sender=None):
             model = self.model
             sender = self.sender
             if isinstance(model, UserRelation):
-                if 'app' in types:
+                if 'app' in types and sendAppmsg:
                     content = '交易师已更换'
                     receiver_alias = receiver.id
                     bdage = 1
                     n_extras = {}
                     pushnotification(content, receiver_alias,  bdage, n_extras)
-                if 'email' in types:
+                if 'email' in types and sendEmail:
                     destination = receiver.email
                     projectsign = 'evsM7'
                     vars = {'nameC':model.traderuser.usernameC,'nameE':model.traderuser.usernameE}
                     xsendEmail(destination, projectsign, vars)
-                if 'sms' in types:
+                if 'sms' in types and sendSms:
                     destination = receiver.mobile
                     projectsign = 'pT0yA4'
                     vars = {'user': model.traderuser.usernameC}
                     xsendSms(destination, projectsign, vars)
-                if 'webmsg' in types:
+                if 'webmsg' in types and sendWebmsg:
                     content = '您的交易师已更换为%s，感谢您的信任与支持' % model.traderuser.usernameC
                     title = '交易师已更换'
                     messagetype = 2
                     saveMessage(content, messagetype, title, receiver, sender)
 
-    # if checkReceiverToSendMsg(receiver):
-    #     sendmessage_traderchangeThread(model,receiver,types,sender).start()
+    if checkReceiverToSendMsg(receiver):
+        sendmessage_traderchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
     """
@@ -506,7 +234,7 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
             model = self.model
             sender = self.sender
             if isinstance(model, MyUser):
-                if 'app' in types:
+                if 'app' in types and sendAppmsg:
                     if model.userstatus.id == 2:
                         content = '您在海拓注册的%s账号已经通过审核，欢迎加入海拓交易平台。'% model.usernameC
                     else:
@@ -515,7 +243,7 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                     bdage = 1
                     n_extras = {}
                     pushnotification(content=content, receiver_alias=receiver_alias,  bdage=bdage, n_extras=n_extras)
-                if 'email' in types:
+                if 'email' in types and sendEmail:
                     if model.userstatus.id == 2:
                         destination = receiver.email
                         projectsign = 'uszOI1'
@@ -526,13 +254,13 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                         projectsign = 'ZNRYV3'
                         vars = {'nameC':model.usernameC,'nameE':model.usernameE}
                         xsendEmail(destination, projectsign, vars)
-                if 'sms' in types:
+                if 'sms' in types and sendSms:
                     if model.userstatus.id == 2:
                         destination = receiver.mobile
                         projectsign = 'EXIDv1'
                         vars = {'user': model.usernameC}
                         xsendSms(destination, projectsign, vars)
-                if 'webmsg' in types:
+                if 'webmsg' in types and sendWebmsg:
                     if model.userstatus.id == 2:
                         content = '您在海拓注册的%s账号已经通过审核，欢迎加入海拓交易平台。'% model.usernameC
                         title = '账号状态更改'
@@ -542,8 +270,8 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                     messagetype = 3
                     saveMessage(content, messagetype, title, receiver, sender)
 
-    # if checkReceiverToSendMsg(receiver):
-    #     sendmessage_auditstatuchangeThread(model,receiver,types,sender).start()
+    if checkReceiverToSendMsg(receiver):
+        sendmessage_auditstatuchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_userregister(model,receiver,types,sender=None):
     """
@@ -567,25 +295,25 @@ def sendmessage_userregister(model,receiver,types,sender=None):
             model = self.model
             sender = self.sender
             if isinstance(model, MyUser):
-                if 'app' in types:
+                if 'app' in types and sendAppmsg:
                     content = '我们已收到您提交的注册申请。我们将在24小时内与您取得联系，进行用户信息审核，并明确您的意向和需求。请您耐心等待！审核结果将通过邮件和短信通知您。感谢您对多维海拓的关注！'
                     receiver_alias = receiver.id
                     bdage = 1
                     n_extras = {}
                     pushnotification(content=content, receiver_alias=receiver_alias, bdage=bdage, n_extras=n_extras)
-                if 'email' in types:
+                if 'email' in types and sendEmail:
                     destination = receiver.email
                     projectsign = 'J6VK41'
                     vars = {}
                     xsendEmail(destination, projectsign, vars)
-                if 'webmsg' in types:
+                if 'webmsg' in types and sendWebmsg:
                     content = '我们已收到您提交的注册申请。我们将在24小时内与您取得联系，进行用户信息审核，并明确您的意向和需求。请您耐心等待！审核结果将通过邮件和短信通知您。感谢您对多维海拓的关注！'
                     title = '账号注册成功，审核工作会在24小时内开始。'
                     messagetype = 5
                     saveMessage(content, messagetype, title, receiver, sender)
 
-    # if checkReceiverToSendMsg(receiver):
-    #     sendmessage_userregisterThread(model,receiver,types,sender).start()
+    if checkReceiverToSendMsg(receiver):
+        sendmessage_userregisterThread(model,receiver,types,sender).start()
 
 
 
@@ -611,29 +339,29 @@ def sendmessage_timelineauditstatuchange(model,receiver,types,sender=None):
             model = self.model
             sender = self.sender
             if isinstance(model, timelineTransationStatu):
-                if 'app' in types:
+                if 'app' in types and sendAppmsg:
                     content = '您的项目%s时间轴状态已更新，点击查看最新状态'%model.timeline.proj.projtitleC
                     receiver_alias = receiver.id
                     bdage = 1
                     n_extras = {}
                     pushnotification(content, receiver_alias, bdage, n_extras)
-                if 'email' in types:
+                if 'email' in types and sendEmail:
                     destination = receiver.email
                     projectsign = 'LkZix2'
                     vars = {'projectC': getProjTitleWithSuperLink(model.timeline.proj),'projectE': getProjTitleWithSuperLink(model.timeline.proj,'en')}
                     xsendEmail(destination, projectsign, vars)
-                if 'sms' in types:
+                if 'sms' in types and sendSms:
                     destination = receiver.mobile
                     projectsign = 'tNEV93'
                     vars = {'project': model.timeline.proj.projtitleC}
                     xsendSms(destination, projectsign, vars)
-                if 'webmsg' in types:
+                if 'webmsg' in types and sendWebmsg:
                     content = '您的项目%s时间轴状态已更新，点击查看最新状态'%model.timeline.proj.projtitleC
                     title = '时间轴状态更新'
                     messagetype = 6
                     saveMessage(content, messagetype, title, receiver, sender)
-    # if checkReceiverToSendMsg(receiver):
-    #     sendmessage_timelineauditstatuchangeThread(model,receiver,types,sender).start()
+    if checkReceiverToSendMsg(receiver):
+        sendmessage_timelineauditstatuchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_dataroomfileupdate(model,receiver,types,sender=None):
     """
@@ -657,30 +385,30 @@ def sendmessage_dataroomfileupdate(model,receiver,types,sender=None):
             model = self.model
             sender = self.sender
             if isinstance(model, dataroom_User_file):
-                if 'app' in types:
+                if 'app' in types and sendAppmsg:
                     content = 'DataRoom有文件更新，点击查看详情'
                     receiver_alias = receiver.id
                     bdage = 1
                     n_extras = {}
                     pushnotification(content, receiver_alias, bdage, n_extras)
-                if 'email' in types:
+                if 'email' in types and sendEmail:
                     destination = receiver.email
                     projectsign = 'umZlP3'
                     vars = {'projectC': model.dataroom.proj.projtitleC, 'projectE': model.dataroom.proj.projtitleE}
                     xsendEmail(destination, projectsign, vars)
-                if 'sms' in types:
+                if 'sms' in types and sendSms:
                     destination = receiver.mobile
                     projectsign = 'huvrW4'
                     vars = {'project': model.dataroom.proj.projtitleC}
                     xsendSms(destination, projectsign, vars)
-                if 'webmsg' in types:
+                if 'webmsg' in types and sendWebmsg:
                     content = '您的项目%s，DataRoom有文件更新，请登录后查看'%model.dataroom.proj.projtitleC
                     title = 'DataRoom有文件更新，点击查看详情'
                     messagetype = 7
                     saveMessage(content, messagetype, title, receiver, sender)
 
-    # if checkReceiverToSendMsg(receiver):
-    #     sendmessage_dataroomfileupdateThread(model,receiver,types,sender).start()
+    if checkReceiverToSendMsg(receiver):
+        sendmessage_dataroomfileupdateThread(model,receiver,types,sender).start()
 
 def sendmessage_projectpublish(model, receiver, types, sender=None):
     """
@@ -705,19 +433,19 @@ def sendmessage_projectpublish(model, receiver, types, sender=None):
             model = self.model
             sender = self.sender
             if isinstance(model, project):
-                if 'email' in types:
+                if 'email' in types and sendEmail:
                     destination = receiver.email
                     projectsign = 'IszFR1'
                     vars = {'projectC': model.dataroom.proj.projtitleC, 'projectE': model.dataroom.proj.projtitleE}
                     xsendEmail(destination, projectsign, vars)
-                if 'webmsg' in types:
+                if 'webmsg' in types and sendWebmsg:
                     content = '您的项目%s，状态变更为已发布。' % model.dataroom.proj.projtitleC
                     title = '项目状态变更'
                     messagetype = 8
                     saveMessage(content, messagetype, title, receiver, sender)
 
-    # if checkReceiverToSendMsg(receiver):
-    #     sendmessage_projectpublishThread(model,receiver,types,sender).start()
+    if checkReceiverToSendMsg(receiver):
+        sendmessage_projectpublishThread(model,receiver,types,sender).start()
 
 def sendmessage_usermakefriends(model,receiver,types,sender=None):
     """
@@ -741,20 +469,20 @@ def sendmessage_usermakefriends(model,receiver,types,sender=None):
             model = self.model
             sender = self.sender
             if isinstance(model, UserFriendship):
-                if 'app' in types:
+                if 'app' in types and sendAppmsg:
                     content = '您有一个好友添加申请'
                     receiver_alias = receiver.id
                     bdage = 1
                     n_extras = {}
                     pushnotification(content, receiver_alias, bdage, n_extras)
-                if 'webmsg' in types:
+                if 'webmsg' in types and sendWebmsg:
                     content = '您有一个好友添加申请'
                     title = '好友添加申请'
                     messagetype = 9
                     saveMessage(content, messagetype, title, receiver, sender)
 
-    # if checkReceiverToSendMsg(receiver):
-    #     sendmessage_usermakefriendsThread(model,receiver,types,sender).start()
+    if checkReceiverToSendMsg(receiver):
+        sendmessage_usermakefriendsThread(model,receiver,types,sender).start()
 
 #暂无
 def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
@@ -779,30 +507,30 @@ def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
             model = self.model
             sender = self.sender
             if isinstance(model, timelineTransationStatu):
-                if 'app' in types:
+                if 'app' in types and sendAppmsg:
                     content = '您有一个时间轴提醒到期'
                     receiver_alias = receiver.id
                     bdage = 1
                     n_extras = {}
                     pushnotification(content, receiver_alias, bdage, n_extras)
-                # if 'email' in types:
+                # if 'email' in types and sendEmail:
                 #     destination = receiver.email
                 #     projectsign = ''
                 #     vars = {}
                 #     xsendEmail(destination, projectsign, vars)
-                # if 'sms' in types:
+                # if 'sms' in types and sendSms:
                 #     destination = receiver.mobile
                 #     projectsign = 'zzzz'
                 #     vars = {'code': 'sss', 'time': '10'}
                 #     xsendSms(destination, projectsign, vars)
-                if 'webmsg' in types:
+                if 'webmsg' in types and sendWebmsg:
                     content = '您有一个时间轴提醒到期'
                     title = '时间轴到期提醒'
                     messagetype = 10
                     saveMessage(content, messagetype, title, receiver, sender)
 
-    # if checkReceiverToSendMsg(receiver):
-    #     sendmessage_timelinealertcycleexpireThread(model,receiver,types,sender).start()
+    if checkReceiverToSendMsg(receiver):
+        sendmessage_timelinealertcycleexpireThread(model,receiver,types,sender).start()
 
 def sendmessage_schedulemsg(model,receiver,types,sender=None):
     """
@@ -826,20 +554,20 @@ def sendmessage_schedulemsg(model,receiver,types,sender=None):
             model = self.model
             sender = self.sender
             if isinstance(model, schedule):
-                if 'app' in types:
+                if 'app' in types and sendAppmsg:
                     content = '您有一个日程今天到期'
                     receiver_alias = receiver.id
                     bdage = 1
                     n_extras = {}
                     pushnotification(content, receiver_alias, bdage, n_extras)
-                if 'webmsg' in types:
+                if 'webmsg' in types and sendWebmsg:
                     content = '您有一个日程今天到期'
                     title = '日程到期'
                     messagetype = 11
                     saveMessage(content, messagetype, title, receiver, sender)
 
-    # if checkReceiverToSendMsg(receiver):
-    #     sendmessage_schedulemsgThread(model,receiver,types,sender).start()
+    if checkReceiverToSendMsg(receiver):
+        sendmessage_schedulemsgThread(model,receiver,types,sender).start()
 
 
 

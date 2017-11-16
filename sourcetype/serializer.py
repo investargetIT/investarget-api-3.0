@@ -60,7 +60,7 @@ class countrySerializer(serializers.ModelSerializer):
         exclude = ('is_deleted','datasource')
     def get_url(self, obj):
         if not obj.key:
-            return 'https://o79atf82v.qnssl.com/' + '040.jpg'
+            return None
         return 'https://o79atf82v.qnssl.com/' + obj.key
 
 
