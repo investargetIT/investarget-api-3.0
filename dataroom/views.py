@@ -338,10 +338,7 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             with transaction.atomic():
                 for fileid in filelist:
                     instance = self.get_object(fileid)
-                    if instance.isFile:
-                        deleteInstance(instance, request.user)
-                    else:
-                        deleteDirectory(instance, request.user)
+                    deleteInstance(instance, request.user)
                 return JSONResponse(SuccessResponse(filelist))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -520,34 +517,22 @@ def pulishProjectCreateDataroom(proj, user):
         pass
 
 
-def deleteDirectory(instance, deleteuser):
-    if not isinstance(instance, dataroomdirectoryorfile):
-        raise InvestError(7007, msg='expect a dataroomdirectoryorfile type but get a %s type' % type(instance))
-    if instance.is_deleted:
-        raise InvestError(code=7002, msg='已删除，%s'%instance.id)
-    else:
-        filequery = instance.asparent_directories.filter(is_deleted=False)
-        deleteInstance(instance, deleteuser)
-        if filequery.count():
-            for fileordirectoriey in filequery:
-                deleteDirectory(fileordirectoriey, deleteuser)
-
-
-
 def deleteInstance(instance, deleteuser):
+    if instance.is_deleted:
+        raise InvestError(code=7002, msg='%s不存在，已被删除'%instance.id)
     if instance.isFile:
         bucket = instance.bucket
         key = instance.key
-        # instance.is_deleted = True
-        # instance.deleteduser = deleteuser
-        # instance.deletedtime = datetime.datetime.now()
-        # instance.save()
         instance.delete()
         if not bucket or not key:
             pass
         else:
             ret, info = deleteqiniufile(bucket, key)
     else:
+        filequery = instance.asparent_directories.filter(is_deleted=False)
+        if filequery.count():
+            for fileordirectoriey in filequery:
+                deleteInstance(fileordirectoriey, deleteuser)
         instance.is_deleted = True
         instance.deleteduser = deleteuser
         instance.deletedtime = datetime.datetime.now()

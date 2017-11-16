@@ -90,28 +90,15 @@ class dataroomdirectoryorfile(models.Model):
             except dataroomdirectoryorfile.DoesNotExist:
                 pass
             else:
-                raise InvestError(code=2004)
+                raise InvestError(code=7001,msg='相同key文件已存在')
         if self.pk is None:
             if self.dataroom.isClose or self.dataroom.is_deleted:
                 raise InvestError(7012, msg='dataroom已关闭/删除，无法添加文件/目录')
+        if self.parent:
+            if self.parent.isFile:
+                raise InvestError(7007,msg='非目录结构不能存储文件')
         super(dataroomdirectoryorfile, self).save(force_insert, force_update, using, update_fields)
 
-    def checkDirectoryHasFile(self):
-        if self.is_deleted:
-            raise InvestError(code=7002)
-        if self.isFile:
-            return True
-        else:
-            filequery = self.asparent_directories.filter(is_deleted=False)
-            if filequery.count():
-                res = False
-                for fileordirectoriey in filequery:
-                   res = fileordirectoriey.checkDirectoryHasFile()
-                   if res:
-                       break
-                return res
-            else:
-                return False
 
 class dataroom_User_file(models.Model):
     dataroom = MyForeignKey(dataroom, blank=True, null=True, related_name='dataroom_users')
