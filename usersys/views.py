@@ -658,6 +658,20 @@ class UserView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+    @list_route(methods=['get'])
+    @loginTokenIsAvailable()
+    def getCount(self, request, *args, **kwargs):
+        try:
+            totalcount = self.get_queryset().count()
+            newcount = self.get_queryset().filter(createdtime__gte=datetime.datetime.now() - datetime.timedelta(days=1)).count()
+            result = {'total':totalcount,'new':newcount}
+            return JSONResponse(SuccessResponse(result))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
 class UnReachUserView(viewsets.ModelViewSet):
     """
         list:获取unreachuser列表

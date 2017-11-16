@@ -51,6 +51,9 @@ detail_relationone = views.UserRelationView.as_view({
         'get': 'retrieve',
 })
 
+getUserCount = views.UserView.as_view({
+        'get': 'getCount',
+})
 
 user_friendship = views.UserFriendshipView.as_view({
         'get': 'list',
@@ -105,6 +108,7 @@ checkUserAccountExist = views.UserView.as_view({
 
 urlpatterns = [
     url(r'^$', user_list,name='user-list',),
+    url(r'^count$', getUserCount, name='getUserCount', ),
     url(r'^checkexists/$', checkUserAccountExist,name='user-checkUserAccountExist',),
     url(r'^(?P<pk>\d+)/$', user_detail,name='user-one'),
     url(r'^detail/(?P<pk>\d+)/$', user_detailinfo,name='user-detailinfo'),
