@@ -15,4 +15,5 @@ urlpatterns = [
     url(r'^uploadToken$', views.qiniufile.qiniu_uploadtoken, name='getuploadtoken',),
     url(r'^downloadUrl$', views.qiniufile.qiniu_downloadurl, name='getdownloadurl',),
     url(r'^getQRCode$',views.others.getQRCode,name='getQRCode',),
+    url(r'^downloadfile',views.qiniufile.downloadPdfFileAndAddWatermark,name='downloadPdfFileAndAddWatermark',),
 ]

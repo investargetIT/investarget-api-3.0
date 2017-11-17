@@ -16,7 +16,7 @@ from django.db.models import Q
 from APIlog.models import userinfoupdatelog
 from sourcetype.models import AuditStatus, ClientType, TitleType,School,Specialty,Tag, DataSource, Country, OrgArea
 from utils.customClass import InvestError, MyForeignKey
-from utils.makeAvatar import makeAvatar
+from utils.somedef import makeAvatar
 
 
 registersourcechoice = (

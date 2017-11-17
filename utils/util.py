@@ -66,7 +66,7 @@ def checkIPAddress(ip):
         times = 1
     cache.set(key, times, 60 * 60 * 1)
     return times
-
+#检查view内 request的token
 def loginTokenIsAvailable(permissions=None):#判断class级别权限
     def token_available(func):
         def _token_available(self,request, *args, **kwargs):
@@ -96,6 +96,31 @@ def loginTokenIsAvailable(permissions=None):#判断class级别权限
                         return JSONResponse(InvestErrorResponse(InvestError(2009)))
                 kwargs['permissions'] = user_has_permissions
                 return func(self,request, *args, **kwargs)
+        return _token_available
+    return token_available
+
+#检查def request的token
+def checkRequestToken():
+    def token_available(func):
+        def _token_available(request, *args, **kwargs):
+            try:
+                tokenkey = request.META.get('HTTP_TOKEN')
+                if tokenkey:
+                    try:
+                        token = MyToken.objects.get(key=tokenkey,is_deleted=False)
+                    except MyToken.DoesNotExist:
+                        return JSONResponse(InvestErrorResponse(InvestError(3000,msg='token不存在')))
+                    else:
+                        if token.created < datetime.datetime.now() - datetime.timedelta(hours=24 * 1):
+                            return JSONResponse(InvestErrorResponse(InvestError(3000, msg='token过期')))
+                        if token.user.is_deleted:
+                            return JSONResponse(InvestErrorResponse(InvestError(3000, msg='用户不存在')))
+                        request.user = token.user
+                        return func(request, *args, **kwargs)
+                else:
+                    return JSONResponse(InvestErrorResponse(InvestError(3000,msg='token缺失')))
+            except Exception as exc:
+                return JSONResponse(InvestErrorResponse(InvestError(code=3000,msg=repr(exc))))
         return _token_available
     return token_available
 

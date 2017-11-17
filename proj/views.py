@@ -3,8 +3,6 @@ import os
 import traceback
 
 import pdfkit
-from PyPDF2 import PdfFileReader
-from PyPDF2 import PdfFileWriter
 from django.core.paginator import Paginator, EmptyPage
 from django.db import models,transaction
 from django.db.models import Q,QuerySet
@@ -12,7 +10,6 @@ from django.core.exceptions import FieldDoesNotExist
 from django.http import HttpResponse
 from django.http import StreamingHttpResponse
 from django.shortcuts import render
-from reportlab.pdfgen import canvas
 from rest_framework import filters, viewsets
 import datetime
 
@@ -33,6 +30,7 @@ from sourcetype.models import Tag, Industry, TransactionType, DataSource, Servic
 from third.views.jpush import pushnotification
 from third.views.qiniufile import deleteqiniufile
 from usersys.models import MyUser
+from utils.somedef import addWaterMark, file_iterator
 from utils.sendMessage import sendmessage_favoriteproject, sendmessage_projectpublish
 from utils.util import catchexcption, read_from_cache, write_to_cache, loginTokenIsAvailable, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser, \
@@ -524,15 +522,8 @@ class ProjectView(viewsets.ModelViewSet):
             pdfpath = APILOG_PATH['pdfpath_base'] + 'P' + datetime.datetime.now().strftime('%Y%m%d%H%M%S') + '.pdf'
             config = pdfkit.configuration(wkhtmltopdf=APILOG_PATH['wkhtmltopdf'])
             aaa = pdfkit.from_url(PROJECTPDF_URLPATH + str(proj.id)+'&lang=%s'%lang, pdfpath, configuration=config, options=options)
-            out_path = self.addWaterMark(pdfpath,watermarkcontent=request.user.email)
+            out_path = addWaterMark(pdfpath,watermarkcontent=request.user.email)
             if aaa:
-                def file_iterator(fn, chunk_size=512):
-                    while True:
-                        c = fn.read(chunk_size)
-                        if c:
-                            yield c
-                        else:
-                            break
                 fn = open(out_path, 'rb')
                 response = StreamingHttpResponse(file_iterator(fn))
                 response['Content-Type'] = 'application/octet-stream'
@@ -546,45 +537,6 @@ class ProjectView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
-
-    def addWaterMark(self,pdfpath='water.pdf',watermarkcontent='多维海拓'):
-        from reportlab.pdfbase import pdfmetrics
-        from reportlab.pdfbase.ttfonts import TTFont
-        from reportlab.lib.units import cm
-        pdfmetrics.registerFont(TTFont('song', APILOG_PATH['pdfwaterfontPath']))
-        watermarkpath =  pdfpath.split('.')[0] + '-water'+ '.pdf'
-        out_path = pdfpath.split('.')[0] + '-out'+ '.pdf'
-        c = canvas.Canvas(watermarkpath)
-        x = 16; y = 1
-        # 设置字体
-        c.setFont("song", 40)
-        # 旋转45度，坐标系被旋转
-        # 旋转45度，坐标系被旋转
-        c.rotate(45)
-        # 设置透明度，1为不透明
-        c.setFillAlpha(0.1)
-        c.drawCentredString((x - 3) * cm, (y - 3) * cm, watermarkcontent)
-        c.setFillAlpha(0.1)
-        c.drawCentredString(x * cm, y * cm, watermarkcontent)
-        c.setFillAlpha(0.1)
-        c.drawCentredString((x + 3) * cm, (y + 3) * cm, watermarkcontent)
-        c.save()
-        watermark = PdfFileReader(open(watermarkpath, "rb"))
-
-        # Get our files ready
-        output_file = PdfFileWriter()
-        input_file = PdfFileReader(open(pdfpath, "rb"))
-        page_count = input_file.getNumPages()
-        for page_number in range(page_count):
-            input_page = input_file.getPage(page_number)
-            input_page.mergePage(watermark.getPage(0))
-            output_file.addPage(input_page)
-        with open(out_path, "wb") as outputStream:
-            output_file.write(outputStream)
-        os.remove(pdfpath)
-        os.remove(watermarkpath)
-        return out_path
 
 class ProjAttachmentView(viewsets.ModelViewSet):
     """
