@@ -22,6 +22,7 @@ class ProjectData(Document):
     com_name = StringField()   #公司名称
     com_status = StringField(null=True)  #公司运营状态
     com_scale= StringField(null=True)    #公司规模
+    com_web = StringField(null=True)   #公司网站
     invse_round_id = StringField(null=True)  #公司获投状态
     com_cat_name = StringField(null=True)  #行业
     com_sub_cat_name = StringField(null=True) #子行业
