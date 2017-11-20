@@ -16,4 +16,7 @@ urlpatterns = [
     url(r'^downloadUrl$', views.qiniufile.qiniu_downloadurl, name='getdownloadurl',),
     url(r'^getQRCode$',views.others.getQRCode,name='getQRCode',),
     url(r'^downloadfile',views.qiniufile.downloadPdfFileAndAddWatermark,name='downloadPdfFileAndAddWatermark',),
+    url(r'^recordUpload',views.others.recordUpload,name='recordUpload',),
+    url(r'^updateUploadRecord',views.others.updateUploadRecord,name='updateUploadRecord',),
+    url(r'^selectUploadRecord',views.others.selectFromUploadRecord,name='selectFromUploadRecord',),
 ]

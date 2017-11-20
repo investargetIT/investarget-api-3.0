@@ -1,17 +1,23 @@
 #coding=utf-8
 import json
 import os
+import random
+import string
 import traceback
 
+import datetime
 import requests
 from django.http import StreamingHttpResponse
 from rest_framework.decorators import api_view
 
 from invest.settings import APILOG_PATH
 from utils.customClass import JSONResponse, InvestError
-from utils.util import SuccessResponse, catchexcption, ExceptionResponse, InvestErrorResponse, checkrequesttoken
+from utils.somedef import file_iterator
+from utils.util import SuccessResponse, catchexcption, ExceptionResponse, InvestErrorResponse, checkrequesttoken, \
+    write_to_cache, read_from_cache, checkRequestToken
 
 
+#获取汇率
 @api_view(['GET'])
 def getcurrencyreat(request):
     try:
@@ -38,7 +44,7 @@ def getcurrencyreat(request):
         catchexcption(request)
         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-
+#名片识别
 @api_view(['POST'])
 def ccupload(request):
     try:
@@ -78,13 +84,6 @@ def getQRCode(request):
         url = request.GET.get('url',None)
         if url:
             qrcode_path = APILOG_PATH['excptionlogpath'] + 'qrcode.png'
-            def file_iterator(fn, chunk_size=512):
-                while True:
-                    c = fn.read(chunk_size)
-                    if c:
-                        yield c
-                    else:
-                        break
             makeQRCode(url,qrcode_path)
             fn = open(qrcode_path, 'rb')
             response = StreamingHttpResponse(file_iterator(fn))
@@ -94,6 +93,44 @@ def getQRCode(request):
         else:
             raise InvestError(50010, msg='二维码生成失败')
         return response
+    except InvestError as err:
+        return JSONResponse(InvestErrorResponse(err))
+    except Exception:
+        return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+#生成上传记录（开始上传）
+@api_view(['GET'])
+@checkRequestToken()
+def recordUpload(request):
+    try:
+        key = datetime.datetime.now().strftime('%y%m%d%H%M%S')+''.join(random.sample(string.ascii_lowercase,6))
+        write_to_cache(key, 0)
+        return JSONResponse(SuccessResponse({key:read_from_cache(key)}))
+    except InvestError as err:
+        return JSONResponse(InvestErrorResponse(err))
+    except Exception:
+        return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+#上传完成，更新上传记录
+@api_view(['GET'])
+@checkRequestToken()
+def updateUploadRecord(request):
+    try:
+        key = request.GET.get('key')
+        write_to_cache(key, 1)
+        return JSONResponse(SuccessResponse({key:read_from_cache(key)}))
+    except InvestError as err:
+        return JSONResponse(InvestErrorResponse(err))
+    except Exception:
+        return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+#查询上传记录
+@api_view(['GET'])
+@checkRequestToken()
+def selectFromUploadRecord(request):
+    try:
+        key = request.GET.get('key')
+        return JSONResponse(SuccessResponse({key:read_from_cache(key)}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
     except Exception:

@@ -201,24 +201,23 @@ def qiniuuploadfile(filepath, bucket_name):
         return False,None,None
 
 @api_view(['GET'])
-# @checkRequestToken()
+@checkRequestToken()
 def downloadPdfFileAndAddWatermark(request):
     try:
         bucket = request.GET.get('bucket','file')
         key = request.GET.get('key','file')
-        filename = request.GET.get('filename',key)
-        # watermarkcontent = request.user.email
+        filename = request.GET.get('filename', key)
+        watermarkcontent = request.user.email
         if '.pdf' not in key:
             pass
-        download_url = getUrlWithBucketAndKey(bucket,key)
+        download_url = getUrlWithBucketAndKey(bucket, key)
         r = requests.get(download_url)
         if r.status_code != 200:
             raise InvestError(8002,msg=repr(r.content))
-        savepath = APILOG_PATH['pdfpath_base'] + 'PDF' + datetime.datetime.now().strftime('%y%m%d%H%M%S')  + key
+        savepath = APILOG_PATH['pdfpath_base'] + 'PDF' + datetime.datetime.now().strftime('%y%m%d%H%M%S') + key
         with open(savepath, "wb") as code:
             code.write(r.content)
-        # out_path = addWaterMark(savepath,watermarkcontent)
-        out_path = addWaterMark(savepath)
+        out_path = addWaterMark(savepath, watermarkcontent)
         fn = open(out_path, 'rb')
         response = StreamingHttpResponse(file_iterator(fn))
         response['Content-Type'] = 'application/octet-stream'
