@@ -103,22 +103,25 @@ def getQRCode(request):
 @checkRequestToken()
 def recordUpload(request):
     try:
-        key = datetime.datetime.now().strftime('%y%m%d%H%M%S')+''.join(random.sample(string.ascii_lowercase,6))
-        write_to_cache(key, 0)
-        return JSONResponse(SuccessResponse({key:read_from_cache(key)}))
+        record = datetime.datetime.now().strftime('%y%m%d%H%M%S')+''.join(random.sample(string.ascii_lowercase,6))
+        write_to_cache(record, {'bucket':None,'key':None})
+        return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
     except Exception:
         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 #上传完成，更新上传记录
-@api_view(['GET'])
+@api_view(['POST'])
 @checkRequestToken()
 def updateUploadRecord(request):
     try:
-        key = request.GET.get('key')
-        write_to_cache(key, 1)
-        return JSONResponse(SuccessResponse({key:read_from_cache(key)}))
+        data = request.data
+        record = data.get('record')
+        bucket = data.get('bucket')
+        value = data.get('key')
+        write_to_cache(record, {'bucket':bucket,'key':value})
+        return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
     except Exception:
@@ -129,8 +132,8 @@ def updateUploadRecord(request):
 @checkRequestToken()
 def selectFromUploadRecord(request):
     try:
-        key = request.GET.get('key')
-        return JSONResponse(SuccessResponse({key:read_from_cache(key)}))
+        record = request.GET.get('record')
+        return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
     except Exception:
