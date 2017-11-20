@@ -120,6 +120,7 @@ class ScheduleView(viewsets.ModelViewSet):
             page_index = request.GET.get('page_index')  # 从第一页开始
             lang = request.GET.get('lang')
             date = request.GET.get('date')
+            time = request.GET.get('time')
             if not page_size:
                 page_size = 10
             if not page_index:
@@ -128,11 +129,9 @@ class ScheduleView(viewsets.ModelViewSet):
             if date:
                 date = datetime.datetime.strptime(date.encode('utf-8'), "%Y-%m-%d")
                 queryset = queryset.filter(scheduledtime__year=date.year,scheduledtime__month=date.month)
-            sort = request.GET.get('sort')
-            if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
-                queryset = queryset.order_by('-scheduledtime', '-createdtime')
-            else:
-                queryset = queryset.order_by('scheduledtime', 'createdtime')
+            if time:
+                time = datetime.datetime.strptime(time.encode('utf-8'), "%Y-%m-%dT%H:%M:%S")
+                queryset = queryset.filter(scheduledtime__gt=time)
             if request.user.has_perm('msg.admin_manageSchedule'):
                 queryset = queryset
             else:
