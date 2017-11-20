@@ -120,7 +120,7 @@ def updateUploadRecord(request):
         record = data.get('record')
         bucket = data.get('bucket')
         value = data.get('key')
-        write_to_cache(record, {'bucket':bucket,'key':value})
+        write_to_cache(record, {'bucket':bucket,'key':value}, 3600)
         return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
