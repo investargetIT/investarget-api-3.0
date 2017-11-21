@@ -11,10 +11,11 @@ from django.http import StreamingHttpResponse
 from rest_framework.decorators import api_view
 
 from invest.settings import APILOG_PATH
+from third.views.qiniufile import deleteqiniufile
 from utils.customClass import JSONResponse, InvestError
 from utils.somedef import file_iterator
 from utils.util import SuccessResponse, catchexcption, ExceptionResponse, InvestErrorResponse, checkrequesttoken, \
-    write_to_cache, read_from_cache, checkRequestToken
+    write_to_cache, read_from_cache, checkRequestToken, cache_delete_key
 
 
 #获取汇率
@@ -104,7 +105,7 @@ def getQRCode(request):
 def recordUpload(request):
     try:
         record = datetime.datetime.now().strftime('%y%m%d%H%M%S')+''.join(random.sample(string.ascii_lowercase,6))
-        write_to_cache(record, {'bucket':None,'key':None})
+        write_to_cache(record, {'bucket':None,'key':None,'is_active':True})
         return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
@@ -114,13 +115,13 @@ def recordUpload(request):
 #上传完成，更新上传记录
 @api_view(['POST'])
 @checkRequestToken()
-def updateUploadRecord(request):
+def updateUpload(request):
     try:
         data = request.data
         record = data.get('record')
         bucket = data.get('bucket')
         value = data.get('key')
-        write_to_cache(record, {'bucket':bucket,'key':value}, 3600)
+        write_to_cache(record, {'bucket':bucket,'key':value,'is_active':True}, 3600)
         return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
@@ -130,9 +131,41 @@ def updateUploadRecord(request):
 #查询上传记录
 @api_view(['GET'])
 @checkRequestToken()
-def selectFromUploadRecord(request):
+def selectUpload(request):
     try:
         record = request.GET.get('record')
+        return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
+    except InvestError as err:
+        return JSONResponse(InvestErrorResponse(err))
+    except Exception:
+        return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+#取消上传，状态置为非活跃
+@api_view(['POST'])
+@checkRequestToken()
+def cancelUpload(request):
+    try:
+        data = request.data
+        record = data.get('record')
+        recordDic = read_from_cache(record)
+        recordDic['is_active'] = False
+        write_to_cache(record, recordDic, 3600)
+        return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
+    except InvestError as err:
+        return JSONResponse(InvestErrorResponse(err))
+    except Exception:
+        return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+#取消上传，删除上传记录
+@api_view(['POST'])
+@checkRequestToken()
+def deleteUpload(request):
+    try:
+        data = request.data
+        record = data.get('record')
+        if record['key'] and record['bucket']:
+            deleteqiniufile(key=record['key'],bucket=record['bucket'])
+        cache_delete_key(record)
         return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
