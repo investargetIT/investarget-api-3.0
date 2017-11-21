@@ -546,6 +546,8 @@ class WXChatDataView(viewsets.ModelViewSet):
                 isShow = True
             else:
                 isShow = False
+                if not request.user.has_perm('usersys.admin_manageWXChatData'):
+                    isShow = True
             if not page_size:
                 page_size = 10
             if not page_index:
@@ -570,7 +572,7 @@ class WXChatDataView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['usersys.admin_manageWXChatData'])
     def update(self, request, *args, **kwargs):
         try:
             id = request.GET.get('id')

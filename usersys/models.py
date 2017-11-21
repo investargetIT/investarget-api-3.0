@@ -152,6 +152,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
 
             ('admin_getmongoprojremark', u'管理员查看mongo项目备注'),
             ('admin_deletemongoprojremark', u'管理员删除mongo项目备注'),
+            ('admin_manageWXChatData', u'管理员管理微信消息'),
         )
     def save(self, *args, **kwargs):
         if not self.usercode:
