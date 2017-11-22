@@ -8,9 +8,9 @@ from django.db.models import QuerySet
 from rest_framework import filters , viewsets
 
 from org.models import organization, orgTransactionPhase, orgRemarks
-from org.serializer import OrgSerializer, OrgCommonSerializer, OrgDetailSerializer, \
+from org.serializer import OrgCommonSerializer, OrgDetailSerializer, \
     OrgRemarkSerializer, OrgRemarkDetailSerializer, OrgCreateSerializer, OrgUpdateSerializer
-from sourcetype.models import TransactionPhases, Tag, DataSource
+from sourcetype.models import TransactionPhases, DataSource
 from utils.customClass import InvestError, JSONResponse, RelationFilter
 from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser, add_perm, \

@@ -9,20 +9,11 @@ class OrgCommonSerializer(serializers.ModelSerializer):
         model = organization
         fields = ('id','orgnameC','orgnameE','description')
 
-class OrgSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = organization
-        fields = ('id','orgnameC','orgnameE','stockcode','orgstatus','description')
-
-
-
 class OrgCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = organization
         fields = '__all__'
-
 
 class OrgUpdateSerializer(serializers.ModelSerializer):
 

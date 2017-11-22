@@ -29,6 +29,7 @@ import sourcetype.urls
 import msg.urls
 import emailmanage.urls
 import activity.urls
+import BD.urls
 schema_view = get_swagger_view(title='investarget-api-3.0')
 
 urlpatterns = [
@@ -48,4 +49,5 @@ urlpatterns += [
     url(r'^mongolog/', include(mongoDoc.urls)),
     url(r'^emailmanage/', include(emailmanage.urls)),
     url(r'^activity/', include(activity.urls)),
+    url(r'^bd/', include(BD.urls)),
 ]

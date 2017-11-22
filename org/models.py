@@ -3,10 +3,7 @@ from __future__ import unicode_literals
 
 from django.db import models
 import sys
-
-from django.db.models import Q
 from guardian.shortcuts import assign_perm, remove_perm
-
 from sourcetype.models import AuditStatus, OrgType , TransactionPhases,CurrencyType, Industry, DataSource, OrgAttribute
 from usersys.models import MyUser
 from utils.customClass import InvestError, MyForeignKey
