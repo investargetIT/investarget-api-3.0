@@ -424,11 +424,13 @@ def getmenulist(user):
     if user.has_perm('usersys.as_investor'):
         qslist.append(allmenuobj.filter(id__in=[13]))
     if user.has_perm('usersys.as_trader'):
-        qslist.append(allmenuobj.filter(id__in=[12, 2]))
+        qslist.append(allmenuobj.filter(id__in=[12]))
     if user.has_perm('org.admin_getorg'):#机构 、邮件管理
-        qslist.append(allmenuobj.filter(id__in=[2, 3, 23]))
-    if user.has_perm('proj.getBD')or user.has_perm('proj.manageBD'): # 项目bd管理
+        qslist.append(allmenuobj.filter(id__in=[3, 23]))
+    if user.has_perm('BD.getProjectBD') or user.has_perm('BD.manageProjectBD'): # 项目bd管理
         qslist.append(allmenuobj.filter(id__in=[22, 23]))
+    if user.has_perm('BD.getOrgBD') or user.has_perm('BD.manageOrgBD'):         # 机构bd管理
+        qslist.append(allmenuobj.filter(id__in=[2, 23]))
     if user.has_perm('usersys.as_admin'):#日志查询
         qslist.append(allmenuobj.filter(id__in=[9]))
     if user.has_perm('msg.admin_manageSchedule'):#日程管理
@@ -439,6 +441,6 @@ def getmenulist(user):
         qslist.append(allmenuobj.filter(id__in=[17]))
     if user.has_perm('proj.admin_addproj') or user.has_perm('proj.user_addproj'):
         qslist.append(allmenuobj.filter(id__in=[19]))
-    qslist.append(allmenuobj.filter(id__in=[1, 4, 6, 7, 8, 10, 11, 14, 15, 16, 18, 20, 21, 27]))
+    qslist.append(allmenuobj.filter(id__in=[1, 4, 6, 7, 8, 10, 11, 14, 15, 16, 18, 20, 21, 27, 28]))
     qsres = reduce(lambda x,y:x|y,qslist).distinct().order_by('index')
     return WebMenuSerializer(qsres,many=True).data
