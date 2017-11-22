@@ -122,7 +122,7 @@ def updateUpload(request):
         key = data.get('key')
         filename = data.get('filename','mobilefile')
         if read_from_cache(record) is None:
-            raise InvestError(2007,msg='没有这条记录')
+            raise InvestError(8003,msg='没有这条记录')
         write_to_cache(record, {'bucket':bucket,'key':key,'filename':filename,'is_active':True}, 3600)
         return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
     except InvestError as err:
@@ -135,6 +135,8 @@ def updateUpload(request):
 def selectUpload(request):
     try:
         record = request.GET.get('record')
+        if read_from_cache(record) is None:
+            raise InvestError(8003,msg='没有这条记录')
         return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
@@ -148,6 +150,8 @@ def cancelUpload(request):
         data = request.data
         record = data.get('record')
         recordDic = read_from_cache(record)
+        if recordDic is None:
+            raise InvestError(8003,msg='没有这条记录')
         recordDic['is_active'] = False
         write_to_cache(record, recordDic, 3600)
         return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
@@ -162,8 +166,11 @@ def deleteUpload(request):
     try:
         data = request.data
         record = data.get('record')
-        if record['key'] and record['bucket']:
-            deleteqiniufile(key=record['key'],bucket=record['bucket'])
+        recordDic = read_from_cache(record)
+        if recordDic is None:
+            raise InvestError(8003, msg='没有这条记录')
+        if recordDic['key'] and recordDic['bucket']:
+            deleteqiniufile(key=recordDic['key'],bucket=recordDic['bucket'])
         cache_delete_key(record)
         return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
     except InvestError as err:
