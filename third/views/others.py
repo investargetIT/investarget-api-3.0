@@ -114,7 +114,6 @@ def recordUpload(request):
 
 #上传完成，更新上传记录
 @api_view(['POST'])
-@checkRequestToken()
 def updateUpload(request):
     try:
         data = request.data
@@ -131,7 +130,6 @@ def updateUpload(request):
 
 #查询上传记录
 @api_view(['GET'])
-@checkRequestToken()
 def selectUpload(request):
     try:
         record = request.GET.get('record')
@@ -143,7 +141,6 @@ def selectUpload(request):
 
 #取消上传，状态置为非活跃
 @api_view(['POST'])
-@checkRequestToken()
 def cancelUpload(request):
     try:
         data = request.data
@@ -159,7 +156,6 @@ def cancelUpload(request):
 
 #取消上传，删除上传记录
 @api_view(['POST'])
-@checkRequestToken()
 def deleteUpload(request):
     try:
         data = request.data

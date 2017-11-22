@@ -62,7 +62,7 @@ class ProjectBDView(viewsets.ModelViewSet):
         return queryset
 
 
-    #获取收藏列表，GET参数'user'，'trader'，'favoritetype'
+
     @loginTokenIsAvailable(['BD.getProjectBD','BD.manageProjectBD'])
     def list(self, request, *args, **kwargs):
         try:
@@ -87,7 +87,7 @@ class ProjectBDView(viewsets.ModelViewSet):
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    # 批量增加，接受modeldata，proj=projs=projidlist
+
     @loginTokenIsAvailable(['BD.manageProjectBD',])
     def create(self, request, *args, **kwargs):
         try:
@@ -149,7 +149,7 @@ class ProjectBDView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    #批量删除（参数传收藏model的idlist）
+
     @loginTokenIsAvailable(['BD.manageProjectBD',])
     def destroy(self, request, *args, **kwargs):
         try:
@@ -299,7 +299,7 @@ class OrgBDView(viewsets.ModelViewSet):
         return queryset
 
 
-    #获取收藏列表，GET参数'user'，'trader'，'favoritetype'
+
     @loginTokenIsAvailable(['BD.getOrgBD','BD.manageOrgBD'])
     def list(self, request, *args, **kwargs):
         try:
@@ -324,7 +324,7 @@ class OrgBDView(viewsets.ModelViewSet):
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    # 批量增加，接受modeldata，proj=projs=projidlist
+
     @loginTokenIsAvailable(['BD.manageOrgBD',])
     def create(self, request, *args, **kwargs):
         try:
@@ -386,7 +386,7 @@ class OrgBDView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    #批量删除（参数传收藏model的idlist）
+
     @loginTokenIsAvailable(['BD.manageOrgBD',])
     def destroy(self, request, *args, **kwargs):
         try:
@@ -433,7 +433,7 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
         return queryset
 
 
-    # 获取收藏列表，GET参数'user'，'trader'，'favoritetype'
+
     @loginTokenIsAvailable(['BD.getOrgBD','BD.manageOrgBD'])
     def list(self, request, *args, **kwargs):
         try:
@@ -459,7 +459,7 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    # 批量增加，接受modeldata，proj=projs=projidlist
+
     @loginTokenIsAvailable(['BD.manageOrgBD'])
     def create(self, request, *args, **kwargs):
         try:
@@ -480,7 +480,7 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    # 批量删除（参数传收藏model的idlist）
+
     @loginTokenIsAvailable(['BD.manageOrgBD'])
     def destroy(self, request, *args, **kwargs):
         try:
