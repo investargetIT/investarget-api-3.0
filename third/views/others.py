@@ -121,6 +121,8 @@ def updateUpload(request):
         bucket = data.get('bucket')
         key = data.get('key')
         filename = data.get('filename','mobilefile')
+        if read_from_cache(record) is None:
+            raise InvestError(2007,msg='没有这条记录')
         write_to_cache(record, {'bucket':bucket,'key':key,'filename':filename,'is_active':True}, 3600)
         return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
     except InvestError as err:
