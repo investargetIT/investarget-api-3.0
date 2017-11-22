@@ -105,7 +105,7 @@ def getQRCode(request):
 def recordUpload(request):
     try:
         record = datetime.datetime.now().strftime('%y%m%d%H%M%S')+''.join(random.sample(string.ascii_lowercase,6))
-        write_to_cache(record, {'bucket':None,'key':None,'is_active':True})
+        write_to_cache(record, {'bucket':None,'key':None,'filename':None,'is_active':True})
         return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
@@ -120,8 +120,9 @@ def updateUpload(request):
         data = request.data
         record = data.get('record')
         bucket = data.get('bucket')
-        value = data.get('key')
-        write_to_cache(record, {'bucket':bucket,'key':value,'is_active':True}, 3600)
+        key = data.get('key')
+        filename = data.get('filename','mobilefile')
+        write_to_cache(record, {'bucket':bucket,'key':key,'filename':filename,'is_active':True}, 3600)
         return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
