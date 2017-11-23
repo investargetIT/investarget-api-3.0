@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import datetime
 from django.db import models
 from proj.models import project
-from usersys.models import MyUser
+from usersys.models import MyUser, UserRelation
 from sourcetype.models import TransactionStatus, DataSource
 from utils.customClass import InvestError, MyForeignKey
 from utils.util import add_perm, rem_perm
@@ -116,6 +116,8 @@ class timelineTransationStatu(models.Model):
         if self.alertCycle:
             if not self.inDate:
                 self.inDate = datetime.datetime.now() + datetime.timedelta(hours=self.alertCycle * 24)
+        if not UserRelation.objects.filter(investoruser=timeline.investor,traderuser=timeline.trader,is_deleted=False,score__gt=self.transationStatus.id).exists():
+            UserRelation.objects.filter(investoruser=timeline.investor, traderuser=timeline.trader, is_deleted=False).update(score=self.transationStatus.id)
         super(timelineTransationStatu, self).save(force_insert, force_update, using, update_fields)
 class timelineremark(models.Model):
     id = models.AutoField(primary_key=True)

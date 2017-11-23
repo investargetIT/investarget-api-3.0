@@ -10,6 +10,7 @@ from proj.models import project
 from sourcetype.models import Country, BDStatus
 from sourcetype.models import TitleType
 from usersys.models import MyUser
+from usersys.views import makeUserRelation, makeUserRemark
 from utils.customClass import MyForeignKey, InvestError
 
 bd_sourcetype = (
@@ -22,9 +23,10 @@ class ProjectBD(models.Model):
     usertitle = MyForeignKey(TitleType,blank=True,null=True,help_text='职位')
     username = models.CharField(max_length=64,blank=True,null=True,help_text='姓名')
     usermobile = models.CharField(max_length=64,blank=True,null=True,help_text='电话')
+    bduser = MyForeignKey(MyUser, blank=True, null=True, help_text='bd对象id')
     source = models.TextField(blank=True,null=True,help_text='来源')
     source_type = models.IntegerField(blank=True,null=True,choices=bd_sourcetype)
-    manager = MyForeignKey(MyUser,blank=True,null=True,help_text='负责人')
+    manager = MyForeignKey(MyUser,blank=True,null=True,help_text='负责人',related_name='user_projBDs')
     bd_status = MyForeignKey(BDStatus,blank=True,null=True,help_text='bd状态')
     is_deleted = models.BooleanField(blank=True,default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_ProjectBD')
@@ -44,6 +46,10 @@ class ProjectBD(models.Model):
             self.createdtime = datetime.datetime.now()
         if self.manager is None:
             raise InvestError(2007,msg='manager can`t be null')
+        if self.bduser:
+            self.username = self.bduser.usernameC
+            self.usermobile = self.bduser.mobile
+            self.usertitle = self.bduser.title.nameC
         self.datasource = self.manager.datasource_id
         if self.source == '全库搜索':
             self.source_type = 0
@@ -79,7 +85,8 @@ class OrgBD(models.Model):
     usertitle = MyForeignKey(TitleType,blank=True,null=True,help_text='职位')
     username = models.CharField(max_length=64,blank=True,null=True,help_text='姓名')
     usermobile = models.CharField(max_length=64,blank=True,null=True,help_text='电话')
-    manager = MyForeignKey(MyUser,blank=True,null=True,help_text='负责人')
+    bduser = MyForeignKey(MyUser,blank=True,null=True,help_text='bd对象id')
+    manager = MyForeignKey(MyUser,blank=True,null=True,help_text='负责人',related_name='user_orgBDs')
     bd_status = MyForeignKey(BDStatus,blank=True,null=True,help_text='bd状态')
     is_deleted = models.BooleanField(blank=True,default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_OrgBD')
@@ -99,7 +106,17 @@ class OrgBD(models.Model):
             self.createdtime = datetime.datetime.now()
         if self.manager is None:
             raise InvestError(2007,msg='manager can`t be null')
+        if self.bduser:
+            self.username = self.bduser.usernameC
+            self.usermobile = self.bduser.mobile
+            self.usertitle = self.bduser.title.nameC
         self.datasource = self.manager.datasource_id
+        if self.pk and self.is_deleted == False:
+            if self.bd_status.nameC == 'BD成功':
+                makeUserRelation(self.bduser,self.manager)
+                comments = self.OrgBD_comments.all().filter(is_deleted=False)
+                for comment in comments:
+                    makeUserRemark(self.bduser,comment,self.manager)
         return super(OrgBD, self).save(*args, **kwargs)
 
 class OrgBDComments(models.Model):

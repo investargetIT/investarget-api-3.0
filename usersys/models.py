@@ -323,7 +323,7 @@ class MyToken(models.Model):
 class UserRelation(models.Model):
     investoruser = MyForeignKey(MyUser,related_name='investor_relations',help_text=('作为投资人'))
     traderuser = MyForeignKey(MyUser,related_name='trader_relations',help_text=('作为交易师'))
-    relationtype = models.BooleanField(help_text=('强关系True，弱关系False'),default=False)
+    relationtype = models.BooleanField(help_text=('强关系True，弱关系False'),default=False,blank=True)
     score = models.SmallIntegerField(help_text=('交易师评分'), default=0, blank=True)
     is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_relations')

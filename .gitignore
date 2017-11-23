@@ -30,3 +30,5 @@ timeline/migrations/
 !timeline/migrations/__init__.py
 usersys/migrations/
 !usersys/migrations/__init__.py
+BD/migrations/
+!BD/migrations/__init__.py

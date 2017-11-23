@@ -22,7 +22,7 @@ from third.views.huanxin import registHuanXinIMWithUser
 from timeline.models import timeline
 from usersys.models import MyUser, UserRelation, userTags, UserFriendship, MyToken, UnreachUser, UserRemarks
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
-    CreatUserSerializer , UserCommenSerializer , UserRelationDetailSerializer, UserFriendshipSerializer, \
+    CreatUserSerializer , UserCommenSerializer , UserRelationCreateSerializer, UserFriendshipSerializer, \
     UserFriendshipDetailSerializer, UserFriendshipUpdateSerializer, GroupSerializer, GroupDetailSerializer, GroupCreateSerializer, PermissionSerializer, \
     UpdateUserSerializer, UnreachUserSerializer, UserRemarkSerializer, UserRemarkCreateSerializer
 from sourcetype.models import Tag, DataSource
@@ -1042,7 +1042,7 @@ class UserRelationView(viewsets.ModelViewSet):
                 if data.get('traderuser',None) != request.user.id and data.get('investoruser',None) != request.user.id:
                     raise InvestError(2009,msg='非管理员权限')
             with transaction.atomic():
-                newrelation = UserRelationDetailSerializer(data=data)
+                newrelation = UserRelationCreateSerializer(data=data)
                 if newrelation.is_valid():
                     relation = newrelation.save()
                     add_perm('usersys.user_getuserrelation', relation.traderuser, relation)
@@ -1122,7 +1122,7 @@ class UserRelationView(viewsets.ModelViewSet):
                         raise InvestError(code=2009,msg='没有权限')
                     relationdata['lastmodifyuser'] = request.user.id
                     relationdata['lastmodifytime'] = datetime.datetime.now()
-                    newrelationseria = UserRelationDetailSerializer(relation,data=relationdata)
+                    newrelationseria = UserRelationCreateSerializer(relation,data=relationdata)
                     if newrelationseria.is_valid():
                         newrelation = newrelationseria.save()
                     else:
@@ -1628,7 +1628,31 @@ def maketoken(user,clienttype):
     }
 
 
-# def testsendmsg(request):
-#     res = pushnotification('18637760716', 'contentsssssssstest', 0)
-#     print res
-#     return JSONResponse({'da':'dd'})
+def makeUserRelation(investor,trader):
+    if investor and trader:
+        if UserRelation.objects.filter(investoruser=investor,traderuser=trader,is_deleted=False).exists():
+            return
+        dic = {
+            'investoruser':investor.id,
+            'traderuser':trader.id,
+            'relationtype':False,
+            'datasource':investor.datasource_id
+        }
+        serializer = UserRelationCreateSerializer(data=dic)
+        if serializer.is_valid():
+            serializer.save()
+        return
+
+
+def makeUserRemark(user,remark,createuser):
+    if user and remark and createuser:
+        dic = {
+            'user': user.id,
+            'remark': remark,
+            'datasource': createuser.datasource_id,
+            'createuser' : createuser.id,
+        }
+        serializer = UserRemarkCreateSerializer(data=dic)
+        if serializer.is_valid():
+            serializer.save()
+        return
