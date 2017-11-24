@@ -47,6 +47,7 @@ class dataroom(models.Model):
             ('admin_deletedataroom', '管理员删除dataroom'),
             ('admin_adddataroom', '管理员添加dataroom'),
             ('admin_closedataroom', '管理员关闭dataroom'),
+            ('downloadDataroom','打包下载dataroom'),
         )
 
     def save(self, force_insert=False, force_update=False, using=None,

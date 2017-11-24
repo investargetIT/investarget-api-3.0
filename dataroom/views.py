@@ -217,7 +217,7 @@ class DataroomView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['dataroom.admin_getdataroom'])
+    @loginTokenIsAvailable(['dataroom.downloadDataroom'])
     def makeDataroomAllFilesZip(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
@@ -231,12 +231,12 @@ class DataroomView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['dataroom.admin_getdataroom'])
+    @loginTokenIsAvailable(['dataroom.downloadDataroom'])
     def downloadDataroomZip(self, request, *args, **kwargs):
         try:
             path = request.GET.get('path',None)
             rootpath = APILOG_PATH['dataroomFilePath'] + '/' + path
-            if rootpath:
+            if os.path.exists(rootpath):
                 fn = open(rootpath, 'rb')
                 response = StreamingHttpResponse(file_iterator(fn))
                 response['Content-Type'] = 'application/octet-stream'
