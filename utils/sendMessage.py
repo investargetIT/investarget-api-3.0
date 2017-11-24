@@ -52,7 +52,7 @@ favoriteTypeConf = {
         },
         'webmsg':{
             'content' : '根据您的意向，系统向您推荐(%s)。',
-            'title' : '系统项目推荐。点击查看详情',
+            'title' : '系统项目推荐',
             'messagetype' : 1,
         },
         'email':{
@@ -74,7 +74,7 @@ favoriteTypeConf = {
         },
         'webmsg':{
             'content' : '您的交易师%s推荐给您项目(%s)。',
-            'title' : '交易师推荐给您项目。点击查看详情',
+            'title' : '交易师推荐给您项目',
             'messagetype' : 1,
         },
         'email':{
@@ -85,7 +85,7 @@ favoriteTypeConf = {
     '5':{
         'paths':['app','sms','webmsg','email'],
         'app':{
-            'content' : '有投资者对项目(%s)感兴趣，点击查看详情。',
+            'content' : '有投资者对项目(%s)感兴趣',
             'platform' : 'ios',
             'bdage' : '1',
             'n_extras' : {},
@@ -96,7 +96,7 @@ favoriteTypeConf = {
         },
         'webmsg':{
             'content' : '您的投资者%s对项目(%s)感兴趣，请在48小时内联系投资者。',
-            'title' : '您的投资者对项目感兴趣，点击查看详情。',
+            'title' : '您的投资者对项目感兴趣',
             'messagetype' : 1,
         },
         'email':{
@@ -160,7 +160,7 @@ def sendmessage_favoriteproject(model,receiver,sender=None):
                             content = (msgconfig['webmsg']['content']) % model.proj.projtitleC
                         title = msgconfig['webmsg']['title']
                         messagetype = msgconfig['webmsg']['messagetype']
-                        saveMessage(content, messagetype, title, receiver, sender)
+                        saveMessage(content, messagetype, title, receiver, sender,modeltype='favoriteProject',sourceid=model.id)
 
     if checkReceiverToSendMsg(receiver):
         sendmessage_favoriteprojectThread(model,receiver,sender).start()
@@ -207,7 +207,7 @@ def sendmessage_traderchange(model,receiver,types,sender=None):
                     content = '您的交易师已更换为%s，感谢您的信任与支持' % model.traderuser.usernameC
                     title = '交易师已更换'
                     messagetype = 2
-                    saveMessage(content, messagetype, title, receiver, sender)
+                    saveMessage(content, messagetype, title, receiver, sender,modeltype='UserRelation',sourceid=model.id)
 
     if checkReceiverToSendMsg(receiver):
         sendmessage_traderchangeThread(model,receiver,types,sender).start()
@@ -268,7 +268,7 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                         content = '您在海拓注册的%s账号%s，如有疑问，请咨询相关工作人员。。'%(model.usernameC, model.userstatu.nameC)
                         title = '账号状态更改'
                     messagetype = 3
-                    saveMessage(content, messagetype, title, receiver, sender)
+                    saveMessage(content, messagetype, title, receiver, sender,modeltype='MyUser',sourceid=model.id)
 
     if checkReceiverToSendMsg(receiver):
         sendmessage_auditstatuchangeThread(model,receiver,types,sender).start()
@@ -310,7 +310,7 @@ def sendmessage_userregister(model,receiver,types,sender=None):
                     content = '我们已收到您提交的注册申请。我们将在24小时内与您取得联系，进行用户信息审核，并明确您的意向和需求。请您耐心等待！审核结果将通过邮件和短信通知您。感谢您对多维海拓的关注！'
                     title = '账号注册成功，审核工作会在24小时内开始。'
                     messagetype = 5
-                    saveMessage(content, messagetype, title, receiver, sender)
+                    saveMessage(content, messagetype, title, receiver, sender,modeltype='MyUser',sourceid=model.id)
 
     if checkReceiverToSendMsg(receiver):
         sendmessage_userregisterThread(model,receiver,types,sender).start()
@@ -359,7 +359,7 @@ def sendmessage_timelineauditstatuchange(model,receiver,types,sender=None):
                     content = '您的项目%s时间轴状态已更新，点击查看最新状态'%model.timeline.proj.projtitleC
                     title = '时间轴状态更新'
                     messagetype = 6
-                    saveMessage(content, messagetype, title, receiver, sender)
+                    saveMessage(content, messagetype, title, receiver, sender,modeltype='timelineTransationStatu',sourceid=model.id)
     if checkReceiverToSendMsg(receiver):
         sendmessage_timelineauditstatuchangeThread(model,receiver,types,sender).start()
 
@@ -405,7 +405,7 @@ def sendmessage_dataroomfileupdate(model,receiver,types,sender=None):
                     content = '您的项目%s，DataRoom有文件更新，请登录后查看'%model.dataroom.proj.projtitleC
                     title = 'DataRoom有文件更新，点击查看详情'
                     messagetype = 7
-                    saveMessage(content, messagetype, title, receiver, sender)
+                    saveMessage(content, messagetype, title, receiver, sender,modeltype='dataroom_User_file',sourceid=model.id)
 
     if checkReceiverToSendMsg(receiver):
         sendmessage_dataroomfileupdateThread(model,receiver,types,sender).start()
@@ -442,7 +442,7 @@ def sendmessage_projectpublish(model, receiver, types, sender=None):
                     content = '您的项目%s，状态变更为已发布。' % model.dataroom.proj.projtitleC
                     title = '项目状态变更'
                     messagetype = 8
-                    saveMessage(content, messagetype, title, receiver, sender)
+                    saveMessage(content, messagetype, title, receiver, sender,modeltype='project',sourceid=model.id)
 
     if checkReceiverToSendMsg(receiver):
         sendmessage_projectpublishThread(model,receiver,types,sender).start()
@@ -479,7 +479,7 @@ def sendmessage_usermakefriends(model,receiver,types,sender=None):
                     content = '您有一个好友添加申请'
                     title = '好友添加申请'
                     messagetype = 9
-                    saveMessage(content, messagetype, title, receiver, sender)
+                    saveMessage(content, messagetype, title, receiver, sender,modeltype='UserFriendship',sourceid=model.id)
 
     if checkReceiverToSendMsg(receiver):
         sendmessage_usermakefriendsThread(model,receiver,types,sender).start()
@@ -527,7 +527,7 @@ def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
                     content = '您有一个时间轴提醒到期'
                     title = '时间轴到期提醒'
                     messagetype = 10
-                    saveMessage(content, messagetype, title, receiver, sender)
+                    saveMessage(content, messagetype, title, receiver, sender,modeltype='timelineTransationStatu',sourceid=model.id)
 
     if checkReceiverToSendMsg(receiver):
         sendmessage_timelinealertcycleexpireThread(model,receiver,types,sender).start()
@@ -564,7 +564,7 @@ def sendmessage_schedulemsg(model,receiver,types,sender=None):
                     content = '您有一个日程今天到期'
                     title = '日程到期'
                     messagetype = 11
-                    saveMessage(content, messagetype, title, receiver, sender)
+                    saveMessage(content, messagetype, title, receiver, sender,modeltype='schedule',sourceid=model.id)
 
     if checkReceiverToSendMsg(receiver):
         sendmessage_schedulemsgThread(model,receiver,types,sender).start()

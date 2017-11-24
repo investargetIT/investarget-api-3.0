@@ -4,7 +4,6 @@ import traceback
 import datetime
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction
-from django.shortcuts import render
 
 # Create your views here.
 from rest_framework import filters
@@ -17,7 +16,7 @@ from utils.util import logexcption, loginTokenIsAvailable, SuccessResponse, Inve
     catchexcption, returnListChangeToLanguage, returnDictChangeToLanguage
 
 
-def saveMessage(content,type,title,receiver,sender=None):
+def saveMessage(content,type,title,receiver,sender=None,modeltype=None,sourceid=None):
     try:
         data = {}
         data['content'] = content
@@ -25,6 +24,10 @@ def saveMessage(content,type,title,receiver,sender=None):
         data['type'] = type
         data['receiver'] = receiver.id
         data['datasource'] = receiver.datasource_id
+        if modeltype:
+            data['sourcetype'] = modeltype
+        if sourceid:
+            data['sourceid'] = sourceid
         if sender:
             data['sender'] = sender.id
         msg = MsgSerializer(data=data)

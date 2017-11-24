@@ -16,13 +16,13 @@ from utils.customClass import InvestError, MyForeignKey
 
 class message(models.Model):
     content = models.TextField(verbose_name='站内信详细内容',blank=True,null=True)
-    type = models.IntegerField(MessageType,blank=True,default=1)
+    type = models.IntegerField(MessageType,blank=True,default=1,help_text='消息类型')
     messagetitle = models.CharField(max_length=128,verbose_name='消息标题',blank=True,null=True)
     sender = MyForeignKey(MyUser,blank=True,null=True,related_name='usersend_msgs')
     receiver = MyForeignKey(MyUser,related_name='userreceive_msgs',blank=True,null=True)
     created = models.DateTimeField(verbose_name='创建日期',auto_now_add=True)
     isRead = models.BooleanField(verbose_name='是否已读',default=False,blank=True)
-    sourcetype = MyForeignKey(ContentType,blank=True,null=True,help_text='关联资源类型')
+    sourcetype = models.CharField(max_length=32,blank=True,null=True,help_text='资源类型')
     sourceid = models.IntegerField(blank=True,null=True,help_text='关联资源id')
     readtime = models.DateTimeField(blank=True,null=True)
     is_deleted = models.BooleanField(blank=True,default=False)

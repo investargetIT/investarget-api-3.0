@@ -31,14 +31,16 @@ def qiniu_coverupload(request):
         key = request.GET.get('key')
         if not bucket_name or not key or bucket_name not in qiniu_url.keys():
             raise InvestError(2020,msg='bucket/key error')
+        deleteqiniufile(bucket_name, key)
         data_dict = request.FILES
         uploaddata = None
-        for keya in data_dict.keys():
-            uploaddata = data_dict[keya]
+        for key in data_dict.keys():
+            uploaddata = data_dict[key]
         q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
         filetype = str(uploaddata.name).split('.')[-1]
+        realfilekey = datetime.datetime.now().strftime('%Y%m%d%H%M%s') + ''.join(random.sample(string.ascii_lowercase, 6)) + '.' + filetype
         if filetype in ['xlsx', 'doc', 'docx', 'xls', 'ppt', 'pptx']:
-            saveas_key = qiniu.urlsafe_base64_encode('file:%s' % (key.split('.')[0] + '.pdf'))
+            saveas_key = qiniu.urlsafe_base64_encode('file:%s' % (realfilekey.split('.')[0] + '.pdf'))
             persistentOps = fops + '|saveas/' + saveas_key
             policy = {
                 'persistentOps': persistentOps,
@@ -47,23 +49,25 @@ def qiniu_coverupload(request):
             }
         else:
             policy = None
-        print key
-        params = {'x:a':'a'}
+        params = {'x:a': 'a'}
         mime_type = uploaddata.content_type
-        token = q.upload_token(bucket_name, key, 3600,policy=policy)
-        progress_handler = lambda progress,total:progress / total
-        uploader = _Resume(token,key,uploaddata,uploaddata.size,params,mime_type,progress_handler,upload_progress_recorder=MyUploadProgressRecorder(),modify_time=None,file_name=key)
-        ret,info = uploader.upload()
+        token = q.upload_token(bucket_name, realfilekey, 3600, policy=policy)
+        progress_handler = lambda progress, total: progress / total
+        uploader = _Resume(token, realfilekey, uploaddata, uploaddata.size, params, mime_type, progress_handler,
+                           upload_progress_recorder=MyUploadProgressRecorder(), modify_time=None, file_name=key)
+        ret, info = uploader.upload()
         if info is not None:
             if info.status_code == 200:
-                return_url = getUrlWithBucketAndKey(bucket_name,ret['key'])
+                return_url = getUrlWithBucketAndKey(bucket_name, ret['key'])
             else:
-                raise InvestError(2020,msg=str(info))
+                raise InvestError(2020, msg=str(info))
         else:
-            raise InvestError(2020,msg=str(ret))
+            raise InvestError(2020, msg=str(ret))
         if policy:
-            key = key.split('.')[0] + '.pdf'
-        return JSONResponse(SuccessResponse({'key':key,'url':return_url}))
+            key = realfilekey.split('.')[0] + '.pdf'
+        else:
+            key = realfilekey
+        return JSONResponse(SuccessResponse({'key': key, 'url': return_url, 'realfilekey': realfilekey}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
     except Exception:
@@ -85,9 +89,9 @@ def bigfileupload(request):
             uploaddata = data_dict[key]
         q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
         filetype = str(uploaddata.name).split('.')[-1]
-        key = datetime.datetime.now().strftime('%Y%m%d%H%M%s') + ''.join(random.sample(string.ascii_lowercase,6)) + '.' + filetype
+        realfilekey = datetime.datetime.now().strftime('%Y%m%d%H%M%s') + ''.join(random.sample(string.ascii_lowercase,6)) + '.' + filetype
         if filetype in ['xlsx','doc','docx','xls','ppt','pptx']:
-            saveas_key = qiniu.urlsafe_base64_encode('file:%s' % (key.split('.')[0] + '.pdf'))
+            saveas_key = qiniu.urlsafe_base64_encode('file:%s' % (realfilekey.split('.')[0] + '.pdf'))
             persistentOps = fops + '|saveas/' + saveas_key
             policy = {
                 'persistentOps': persistentOps,
@@ -96,12 +100,11 @@ def bigfileupload(request):
             }
         else:
             policy = None
-        print key
         params = {'x:a':'a'}
         mime_type = uploaddata.content_type
-        token = q.upload_token(bucket_name, key, 3600,policy=policy)
+        token = q.upload_token(bucket_name, realfilekey, 3600,policy=policy)
         progress_handler = lambda progress,total:progress / total
-        uploader = _Resume(token,key,uploaddata,uploaddata.size,params,mime_type,progress_handler,upload_progress_recorder=MyUploadProgressRecorder(),modify_time=None,file_name=key)
+        uploader = _Resume(token,realfilekey,uploaddata,uploaddata.size,params,mime_type,progress_handler,upload_progress_recorder=MyUploadProgressRecorder(),modify_time=None,file_name=key)
         ret,info = uploader.upload()
         if info is not None:
             if info.status_code == 200:
@@ -111,8 +114,10 @@ def bigfileupload(request):
         else:
             raise InvestError(2020,msg=str(ret))
         if policy:
-            key = key.split('.')[0] + '.pdf'
-        return JSONResponse(SuccessResponse({'key':key,'url':return_url}))
+            key = realfilekey.split('.')[0] + '.pdf'
+        else:
+            key = realfilekey
+        return JSONResponse(SuccessResponse({'key':key,'url':return_url,'realfilekey':realfilekey}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
     except Exception:
@@ -172,8 +177,9 @@ def qiniu_deletefile(request):
 def deleteqiniufile(bucket,key):
     q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
     bucketManager = BucketManager(q)
-    ret, info = bucketManager.delete(bucket, key)
-    return ret, info
+    if bucket and key:
+        ret, info = bucketManager.delete(bucket, key)
+        return ret, info
 
 def getUrlWithBucketAndKey(bucket,key):
     if bucket not in qiniu_url.keys():
@@ -199,6 +205,18 @@ def qiniuuploadfile(filepath, bucket_name):
             return False, str(info),None
     else:
         return False,None,None
+
+#下载文件到本地
+def downloadFileToPath(key,bucket,path):
+    download_url = getUrlWithBucketAndKey(bucket, key)
+    if download_url is None:
+        raise InvestError(8002, msg='文件路径不正确，无法下载')
+    r = requests.get(download_url)
+    if r.status_code != 200:
+        raise InvestError(8002, msg=repr(r.content))
+    with open(path, "wb") as code:
+        code.write(r.content)
+
 
 @api_view(['GET'])
 @checkRequestToken()

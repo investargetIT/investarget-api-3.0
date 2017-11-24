@@ -64,6 +64,7 @@ class dataroomdirectoryorfile(models.Model):
     orderNO = models.PositiveSmallIntegerField(help_text='目录或文件在所属目录下的排序位置',blank=True,default=0)
     size = models.IntegerField(blank=True,null=True,help_text='文件大小')
     filename = models.CharField(max_length=128,blank=True,null=True,help_text='文件名或目录名')
+    realfilekey = models.CharField(max_length=128,blank=True,null=True,help_text='原文件key')
     key = models.CharField(max_length=128,blank=True,null=True,help_text='文件路径')
     bucket = models.CharField(max_length=128,blank=True,default='file',help_text='文件所在空间')
     isFile = models.BooleanField(blank=True,default=False,help_text='true/文件，false/目录')
@@ -95,6 +96,10 @@ class dataroomdirectoryorfile(models.Model):
         if self.parent:
             if self.parent.isFile:
                 raise InvestError(7007,msg='非目录结构不能存储文件')
+        if self.filename is None:
+            raise InvestError(2007,msg='名称不能为空')
+        if self.realfilekey is None:
+            self.realfilekey = self.key
         super(dataroomdirectoryorfile, self).save(force_insert, force_update, using, update_fields)
 
 

@@ -1,4 +1,5 @@
 #coding=utf-8
+import threading
 import traceback
 
 from django.core.paginator import Paginator, EmptyPage
@@ -7,16 +8,19 @@ from django.db import transaction
 from django.db.models import F
 from django.db.models import Q,QuerySet, FieldDoesNotExist
 from django.db.models.fields.reverse_related import ForeignObjectRel
+from django.http import StreamingHttpResponse
 from rest_framework import filters, viewsets
 
 from dataroom.models import dataroom, dataroomdirectoryorfile, publicdirectorytemplate, dataroom_User_file
 from dataroom.serializer import DataroomSerializer, DataroomCreateSerializer, DataroomdirectoryorfileCreateSerializer, \
     DataroomdirectoryorfileSerializer, DataroomdirectoryorfileUpdateSerializer, User_DataroomfileSerializer, \
     User_DataroomSerializer, User_DataroomfileCreateSerializer
+from invest.settings import APILOG_PATH
 from proj.models import project
-from third.views.qiniufile import deleteqiniufile
+from third.views.qiniufile import deleteqiniufile, downloadFileToPath
 from utils.customClass import InvestError, JSONResponse, RelationFilter
 from utils.sendMessage import sendmessage_dataroomfileupdate
+from utils.somedef import file_iterator
 from utils.util import read_from_cache, write_to_cache, returnListChangeToLanguage, loginTokenIsAvailable, \
     returnDictChangeToLanguage, catchexcption, cache_delete_key, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
     logexcption, add_perm
@@ -212,6 +216,88 @@ class DataroomView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable(['dataroom.admin_getdataroom'])
+    def makeDataroomAllFilesZip(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            qs = instance.dataroom_directories.all().filter(is_deleted=False)
+            rootpath = APILOG_PATH['dataroomFilePath'] + '/' + 'dataroom_' + str(instance.id)
+            startMakeDataroomZip(qs, rootpath)
+            return JSONResponse(SuccessResponse('dataroom_' + str(instance.id)+'.zip'))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable(['dataroom.admin_getdataroom'])
+    def downloadDataroomZip(self, request, *args, **kwargs):
+        try:
+            path = request.GET.get('path',None)
+            rootpath = APILOG_PATH['dataroomFilePath'] + '/' + path
+            if rootpath:
+                fn = open(rootpath, 'rb')
+                response = StreamingHttpResponse(file_iterator(fn))
+                response['Content-Type'] = 'application/octet-stream'
+                response["content-disposition"] = 'attachment;filename=%s'% path
+            else:
+                raise InvestError(8002,msg='文件不存在')
+            return response
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+import os
+import shutil
+
+def startMakeDataroomZip(file_qs,path):
+    class downloadAllDataroomFile(threading.Thread):
+        def __init__(self, qs, path):
+            self.qs = qs
+            self.path = path
+            threading.Thread.__init__(self)
+
+        def run(self):
+            directory_qs = self.qs.filter(isFile=False)
+            makeDirWithdirectoryobjs(directory_qs, self.path)
+            file_qs = self.qs.filter(isFile=True)
+            for file_obj in file_qs:
+                downloadFileToPath(key=file_obj.realfilekey, bucket=file_obj.bucket, path=getPathWithFile(file_obj, self.path))
+            import zipfile
+            zipf = zipfile.ZipFile(self.path+'.zip', 'w')
+            pre_len = len(os.path.dirname(self.path))
+            for parent, dirnames, filenames in os.walk(self.path):
+                for filename in filenames:
+                    pathfile = os.path.join(parent, filename)
+                    arcname = pathfile[pre_len:].strip(os.path.sep)  # 相对路径
+                    zipf.write(pathfile, arcname)
+            zipf.close()
+            shutil.rmtree(self.path)
+    downloadAllDataroomFile(file_qs, path).start()
+
+
+def makeDirWithdirectoryobjs(directory_objs ,rootpath):
+    if os.path.exists(rootpath):
+        shutil.rmtree(rootpath)
+    os.makedirs(rootpath)
+    for file_obj in directory_objs:
+        try:
+            path = getPathWithFile(file_obj,rootpath)
+            os.makedirs(path)
+        except OSError:
+            pass
+
+
+def getPathWithFile(file_obj,rootpath,currentpath=None):
+    if currentpath is None:
+        currentpath = file_obj.filename
+    if file_obj.parent is None:
+        return rootpath + '/' + currentpath
+    else:
+        currentpath = file_obj.parent.filename + '/' + currentpath
+        return getPathWithFile(file_obj.parent, rootpath, currentpath)
 
 
 class DataroomdirectoryorfileView(viewsets.ModelViewSet):
@@ -523,11 +609,10 @@ def deleteInstance(instance, deleteuser):
     if instance.isFile:
         bucket = instance.bucket
         key = instance.key
+        realkey = instance.realfilekey
         instance.delete()
-        if not bucket or not key:
-            pass
-        else:
-            ret, info = deleteqiniufile(bucket, key)
+        deleteqiniufile(bucket, key)
+        deleteqiniufile(bucket, realkey)
     else:
         filequery = instance.asparent_directories.filter(is_deleted=False)
         if filequery.count():
