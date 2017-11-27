@@ -57,7 +57,6 @@ class OrgBDSerializer(serializers.ModelSerializer):
     org = OrgCommonSerializer()
     proj = ProjSimpleSerializer()
     BDComments = serializers.SerializerMethodField()
-    location = countrySerializer()
     usertitle = titleTypeSerializer()
     bd_status = BDStatusSerializer()
     manager = UserCommenSerializer()

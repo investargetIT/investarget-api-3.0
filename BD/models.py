@@ -49,7 +49,7 @@ class ProjectBD(models.Model):
         if self.bduser:
             self.username = self.bduser.usernameC
             self.usermobile = self.bduser.mobile
-            self.usertitle = self.bduser.title.nameC
+            self.usertitle = self.bduser.title.id
         self.datasource = self.manager.datasource_id
         if self.source == '全库搜索':
             self.source_type = 0
@@ -109,7 +109,7 @@ class OrgBD(models.Model):
         if self.bduser:
             self.username = self.bduser.usernameC
             self.usermobile = self.bduser.mobile
-            self.usertitle = self.bduser.title.nameC
+            self.usertitle = self.bduser.title.id
         self.datasource = self.manager.datasource_id
         if self.pk and self.is_deleted == False:
             if self.bd_status.nameC == 'BD成功':
