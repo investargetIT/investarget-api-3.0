@@ -3,7 +3,7 @@ from django.contrib.auth.models import Group, Permission
 from rest_framework import serializers
 
 from org.serializer import OrgCommonSerializer
-from sourcetype.serializer import tagSerializer, countrySerializer
+from sourcetype.serializer import tagSerializer, countrySerializer, titleTypeSerializer
 from third.views.qiniufile import getUrlWithBucketAndKey
 from .models import MyUser, UserRelation, UserFriendship, UnreachUser, UserRemarks
 
@@ -25,9 +25,10 @@ class PermissionSerializer(serializers.ModelSerializer):
 class UserCommenSerializer(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
     photourl = serializers.SerializerMethodField()
+    title = titleTypeSerializer()
     class Meta:
         model = MyUser
-        fields = ('id', 'usernameC','usernameE','tags','userstatus','photourl',)
+        fields = ('id', 'usernameC','usernameE','tags','userstatus','photourl','title')
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_usertags__is_deleted=False)
         if qs.exists():
