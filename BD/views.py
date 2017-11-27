@@ -107,7 +107,7 @@ class ProjectBDView(viewsets.ModelViewSet):
                     commentinstance = ProjectBDCommentsCreateSerializer(data=data)
                     if commentinstance.is_valid():
                         commentinstance.save()
-                return JSONResponse(SuccessResponse(returnListChangeToLanguage(ProjectBDSerializer(newprojectBD).data,lang)))
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(ProjectBDSerializer(newprojectBD).data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -142,7 +142,7 @@ class ProjectBDView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(4009, msg='项目BD修改失败——%s' % projectBD.error_messages)
                 return JSONResponse(
-                    SuccessResponse(returnListChangeToLanguage(ProjectBDSerializer(newprojectBD).data, lang)))
+                    SuccessResponse(returnDictChangeToLanguage(ProjectBDSerializer(newprojectBD).data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -233,7 +233,7 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
                     newcommentinstance = commentinstance.save()
                 else:
                     raise InvestError(4009, msg='创建项目BDcomments失败--%s' % commentinstance.error_messages)
-                return JSONResponse(SuccessResponse(returnListChangeToLanguage(ProjectBDCommentsSerializer(newcommentinstance).data, lang)))
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(ProjectBDCommentsSerializer(newcommentinstance).data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -344,7 +344,7 @@ class OrgBDView(viewsets.ModelViewSet):
                     commentinstance = OrgBDCommentsCreateSerializer(data=data)
                     if commentinstance.is_valid():
                         commentinstance.save()
-                return JSONResponse(SuccessResponse(returnListChangeToLanguage(OrgBDSerializer(neworgBD).data,lang)))
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgBDSerializer(neworgBD).data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -379,7 +379,7 @@ class OrgBDView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(5004, msg='机构BD修改失败——%s' % orgBD.error_messages)
                 return JSONResponse(
-                    SuccessResponse(returnListChangeToLanguage(OrgBDSerializer(neworgBD).data, lang)))
+                    SuccessResponse(returnDictChangeToLanguage(OrgBDSerializer(neworgBD).data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -473,7 +473,7 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
                     newcommentinstance = commentinstance.save()
                 else:
                     raise InvestError(5004, msg='创建机构BDcomments失败--%s' % commentinstance.error_messages)
-                return JSONResponse(SuccessResponse(returnListChangeToLanguage(OrgBDCommentsSerializer(newcommentinstance).data, lang)))
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgBDCommentsSerializer(newcommentinstance).data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
