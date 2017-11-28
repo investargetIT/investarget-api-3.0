@@ -1,42 +1,35 @@
 #coding=utf-8
 from __future__ import unicode_literals
 
+import datetime
 from django.db import models
 
 # Create your models here.
 from proj.models import project
 from sourcetype.models import DataSource
 from usersys.models import MyUser
-from utils.customClass import InvestError, MyForeignKey
+from utils.customClass import InvestError, MyForeignKey, MyModel
 from utils.util import add_perm, rem_perm
 
 
-class publicdirectorytemplate(models.Model):
+class publicdirectorytemplate(MyModel):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=64,blank=True,null=True)
     parent = MyForeignKey('self',blank=True,null=True)
     orderNO = models.PositiveSmallIntegerField()
-    is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_publicdirectorytemplate')
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_now_add=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_publicdirectorytemplate')
-    lastmodifytime = models.DateTimeField(blank=True, null=True)
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_publicdirectorytemplate')
     class Meta:
         db_table = 'dataroompublicdirectorytemplate'
 
-class dataroom(models.Model):
+class dataroom(MyModel):
     id = models.AutoField(primary_key=True)
     proj = MyForeignKey(project,related_name='proj_datarooms',help_text='dataroom关联项目')
     isClose = models.BooleanField(help_text='是否关闭',blank=True,default=False)
     closeDate = models.DateTimeField(blank=True,null=True,help_text='关闭日期')
-    is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_datarooms')
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(blank=True, null=True,auto_now_add=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_datarooms')
-    lastmodifytime = models.DateTimeField(blank=True,null=True)
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_datarooms')
     datasource = MyForeignKey(DataSource, blank=True, null=True, help_text='数据源')
     class Meta:
@@ -58,7 +51,7 @@ class dataroom(models.Model):
             raise InvestError(5003,msg='项目尚未终审发布')
         super(dataroom, self).save(force_insert, force_update, using, update_fields)
 
-class dataroomdirectoryorfile(models.Model):
+class dataroomdirectoryorfile(MyModel):
     id = models.AutoField(primary_key=True)
     dataroom = MyForeignKey(dataroom,related_name='dataroom_directories',help_text='目录或文件所属dataroom')
     parent = MyForeignKey('self',blank=True,null=True,related_name='asparent_directories',help_text='目录或文件所属目录id')
@@ -69,12 +62,8 @@ class dataroomdirectoryorfile(models.Model):
     key = models.CharField(max_length=128,blank=True,null=True,help_text='文件路径')
     bucket = models.CharField(max_length=128,blank=True,default='file',help_text='文件所在空间')
     isFile = models.BooleanField(blank=True,default=False,help_text='true/文件，false/目录')
-    is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_dataroomdirectories')
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_dataroomdirectories')
-    lastmodifytime = models.DateTimeField(blank=True,null=True)
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_dataroomdirectories')
     datasource = MyForeignKey(DataSource, blank=True, null=True, help_text='数据源')
     class Meta:
@@ -104,14 +93,11 @@ class dataroomdirectoryorfile(models.Model):
         super(dataroomdirectoryorfile, self).save(force_insert, force_update, using, update_fields)
 
 
-class dataroom_User_file(models.Model):
+class dataroom_User_file(MyModel):
     dataroom = MyForeignKey(dataroom, blank=True, null=True, related_name='dataroom_users')
     user = MyForeignKey(MyUser, blank=True, null=True, related_name='user_datatooms')
     files = models.ManyToManyField(dataroomdirectoryorfile, blank=True)
-    is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_userdatarooms')
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_userdatarooms')
     datasource = MyForeignKey(DataSource, blank=True, null=True, help_text='数据源')
 

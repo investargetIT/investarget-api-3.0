@@ -1,9 +1,9 @@
+import datetime
 from django.db import models
 from django.http import HttpResponse
 from qiniu.services.storage.upload_progress_recorder import UploadProgressRecorder
 from rest_framework import throttling
 from rest_framework.compat import is_authenticated
-from rest_framework.permissions import BasePermission
 from rest_framework.renderers import JSONRenderer
 
 from invest.settings import APILOG_PATH
@@ -61,6 +61,19 @@ class AppEventRateThrottle(throttling.SimpleRateThrottle):
             'scope': self.scope,
             'ident': ident
         }
+
+class MyModel(models.Model):
+    lastmodifytime = models.DateTimeField(blank=True, null=True)
+    createdtime = models.DateTimeField(blank=True, null=True)
+    deletedtime = models.DateTimeField(blank=True, null=True)
+    is_deleted = models.BooleanField(blank=True, default=False)
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        # if self.pk is None:
+        #     self.createdtime = datetime.datetime.now()
+        # self.lastmodifytime = datetime.datetime.now()
+        super(MyModel,self).save(force_insert, force_update, using, update_fields)
 
 class MyForeignKey(models.ForeignKey):
     def get_extra_descriptor_filter(self,instance):

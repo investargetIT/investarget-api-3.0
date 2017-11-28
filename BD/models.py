@@ -11,13 +11,13 @@ from sourcetype.models import Country, BDStatus
 from sourcetype.models import TitleType
 from usersys.models import MyUser
 from usersys.views import makeUserRelation, makeUserRemark
-from utils.customClass import MyForeignKey, InvestError
+from utils.customClass import MyForeignKey, InvestError, MyModel
 
 bd_sourcetype = (
     (0,'全库搜索'),
     (1,'其他')
 )
-class ProjectBD(models.Model):
+class ProjectBD(MyModel):
     location = MyForeignKey(Country,blank=True,null=True,help_text='项目地区')
     com_name = models.TextField(blank=True,null=True,help_text='公司名称/项目名称')
     usertitle = MyForeignKey(TitleType,blank=True,null=True,help_text='职位')
@@ -28,11 +28,9 @@ class ProjectBD(models.Model):
     source_type = models.IntegerField(blank=True,null=True,choices=bd_sourcetype)
     manager = MyForeignKey(MyUser,blank=True,null=True,help_text='负责人',related_name='user_projBDs')
     bd_status = MyForeignKey(BDStatus,blank=True,null=True,help_text='bd状态')
-    is_deleted = models.BooleanField(blank=True,default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_ProjectBD')
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_created=True, blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_ProjectBD')
+    lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_ProjectBD')
     datasource = models.IntegerField(blank=True,null=True)
 
     class Meta:
@@ -42,8 +40,6 @@ class ProjectBD(models.Model):
         )
 
     def save(self, *args, **kwargs):
-        if self.createdtime is None:
-            self.createdtime = datetime.datetime.now()
         if self.manager is None:
             raise InvestError(2007,msg='manager can`t be null')
         if self.bduser:
@@ -58,20 +54,15 @@ class ProjectBD(models.Model):
         return super(ProjectBD, self).save(*args, **kwargs)
 
 
-class ProjectBDComments(models.Model):
+class ProjectBDComments(MyModel):
     comments = models.TextField(blank=True, default=False, help_text='内容')
     projectBD = MyForeignKey(ProjectBD,blank=True,null=True,help_text='bd项目',related_name='ProjectBD_comments')
-    is_deleted = models.BooleanField(blank=True,default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_ProjectBDComments')
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_created=True, blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_ProjectBDComments')
     datasource = models.IntegerField(blank=True,null=True)
 
 
     def save(self, *args, **kwargs):
-        if self.createdtime is None:
-            self.createdtime = datetime.datetime.now()
         if self.projectBD is None:
             raise InvestError(2007,msg='projectBD can`t be null')
         self.datasource = self.projectBD.datasource
@@ -79,7 +70,7 @@ class ProjectBDComments(models.Model):
 
 
 
-class OrgBD(models.Model):
+class OrgBD(MyModel):
     org = MyForeignKey(organization,blank=True,null=True,help_text='BD机构')
     proj = MyForeignKey(project,blank=True,null=True,help_text='项目名称')
     usertitle = MyForeignKey(TitleType,blank=True,null=True,help_text='职位')
@@ -88,11 +79,9 @@ class OrgBD(models.Model):
     bduser = MyForeignKey(MyUser,blank=True,null=True,help_text='bd对象id')
     manager = MyForeignKey(MyUser,blank=True,null=True,help_text='负责人',related_name='user_orgBDs')
     bd_status = MyForeignKey(BDStatus,blank=True,null=True,help_text='bd状态')
-    is_deleted = models.BooleanField(blank=True,default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_OrgBD')
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_created=True, blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_OrgBD')
+    lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_OrgBD')
     datasource = models.IntegerField(blank=True,null=True)
 
     class Meta:
@@ -102,8 +91,6 @@ class OrgBD(models.Model):
         )
 
     def save(self, *args, **kwargs):
-        if self.createdtime is None:
-            self.createdtime = datetime.datetime.now()
         if self.manager is None:
             raise InvestError(2007,msg='manager can`t be null')
         if self.bduser:
@@ -119,19 +106,14 @@ class OrgBD(models.Model):
                     makeUserRemark(self.bduser,comment,self.manager)
         return super(OrgBD, self).save(*args, **kwargs)
 
-class OrgBDComments(models.Model):
+class OrgBDComments(MyModel):
     comments = models.TextField(blank=True, default=False, help_text='内容')
     orgBD = MyForeignKey(OrgBD,blank=True,null=True,help_text='机构BD',related_name='OrgBD_comments')
-    is_deleted = models.BooleanField(blank=True,default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_OrgBDComments')
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_created=True, blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_OrgBDComments')
     datasource = models.IntegerField(blank=True,null=True)
 
     def save(self, *args, **kwargs):
-        if self.createdtime is None:
-            self.createdtime = datetime.datetime.now()
         if self.orgBD is None:
             raise InvestError(2007,msg='orgBD can`t be null')
         self.datasource = self.orgBD.datasource

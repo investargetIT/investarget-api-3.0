@@ -6,13 +6,13 @@ import sys
 from guardian.shortcuts import assign_perm, remove_perm
 from sourcetype.models import AuditStatus, OrgType , TransactionPhases,CurrencyType, Industry, DataSource, OrgAttribute
 from usersys.models import MyUser
-from utils.customClass import InvestError, MyForeignKey
+from utils.customClass import InvestError, MyForeignKey, MyModel
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
 # Create your models here.
 
-class organization(models.Model):
+class organization(MyModel):
     id = models.AutoField(primary_key=True)
     orglevel = models.PositiveSmallIntegerField(blank=True, default=0, help_text='机构服务级别')
     description = models.TextField(blank=True,null=True)
@@ -51,13 +51,9 @@ class organization(models.Model):
     companyEmail = models.EmailField(blank=True,null=True,max_length=50)
     orgstatus = MyForeignKey(AuditStatus, blank=True, default=1)
     auditUser = MyForeignKey(MyUser, blank=True, null=True, related_name='useraudit_orgs')
-    is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True,related_name='userdelete_orgs')
-    deletedtime = models.DateTimeField(blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True,related_name='usercreate_orgs')
-    createdtime = models.DateTimeField(auto_now_add=True,blank=True,null=True)
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True,related_name='usermodify_orgs')
-    lastmodifytime = models.DateTimeField(auto_now=True,blank=True,null=True)
     datasource = MyForeignKey(DataSource,help_text='数据源')
 
     def __str__(self):
@@ -75,13 +71,6 @@ class organization(models.Model):
             ('user_deleteorg', '用户删除机构(obj级别权限)'),
             ('user_getorg', '用户查看机构'),
         )
-
-    # def __init__(self,*args,**kwargs):
-    #     super(organization,self).__init__(*args,**kwargs)
-    #     print 'aaaaa'
-    #     print self.orgtransactionphase.all()
-    #     print self.currency.id
-    #     print self.orgtransactionphase.filter(transactionPhase_orgs__is_deleted=False)
 
     def activeTransactionPhase(self):
         qs = self.orgtransactionphase.filter(transactionPhase_orgs__is_deleted=False)
@@ -110,28 +99,21 @@ class organization(models.Model):
                     raise InvestError(code=5001,msg='同名机构已存在，新增')
         super(organization,self).save(force_insert,force_update,using,update_fields)
 
-class orgTransactionPhase(models.Model):
+class orgTransactionPhase(MyModel):
     org = MyForeignKey(organization,null=True,blank=True,related_name='org_orgTransactionPhases')
     transactionPhase = MyForeignKey(TransactionPhases,null=True,blank=True,related_name='transactionPhase_orgs',on_delete=models.SET_NULL)
-    is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_orgTransactionPhases',on_delete=models.SET_NULL)
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_created=True,blank=True,null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_orgTransactionPhase',on_delete=models.SET_NULL)
 
     class Meta:
         db_table = "org_TransactionPhase"
 
-class orgRemarks(models.Model):
+class orgRemarks(MyModel):
     id = models.AutoField(primary_key=True)
     org = MyForeignKey(organization,null=True,blank=True,related_name='org_remarks')
     remark = models.TextField(blank=True,null=True)
-    is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_orgremarks',on_delete=models.SET_NULL)
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_now_add=True,blank=True,null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_orgremarks',on_delete=models.SET_NULL)
-    lastmodifytime = models.DateTimeField(auto_now=True,blank=True,null=True)
     lastmodifyuser = MyForeignKey(MyUser,  blank=True, null=True,related_name='usermodify_orgremarks', related_query_name='orgremark_modifyuser',on_delete=models.SET_NULL)
     datasource = MyForeignKey(DataSource, help_text='数据源')
     class Meta:

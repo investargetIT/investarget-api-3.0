@@ -25,6 +25,4 @@ class ScheduleSerializer(serializers.ModelSerializer):
 class MsgSerializer(serializers.ModelSerializer):
     class Meta:
         model = message
-        # fields = ('id','content','type','messagetitle','receiver','isread','created','sender')
         fields = '__all__'
-        # depth = 1

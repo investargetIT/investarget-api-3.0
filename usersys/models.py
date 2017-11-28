@@ -15,7 +15,7 @@ from django.db.models import Q
 
 from APIlog.models import userinfoupdatelog
 from sourcetype.models import AuditStatus, ClientType, TitleType,School,Specialty,Tag, DataSource, Country, OrgArea
-from utils.customClass import InvestError, MyForeignKey
+from utils.customClass import InvestError, MyForeignKey, MyModel
 from utils.somedef import makeAvatar
 
 
@@ -75,7 +75,7 @@ class MyUserManager(BaseUserManager):
         return user
 
 # 在settings里面指定这个User类为AUTH_USER_MODEL
-class MyUser(AbstractBaseUser, PermissionsMixin):
+class MyUser(AbstractBaseUser, PermissionsMixin, MyModel):
     """
     groups : 作为权限组
     """
@@ -99,24 +99,20 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     description = models.TextField(help_text='简介',blank=True,default='description')
     tags = models.ManyToManyField(Tag, through='userTags', through_fields=('user', 'tag'), blank=True,related_name='tag_users')
     email = models.EmailField(help_text='邮箱', max_length=48,db_index=True,blank=True,null=True)
-    title = MyForeignKey(TitleType,blank=True,null=True,related_name='title_users',related_query_name='user_title',on_delete=models.SET_NULL)
+    title = MyForeignKey(TitleType,blank=True,null=True,related_name='title_users')
     gender = models.BooleanField(blank=True,default=0,help_text=('0=男，1=女'))
     remark = models.TextField(help_text='用户个人备注',blank=True,null=True)
-    school = MyForeignKey(School,help_text='院校',blank=True,null=True,related_name='school_users',on_delete=models.SET_NULL)
-    specialty = MyForeignKey(Specialty,help_text='专业',blank=True,null=True,related_name='profession_users',on_delete=models.SET_NULL)
+    school = MyForeignKey(School,help_text='院校',blank=True,null=True,related_name='school_users')
+    specialty = MyForeignKey(Specialty,help_text='专业',blank=True,null=True,related_name='profession_users')
     targetdemand = models.TextField(help_text='标的需求',blank=True,default='标的需求')
     mergedynamic = models.TextField(help_text='并购动态', blank=True, default='并购动态')
     ishasfundorplan = models.TextField(help_text='是否有产业基金或成立计划', blank=True, default='是否有产业基金或成立计划')
     registersource = models.SmallIntegerField(help_text='注册来源',choices=registersourcechoice,default=1)
-    lastmodifytime = models.DateTimeField(auto_now=True,null=True)
-    lastmodifyuser = MyForeignKey('self',help_text='修改者',blank=True,null=True,related_name='usermodify_users',related_query_name='user_modifyuser',on_delete=models.SET_NULL)
+    lastmodifyuser = MyForeignKey('self',help_text='修改者',blank=True,null=True,related_name='usermodify_users')
     is_staff = models.BooleanField(help_text='登录admin', default=False, blank=True,)
     is_active = models.BooleanField(help_text='是否活跃', default=True, blank=True,)
-    is_deleted = models.BooleanField(blank=True,help_text='是否已被删除', default=False)
-    deleteduser = MyForeignKey('self',help_text='删除者',blank=True,null=True,related_name='userdelete_users',related_query_name='user_deleteduser',on_delete=models.SET_NULL)
-    deletedtime = models.DateTimeField(blank=True,null=True)
-    createdtime = models.DateTimeField(auto_now_add=True,blank=True,null=True)
-    createuser = MyForeignKey('self',help_text='创建者',blank=True,null=True,related_name='usercreate_users',related_query_name='user_createuser',on_delete=models.SET_NULL)
+    deleteduser = MyForeignKey('self',blank=True,null=True,related_name='userdelete_users')
+    createuser = MyForeignKey('self',blank=True,null=True,related_name='usercreate_users')
     datasource = MyForeignKey(DataSource,help_text='数据源',blank=True,null=True)
     USERNAME_FIELD = 'usercode'
     REQUIRED_FIELDS = ['email']
@@ -240,59 +236,49 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
             unreachuser.deletedtime = datetime.datetime.now()
             unreachuser.save()
 
-class UserRemarks(models.Model):
+class UserRemarks(MyModel):
     id = models.AutoField(primary_key=True)
     user = MyForeignKey(MyUser, related_name='user_remarks', blank=True, null=True)
     remark = models.TextField(blank=True, null=True)
-    is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_userremarks')
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_userremarks')
-    lastmodifytime = models.DateTimeField(auto_now=True)
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_userremarks')
     datasource = MyForeignKey(DataSource, help_text='数据源', default=1)
 
     class Meta:
         db_table = 'user_remarks'
 
-    def save(self, *args, **kwargs):
-        if not self.createdtime:
-           self.createdtime = datetime.datetime.now()
-        return super(UserRemarks, self).save(*args, **kwargs)
 
 
 
-class UnreachUser(models.Model):
+class UnreachUser(MyModel):
     name = models.CharField(max_length=128,blank=True,null=True)
     title = MyForeignKey(TitleType,blank=True,null=True)
     org = MyForeignKey('org.organization',blank=True,null=True,related_name='org_unreachuser')
     mobile = models.CharField(max_length=32,blank=True,null=True)
     email = models.CharField(max_length=32,blank=True,null=True)
-    is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_unreachUsers')
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_created=True, blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_unreachUsers')
     datasource = MyForeignKey(DataSource, blank=True,default=1)
+
     class Meta:
         db_table = "unreachuser"
+
     def save(self, *args, **kwargs):
         if self.org.datasource != self.datasource:
            raise InvestError(8888,msg='org 与 user非同源')
         return super(UnreachUser, self).save(*args, **kwargs)
 
 
-class userTags(models.Model):
+class userTags(MyModel):
     user = MyForeignKey(MyUser,related_name='user_usertags',null=True,blank=True)
     tag = MyForeignKey(Tag, related_name='tag_usertags',null=True, blank=True)
-    is_deleted = models.BooleanField(blank=True,default=False)
     deleteduser = MyForeignKey(MyUser,blank=True, null=True,related_name='userdelete_usertags')
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_created=True,blank=True,null=True)
     createuser = MyForeignKey(MyUser,blank=True, null=True,related_name='usercreate_usertags')
+
     class Meta:
         db_table = "user_tags"
+
     def save(self, *args, **kwargs):
         if self.tag and self.user:
             if self.tag.datasource != self.user.datasource_id:
@@ -308,7 +294,10 @@ class MyToken(models.Model):
     is_deleted = models.BooleanField(help_text='是否已被删除',blank=True,default=False)
     class Meta:
         db_table = 'user_token'
+
     def timeout(self):
+        if self.is_deleted:
+            raise InvestError(3000, msg='token不存在')
         return datetime.timedelta(hours=24 * 1) - (datetime.datetime.now() - self.created)
 
     def save(self, *args, **kwargs):
@@ -320,18 +309,13 @@ class MyToken(models.Model):
     def __str__(self):
         return self.key
 
-class UserRelation(models.Model):
+class UserRelation(MyModel):
     investoruser = MyForeignKey(MyUser,related_name='investor_relations',help_text=('作为投资人'))
     traderuser = MyForeignKey(MyUser,related_name='trader_relations',help_text=('作为交易师'))
     relationtype = models.BooleanField(help_text=('强关系True，弱关系False'),default=False,blank=True)
     score = models.SmallIntegerField(help_text=('交易师评分'), default=0, blank=True)
-    is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_relations')
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_now_add=True,null=True)
-    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_relations',
-                                   on_delete=models.SET_NULL)
-    lastmodifytime = models.DateTimeField(blank=True, null=True)
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_relations')
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_relations',)
     datasource = MyForeignKey(DataSource, blank=True,default=1, help_text='数据源')
     def save(self, *args, **kwargs):
@@ -424,7 +408,7 @@ class UserRelation(models.Model):
 
 
 
-class UserFriendship(models.Model):
+class UserFriendship(MyModel):
     id = models.AutoField(primary_key=True)
     user = MyForeignKey(MyUser,related_name='user_friends',help_text='发起人')
     friend = MyForeignKey(MyUser,related_name='friend_users',help_text='接收人')
@@ -432,12 +416,10 @@ class UserFriendship(models.Model):
     accepttime = models.DateTimeField(blank=True,null=True)
     userallowgetfavoriteproj = models.BooleanField(blank=True,default=True,help_text='发起人允许好友查看自己的项目收藏')
     friendallowgetfavoriteproj = models.BooleanField(blank=True, default=True,help_text='接收人允许好友查看自己的项目收藏')
-    is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_userfriends',)
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_created=True, blank=True,null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_userfriends',)
     datasource = MyForeignKey(DataSource,blank=True,default=1, help_text='数据源')
+
     class Meta:
         db_table = "user_friendship"
         permissions =  (
@@ -461,8 +443,6 @@ class UserFriendship(models.Model):
         if not self.pk:
             if UserFriendship.objects.filter(Q(user=self.user,friend=self.friend,is_deleted=False) | Q(friend=self.user,user=self.friend,is_deleted=False)).exists():
                 raise InvestError(2017)
-        if not self.createdtime:
-            self.createdtime = datetime.datetime.now()
         if self.pk:
             if self.isaccept is False:
                 self.is_deleted = True

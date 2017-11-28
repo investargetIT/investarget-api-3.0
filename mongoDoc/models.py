@@ -140,7 +140,7 @@ class IMChatMessages(Document):
 
 class WXChatdata(Document):
     content = StringField()
-    createtime = DateTimeField()
+    createtime = DateTimeField(default=datetime.datetime.now())
     name = StringField()
     group_name = StringField()
     isShow = BooleanField(default=True)

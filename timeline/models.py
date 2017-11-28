@@ -6,11 +6,11 @@ from django.db import models
 from proj.models import project
 from usersys.models import MyUser, UserRelation
 from sourcetype.models import TransactionStatus, DataSource
-from utils.customClass import InvestError, MyForeignKey
+from utils.customClass import InvestError, MyForeignKey, MyModel
 from utils.util import add_perm, rem_perm
 
 
-class timeline(models.Model):
+class timeline(MyModel):
     id = models.AutoField(primary_key=True)
     proj = MyForeignKey(project,related_name='proj_timelines',blank=True, null=True)
     investor = MyForeignKey(MyUser,related_name='investor_timelines', blank=True, null=True)
@@ -19,12 +19,8 @@ class timeline(models.Model):
     closeDate = models.DateTimeField(blank=True,null=True,)
     contractedServiceTime = models.DateTimeField(blank=True,null=True)
     turnoverTime = models.DateTimeField(blank=True,null=True)
-    is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_timelines',on_delete=models.SET_NULL)
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_timelines',on_delete=models.SET_NULL)
-    lastmodifytime = models.DateTimeField(blank=True,null=True)
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_timelines',on_delete=models.SET_NULL)
     datasource = MyForeignKey(DataSource, help_text='数据源')
     class Meta:
@@ -44,11 +40,7 @@ class timeline(models.Model):
         return self.timeline_transationStatus.all().filter(isActive=True,is_deleted=False)
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
-        if not self.createdtime:
-            self.createdtime = datetime.datetime.now()
-        if self.datasource:
-            pass
-        else:
+        if not self.datasource:
             raise InvestError(20071,msg='datasource/proj/investor/trader cannot be null')
         if self.proj.projstatus_id < 4:
             raise InvestError(5003,msg='项目尚未终审发布')
@@ -90,27 +82,21 @@ class timeline(models.Model):
         super(timeline,self).save(force_insert, force_update, using, update_fields)
 
 
-class timelineTransationStatu(models.Model):
+class timelineTransationStatu(MyModel):
     id = models.AutoField(primary_key=True)
     timeline = MyForeignKey(timeline,blank=True,null=True,related_name='timeline_transationStatus')
     transationStatus = MyForeignKey(TransactionStatus,default=1)
     isActive = models.BooleanField(blank=True,default=False)
     alertCycle = models.SmallIntegerField(blank=True,null=True,help_text='提醒周期')
     inDate = models.DateTimeField(blank=True,null=True,help_text='提醒到期时间')
-    is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_timelinestatus',on_delete=models.SET_NULL)
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_timelinestatus',on_delete=models.SET_NULL)
-    lastmodifytime = models.DateTimeField(auto_now=True)
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_timelinestatus',on_delete=models.SET_NULL)
 
     class Meta:
         db_table = 'timelineTransationStatus'
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
-        if not self.createdtime:
-            self.createdtime = datetime.datetime.now()
         if self.timeline.isClose:
             raise InvestError(6004)
         if self.alertCycle:
@@ -119,18 +105,16 @@ class timelineTransationStatu(models.Model):
         if not UserRelation.objects.filter(investoruser=timeline.investor,traderuser=timeline.trader,is_deleted=False,score__gt=self.transationStatus.id).exists():
             UserRelation.objects.filter(investoruser=timeline.investor, traderuser=timeline.trader, is_deleted=False).update(score=self.transationStatus.id)
         super(timelineTransationStatu, self).save(force_insert, force_update, using, update_fields)
-class timelineremark(models.Model):
+
+class timelineremark(MyModel):
     id = models.AutoField(primary_key=True)
     timeline = MyForeignKey(timeline,related_name='timeline_remarks',blank=True,null=True)
     remark = models.TextField(blank=True,null=True)
-    is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_timelineremarks',on_delete=models.SET_NULL)
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_created=True,blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_timelineremarks',on_delete=models.SET_NULL)
-    lastmodifytime = models.DateTimeField(auto_now=True)
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_timelineremarks', on_delete=models.SET_NULL)
     datasource = MyForeignKey(DataSource, help_text='数据源',default=1)
+
     class Meta:
         db_table = 'timelineremarks'
         permissions = (
@@ -146,8 +130,6 @@ class timelineremark(models.Model):
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
-        if not self.createdtime:
-            self.createdtime = datetime.datetime.now()
         if self.pk:
             if self.is_deleted:
                 rem_perm('timeline.user_getlineremark', self.createuser, self)

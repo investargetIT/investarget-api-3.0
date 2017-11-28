@@ -15,7 +15,7 @@ class MobileAuthCode(models.Model):
     mobile = models.CharField(help_text='手机号',max_length=32)
     token = models.CharField(help_text='验证码token',max_length=32)
     code = models.CharField(help_text='验证码',max_length=32)
-    createTime = models.DateTimeField(auto_now_add=True)
+    createTime = models.DateTimeField(blank=True,null=True)
     is_deleted = models.BooleanField(blank=True,default=False)
     def isexpired(self):
         return datetime.datetime.now() - self.createTime >=  datetime.timedelta(minutes=30)

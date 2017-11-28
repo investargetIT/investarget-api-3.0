@@ -15,14 +15,14 @@ from sourcetype.models import FavoriteType, ProjectStatus,CurrencyType,Tag,Count
 from usersys.models import MyUser
 import sys
 
-from utils.customClass import InvestError, MyForeignKey
+from utils.customClass import InvestError, MyForeignKey, MyModel
 from utils.util import add_perm, rem_perm
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
 
-class project(models.Model):
+class project(MyModel):
     id = models.AutoField(primary_key=True)
     projtitleC = models.CharField(max_length=128,db_index=True,default='标题')
     projtitleE = models.CharField(max_length=256,blank=True,null=True,db_index=True)
@@ -76,13 +76,9 @@ class project(models.Model):
     operationalDataE = models.TextField(blank=True, null=True)
     publishDate = models.DateTimeField(blank=True, null=True,help_text='终审发布日期')
     isSendEmail = models.BooleanField(blank=True,default=False,help_text='是否发送邮件')
-    is_deleted = models.BooleanField(blank=True, default=False)
-    deleteduser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='userdelete_projects')
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createuser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='usercreate_projects')
-    createdtime = models.DateTimeField(auto_created=True,blank=True,null=True)
-    lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='usermodify_projects')
-    lastmodifytime = models.DateTimeField(auto_now=True)
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_projects')
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_projects')
+    lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_projects')
     datasource = MyForeignKey(DataSource, help_text='数据源')
 
 
@@ -103,8 +99,6 @@ class project(models.Model):
         )
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
-        if not self.createdtime:
-            self.createdtime = datetime.datetime.now()
         if not self.datasource or not self.createuser or self.datasource != self.createuser.datasource:
             raise InvestError(code=8888,msg='项目datasource不合法')
         if self.pk:
@@ -126,25 +120,18 @@ class project(models.Model):
         for aa in fieldlist:
             if getattr(self,aa) is None:
                 raise InvestError(4007,msg='项目信息未完善—%s'%aa)
-class projServices(models.Model):
+
+class projServices(MyModel):
     id = models.AutoField(primary_key=True)
     proj = MyForeignKey(project,blank=True,null=True,related_name='proj_services')
     service = MyForeignKey(Service, related_name='service_projects')
-    is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_projservices')
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_created=True, blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_projservices')
 
     class Meta:
         db_table = "project_services"
-    def save(self, force_insert=False, force_update=False, using=None,
-             update_fields=None):
-        if not self.createdtime:
-            self.createdtime = datetime.datetime.now()
-        super(projServices,self).save(force_insert,force_update,using,update_fields)
 
-class finance(models.Model):
+class finance(MyModel):
     id = models.AutoField(primary_key=True)
     proj = MyForeignKey(project, blank=True, null=True, related_name='proj_finances')
     revenue = models.BigIntegerField(blank=True, null=True, )
@@ -158,58 +145,37 @@ class finance(models.Model):
     operationalCashFlow = models.BigIntegerField(blank=True, null=True, )
     grossMerchandiseValue = models.BigIntegerField(blank=True, null=True, )
     fYear = models.SmallIntegerField(blank=True, null=True, )
-    is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='userdelete_finances')
-    deletedtime = models.DateTimeField(blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL, related_name='usercreate_finances')
-    createdtime = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='usermodify_finances')
-    lastmodifytime = models.DateTimeField(auto_now=True)
     datasource = MyForeignKey(DataSource, help_text='数据源',blank=True,default=1)
-    def __str__(self):
-        if self.proj:
-            return self.proj.projtitleC
-        return self.id.__str__()
 
     class Meta:
         db_table = 'projectFinance'
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
-        if not self.createdtime:
-            self.createdtime = datetime.datetime.now()
         if not self.datasource or self.datasource != self.proj.datasource:
             raise InvestError(code=8888,msg='项目财务信息datasource不合法')
         super(finance,self).save(force_insert,force_update,using,update_fields)
 
-class attachment(models.Model):
+class attachment(MyModel):
     proj = MyForeignKey(project,related_name='proj_attachment',blank=True,null=True)
     filename = models.CharField(max_length=128,blank=True,null=True)
     filetype = models.CharField(max_length=32,blank=True,null=True)
     bucket = models.CharField(max_length=32,blank=True,default='file')
     key = models.CharField(max_length=128,blank=True,null=True)
-    is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='userdelete_projattachments')
-    deletedtime = models.DateTimeField(blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL, related_name='usercreate_projattachments')
-    createdtime = models.DateTimeField(auto_created=True, blank=True, null=True)
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='usermodify_projattachments')
-    lastmodifytime = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'projectAttachment'
-    def save(self, force_insert=False, force_update=False, using=None,
-             update_fields=None):
-        if not self.createdtime:
-            self.createdtime = datetime.datetime.now()
-        super(attachment,self).save(force_insert,force_update,using,update_fields)
 
-class projectTags(models.Model):
+
+class projectTags(MyModel):
     proj = MyForeignKey(project,related_name='project_tags' )
     tag = MyForeignKey(Tag, related_name='tag_projects')
-    is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_projtags')
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_created=True, blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_projtag')
 
     class Meta:
@@ -218,20 +184,15 @@ class projectTags(models.Model):
     def save(self, *args, **kwargs):
         if self.tag.datasource != self.proj.datasource_id:
             raise InvestError(8888)
-        if not self.createdtime:
-            self.createdtime = datetime.datetime.now()
         return super(projectTags, self).save(*args, **kwargs)
 
 
-class projectIndustries(models.Model):
+class projectIndustries(MyModel):
     proj = MyForeignKey(project,related_name='project_industries')
     industry = MyForeignKey(Industry, related_name='industry_projects')
     bucket = models.CharField(max_length=16,blank=True,null=True)
     key = models.TextField(blank=True,null=True)
-    is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_projIndustries')
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_created=True, blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_projIndustry')
 
     class Meta:
@@ -239,21 +200,16 @@ class projectIndustries(models.Model):
     def save(self, *args, **kwargs):
         if self.industry.datasource != self.proj.datasource_id:
             raise InvestError(8888)
-        if not self.createdtime:
-            self.createdtime = datetime.datetime.now()
         if not self.key:
             self.bucket = self.industry.bucket
             self.key = self.industry.key
         return super(projectIndustries, self).save(*args, **kwargs)
 
 
-class projectTransactionType(models.Model):
+class projectTransactionType(MyModel):
     proj = MyForeignKey(project, related_name='project_TransactionTypes')
     transactionType = MyForeignKey(TransactionType, related_name='transactionType_projects')
-    is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_projtransactionTypes')
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_created=True, blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_projtransactionType')
 
     class Meta:
@@ -262,15 +218,12 @@ class projectTransactionType(models.Model):
 
 
 #收藏只能 新增/删除/查看/  ，不能修改
-class favoriteProject(models.Model):
+class favoriteProject(MyModel):
     proj = MyForeignKey(project,related_name='proj_favorite')
     user = MyForeignKey(MyUser,related_name='user_favorite')
     trader = MyForeignKey(MyUser,blank=True,null=True,related_name='trader_favorite',help_text='交易师id（用户感兴趣时联系/交易师推荐）')
     favoritetype = MyForeignKey(FavoriteType,related_name='favoritetype_proj',help_text='收藏类型')
-    is_deleted = models.BooleanField(blank=True, default=False)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_favoriteproj')
-    deletedtime = models.DateTimeField(blank=True, null=True)
-    createdtime = models.DateTimeField(auto_created=True, blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_favoriteproj')
     datasource = MyForeignKey(DataSource, help_text='数据源')
 
@@ -279,8 +232,6 @@ class favoriteProject(models.Model):
              update_fields=None):
         if self.proj.projstatus_id < 4:
             raise InvestError(5003,msg='项目尚未终审发布')
-        if self.createdtime is None:
-            self.createdtime = datetime.datetime.now()
         if not self.datasource or self.datasource != self.proj.datasource:
             raise InvestError(code=8888,msg='项目收藏datasource与项目不符')
         if not self.pk: #交易师不能自己主动删除推荐，再次推荐同一个项目时删除旧的添加新的(暂定)

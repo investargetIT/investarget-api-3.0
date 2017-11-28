@@ -82,7 +82,7 @@ def loginTokenIsAvailable(permissions=None):#判断class级别权限
             except Exception as exc:
                 return JSONResponse(InvestErrorResponse(InvestError(code=3000,msg=repr(exc))))
             else:
-                if token.created < datetime.datetime.now() - datetime.timedelta(hours=24 * 1):
+                if token.timeout():
                     return JSONResponse(InvestErrorResponse(InvestError(3000,msg='token过期')))
                 if token.user.is_deleted:
                     return JSONResponse(InvestErrorResponse(InvestError(3000,msg='用户不存在')))
@@ -111,7 +111,7 @@ def checkRequestToken():
                     except MyToken.DoesNotExist:
                         return JSONResponse(InvestErrorResponse(InvestError(3000,msg='token不存在')))
                     else:
-                        if token.created < datetime.datetime.now() - datetime.timedelta(hours=24 * 1):
+                        if token.timeout():
                             return JSONResponse(InvestErrorResponse(InvestError(3000, msg='token过期')))
                         if token.user.is_deleted:
                             return JSONResponse(InvestErrorResponse(InvestError(3000, msg='用户不存在')))
@@ -131,7 +131,7 @@ def checkrequesttoken(token):#验证token有效
         except MyToken.DoesNotExist:
             raise InvestError(3000, msg='token不存在')
         else:
-            if token.created < datetime.datetime.now() - datetime.timedelta(hours=24 * 1):
+            if token.timeout():
                 raise InvestError(3000, msg='token过期')
             if token.user.is_deleted:
                 raise InvestError(3000, msg='用户不存在')
@@ -145,7 +145,7 @@ def setrequestuser(request):#根据token设置request.user
     if tokenkey:
         try:
             token = MyToken.objects.get(key=tokenkey, is_deleted=False)
-            if token.created > datetime.datetime.now() - datetime.timedelta(hours=24 * 1) and token.is_deleted == False:
+            if not token.timeout():
                 request.user = token.user
         except MyToken.DoesNotExist:
             pass

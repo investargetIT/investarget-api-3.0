@@ -3,14 +3,6 @@ from __future__ import unicode_literals
 
 import sys
 from django.db import models
-
-# Create your models here.
-from django.db.models import Q
-from django.db.models import QuerySet
-from django.db.models import sql
-from django.db.models.manager import BaseManager
-from django.db.models.sql.where import WhereNode
-
 from utils.customClass import MyForeignKey
 
 reload(sys)
