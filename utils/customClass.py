@@ -68,6 +68,9 @@ class MyModel(models.Model):
     deletedtime = models.DateTimeField(blank=True, null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
 
+    class Meta:
+        abstract = True
+
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
         # if self.pk is None:

@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
 
-import datetime
+
 from django.db import models
 
-# Create your models here.
+
 from usersys.models import MyUser
 from utils.customClass import MyForeignKey, MyModel
 

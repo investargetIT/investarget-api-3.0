@@ -1,7 +1,5 @@
 #coding=utf8
 from __future__ import unicode_literals
-
-import datetime
 from django.db import models
 
 # Create your models here.
@@ -114,6 +112,7 @@ class OrgBDComments(MyModel):
     datasource = models.IntegerField(blank=True,null=True)
 
     def save(self, *args, **kwargs):
+
         if self.orgBD is None:
             raise InvestError(2007,msg='orgBD can`t be null')
         self.datasource = self.orgBD.datasource

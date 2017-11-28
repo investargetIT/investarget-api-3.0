@@ -75,7 +75,7 @@ class MyUserManager(BaseUserManager):
         return user
 
 # 在settings里面指定这个User类为AUTH_USER_MODEL
-class MyUser(AbstractBaseUser, PermissionsMixin, MyModel):
+class MyUser(AbstractBaseUser, PermissionsMixin,MyModel):
     """
     groups : 作为权限组
     """
