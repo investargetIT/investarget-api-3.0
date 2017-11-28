@@ -298,7 +298,7 @@ class MyToken(models.Model):
     def timeout(self):
         if self.is_deleted:
             raise InvestError(3000, msg='token不存在')
-        return datetime.timedelta(hours=24 * 1) - (datetime.datetime.now() - self.created)
+        return (datetime.datetime.now() - self.created) - datetime.timedelta(hours=24 * 1)
 
     def save(self, *args, **kwargs):
         if not self.key:
