@@ -279,7 +279,7 @@ class OrgBDView(viewsets.ModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,filters.SearchFilter)
     queryset = OrgBD.objects.filter(is_deleted=False)
     filter_class = OrgBDFilter
-    search_fields = ('usermobile', 'username')
+    search_fields = ('proj__projtitleC', 'username','manager__usernameC',)
     serializer_class = OrgBDSerializer
 
     def get_queryset(self):

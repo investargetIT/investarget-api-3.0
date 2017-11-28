@@ -33,7 +33,7 @@ from utils.somedef import addWaterMark, file_iterator
 from utils.sendMessage import sendmessage_favoriteproject, sendmessage_projectpublish
 from utils.util import catchexcption, read_from_cache, write_to_cache, loginTokenIsAvailable, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser, \
-    setUserObjectPermission, checkConformType, cache_delete_key, checkrequesttoken
+    setUserObjectPermission, cache_delete_key, checkrequesttoken
 from utils.customClass import JSONResponse, InvestError, RelationFilter
 from django_filters import FilterSet
 
@@ -867,13 +867,11 @@ class ProjFinanceView(viewsets.ModelViewSet):
         data = request.data
         lang = request.GET.get('lang')
         financedata = data.get('finances')
-        checkConformType(financedata,list)
         try:
             with transaction.atomic():
                 if financedata:
                     newfinances = []
                     for f in financedata:
-                        checkConformType(f,dict)
                         fid = f['id']
                         f.pop('proj')
                         if not isinstance(fid,(int,str,unicode)) or not fid:

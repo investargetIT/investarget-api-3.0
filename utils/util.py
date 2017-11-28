@@ -172,12 +172,6 @@ def setUserObjectPermission(user,obj,permissions,touser=None):
             add_perm(permission, touser, obj)
 
 
-def checkConformType(data,type):
-    if isinstance(data,type):
-        pass
-    else:
-        raise InvestError(2007,msg='data type error')
-
 def returnDictChangeToLanguage(dictdata,lang=None):
     newdict = {'timezone':'+08:00'}
     if lang == 'en':
