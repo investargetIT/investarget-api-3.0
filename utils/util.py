@@ -124,6 +124,7 @@ def checkRequestToken():
         return _token_available
     return token_available
 
+
 def checkrequesttoken(token):#验证token有效
     if token:
         try:
