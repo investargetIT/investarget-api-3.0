@@ -151,7 +151,7 @@ class EmailgroupsendlistView(viewsets.ModelViewSet):
     filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend)
     queryset = emailgroupsendlist.objects.all()
     filter_fields = ('proj',)
-    search_fields = ('datasource','proj','user','isRead','isSend','projtitle','username','userEmail')
+    search_fields = ('proj','user','isRead','isSend','projtitle','username','userEmail')
     serializer_class = Emailgroupsendlistserializer
 
 

@@ -127,9 +127,9 @@ class UserView(viewsets.ModelViewSet):
             queryset = self.filter_queryset(self.get_queryset())
             sort = request.GET.get('sort')
             if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
-                queryset = queryset.order_by('-lastmodifytime', '-createdtime')
+                queryset = queryset.order_by('-createdtime')
             else:
-                queryset = queryset.order_by('lastmodifytime', 'createdtime')
+                queryset = queryset.order_by('createdtime')
             if request.user.has_perm('usersys.admin_getuser'):
                 serializerclass = UserListSerializer
             else:

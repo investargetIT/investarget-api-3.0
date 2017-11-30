@@ -509,7 +509,7 @@ class GroupEmailDataView(viewsets.ModelViewSet):
                 page_size = 10
             if not page_index:
                 page_index = 1
-            queryset = self.queryset
+            queryset = self.queryset(datasource=request.user.datasource_id)
             sort = request.GET.get('sort')
             if projtitle:
                 queryset = queryset(projtitle__icontains=projtitle)
