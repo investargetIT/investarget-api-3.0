@@ -339,57 +339,54 @@ class UserRelation(MyModel):
             self.relationtype = True
         if self.investoruser.id == self.traderuser.id:
             raise InvestError(code=2014,msg='投资人和交易师不能是同一个人')
-        elif not self.investoruser.has_perm('usersys.as_investor') or not self.traderuser.has_perm('usersys.as_trader'):
-            raise InvestError(2015)
-        else:
-            if self.pk:
-                if self.is_deleted:
-                    remove_perm('usersys.user_getuser',self.traderuser,self.investoruser)
-                    remove_perm('usersys.user_changeuser', self.traderuser, self.investoruser)
-                    remove_perm('usersys.user_deleteuser', self.traderuser, self.investoruser)
+        if self.pk:
+            if self.is_deleted:
+                remove_perm('usersys.user_getuser', self.traderuser, self.investoruser)
+                remove_perm('usersys.user_changeuser', self.traderuser, self.investoruser)
+                remove_perm('usersys.user_deleteuser', self.traderuser, self.investoruser)
 
-                    remove_perm('usersys.user_getuserrelation', self.traderuser, self)
-                    remove_perm('usersys.user_changeuserrelation', self.traderuser, self)
-                    remove_perm('usersys.user_deleteuserrelation', self.traderuser, self)
+                remove_perm('usersys.user_getuserrelation', self.traderuser, self)
+                remove_perm('usersys.user_changeuserrelation', self.traderuser, self)
+                remove_perm('usersys.user_deleteuserrelation', self.traderuser, self)
+
+                remove_perm('usersys.user_addfavorite', self.traderuser, self.investoruser)
+                remove_perm('usersys.user_getfavorite', self.traderuser, self.investoruser)
+                remove_perm('usersys.user_interestproj', self.investoruser, self.traderuser)
+            else:
+                oldrela = UserRelation.objects.get(pk=self.pk)
+                if oldrela.traderuser != self.traderuser or oldrela.investoruser != self.investoruser:
+                    remove_perm('usersys.user_getuser', oldrela.traderuser, oldrela.investoruser)
+                    remove_perm('usersys.user_changeuser', oldrela.traderuser, oldrela.investoruser)
+                    remove_perm('usersys.user_deleteuser', oldrela.traderuser, oldrela.investoruser)
+
+                    remove_perm('usersys.user_getuserrelation', oldrela.traderuser, self)
+                    remove_perm('usersys.user_changeuserrelation', oldrela.traderuser, self)
+                    remove_perm('usersys.user_deleteuserrelation', oldrela.traderuser, self)
 
                     remove_perm('usersys.user_addfavorite', self.traderuser, self.investoruser)
                     remove_perm('usersys.user_getfavorite', self.traderuser, self.investoruser)
                     remove_perm('usersys.user_interestproj', self.investoruser, self.traderuser)
-                else:
-                    oldrela = UserRelation.objects.get(pk=self.pk)
-                    if oldrela.traderuser != self.traderuser or oldrela.investoruser != self.investoruser:
-                        remove_perm('usersys.user_getuser', oldrela.traderuser, oldrela.investoruser)
-                        remove_perm('usersys.user_changeuser', oldrela.traderuser, oldrela.investoruser)
-                        remove_perm('usersys.user_deleteuser', oldrela.traderuser, oldrela.investoruser)
 
-                        remove_perm('usersys.user_getuserrelation', oldrela.traderuser, self)
-                        remove_perm('usersys.user_changeuserrelation', oldrela.traderuser, self)
-                        remove_perm('usersys.user_deleteuserrelation', oldrela.traderuser, self)
+                    assign_perm('usersys.user_getuser', self.traderuser, self.investoruser)
+                    assign_perm('usersys.user_changeuser', self.traderuser, self.investoruser)
+                    assign_perm('usersys.user_deleteuser', self.traderuser, self.investoruser)
 
-                        remove_perm('usersys.user_addfavorite', self.traderuser, self.investoruser)
-                        remove_perm('usersys.user_getfavorite', self.traderuser, self.investoruser)
-                        remove_perm('usersys.user_interestproj', self.investoruser, self.traderuser)
+                    assign_perm('usersys.user_getuserrelation', self.traderuser, self)
+                    assign_perm('usersys.user_changeuserrelation', self.traderuser, self)
+                    assign_perm('usersys.user_deleteuserrelation', self.traderuser, self)
 
-                        assign_perm('usersys.user_getuser',self.traderuser,self.investoruser)
-                        assign_perm('usersys.user_changeuser', self.traderuser, self.investoruser)
-                        assign_perm('usersys.user_deleteuser', self.traderuser, self.investoruser)
+                    assign_perm('usersys.user_addfavorite', self.traderuser, self.investoruser)
+                    assign_perm('usersys.user_getfavorite', self.traderuser, self.investoruser)
+                    assign_perm('usersys.user_interestproj', self.investoruser, self.traderuser)
+        else:
+            assign_perm('usersys.user_getuser', self.traderuser, self.investoruser)
+            assign_perm('usersys.user_changeuser', self.traderuser, self.investoruser)
+            assign_perm('usersys.user_deleteuser', self.traderuser, self.investoruser)
 
-                        assign_perm('usersys.user_getuserrelation', self.traderuser, self)
-                        assign_perm('usersys.user_changeuserrelation', self.traderuser, self)
-                        assign_perm('usersys.user_deleteuserrelation', self.traderuser, self)
-
-                        assign_perm('usersys.user_addfavorite', self.traderuser, self.investoruser)
-                        assign_perm('usersys.user_getfavorite', self.traderuser, self.investoruser)
-                        assign_perm('usersys.user_interestproj', self.investoruser, self.traderuser)
-            else:
-                assign_perm('usersys.user_getuser', self.traderuser, self.investoruser)
-                assign_perm('usersys.user_changeuser', self.traderuser, self.investoruser)
-                assign_perm('usersys.user_deleteuser', self.traderuser, self.investoruser)
-
-                assign_perm('usersys.user_addfavorite', self.traderuser, self.investoruser)
-                assign_perm('usersys.user_getfavorite', self.traderuser, self.investoruser)
-                assign_perm('usersys.user_interestproj', self.investoruser, self.traderuser)
-            super(UserRelation, self).save(*args, **kwargs)
+            assign_perm('usersys.user_addfavorite', self.traderuser, self.investoruser)
+            assign_perm('usersys.user_getfavorite', self.traderuser, self.investoruser)
+            assign_perm('usersys.user_interestproj', self.investoruser, self.traderuser)
+        super(UserRelation, self).save(*args, **kwargs)
     class Meta:
         db_table = "user_relation"
         permissions =  (

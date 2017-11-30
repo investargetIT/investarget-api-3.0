@@ -12,7 +12,7 @@ from rest_framework import viewsets
 from APIlog.models import loginlog, userviewprojlog, APILog, userinfoupdatelog
 from APIlog.serializer import APILogSerializer, ViewProjLogSerializer, LoginLogSerializer, UserInfoUpdateLogSerializer
 from utils.customClass import JSONResponse, InvestError
-from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, catchexcption
+from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, catchexcption, loginTokenIsAvailable
 
 
 def logininlog(loginaccount,logintypeid,datasourceid,userid=None,ipaddress=None):
@@ -55,6 +55,7 @@ class APILogView(viewsets.ModelViewSet):
     queryset = APILog.objects.filter(is_deleted=False)
     serializer_class = APILogSerializer
 
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')
@@ -63,7 +64,7 @@ class APILogView(viewsets.ModelViewSet):
                 page_size = 10
             if not page_index:
                 page_index = 1
-            queryset = self.filter_queryset(self.get_queryset())
+            queryset = self.filter_queryset(self.get_queryset()).filter(datasource=request.user.datasource_id)
             count = queryset.count()
             try:
                 queryset = Paginator(queryset, page_size)
@@ -83,6 +84,7 @@ class LoginLogView(viewsets.ModelViewSet):
     queryset = loginlog.objects.filter(is_deleted=False)
     serializer_class = LoginLogSerializer
 
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')
@@ -91,7 +93,7 @@ class LoginLogView(viewsets.ModelViewSet):
                 page_size = 10
             if not page_index:
                 page_index = 1
-            queryset = self.filter_queryset(self.get_queryset())
+            queryset = self.filter_queryset(self.get_queryset()).filter(datasource=request.user.datasource_id)
             count = queryset.count()
             try:
                 queryset = Paginator(queryset, page_size)
@@ -110,6 +112,7 @@ class ViewprojLogView(viewsets.ModelViewSet):
     queryset = userviewprojlog.objects.filter(is_deleted=False)
     serializer_class = ViewProjLogSerializer
 
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')
@@ -118,7 +121,7 @@ class ViewprojLogView(viewsets.ModelViewSet):
                 page_size = 10
             if not page_index:
                 page_index = 1
-            queryset = self.filter_queryset(self.get_queryset())
+            queryset = self.filter_queryset(self.get_queryset()).filter(datasource=request.user.datasource_id)
             count = queryset.count()
             try:
                 queryset = Paginator(queryset, page_size)
@@ -139,6 +142,7 @@ class UserInfoUpdateLogView(viewsets.ModelViewSet):
     queryset = userinfoupdatelog.objects.filter(is_deleted=False)
     serializer_class = UserInfoUpdateLogSerializer
 
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')
@@ -147,7 +151,7 @@ class UserInfoUpdateLogView(viewsets.ModelViewSet):
                 page_size = 10
             if not page_index:
                 page_index = 1
-            queryset = self.filter_queryset(self.get_queryset()).order_by('-updatetime')
+            queryset = self.filter_queryset(self.get_queryset()).filter(datasource=request.user.datasource_id).order_by('-updatetime')
             count = queryset.count()
             try:
                 queryset = Paginator(queryset, page_size)

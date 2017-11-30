@@ -327,6 +327,7 @@ class ProjectView(viewsets.ModelViewSet):
             if projdata.get('projstatus', None) and projdata.get('projstatus', None) != pro.projstatus_id:
                 if projdata.get('projstatus', None) == 4:
                     sendmsg = True
+                    projdata['publishDate'] = datetime.datetime.now()
             keylist = projdata.keys()
             editlist1 = [key for key in keylist if key in ['phoneNumber', 'email', 'contactPerson']]
             editlist2 = [key for key in keylist if key in ['takeUser', 'makeUser',]]
@@ -411,7 +412,6 @@ class ProjectView(viewsets.ModelViewSet):
                     raise InvestError(code=4001,msg='data有误_%s' %  proj.errors)
                 if sendmsg:
                     sendmessage_projectpublish(pro,pro.supportUser,['email',],sender=request.user)
-                    projdata['publishDate'] = datetime.datetime.now()
                     pulishProjectCreateDataroom(pro, request.user)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(ProjSerializer(pro).data,lang)))
         except InvestError as err:
