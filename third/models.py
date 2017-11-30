@@ -28,6 +28,8 @@ class MobileAuthCode(models.Model):
             self.token = binascii.hexlify(os.urandom(16)).decode()
         if not self.code:
             self.code = self.getRandomCode()
+        if not self.pk:
+            self.createTime = datetime.datetime.now()
         return super(MobileAuthCode, self).save(*args, **kwargs)
     def getRandomCode(self):
         code_list = [0,1,2,3,4,5,6,7,8,9]
