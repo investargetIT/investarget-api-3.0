@@ -335,14 +335,20 @@ def makeDirWithdirectoryobjs(directory_objs ,rootpath):
     if os.path.exists(rootpath):
         shutil.rmtree(rootpath)
     os.makedirs(rootpath)
-
+    tim = 1
     for file_obj in directory_objs:
-
+        print file_obj.filename
+        print datetime.datetime.now()
+        print tim
         try:
+            print datetime.datetime.now()
             path = getPathWithFile(file_obj,rootpath)
+            print datetime.datetime.now()
             os.makedirs(path)
+            print datetime.datetime.now()
         except OSError:
             pass
+        tim+=1
 
 
 def getPathWithFile(file_obj,rootpath,currentpath=None):
