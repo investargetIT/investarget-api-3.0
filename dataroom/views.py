@@ -344,6 +344,7 @@ def makeDirWithdirectoryobjs(directory_objs ,rootpath):
     for file_obj in directory_objs:
         try:
             print '文件夹'
+            print datetime.datetime.now()
             path = rootpath+'/'+file_obj.filename
             os.makedirs(path)
         except OSError:
