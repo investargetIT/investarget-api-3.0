@@ -272,7 +272,7 @@ class DataroomView(viewsets.ModelViewSet):
                 response["content-disposition"] = 'attachment;filename=%s' % path
                 os.remove(rootpath)
                 if os.path.exists(direcpath):
-                    shutil.rmtree(direcpath)
+                    os.removedirs(direcpath)
             else:
                 if os.path.exists(direcpath):
                     response = JSONResponse(SuccessResponse({'code':8004, 'msg': '压缩中'}))
@@ -334,6 +334,7 @@ def makeDirWithdirectoryobjs(directory_objs ,rootpath):
             path = getPathWithFile(file_obj,rootpath)
             os.makedirs(path)
         except OSError:
+            print traceback.format_exc()
             pass
 
 def getPathWithFile(file_obj,rootpath,currentpath=None):
