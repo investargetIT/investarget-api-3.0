@@ -328,7 +328,9 @@ def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcon
     downloadAllDataroomFile(file_qs, path).start()
 
 def makeDirWithdirectoryobjs(directory_objs ,rootpath):
+    print rootpath
     os.makedirs(rootpath)
+
     print datetime.datetime.now()
     print '开始'
     print directory_objs.count()
@@ -340,6 +342,7 @@ def makeDirWithdirectoryobjs(directory_objs ,rootpath):
             print datetime.datetime.now()
             path = getPathWithFile(file_obj,rootpath)
             print datetime.datetime.now()
+            print path
             os.makedirs(path)
             print datetime.datetime.now()
         except OSError:
