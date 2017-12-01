@@ -293,7 +293,10 @@ def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcon
             threading.Thread.__init__(self)
 
         def run(self):
+            print '进程开始'
+            print datetime.datetime.now()
             directory_qs = self.qs.filter(isFile=False)
+            print datetime.datetime.now()
             makeDirWithdirectoryobjs(directory_qs, self.path)
             # if userid:
             #     try:
@@ -332,7 +335,8 @@ def makeDirWithdirectoryobjs(directory_objs ,rootpath):
     count = 1
     for file_obj in directory_objs:
         try:
-            print '文件夹 -%'%str(count)
+            print '文件夹'
+            print count
             print datetime.datetime.now()
             path = getPathWithFile(file_obj,rootpath)
             print datetime.datetime.now()
