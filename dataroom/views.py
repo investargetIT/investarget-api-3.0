@@ -228,7 +228,7 @@ class DataroomView(viewsets.ModelViewSet):
             watermarkcontent = request.GET.get('water',None)
             qs = instance.dataroom_directories.all().filter(is_deleted=False)
             rootpath = APILOG_PATH['dataroomFilePath'] + '/' + 'dataroom_%s%s'%(str(instance.id), '_%s'%userid if userid else '')
-            startMakeDataroomZip(dataroomid, rootpath , userid,watermarkcontent)
+            makeDirWithdirectoryobjs(dataroomid, rootpath)
             return JSONResponse(SuccessResponse('dataroom_%s%s.zip'%(str(instance.id), '_%s'%userid if userid else '')))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
