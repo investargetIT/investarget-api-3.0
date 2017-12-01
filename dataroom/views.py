@@ -309,7 +309,7 @@ def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcon
                     filetype = path.split('.')[-1]
                     if filetype in ['pdf', u'pdf']:
                         filepaths.append(path)
-            addWaterMarkToPdfFiles(filepaths, watermarkcontent)
+            # addWaterMarkToPdfFiles(filepaths, watermarkcontent)
             import zipfile
             zipf = zipfile.ZipFile(self.path+'.zip', 'w')
             pre_len = len(os.path.dirname(self.path))
@@ -326,8 +326,11 @@ def makeDirWithdirectoryobjs(directory_objs ,rootpath):
     if os.path.exists(rootpath):
         shutil.rmtree(rootpath)
     os.makedirs(rootpath)
-    for file_obj in directory_objs:
+    print datetime.datetime.now()
+    print '开始'
+    for file_obj in directory_objs.filter(parent=None):
         try:
+            print '文件夹'
             path = getPathWithFile(file_obj,rootpath)
             os.makedirs(path)
         except OSError:

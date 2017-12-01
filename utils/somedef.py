@@ -89,7 +89,7 @@ def addWaterMark(pdfpath='water.pdf',watermarkcontent='多维海拓'):
     os.remove(watermarkpath)
     return out_path
 
-def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent='多维海拓'):
+def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=u'多维海拓'):
     if len(pdfpaths) == 0:
         return
     pdfmetrics.registerFont(TTFont('song', APILOG_PATH['pdfwaterfontPath']))
