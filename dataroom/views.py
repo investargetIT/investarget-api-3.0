@@ -319,32 +319,31 @@ def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcon
             addWaterMarkToPdfFiles(filepaths, watermarkcontent)
             print datetime.datetime.now()
             print '加好水印'
-            import zipfile
-            zipf = zipfile.ZipFile(self.path+'.zip', 'w')
-            pre_len = len(os.path.dirname(self.path))
-            for parent, dirnames, filenames in os.walk(self.path):
-                for filename in filenames:
-                    pathfile = os.path.join(parent, filename)
-                    arcname = pathfile[pre_len:].strip(os.path.sep)  # 相对路径
-                    zipf.write(pathfile, arcname)
-            zipf.close()
-            shutil.rmtree(self.path)
+            # import zipfile
+            # zipf = zipfile.ZipFile(self.path+'.zip', 'w')
+            # pre_len = len(os.path.dirname(self.path))
+            # for parent, dirnames, filenames in os.walk(self.path):
+            #     for filename in filenames:
+            #         pathfile = os.path.join(parent, filename)
+            #         arcname = pathfile[pre_len:].strip(os.path.sep)  # 相对路径
+            #         zipf.write(pathfile, arcname)
+            # zipf.close()
+            # shutil.rmtree(self.path)
     downloadAllDataroomFile(file_qs, path).start()
 
 def makeDirWithdirectoryobjs(directory_objs ,rootpath):
     if os.path.exists(rootpath):
         shutil.rmtree(rootpath)
     os.makedirs(rootpath)
-    tim = 1
+
     for file_obj in directory_objs:
-        print datetime.datetime.now()
-        print '建好文件夹_%s'%tim
+
         try:
             path = getPathWithFile(file_obj,rootpath)
             os.makedirs(path)
         except OSError:
             pass
-        tim+=1
+
 
 def getPathWithFile(file_obj,rootpath,currentpath=None):
     if currentpath is None:
