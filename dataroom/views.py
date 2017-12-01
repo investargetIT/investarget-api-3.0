@@ -295,22 +295,22 @@ def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcon
         def run(self):
             directory_qs = self.qs.filter(isFile=False)
             makeDirWithdirectoryobjs(directory_qs, self.path)
-            if userid:
-                try:
-                    userfile_qs = dataroom_User_file.objects.get(dataroom=dataroominstance,user_id=userid).files.all()
-                except dataroom_User_file.DoesNotExist:
-                    raise InvestError(2007,msg='未找到符合条件的dataroom')
-                # file_qs = file_qs.filter(id__in=userfile_qs)
-            else:
-                userfile_qs = self.qs.filter(isFile=True)
-            filepaths = []
-            for file_obj in userfile_qs:
-                path = getPathWithFile(file_obj, self.path)
-                savepath = downloadFileToPath(key=file_obj.realfilekey, bucket=file_obj.bucket, path=path)
-                if savepath:
-                    filetype = path.split('.')[-1]
-                    if filetype in ['pdf', u'pdf']:
-                        filepaths.append(path)
+            # if userid:
+            #     try:
+            #         userfile_qs = dataroom_User_file.objects.get(dataroom=dataroominstance,user_id=userid).files.all()
+            #     except dataroom_User_file.DoesNotExist:
+            #         raise InvestError(2007,msg='未找到符合条件的dataroom')
+            #     # file_qs = file_qs.filter(id__in=userfile_qs)
+            # else:
+            #     userfile_qs = self.qs.filter(isFile=True)
+            # filepaths = []
+            # for file_obj in userfile_qs:
+            #     path = getPathWithFile(file_obj, self.path)
+            #     savepath = downloadFileToPath(key=file_obj.realfilekey, bucket=file_obj.bucket, path=path)
+            #     if savepath:
+            #         filetype = path.split('.')[-1]
+            #         if filetype in ['pdf', u'pdf']:
+            #             filepaths.append(path)
             # addWaterMarkToPdfFiles(filepaths, watermarkcontent)
             import zipfile
             zipf = zipfile.ZipFile(self.path+'.zip', 'w')
@@ -321,8 +321,21 @@ def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcon
                     arcname = pathfile[pre_len:].strip(os.path.sep)  # 相对路径
                     zipf.write(pathfile, arcname)
             zipf.close()
-            shutil.rmtree(self.path)
+            # shutil.rmtree(self.path)
     downloadAllDataroomFile(file_qs, path).start()
+
+# def makeDirWithdirectoryobjs(directory_objs ,rootpath):
+#     os.makedirs(rootpath)
+#     print datetime.datetime.now()
+#     print '开始'
+#     for file_obj in directory_objs:
+#         try:
+#             print '文件夹'
+#             path = getPathWithFile(file_obj,rootpath)
+#             os.makedirs(path)
+#         except OSError:
+#             print traceback.format_exc()
+#             pass
 
 def makeDirWithdirectoryobjs(directory_objs ,rootpath):
     os.makedirs(rootpath)
@@ -331,11 +344,13 @@ def makeDirWithdirectoryobjs(directory_objs ,rootpath):
     for file_obj in directory_objs:
         try:
             print '文件夹'
-            path = getPathWithFile(file_obj,rootpath)
+            path = rootpath+'/'+file_obj.filename
             os.makedirs(path)
         except OSError:
             print traceback.format_exc()
             pass
+
+
 
 def getPathWithFile(file_obj,rootpath,currentpath=None):
     if currentpath is None:
