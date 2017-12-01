@@ -236,13 +236,18 @@ class DataroomView(viewsets.ModelViewSet):
         try:
             path = request.GET.get('path',None)
             rootpath = APILOG_PATH['dataroomFilePath'] + '/' + path
-            if os.path.exists(rootpath):
-                fn = open(rootpath, 'rb')
-                response = StreamingHttpResponse(file_iterator(fn))
-                response['Content-Type'] = 'application/octet-stream'
-                response["content-disposition"] = 'attachment;filename=%s'% path
+            direcpath = APILOG_PATH['dataroomFilePath'] + '/' + path
+            direcpath = direcpath.replace('.zip','')
+            if os.path.exists(direcpath):
+                if os.path.exists(rootpath):
+                    fn = open(rootpath, 'rb')
+                    response = StreamingHttpResponse(file_iterator(fn))
+                    response['Content-Type'] = 'application/octet-stream'
+                    response["content-disposition"] = 'attachment;filename=%s'% path
+                else:
+                    raise InvestError(8004,msg='压缩中')
             else:
-                raise InvestError(8002,msg='文件不存在')
+                raise InvestError(8002, msg='文件不存在')
             return response
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))

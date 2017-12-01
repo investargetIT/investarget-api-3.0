@@ -138,7 +138,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin,MyModel):
             ('user_getuser', u'用户查看用户(obj级别)'),
 
             ('admin_adduser', u'管理员新增用户'),
-            ('admin_deleteuser', u'管理员删除'),
+            ('admin_deleteuser', u'管理员删除用户'),
             ('admin_changeuser', u'管理员修改用户基本信息'),
             ('admin_getuser', u'管理员查看用户'),
 
