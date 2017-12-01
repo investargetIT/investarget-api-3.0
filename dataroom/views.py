@@ -332,7 +332,7 @@ def makeDirWithdirectoryobjs(directory_objs ,rootpath):
     count = 1
     for file_obj in directory_objs:
         try:
-            print '文件夹 -%'%count
+            print '文件夹 -%'%str(count)
             print datetime.datetime.now()
             path = getPathWithFile(file_obj,rootpath)
             print datetime.datetime.now()
