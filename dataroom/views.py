@@ -291,13 +291,8 @@ def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcon
             threading.Thread.__init__(self)
 
         def run(self):
-            print datetime.datetime.now()
-            print '开始'
             directory_qs = self.qs.filter(isFile=False)
-
             makeDirWithdirectoryobjs(directory_qs, self.path)
-            print datetime.datetime.now()
-            print '建好文件夹'
             if userid:
                 try:
                     userfile_qs = dataroom_User_file.objects.get(dataroom=dataroominstance,user_id=userid).files.all()
@@ -314,42 +309,29 @@ def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcon
                     filetype = path.split('.')[-1]
                     if filetype in ['pdf', u'pdf']:
                         filepaths.append(path)
-            print datetime.datetime.now()
-            print '下载好文件'
             addWaterMarkToPdfFiles(filepaths, watermarkcontent)
-            print datetime.datetime.now()
-            print '加好水印'
-            # import zipfile
-            # zipf = zipfile.ZipFile(self.path+'.zip', 'w')
-            # pre_len = len(os.path.dirname(self.path))
-            # for parent, dirnames, filenames in os.walk(self.path):
-            #     for filename in filenames:
-            #         pathfile = os.path.join(parent, filename)
-            #         arcname = pathfile[pre_len:].strip(os.path.sep)  # 相对路径
-            #         zipf.write(pathfile, arcname)
-            # zipf.close()
-            # shutil.rmtree(self.path)
+            import zipfile
+            zipf = zipfile.ZipFile(self.path+'.zip', 'w')
+            pre_len = len(os.path.dirname(self.path))
+            for parent, dirnames, filenames in os.walk(self.path):
+                for filename in filenames:
+                    pathfile = os.path.join(parent, filename)
+                    arcname = pathfile[pre_len:].strip(os.path.sep)  # 相对路径
+                    zipf.write(pathfile, arcname)
+            zipf.close()
+            shutil.rmtree(self.path)
     downloadAllDataroomFile(file_qs, path).start()
 
 def makeDirWithdirectoryobjs(directory_objs ,rootpath):
     if os.path.exists(rootpath):
         shutil.rmtree(rootpath)
     os.makedirs(rootpath)
-    tim = 1
     for file_obj in directory_objs:
-        print file_obj.filename
-        print datetime.datetime.now()
-        print tim
         try:
-            print datetime.datetime.now()
             path = getPathWithFile(file_obj,rootpath)
-            print datetime.datetime.now()
             os.makedirs(path)
-            print datetime.datetime.now()
         except OSError:
             pass
-        tim+=1
-
 
 def getPathWithFile(file_obj,rootpath,currentpath=None):
     if currentpath is None:
