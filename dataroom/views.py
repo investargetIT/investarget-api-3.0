@@ -223,11 +223,12 @@ class DataroomView(viewsets.ModelViewSet):
     def makeDataroomAllFilesZip(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
+            dataroomid = instance.id
             userid = request.GET.get('user',None)
             watermarkcontent = request.GET.get('water',None)
             qs = instance.dataroom_directories.all().filter(is_deleted=False)
             rootpath = APILOG_PATH['dataroomFilePath'] + '/' + 'dataroom_%s%s'%(str(instance.id), '_%s'%userid if userid else '')
-            startMakeDataroomZip(qs, rootpath , instance,userid,watermarkcontent)
+            startMakeDataroomZip(dataroomid, rootpath , userid,watermarkcontent)
             return JSONResponse(SuccessResponse('dataroom_%s%s.zip'%(str(instance.id), '_%s'%userid if userid else '')))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -285,19 +286,19 @@ class DataroomView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcontent=None):
+def startMakeDataroomZip(dataroomid,path, userid=None,watermarkcontent=None):
     class downloadAllDataroomFile(threading.Thread):
-        def __init__(self, qs, path):
-            self.qs = qs
+        def __init__(self, dataroomid, path):
+            self.dataroomid = dataroomid
             self.path = path
             threading.Thread.__init__(self)
 
         def run(self):
             print '进程开始'
             print datetime.datetime.now()
-            directory_qs = self.qs.filter(isFile=False)
+
             print datetime.datetime.now()
-            makeDirWithdirectoryobjs(directory_qs, self.path)
+            makeDirWithdirectoryobjs(self.dataroomid, self.path)
             # if userid:
             #     try:
             #         userfile_qs = dataroom_User_file.objects.get(dataroom=dataroominstance,user_id=userid).files.all()
@@ -325,12 +326,12 @@ def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcon
                     zipf.write(pathfile, arcname)
             zipf.close()
             # shutil.rmtree(self.path)
-    downloadAllDataroomFile(file_qs, path).start()
+    downloadAllDataroomFile(dataroomid, path).start()
 
-def makeDirWithdirectoryobjs(directory_objs ,rootpath):
+def makeDirWithdirectoryobjs(dataroomid ,rootpath):
     print rootpath
     os.makedirs(rootpath)
-
+    directory_objs = dataroomdirectoryorfile.objects.filter(isFile=False,is_deleted=False,dataroom_id=dataroomid)
     print datetime.datetime.now()
     print '开始'
     print directory_objs.count()
