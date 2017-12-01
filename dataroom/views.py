@@ -324,19 +324,6 @@ def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcon
             # shutil.rmtree(self.path)
     downloadAllDataroomFile(file_qs, path).start()
 
-# def makeDirWithdirectoryobjs(directory_objs ,rootpath):
-#     os.makedirs(rootpath)
-#     print datetime.datetime.now()
-#     print '开始'
-#     for file_obj in directory_objs:
-#         try:
-#             print '文件夹'
-#             path = getPathWithFile(file_obj,rootpath)
-#             os.makedirs(path)
-#         except OSError:
-#             print traceback.format_exc()
-#             pass
-
 def makeDirWithdirectoryobjs(directory_objs ,rootpath):
     os.makedirs(rootpath)
     print datetime.datetime.now()
@@ -345,11 +332,14 @@ def makeDirWithdirectoryobjs(directory_objs ,rootpath):
         try:
             print '文件夹'
             print datetime.datetime.now()
-            path = rootpath+'/'+file_obj.filename
+            path = getPathWithFile(file_obj,rootpath)
+            print datetime.datetime.now()
             os.makedirs(path)
+            print datetime.datetime.now()
         except OSError:
             print traceback.format_exc()
             pass
+
 
 
 
