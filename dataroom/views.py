@@ -328,9 +328,11 @@ def makeDirWithdirectoryobjs(directory_objs ,rootpath):
     os.makedirs(rootpath)
     print datetime.datetime.now()
     print '开始'
+    print directory_objs.count()
+    count = 1
     for file_obj in directory_objs:
         try:
-            print '文件夹'
+            print '文件夹 -%'%count
             print datetime.datetime.now()
             path = getPathWithFile(file_obj,rootpath)
             print datetime.datetime.now()
@@ -339,7 +341,7 @@ def makeDirWithdirectoryobjs(directory_objs ,rootpath):
         except OSError:
             print traceback.format_exc()
             pass
-
+        count+=1
 
 
 
