@@ -291,8 +291,12 @@ def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcon
             threading.Thread.__init__(self)
 
         def run(self):
+            print datetime.datetime.now()
+            print '开始'
             directory_qs = self.qs.filter(isFile=False)
             makeDirWithdirectoryobjs(directory_qs, self.path)
+            print datetime.datetime.now()
+            print '建好文件夹'
             if userid:
                 try:
                     userfile_qs = dataroom_User_file.objects.get(dataroom=dataroominstance,user_id=userid).files.all()
@@ -309,7 +313,11 @@ def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcon
                     filetype = path.split('.')[-1]
                     if filetype in ['pdf', u'pdf']:
                         filepaths.append(path)
+            print datetime.datetime.now()
+            print '下载好文件'
             addWaterMarkToPdfFiles(filepaths, watermarkcontent)
+            print datetime.datetime.now()
+            print '加好水印'
             import zipfile
             zipf = zipfile.ZipFile(self.path+'.zip', 'w')
             pre_len = len(os.path.dirname(self.path))
