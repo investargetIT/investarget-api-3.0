@@ -271,6 +271,8 @@ class DataroomView(viewsets.ModelViewSet):
                 response['Content-Type'] = 'application/octet-stream'
                 response["content-disposition"] = 'attachment;filename=%s' % path
                 os.remove(rootpath)
+                if os.path.exists(direcpath):
+                    shutil.rmtree(direcpath)
             else:
                 if os.path.exists(direcpath):
                     response = JSONResponse(SuccessResponse({'code':8004, 'msg': '压缩中'}))
@@ -323,8 +325,6 @@ def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcon
     downloadAllDataroomFile(file_qs, path).start()
 
 def makeDirWithdirectoryobjs(directory_objs ,rootpath):
-    if os.path.exists(rootpath):
-        shutil.rmtree(rootpath)
     os.makedirs(rootpath)
     print datetime.datetime.now()
     print '开始'
