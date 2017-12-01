@@ -294,6 +294,7 @@ def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcon
             print datetime.datetime.now()
             print '开始'
             directory_qs = self.qs.filter(isFile=False)
+
             makeDirWithdirectoryobjs(directory_qs, self.path)
             print datetime.datetime.now()
             print '建好文件夹'
@@ -334,12 +335,16 @@ def makeDirWithdirectoryobjs(directory_objs ,rootpath):
     if os.path.exists(rootpath):
         shutil.rmtree(rootpath)
     os.makedirs(rootpath)
+    tim = 1
     for file_obj in directory_objs:
+        print datetime.datetime.now()
+        print '建好文件夹_%s'%tim
         try:
             path = getPathWithFile(file_obj,rootpath)
             os.makedirs(path)
         except OSError:
             pass
+        tim+=1
 
 def getPathWithFile(file_obj,rootpath,currentpath=None):
     if currentpath is None:
