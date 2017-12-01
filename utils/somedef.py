@@ -9,6 +9,9 @@ from PyPDF2 import PdfFileWriter
 from reportlab.pdfgen import canvas
 
 from invest.settings import APILOG_PATH
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib.units import cm
 
 # 随机颜色1:
 def rndColor():
@@ -51,9 +54,6 @@ def makeAvatar(name):
         return None
 
 def addWaterMark(pdfpath='water.pdf',watermarkcontent='多维海拓'):
-    from reportlab.pdfbase import pdfmetrics
-    from reportlab.pdfbase.ttfonts import TTFont
-    from reportlab.lib.units import cm
     pdfmetrics.registerFont(TTFont('song', APILOG_PATH['pdfwaterfontPath']))
     watermarkpath = pdfpath.split('.')[0] + '-water' + '.pdf'
     out_path = pdfpath.split('.')[0] + '-out' + '.pdf'
@@ -88,6 +88,44 @@ def addWaterMark(pdfpath='water.pdf',watermarkcontent='多维海拓'):
     os.remove(pdfpath)
     os.remove(watermarkpath)
     return out_path
+
+def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent='多维海拓'):
+    if len(pdfpaths) == 0:
+        return
+    pdfmetrics.registerFont(TTFont('song', APILOG_PATH['pdfwaterfontPath']))
+    watermarkpath = pdfpaths[0].split('.')[0] + '-water' + '.pdf'
+    c = canvas.Canvas(watermarkpath)
+    x = 16
+    y = 1
+    # 设置字体
+    c.setFont("song", 40)
+    # 旋转45度，坐标系被旋转
+    c.rotate(45)
+    # 设置透明度，1为不透明
+    c.setFillAlpha(0.1)
+    c.drawCentredString((x - 3) * cm, (y - 3) * cm, watermarkcontent)
+    c.setFillAlpha(0.1)
+    c.drawCentredString(x * cm, y * cm, watermarkcontent)
+    c.setFillAlpha(0.1)
+    c.drawCentredString((x + 3) * cm, (y + 3) * cm, watermarkcontent)
+    c.save()
+    watermark = PdfFileReader(open(watermarkpath, "rb"))
+    # Get our files ready
+    for path in pdfpaths:
+        out_path = path.split('.')[0] + '-out' + '.pdf'
+        output_file = PdfFileWriter()
+        input_file = PdfFileReader(open(path, "rb"))
+        page_count = input_file.getNumPages()
+        for page_number in range(page_count):
+            input_page = input_file.getPage(page_number)
+            input_page.mergePage(watermark.getPage(0))
+            output_file.addPage(input_page)
+        with open(out_path, "wb") as outputStream:
+            output_file.write(outputStream)
+        os.remove(path)
+        os.rename(out_path, path)
+    os.remove(watermarkpath)
+    return
 
 def file_iterator(fn, chunk_size=512):
     while True:

@@ -184,6 +184,8 @@ def deleteqiniufile(bucket,key):
 def getUrlWithBucketAndKey(bucket,key):
     if bucket not in qiniu_url.keys():
         return None
+    if key is None:
+        return None
     q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
     return_url = "https://%s/%s" % (qiniu_url[bucket], key)
     if bucket == 'file':
@@ -208,14 +210,19 @@ def qiniuuploadfile(filepath, bucket_name):
 
 #下载文件到本地
 def downloadFileToPath(key,bucket,path):
-    download_url = getUrlWithBucketAndKey(bucket, key)
-    if download_url is None:
-        raise InvestError(8002, msg='文件路径不正确，无法下载')
-    r = requests.get(download_url)
-    if r.status_code != 200:
-        raise InvestError(8002, msg=repr(r.content))
-    with open(path, "wb") as code:
-        code.write(r.content)
+    try:
+        download_url = getUrlWithBucketAndKey(bucket, key)
+        if download_url is None:
+            raise InvestError(8002, msg='bucket/key error')
+        r = requests.get(download_url)
+        if r.status_code != 200:
+            raise InvestError(8002, msg=repr(r.content))
+        with open(path, "wb") as code:
+            code.write(r.content)
+    except Exception:
+        return None
+    else:
+        return path
 
 
 @api_view(['GET'])

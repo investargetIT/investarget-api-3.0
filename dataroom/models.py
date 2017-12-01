@@ -86,8 +86,6 @@ class dataroomdirectoryorfile(MyModel):
                 raise InvestError(7007,msg='非目录结构不能存储文件')
         if self.filename is None:
             raise InvestError(2007,msg='名称不能为空')
-        if self.realfilekey is None:
-            self.realfilekey = self.key
         super(dataroomdirectoryorfile, self).save(force_insert, force_update, using, update_fields)
 
 
