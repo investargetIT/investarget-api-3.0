@@ -3,11 +3,8 @@ import threading
 import traceback
 
 from django.core.paginator import Paginator, EmptyPage
-from django.db import models
 from django.db import transaction
 from django.db.models import F
-from django.db.models import Q,QuerySet, FieldDoesNotExist
-from django.db.models.fields.reverse_related import ForeignObjectRel
 from django.http import StreamingHttpResponse
 from rest_framework import filters, viewsets
 
@@ -21,9 +18,9 @@ from third.views.qiniufile import deleteqiniufile, downloadFileToPath
 from utils.customClass import InvestError, JSONResponse, RelationFilter
 from utils.sendMessage import sendmessage_dataroomfileupdate
 from utils.somedef import file_iterator,  addWaterMarkToPdfFiles
-from utils.util import read_from_cache, write_to_cache, returnListChangeToLanguage, loginTokenIsAvailable, \
-    returnDictChangeToLanguage, catchexcption, cache_delete_key, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
-    logexcption, add_perm, checkrequesttoken
+from utils.util import returnListChangeToLanguage, loginTokenIsAvailable, \
+    returnDictChangeToLanguage, catchexcption, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
+    logexcption, checkrequesttoken
 import datetime
 from django_filters import FilterSet
 import os
@@ -306,6 +303,7 @@ def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcon
                 path = getPathWithFile(file_obj, self.path)
                 savepath = downloadFileToPath(key=file_obj.realfilekey, bucket=file_obj.bucket, path=path)
                 if savepath:
+                    print savepath
                     filetype = path.split('.')[-1]
                     if filetype in ['pdf', u'pdf']:
                         filepaths.append(path)
@@ -319,8 +317,10 @@ def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcon
                     arcname = pathfile[pre_len:].strip(os.path.sep)  # 相对路径
                     zipf.write(pathfile, arcname)
             zipf.close()
-            shutil.rmtree(self.path)
-    downloadAllDataroomFile(file_qs, path).start()
+            # shutil.rmtree(self.path)
+    d = downloadAllDataroomFile(file_qs, path)
+    d.start()
+    d.join()
 
 def makeDirWithdirectoryobjs(directory_objs ,rootpath):
     if os.path.exists(rootpath):
