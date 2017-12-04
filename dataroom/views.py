@@ -296,7 +296,6 @@ def startMakeDataroomZip(dataroomid,path, userid=None,watermarkcontent=None):
             print '进程开始'
             print datetime.datetime.now()
             print 'is_alive = %s' % self.is_alive
-            print datetime.datetime.now()
             makeDirWithdirectoryobjs(self.dataroomid, self.path)
             # if userid:
             #     try:
