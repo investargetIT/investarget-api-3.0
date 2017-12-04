@@ -226,9 +226,8 @@ class DataroomView(viewsets.ModelViewSet):
             dataroomid = instance.id
             userid = request.GET.get('user',None)
             watermarkcontent = request.GET.get('water',None)
-            qs = instance.dataroom_directories.all().filter(is_deleted=False)
             rootpath = APILOG_PATH['dataroomFilePath'] + '/' + 'dataroom_%s%s'%(str(instance.id), '_%s'%userid if userid else '')
-            makeDirWithdirectoryobjs(dataroomid, rootpath)
+            startMakeDataroomZip(dataroomid, rootpath)
             return JSONResponse(SuccessResponse('dataroom_%s%s.zip'%(str(instance.id), '_%s'%userid if userid else '')))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -296,7 +295,7 @@ def startMakeDataroomZip(dataroomid,path, userid=None,watermarkcontent=None):
         def run(self):
             print '进程开始'
             print datetime.datetime.now()
-
+            print 'is_alive = %s' % self.is_alive
             print datetime.datetime.now()
             makeDirWithdirectoryobjs(self.dataroomid, self.path)
             # if userid:
