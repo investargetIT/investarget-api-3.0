@@ -45,7 +45,7 @@ def qiniu_coverupload(request):
             policy = {
                 'persistentOps': persistentOps,
                 # 'persistentPipeline': pipeline,
-                'deleteAfterDays': 1,
+                # 'deleteAfterDays': 1,
             }
         else:
             policy = None
@@ -96,7 +96,7 @@ def bigfileupload(request):
             policy = {
                 'persistentOps': persistentOps,
                 # 'persistentPipeline': pipeline,
-                'deleteAfterDays': 1,
+                # 'deleteAfterDays': 1,
             }
         else:
             policy = None
