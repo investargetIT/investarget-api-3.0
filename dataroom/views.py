@@ -320,7 +320,7 @@ def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcon
             shutil.rmtree(self.path)
     d = downloadAllDataroomFile(file_qs, path)
     d.start()
-    d.join()
+    # d.join()
 
 def makeDirWithdirectoryobjs(directory_objs ,rootpath):
     if os.path.exists(rootpath):
