@@ -3,11 +3,8 @@ import threading
 import traceback
 
 from django.core.paginator import Paginator, EmptyPage
-from django.db import models
 from django.db import transaction
 from django.db.models import F
-from django.db.models import Q,QuerySet, FieldDoesNotExist
-from django.db.models.fields.reverse_related import ForeignObjectRel
 from django.http import StreamingHttpResponse
 from rest_framework import filters, viewsets
 
@@ -21,9 +18,9 @@ from third.views.qiniufile import deleteqiniufile, downloadFileToPath
 from utils.customClass import InvestError, JSONResponse, RelationFilter
 from utils.sendMessage import sendmessage_dataroomfileupdate
 from utils.somedef import file_iterator,  addWaterMarkToPdfFiles
-from utils.util import read_from_cache, write_to_cache, returnListChangeToLanguage, loginTokenIsAvailable, \
-    returnDictChangeToLanguage, catchexcption, cache_delete_key, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
-    logexcption, add_perm, checkrequesttoken
+from utils.util import returnListChangeToLanguage, loginTokenIsAvailable, \
+    returnDictChangeToLanguage, catchexcption, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
+    logexcption, checkrequesttoken
 import datetime
 from django_filters import FilterSet
 import os
@@ -223,11 +220,11 @@ class DataroomView(viewsets.ModelViewSet):
     def makeDataroomAllFilesZip(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
-            dataroomid = instance.id
             userid = request.GET.get('user',None)
             watermarkcontent = request.GET.get('water',None)
+            qs = instance.dataroom_directories.all().filter(is_deleted=False)
             rootpath = APILOG_PATH['dataroomFilePath'] + '/' + 'dataroom_%s%s'%(str(instance.id), '_%s'%userid if userid else '')
-            startMakeDataroomZip(dataroomid, rootpath)
+            startMakeDataroomZip(qs, rootpath , instance,userid,watermarkcontent)
             return JSONResponse(SuccessResponse('dataroom_%s%s.zip'%(str(instance.id), '_%s'%userid if userid else '')))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -271,8 +268,6 @@ class DataroomView(viewsets.ModelViewSet):
                 response['Content-Type'] = 'application/octet-stream'
                 response["content-disposition"] = 'attachment;filename=%s' % path
                 os.remove(rootpath)
-                if os.path.exists(direcpath):
-                    os.removedirs(direcpath)
             else:
                 if os.path.exists(direcpath):
                     response = JSONResponse(SuccessResponse({'code':8004, 'msg': '压缩中'}))
@@ -285,35 +280,34 @@ class DataroomView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-def startMakeDataroomZip(dataroomid,path, userid=None,watermarkcontent=None):
+def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcontent=None):
     class downloadAllDataroomFile(threading.Thread):
-        def __init__(self, dataroomid, path):
-            self.dataroomid = dataroomid
+        def __init__(self, qs, path):
+            self.qs = qs
             self.path = path
             threading.Thread.__init__(self)
 
         def run(self):
-            print '进程开始'
-            print datetime.datetime.now()
-            print 'is_alive = %s' % self.is_alive
-            makeDirWithdirectoryobjs(self.dataroomid, self.path)
-            # if userid:
-            #     try:
-            #         userfile_qs = dataroom_User_file.objects.get(dataroom=dataroominstance,user_id=userid).files.all()
-            #     except dataroom_User_file.DoesNotExist:
-            #         raise InvestError(2007,msg='未找到符合条件的dataroom')
-            #     # file_qs = file_qs.filter(id__in=userfile_qs)
-            # else:
-            #     userfile_qs = self.qs.filter(isFile=True)
-            # filepaths = []
-            # for file_obj in userfile_qs:
-            #     path = getPathWithFile(file_obj, self.path)
-            #     savepath = downloadFileToPath(key=file_obj.realfilekey, bucket=file_obj.bucket, path=path)
-            #     if savepath:
-            #         filetype = path.split('.')[-1]
-            #         if filetype in ['pdf', u'pdf']:
-            #             filepaths.append(path)
-            # addWaterMarkToPdfFiles(filepaths, watermarkcontent)
+            directory_qs = self.qs.filter(isFile=False)
+            makeDirWithdirectoryobjs(directory_qs, self.path)
+            if userid:
+                try:
+                    userfile_qs = dataroom_User_file.objects.get(dataroom=dataroominstance,user_id=userid).files.all()
+                except dataroom_User_file.DoesNotExist:
+                    raise InvestError(2007,msg='未找到符合条件的dataroom')
+                # file_qs = file_qs.filter(id__in=userfile_qs)
+            else:
+                userfile_qs = self.qs.filter(isFile=True)
+            filepaths = []
+            for file_obj in userfile_qs:
+                path = getPathWithFile(file_obj, self.path)
+                savepath = downloadFileToPath(key=file_obj.realfilekey, bucket=file_obj.bucket, path=path)
+                if savepath:
+                    print savepath
+                    filetype = path.split('.')[-1]
+                    if filetype in ['pdf', u'pdf']:
+                        filepaths.append(path)
+            addWaterMarkToPdfFiles(filepaths, watermarkcontent)
             import zipfile
             zipf = zipfile.ZipFile(self.path+'.zip', 'w')
             pre_len = len(os.path.dirname(self.path))
@@ -323,33 +317,21 @@ def startMakeDataroomZip(dataroomid,path, userid=None,watermarkcontent=None):
                     arcname = pathfile[pre_len:].strip(os.path.sep)  # 相对路径
                     zipf.write(pathfile, arcname)
             zipf.close()
-            # shutil.rmtree(self.path)
-    downloadAllDataroomFile(dataroomid, path).start()
+            shutil.rmtree(self.path)
+    d = downloadAllDataroomFile(file_qs, path)
+    d.start()
+    d.join()
 
-def makeDirWithdirectoryobjs(dataroomid ,rootpath):
-    print rootpath
+def makeDirWithdirectoryobjs(directory_objs ,rootpath):
+    if os.path.exists(rootpath):
+        shutil.rmtree(rootpath)
     os.makedirs(rootpath)
-    directory_objs = dataroomdirectoryorfile.objects.filter(isFile=False,is_deleted=False,dataroom_id=dataroomid)
-    print datetime.datetime.now()
-    print '开始'
-    print directory_objs.count()
-    count = 1
     for file_obj in directory_objs:
         try:
-            print '文件夹'
-            print count
-            print datetime.datetime.now()
             path = getPathWithFile(file_obj,rootpath)
-            print datetime.datetime.now()
-            print path
             os.makedirs(path)
-            print datetime.datetime.now()
         except OSError:
-            print traceback.format_exc()
             pass
-        count+=1
-
-
 
 def getPathWithFile(file_obj,rootpath,currentpath=None):
     if currentpath is None:

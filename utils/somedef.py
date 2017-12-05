@@ -39,11 +39,6 @@ def makeAvatar(name):
     textX0 = int((height - letterWidth) / 2)
     # 创建Draw对象:
     draw = ImageDraw.Draw(image)
-    # 填充每个像素:
-    # for x in range(width):
-    #     for y in range(height):
-    #         draw.point((x, y), fill=backcolor)
-    # 输出文字:
     draw.text((textX0, textY0), name, font=font, fill=(255,255,255))
     from third.views.qiniufile import qiniuuploadfile
     image.save(APILOG_PATH['userAvatarPath'], 'jpeg')
@@ -53,7 +48,9 @@ def makeAvatar(name):
     else:
         return None
 
-def addWaterMark(pdfpath='water.pdf',watermarkcontent='多维海拓'):
+def addWaterMark(pdfpath='water.pdf',watermarkcontent=None):
+    if watermarkcontent is None:
+        watermarkcontent = u'多维海拓'
     pdfmetrics.registerFont(TTFont('song', APILOG_PATH['pdfwaterfontPath']))
     watermarkpath = pdfpath.split('.')[0] + '-water' + '.pdf'
     out_path = pdfpath.split('.')[0] + '-out' + '.pdf'
@@ -62,8 +59,6 @@ def addWaterMark(pdfpath='water.pdf',watermarkcontent='多维海拓'):
     y = 1
     # 设置字体
     c.setFont("song", 40)
-    # 旋转45度，坐标系被旋转
-    # 旋转45度，坐标系被旋转
     c.rotate(45)
     # 设置透明度，1为不透明
     c.setFillAlpha(0.1)
@@ -89,9 +84,11 @@ def addWaterMark(pdfpath='water.pdf',watermarkcontent='多维海拓'):
     os.remove(watermarkpath)
     return out_path
 
-def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=u'多维海拓'):
+def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
     if len(pdfpaths) == 0:
         return
+    if watermarkcontent is None:
+        watermarkcontent = u'多维海拓'
     pdfmetrics.registerFont(TTFont('song', APILOG_PATH['pdfwaterfontPath']))
     watermarkpath = pdfpaths[0].split('.')[0] + '-water' + '.pdf'
     c = canvas.Canvas(watermarkpath)
