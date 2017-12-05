@@ -200,7 +200,7 @@ class UserView(viewsets.ModelViewSet):
                 if self.queryset.filter(email=email,datasource=userdatasource).exists():
                     raise InvestError(code=20042)
                 type = data.pop('type',None)
-                if type in ['trader',u'trader']:
+                if type in ['trader', u'trader']:
                     groupname = '未审核交易师'
                 else:
                     groupname = '未审核投资人'
