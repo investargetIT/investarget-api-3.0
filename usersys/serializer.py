@@ -57,7 +57,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
     photourl = serializers.SerializerMethodField()
     class Meta:
         model = MyUser
-        fields = ('usernameC', 'usernameE', 'org','department', 'mobile', 'email', 'title', 'id','tags','userstatus','photourl','orgarea')
+        fields = ('usernameC', 'usernameE', 'org','department', 'mobile', 'email', 'wechat', 'title', 'id','tags','userstatus','photourl','orgarea')
         depth = 1
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_usertags__is_deleted=False)

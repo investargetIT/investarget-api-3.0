@@ -306,13 +306,10 @@ class ProjDetailSerializer_admin_withoutsecretinfo(serializers.ModelSerializer):
     transactionType = serializers.SerializerMethodField()
     finance = serializers.SerializerMethodField()
     attachment = serializers.SerializerMethodField()
-    supportUser = UserCommenSerializer()
-    takeUser = UserCommenSerializer()
-    makeUser = UserCommenSerializer()
     linkpdfurl = serializers.SerializerMethodField()
     class Meta:
         model = project
-        exclude = ('phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail','realname')
+        exclude = ('supportUser', 'takeUser', 'makeUser', 'phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail','realname')
         depth = 1
 
     def get_service(self, obj):
@@ -358,13 +355,10 @@ class ProjDetailSerializer_user_withoutsecretinfo(serializers.ModelSerializer):
     finance = serializers.SerializerMethodField()
     attachment = serializers.SerializerMethodField()
     country = countrySerializer()
-    supportUser = UserCommenSerializer()
-    takeUser = UserCommenSerializer()
-    makeUser = UserCommenSerializer()
     linkpdfurl = serializers.SerializerMethodField()
     class Meta:
         model = project
-        exclude = ('phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail','realname')
+        exclude = ('supportUser', 'takeUser', 'makeUser', 'phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail','realname')
         depth = 1
 
     def get_service(self, obj):
