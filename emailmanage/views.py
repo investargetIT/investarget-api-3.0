@@ -182,7 +182,10 @@ class EmailgroupsendlistView(viewsets.ModelViewSet):
         try:
             data = request.data
             send_id = data.get('send_id')
-            emailgroupsend = self.queryset.get(send_id=send_id)
+            try:
+                emailgroupsend = self.queryset.get(send_id=send_id)
+            except emailgroupsendlist.DoesNotExist:
+                return JSONResponse(SuccessResponse(None))
             with transaction.atomic():
                 data['isRead'] = True,
                 data['readtime'] = datetime.datetime.now(),
