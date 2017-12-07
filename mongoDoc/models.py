@@ -113,10 +113,17 @@ class ProjRemark(Document):
     remark = StringField(null=True)
     createuser_id = IntField()
     datasource = IntField()
-    date = DateTimeField(default=datetime.datetime.now())
+    date = DateTimeField()
     meta = {'collection': projremarkMongoTableName,
             'indexes': ['com_id', 'com_name']
             }
+    def save(self, force_insert=False, validate=True, clean=True,
+             write_concern=None, cascade=None, cascade_kwargs=None,
+             _refs=None, save_condition=None, signal_kwargs=None, **kwargs):
+        if self.date is None:
+            self.date = datetime.datetime.now()
+        super(ProjRemark, self).save(force_insert, validate, clean, write_concern, cascade, cascade_kwargs, _refs,
+                                      save_condition, signal_kwargs, **kwargs)
 
 
 class GroupEmailData(Document):
