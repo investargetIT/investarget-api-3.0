@@ -134,7 +134,13 @@ class GroupEmailData(Document):
     datasource = IntField()
     meta = {"collection": groupemailMongoTableName}
 
-
+    def save(self, force_insert=False, validate=True, clean=True,
+             write_concern=None, cascade=None, cascade_kwargs=None,
+             _refs=None, save_condition=None, signal_kwargs=None, **kwargs):
+        if self.savetime is None:
+            self.savetime = datetime.datetime.now()
+        super(GroupEmailData, self).save(force_insert, validate, clean, write_concern, cascade, cascade_kwargs, _refs,
+                                      save_condition, signal_kwargs, **kwargs)
 class IMChatMessages(Document):
     msg_id = StringField()
     timestamp = StringField()
@@ -147,8 +153,15 @@ class IMChatMessages(Document):
 
 class WXChatdata(Document):
     content = StringField()
-    createtime = DateTimeField(default=datetime.datetime.now())
+    createtime = DateTimeField()
     name = StringField()
     group_name = StringField()
     isShow = BooleanField(default=True)
     meta = {"collection": wxchatdataMongoTableName}
+    def save(self, force_insert=False, validate=True, clean=True,
+             write_concern=None, cascade=None, cascade_kwargs=None,
+             _refs=None, save_condition=None, signal_kwargs=None, **kwargs):
+        if self.createtime is None:
+            self.createtime = datetime.datetime.now()
+        super(WXChatdata, self).save(force_insert, validate, clean, write_concern, cascade, cascade_kwargs, _refs,
+                                      save_condition, signal_kwargs, **kwargs)
