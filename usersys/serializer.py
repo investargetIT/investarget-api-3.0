@@ -76,9 +76,10 @@ class UserRemarkCreateSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class UserRemarkSerializer(serializers.ModelSerializer):
+    createuser = UserCommenSerializer()
     class Meta:
         model = UserRemarks
-        fields = ('id','user','remark','createdtime','lastmodifytime')
+        fields = ('id','user','remark','createdtime','lastmodifytime','createuser')
 
 
 #投资人交易师关系基本信息
