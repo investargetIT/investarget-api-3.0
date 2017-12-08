@@ -137,7 +137,7 @@ def sendmessage_favoriteproject(model,receiver,sender=None):
                         bdage = 1
                         n_extras = {}
                         pushnotification(content, receiver_alias, bdage, n_extras)
-                    if 'email' in paths:
+                    if 'email' in paths and sendEmail and checkEmailTrue(receiver.email):
                         destination = receiver.email
                         projectsign = msgconfig['email']['projectsign']
                         if model.favoritetype_id in [3,5]:
@@ -193,7 +193,7 @@ def sendmessage_traderchange(model,receiver,types,sender=None):
                     bdage = 1
                     n_extras = {}
                     pushnotification(content, receiver_alias,  bdage, n_extras)
-                if 'email' in types and sendEmail:
+                if 'email' in types and sendEmail and checkEmailTrue(receiver.email):
                     destination = receiver.email
                     projectsign = 'evsM7'
                     vars = {'nameC':model.traderuser.usernameC,'nameE':model.traderuser.usernameE}
@@ -243,7 +243,7 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                     bdage = 1
                     n_extras = {}
                     pushnotification(content=content, receiver_alias=receiver_alias,  bdage=bdage, n_extras=n_extras)
-                if 'email' in types and sendEmail:
+                if 'email' in types and sendEmail and checkEmailTrue(receiver.email):
                     if model.userstatus.id == 2:
                         destination = receiver.email
                         projectsign = 'uszOI1'
@@ -301,7 +301,7 @@ def sendmessage_userregister(model,receiver,types,sender=None):
                     bdage = 1
                     n_extras = {}
                     pushnotification(content=content, receiver_alias=receiver_alias, bdage=bdage, n_extras=n_extras)
-                if 'email' in types and sendEmail:
+                if 'email' in types and sendEmail and checkEmailTrue(receiver.email):
                     destination = receiver.email
                     projectsign = 'J6VK41'
                     vars = {}
@@ -345,7 +345,7 @@ def sendmessage_timelineauditstatuchange(model,receiver,types,sender=None):
                     bdage = 1
                     n_extras = {}
                     pushnotification(content, receiver_alias, bdage, n_extras)
-                if 'email' in types and sendEmail:
+                if 'email' in types and sendEmail and checkEmailTrue(receiver.email):
                     destination = receiver.email
                     projectsign = 'LkZix2'
                     vars = {'projectC': getProjTitleWithSuperLink(model.timeline.proj),'projectE': getProjTitleWithSuperLink(model.timeline.proj,'en')}
@@ -391,7 +391,7 @@ def sendmessage_dataroomfileupdate(model,receiver,types,sender=None):
                     bdage = 1
                     n_extras = {}
                     pushnotification(content, receiver_alias, bdage, n_extras)
-                if 'email' in types and sendEmail:
+                if 'email' in types and sendEmail and checkEmailTrue(receiver.email):
                     destination = receiver.email
                     projectsign = 'umZlP3'
                     vars = {'projectC': model.dataroom.proj.projtitleC, 'projectE': model.dataroom.proj.projtitleE}
@@ -433,7 +433,7 @@ def sendmessage_projectpublish(model, receiver, types, sender=None):
             model = self.model
             sender = self.sender
             if isinstance(model, project):
-                if 'email' in types and sendEmail:
+                if 'email' in types and sendEmail and checkEmailTrue(receiver.email):
                     destination = receiver.email
                     projectsign = 'IszFR1'
                     vars = {'projectC': model.dataroom.proj.projtitleC, 'projectE': model.dataroom.proj.projtitleE}
@@ -513,7 +513,7 @@ def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
                     bdage = 1
                     n_extras = {}
                     pushnotification(content, receiver_alias, bdage, n_extras)
-                # if 'email' in types and sendEmail:
+                # if 'email' in types and sendEmail and checkEmailTrue(receiver.email):
                 #     destination = receiver.email
                 #     projectsign = ''
                 #     vars = {}
@@ -576,4 +576,14 @@ def checkReceiverToSendMsg(receiver):
         if isinstance(receiver, MyUser):
             if getattr(receiver, 'datasource_id') == 1 and receiver.is_active:
                 return True
+    return False
+
+fillemails = ['@investarget','@autospaceplus']
+
+def checkEmailTrue(email):
+    if email:
+        for fillemail in fillemails:
+            if fillemail in email:
+                return False
+        return True
     return False

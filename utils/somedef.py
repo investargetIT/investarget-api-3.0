@@ -24,7 +24,7 @@ def rndColor2():
 
 def rndColor3():
     colorset = [(247, 58, 97), (87, 96, 105), (173, 195, 192), (185, 227, 217)]
-    return colorset[random.randint(0,4)]
+    return colorset[random.randint(0,3)]
 
 
 def makeAvatar(name):
