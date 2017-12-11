@@ -7,7 +7,8 @@ from sourcetype.serializer import transactionPhasesSerializer
 class OrgCommonSerializer(serializers.ModelSerializer):
     class Meta:
         model = organization
-        fields = ('id','orgnameC','orgnameE','description')
+        fields = ('id', 'orgnameC', 'orgnameE', 'description')
+
 
 class OrgCreateSerializer(serializers.ModelSerializer):
 
@@ -15,18 +16,20 @@ class OrgCreateSerializer(serializers.ModelSerializer):
         model = organization
         fields = '__all__'
 
+
 class OrgUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = organization
-        exclude = ('datasource','createuser','createdtime')
+        exclude = ('datasource', 'createuser', 'createdtime')
 
 
 class OrgTransactionPhaseSerializer(serializers.ModelSerializer):
     transactionPhase = serializers.StringRelatedField()
     class Meta:
         model = orgTransactionPhase
-        fields = ('transactionPhase','is_deleted')
+        fields = ('transactionPhase', 'is_deleted')
+
 
 class OrgDetailSerializer(serializers.ModelSerializer):
     orgtransactionphase = serializers.SerializerMethodField()
@@ -34,15 +37,17 @@ class OrgDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = organization
         depth = 1
-        exclude = ('datasource', 'createuser', 'createdtime','is_deleted','deleteduser','deletedtime','lastmodifyuser','lastmodifytime',)
+        exclude = ('datasource', 'createuser', 'createdtime', 'is_deleted', 'deleteduser', 'deletedtime', 'lastmodifyuser', 'lastmodifytime',)
 
     def get_orgtransactionphase(self, obj):
         usertrader = obj.orgtransactionphase.filter(transactionPhase_orgs__is_deleted=False)
         if usertrader.exists():
-            return transactionPhasesSerializer(usertrader,many=True).data
+            return transactionPhasesSerializer(usertrader, many=True).data
         return None
 
+
 class OrgRemarkDetailSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = orgRemarks
         fields = '__all__'
