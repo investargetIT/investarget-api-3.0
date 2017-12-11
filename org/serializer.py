@@ -2,6 +2,7 @@
 from rest_framework import serializers
 from org.models import organization, orgRemarks, orgTransactionPhase
 from sourcetype.serializer import transactionPhasesSerializer
+from usersys.serializer import UserCommenSerializer
 
 
 class OrgCommonSerializer(serializers.ModelSerializer):
@@ -43,11 +44,13 @@ class OrgDetailSerializer(serializers.ModelSerializer):
         return None
 
 class OrgRemarkSerializer(serializers.ModelSerializer):
+    createuser = UserCommenSerializer()
     class Meta:
         model = orgRemarks
-        fields = ('id','org','remark','createdtime')
+        fields = ('id','org','remark','createdtime','createuser')
 
 class OrgRemarkDetailSerializer(serializers.ModelSerializer):
+    createuser = UserCommenSerializer()
     class Meta:
         model = orgRemarks
         fields = '__all__'
