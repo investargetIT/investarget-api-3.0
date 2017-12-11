@@ -42,11 +42,6 @@ class OrgDetailSerializer(serializers.ModelSerializer):
             return transactionPhasesSerializer(usertrader,many=True).data
         return None
 
-class OrgRemarkSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = orgRemarks
-        fields = ('id','org','remark','createdtime','createuser')
-
 class OrgRemarkDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = orgRemarks
