@@ -64,7 +64,6 @@ class UserView(viewsets.ModelViewSet):
     resetpassword:重置密码
     update:修改用户信息
     destroy:删除用户
-
     """
     filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
     queryset = MyUser.objects.filter(is_deleted=False)
