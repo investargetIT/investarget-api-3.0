@@ -26,7 +26,7 @@ def rndColor3():
     colorset = [(247, 58, 97), (87, 96, 105), (173, 195, 192), (185, 227, 217)]
     return colorset[random.randint(0,3)]
 
-#默认头像生成
+#默认头像生成kk
 def makeAvatar(name):
     width = 100
     height = 100
