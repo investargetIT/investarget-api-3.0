@@ -9,35 +9,42 @@ class CompanyCatDataSerializer(DocumentSerializer):
         model = CompanyCatData
         fields = '__all__'
 
+
 class MergeFinanceDataSerializer(DocumentSerializer):
     class Meta:
         model = MergeFinanceData
         fields = '__all__'
+
 
 class ProjectDataSerializer(DocumentSerializer):
     class Meta:
         model = ProjectData
         fields = '__all__'
 
+
 class ProjectNewsSerializer(DocumentSerializer):
     class Meta:
         model = ProjectNews
         fields = '__all__'
+
 
 class ProjRemarkSerializer(DocumentSerializer):
     class Meta:
         model = ProjRemark
         fields = '__all__'
 
+
 class GroupEmailDataSerializer(DocumentSerializer):
     class Meta:
         model = GroupEmailData
         fields = '__all__'
 
+
 class IMChatMessagesSerializer(DocumentSerializer):
     class Meta:
         model = IMChatMessages
         fields = '__all__'
+
 
 class WXChatdataSerializer(DocumentSerializer):
     class Meta:

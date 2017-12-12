@@ -147,6 +147,7 @@ class GroupDetailSerializer(serializers.ModelSerializer):
         model = Group
         fields = ('id', 'name','permissions')
 
+
 # 用户全部信息
 class UserSerializer(serializers.ModelSerializer):
     groups = GroupSerializer(MyUser.groups,many=True)

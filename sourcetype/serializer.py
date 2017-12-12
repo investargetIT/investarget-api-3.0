@@ -10,30 +10,36 @@ class AuditStatusSerializer(serializers.ModelSerializer):
         model = AuditStatus
         exclude = ('is_deleted',)
 
+
 class ProjectStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectStatus
         exclude = ('is_deleted',)
+
 
 class orgTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrgType
         exclude = ('is_deleted',)
 
+
 class BDStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = BDStatus
         exclude = ('is_deleted',)
+
 
 class characterTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = CharacterType
         exclude = ('is_deleted',)
 
+
 class favoriteTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = FavoriteType
         exclude = ('is_deleted',)
+
 
 class messageTypeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -55,9 +61,11 @@ class titleTypeSerializer(serializers.ModelSerializer):
 
 class countrySerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
+
     class Meta:
         model = Country
         exclude = ('is_deleted','datasource')
+
     def get_url(self, obj):
         if not obj.key:
             return None
@@ -69,6 +77,7 @@ class orgAttributeSerializer(serializers.ModelSerializer):
         model = OrgAttribute
         exclude = ('is_deleted',)
 
+
 class currencyTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = CurrencyType
@@ -77,9 +86,11 @@ class currencyTypeSerializer(serializers.ModelSerializer):
 
 class industrySerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
+
     class Meta:
         model = Industry
         exclude = ('is_deleted','datasource')
+
     def get_url(self, obj):
         if not obj.key:
             return 'https://o79atf82v.qnssl.com/' + '040.jpg'
@@ -91,10 +102,12 @@ class tagSerializer(serializers.ModelSerializer):
         model = Tag
         exclude = ('is_deleted','datasource')
 
+
 class serviceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Service
         exclude = ('is_deleted',)
+
 
 class orgAreaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -119,10 +132,12 @@ class transactionPhasesSerializer(serializers.ModelSerializer):
         model = TransactionPhases
         exclude = ('is_deleted',)
 
+
 class transactionTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = TransactionType
         exclude = ('is_deleted',)
+
 
 class transactionStatuSerializer(serializers.ModelSerializer):
     class Meta:
