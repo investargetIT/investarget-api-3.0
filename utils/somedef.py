@@ -26,7 +26,7 @@ def rndColor3():
     colorset = [(247, 58, 97), (87, 96, 105), (173, 195, 192), (185, 227, 217)]
     return colorset[random.randint(0,3)]
 
-
+#默认头像生成
 def makeAvatar(name):
     width = 100
     height = 100
@@ -48,6 +48,7 @@ def makeAvatar(name):
     else:
         return None
 
+#水印增加（单文件）
 def addWaterMark(pdfpath='water.pdf',watermarkcontent=None):
     if watermarkcontent is None:
         watermarkcontent = u'多维海拓'
@@ -84,9 +85,10 @@ def addWaterMark(pdfpath='water.pdf',watermarkcontent=None):
     os.remove(watermarkpath)
     return out_path
 
+#水印增加（多文件）
 def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
     if len(pdfpaths) == 0:
-        return
+        return 20071
     if watermarkcontent is None:
         watermarkcontent = u'多维海拓'
     pdfmetrics.registerFont(TTFont('song', APILOG_PATH['pdfwaterfontPath']))
@@ -121,9 +123,10 @@ def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
             output_file.write(outputStream)
         os.remove(path)
         os.rename(out_path, path)
-    os.remove(watermarkpath)
+        os.remove(watermarkpath)
     return
 
+#文件分片
 def file_iterator(fn, chunk_size=512):
     while True:
         c = fn.read(chunk_size)
