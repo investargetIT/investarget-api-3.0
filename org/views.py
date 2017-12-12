@@ -9,7 +9,7 @@ from rest_framework import filters , viewsets
 
 from org.models import organization, orgTransactionPhase, orgRemarks
 from org.serializer import OrgCommonSerializer, OrgDetailSerializer, \
-    OrgRemarkSerializer, OrgRemarkDetailSerializer, OrgCreateSerializer, OrgUpdateSerializer
+     OrgRemarkDetailSerializer, OrgCreateSerializer, OrgUpdateSerializer
 from sourcetype.models import TransactionPhases, DataSource
 from utils.customClass import InvestError, JSONResponse, RelationFilter
 from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, returnListChangeToLanguage, \
@@ -319,7 +319,7 @@ class OrgRemarkView(viewsets.ModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = orgRemarks.objects.filter(is_deleted=False)
     filter_fields = ('id','org','createuser')
-    serializer_class = OrgRemarkSerializer
+    serializer_class = OrgRemarkDetailSerializer
 
     def get_queryset(self):
         assert self.queryset is not None, (
@@ -383,7 +383,7 @@ class OrgRemarkView(viewsets.ModelViewSet):
                 queryset = queryset.page(page_index)
             except EmptyPage:
                 return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
-            serializer = OrgRemarkSerializer(queryset, many=True)
+            serializer = OrgRemarkDetailSerializer(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))

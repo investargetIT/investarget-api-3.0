@@ -141,7 +141,7 @@ def sendSmscode(request):
             ip = request.META['REMOTE_ADDR']
         if ip:
             times = checkIPAddress(ip)
-            if times > 100:
+            if times > 3:
                 raise InvestError(code=3004,msg='单位时间内只能获取三次验证码')
         else:
             raise InvestError(code=3003)
