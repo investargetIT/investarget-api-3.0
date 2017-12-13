@@ -123,6 +123,7 @@ def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
             output_file.write(outputStream)
         os.remove(path)
         os.rename(out_path, path)
+    if os.path.exists(watermarkpath):
         os.remove(watermarkpath)
     return
 
