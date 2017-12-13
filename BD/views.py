@@ -5,13 +5,13 @@ from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction
 from django.db.models import QuerySet
 from django_filters import FilterSet
-
+import datetime
 # Create your views here.
 from rest_framework import filters, viewsets
-from BD.models import ProjectBD, ProjectBDComments, OrgBDComments, OrgBD
+from BD.models import ProjectBD, ProjectBDComments, OrgBDComments, OrgBD, MeetingBD
 from BD.serializers import ProjectBDSerializer, ProjectBDCreateSerializer, ProjectBDCommentsCreateSerializer, \
     ProjectBDCommentsSerializer, OrgBDCommentsSerializer, OrgBDCommentsCreateSerializer, OrgBDCreateSerializer, \
-    OrgBDSerializer
+    OrgBDSerializer, MeetingBDSerializer, MeetingBDCreateSerializer
 from utils.customClass import RelationFilter, InvestError, JSONResponse
 from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
     returnListChangeToLanguage, catchexcption, returnDictChangeToLanguage
@@ -492,6 +492,135 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
                 # instance.save()
                 instance.delete()
             return JSONResponse(SuccessResponse({'isDeleted': True, }))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+class MeetingBDView(viewsets.ModelViewSet):
+    """
+    list:获取会议BD
+    create:增加会议BD
+    retrieve:查看会议BD信息
+    update:修改会议BD信息
+    destroy:删除会议BD
+    """
+    filter_backends = (filters.DjangoFilterBackend,filters.SearchFilter)
+    queryset = MeetingBD.objects.filter(is_deleted=False)
+    filter_fields = ('username','usermobile','manager')
+    search_fields = ('proj__projtitleC', 'username','manager__usernameC')
+    serializer_class = MeetingBDSerializer
+
+    def get_queryset(self):
+        assert self.queryset is not None, (
+            "'%s' should either include a `queryset` attribute, "
+            "or override the `get_queryset()` method."
+            % self.__class__.__name__
+        )
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource=self.request.user.datasource_id)
+            else:
+                queryset = queryset
+        else:
+            raise InvestError(code=8890)
+        return queryset
+
+
+    @loginTokenIsAvailable(['BD.getMeetBD','BD.manageMeetBD'])
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            lang = request.GET.get('lang')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = MeetingBDSerializer(queryset, many=True)
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable(['BD.manageMeetBD',])
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            lang = request.GET.get('lang')
+            data['createuser'] = request.user.id
+            data['datasource'] = request.user.datasource.id
+            with transaction.atomic():
+                orgBD = MeetingBDCreateSerializer(data=data)
+                if orgBD.is_valid():
+                    neworgBD = orgBD.save()
+                else:
+                    raise InvestError(5005,msg='会议BD创建失败——%s'%orgBD.error_messages)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(MeetingBDSerializer(neworgBD).data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable(['BD.getMeetBD','BD.manageMeetBD'])
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            serializer = self.serializer_class(instance)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable(['BD.manageMeetBD',])
+    def update(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            data['createuser'] = request.user.id
+            data['datasource'] = request.user.datasource.id
+            with transaction.atomic():
+                orgBD = MeetingBDCreateSerializer(instance,data=data)
+                if orgBD.is_valid():
+                    neworgBD = orgBD.save()
+                else:
+                    raise InvestError(5005, msg='会议BD修改失败——%s' % orgBD.error_messages)
+                return JSONResponse(
+                    SuccessResponse(returnDictChangeToLanguage(MeetingBDSerializer(neworgBD).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable(['BD.manageMeetBD',])
+    def destroy(self, request, *args, **kwargs):
+        try:
+            with transaction.atomic():
+                instance = self.get_object()
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
+            return JSONResponse(SuccessResponse({'isDeleted': True,}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:

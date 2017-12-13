@@ -39,6 +39,17 @@ orgbdcomment_detail = views.OrgBDCommentsView.as_view({
 })
 
 
+meetbd_list = views.MeetingBDView.as_view({
+        'get': 'list',
+        'post': 'create'
+})
+
+meetbd_detail = views.MeetingBDView.as_view({
+        'get': 'retrieve',
+        'put': 'update',
+        'delete': 'destroy'
+})
+
 urlpatterns = [
         url(r'^projbd/$', projbd_list, name='projbd_list'),
         url(r'^projbd/(?P<pk>\d+)/$', projbd_detail, name='projbd_detail'),
@@ -48,5 +59,6 @@ urlpatterns = [
         url(r'^orgbd/(?P<pk>\d+)/$', orgbd_detail, name='orgbd_detail'),
         url(r'^orgbd/comment/$', orgbdcomment_list, name='orgbdcomment_list'),
         url(r'^orgbd/comment/(?P<pk>\d+)/$', orgbdcomment_detail, name='orgbdcomment_detail'),
-
+        url(r'^meetbd/$', meetbd_list, name='meetbd_list'),
+        url(r'^meetbd/(?P<pk>\d+)/$', meetbd_detail, name='meetbd_detail'),
 ]
