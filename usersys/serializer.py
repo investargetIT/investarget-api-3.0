@@ -65,10 +65,11 @@ class GroupCreateSerializer(serializers.ModelSerializer):
 class UserInfoSerializer(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
     photourl = serializers.SerializerMethodField()
+    country = countrySerializer()
 
     class Meta:
         model = MyUser
-        fields = ('usernameC', 'usernameE', 'org', 'department', 'mobile', 'email', 'wechat', 'title', 'id', 'tags', 'userstatus', 'photourl', 'orgarea')
+        fields = ('usernameC', 'usernameE', 'org', 'department', 'mobile', 'email', 'wechat', 'title', 'id', 'tags', 'userstatus', 'photourl', 'orgarea', 'country')
         depth = 1
 
     def get_tags(self, obj):
