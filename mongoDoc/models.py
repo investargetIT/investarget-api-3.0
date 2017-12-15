@@ -5,7 +5,7 @@ import datetime
 from mongoengine import *
 from invest.settings import groupemailMongoTableName, chatMessagegMongoTableName, projectDataMongoTableName, \
     mergeandfinanceeventMongoTableName, com_catMongoTableName, projremarkMongoTableName, wxchatdataMongoTableName, \
-    projectNewsMongoTableName
+    projectNewsMongoTableName, projIndustryInfoMongoTableName
 from utils.customClass import InvestError
 
 
@@ -38,6 +38,7 @@ class ProjectData(Document):
     mobile = StringField(null=True)  # 公司联系方式
     email = StringField(null=True)  # 公司邮箱
     detailaddress = StringField(null=True)  # 公司地址
+    tags = ListField(null=True)   #公司标签
     meta = {'collection': projectDataMongoTableName,
             'indexes': ['com_id', 'com_cat_name', 'com_sub_cat_name', 'invse_round_id', 'com_name']
         }
@@ -103,6 +104,24 @@ class ProjectNews(Document):
             raise InvestError(8001, msg='数据重复')
         super(ProjectNews,self).save(force_insert,validate,clean,write_concern,cascade,cascade_kwargs,_refs,save_condition,signal_kwargs,**kwargs)
 
+
+class ProjIndustryInfo(Document):     #工商信息
+    com_id = IntField(null=True)  # 公司id
+    indus_base = DictField(null=True)  # 基本信息
+    indus_shareholder = ListField(null=True)  # 股权信息
+    indus_foreign_invest = ListField()   # 公司对外投资信息
+    indus_busi_info = ListField()    # 工商变更信息
+    date = DateTimeField()
+    meta = {'collection': projIndustryInfoMongoTableName,
+            'indexes': ['com_id',]
+            }
+    def save(self, force_insert=False, validate=True, clean=True,
+             write_concern=None, cascade=None, cascade_kwargs=None,
+             _refs=None, save_condition=None, signal_kwargs=None, **kwargs):
+        if self.date is None:
+            self.date = datetime.datetime.now()
+        super(ProjIndustryInfo, self).save(force_insert, validate, clean, write_concern, cascade, cascade_kwargs, _refs,
+                                      save_condition, signal_kwargs, **kwargs)
 
 
 

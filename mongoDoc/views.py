@@ -11,10 +11,10 @@ from mongoengine import Q
 from rest_framework import viewsets
 from bson.objectid import ObjectId
 from mongoDoc.models import GroupEmailData, IMChatMessages, ProjectData, MergeFinanceData, CompanyCatData, ProjRemark, \
-    WXChatdata, ProjectNews
+    WXChatdata, ProjectNews, ProjIndustryInfo
 from mongoDoc.serializers import GroupEmailDataSerializer, IMChatMessagesSerializer, ProjectDataSerializer, \
     MergeFinanceDataSerializer, CompanyCatDataSerializer, ProjRemarkSerializer, WXChatdataSerializer, \
-    ProjectNewsSerializer
+    ProjectNewsSerializer, ProjIndustryInfoSerializer
 from utils.customClass import JSONResponse, InvestError, AppEventRateThrottle
 from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, catchexcption, logexcption, \
     loginTokenIsAvailable
@@ -325,6 +325,64 @@ class ProjectDataView(viewsets.ModelViewSet):
     #     except Exception:
     #         catchexcption(request)
     #         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+class ProjectIndustryInfoView(viewsets.ModelViewSet):
+    throttle_classes = (AppEventRateThrottle,)
+    queryset = ProjIndustryInfo.objects.all()
+    serializer_class = ProjIndustryInfoSerializer
+    filter_fields = ('com_id',)
+
+
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.queryset)
+            sort = request.GET.get('sort')
+            if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
+                queryset = queryset.order_by('-com_id',)
+            else:
+                queryset = queryset.order_by('com_id',)
+            count = queryset.count()
+            try:
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = self.serializer_class(queryset,many=True)
+            return JSONResponse(SuccessResponse({'count':count,'data':serializer.data}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable(['usersys.as_admin'])
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            com_qs = ProjIndustryInfo.objects.filter(com_id=data['com_id'])
+            if com_qs.count() > 0:
+                serializer = self.serializer_class(com_qs.first(),data=data)
+            else:
+                serializer = self.serializer_class(data=data)
+            if serializer.is_valid():
+                serializer.save()
+            else:
+                raise InvestError(2001, msg=serializer.error_messages)
+            return JSONResponse(SuccessResponse(serializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
 
 class ProjectNewsView(viewsets.ModelViewSet):
 
