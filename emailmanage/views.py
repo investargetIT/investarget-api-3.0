@@ -21,8 +21,7 @@ from third.views.submail import xsendEmail
 from usersys.models import MyUser
 from utils.customClass import InvestError, JSONResponse
 from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, catchexcption, \
-    logexcption
-
+    logexcption, mySortQuery
 
 #邮件群发模板
 Email_project_sign = 'y0dQe4'
@@ -165,6 +164,9 @@ class EmailgroupsendlistView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.queryset).filter(datasource=request.user.datasource_id)
+            sortfield = request.GET.get('sort', 'createdtime')
+            desc = request.GET.get('desc', True)
+            queryset = mySortQuery(queryset, sortfield, desc)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)

@@ -32,7 +32,7 @@ from utils.sendMessage import sendmessage_userauditstatuchange, sendmessage_user
     sendmessage_usermakefriends
 from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable,\
     catchexcption, cache_delete_key, returnDictChangeToLanguage, returnListChangeToLanguage, SuccessResponse, \
-    InvestErrorResponse, ExceptionResponse, add_perm
+    InvestErrorResponse, ExceptionResponse, add_perm, mySortQuery
 from django_filters import FilterSet
 
 
@@ -67,7 +67,7 @@ class UserView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
     queryset = MyUser.objects.filter(is_deleted=False)
-    search_fields = ('mobile','email','usernameC','usernameE','org__orgnameC','orgarea__nameC','orgarea__nameE')
+    search_fields = ('mobile','email','usernameC','usernameE','org__orgnameC','orgarea__nameC','orgarea__nameE','investor_relations__traderuser__usernameC')
     serializer_class = UserSerializer
     filter_class = UserFilter
     redis_key = 'user'
@@ -133,6 +133,9 @@ class UserView(viewsets.ModelViewSet):
                 serializerclass = UserListSerializer
             else:
                 serializerclass = UserCommenSerializer
+            sortfield = request.GET.get('sort', 'createdtime')
+            desc = request.GET.get('desc', True)
+            queryset = mySortQuery(queryset, sortfield, desc)
             count = queryset.count()
             try:
                 queryset = Paginator(queryset, page_size)

@@ -14,7 +14,7 @@ from sourcetype.models import TransactionPhases, DataSource
 from utils.customClass import InvestError, JSONResponse, RelationFilter
 from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser, add_perm, \
-    cache_delete_key
+    cache_delete_key, mySortQuery
 from django.db import transaction,models
 from django_filters import FilterSet
 
@@ -110,11 +110,9 @@ class OrganizationView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(queryset)
-            sort = request.GET.get('sort')
-            if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
-                queryset = queryset.order_by('-lastmodifytime', '-createdtime')
-            else:
-                queryset = queryset.order_by('lastmodifytime', 'createdtime')
+            sortfield = request.GET.get('sort', 'createdtime')
+            desc = request.GET.get('desc', True)
+            queryset = mySortQuery(queryset, sortfield, desc)
             setrequestuser(request)
             if request.user.is_anonymous:
                 serializerclass = OrgCommonSerializer

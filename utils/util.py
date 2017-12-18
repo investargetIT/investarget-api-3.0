@@ -246,3 +246,17 @@ def requestDictChangeToLanguage(model,dictdata,lang=None):
             else:
                 newdict[key] = value
     return newdict
+
+
+def mySortQuery(queryset,sortfield,desc):
+    '''
+
+    :param queryset: 排序集合，queryset类型
+    :param sortfield: 排序字段，str类型
+    :param desc: 正反序
+    :return: queryset类型
+    '''
+    if desc:
+        sortfield = '-' + sortfield
+    queryset = queryset.order_by(sortfield)
+    return queryset

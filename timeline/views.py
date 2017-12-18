@@ -16,7 +16,7 @@ from utils.customClass import InvestError, JSONResponse
 from utils.sendMessage import sendmessage_timelineauditstatuchange
 from utils.util import read_from_cache, write_to_cache, returnListChangeToLanguage, loginTokenIsAvailable, \
     returnDictChangeToLanguage, catchexcption, cache_delete_key, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
-    add_perm
+    add_perm, mySortQuery
 import datetime
 
 class TimelineView(viewsets.ModelViewSet):
@@ -86,11 +86,9 @@ class TimelineView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset()).filter(datasource=request.user.datasource)
-            sort = request.GET.get('sort')
-            if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
-                queryset = queryset.order_by('-lastmodifytime', '-createdtime')
-            else:
-                queryset = queryset.order_by('lastmodifytime', 'createdtime')
+            sortfield = request.GET.get('sort', 'createdtime')
+            desc = request.GET.get('desc', True)
+            queryset = mySortQuery(queryset, sortfield, desc)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)

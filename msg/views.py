@@ -13,7 +13,7 @@ from msg.models import message, schedule
 from msg.serializer import MsgSerializer, ScheduleSerializer, ScheduleCreateSerializer
 from utils.customClass import InvestError, JSONResponse
 from utils.util import logexcption, loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
-    catchexcption, returnListChangeToLanguage, returnDictChangeToLanguage
+    catchexcption, returnListChangeToLanguage, returnDictChangeToLanguage, mySortQuery
 
 
 def saveMessage(content,type,title,receiver,sender=None,modeltype=None,sourceid=None):
@@ -139,6 +139,9 @@ class ScheduleView(viewsets.ModelViewSet):
                 queryset = queryset
             else:
                 queryset = queryset.filter(createuser_id=request.user.id)
+            sortfield = request.GET.get('sort', 'createdtime')
+            desc = request.GET.get('desc', True)
+            queryset = mySortQuery(queryset, sortfield, desc)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)

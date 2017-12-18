@@ -89,8 +89,8 @@ class OrgBD(MyModel):
 
     class Meta:
         permissions = (
-            ('manageOrgBD', '管理项目BD'),
-            ('getOrgBD', '查看项目BD'),
+            ('manageOrgBD', '管理机构BD'),
+            ('getOrgBD', '查看机构BD'),
         )
 
     def save(self, *args, **kwargs):
