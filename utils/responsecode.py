@@ -5,6 +5,7 @@ responsecode = {
     '8888':'unavailable source',
     '8889':'用户未登录',
     '8890':'give obj but expect queryset',
+    '8891':'字段名错误',
 
     '2001':'密码错误',
     '2002':'用户不存在',

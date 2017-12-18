@@ -4,6 +4,7 @@ from django.core.cache import cache
 import datetime
 import traceback
 
+from django.core.exceptions import FieldError
 from guardian.shortcuts import assign_perm, remove_perm
 
 from invest.settings import APILOG_PATH
@@ -256,7 +257,10 @@ def mySortQuery(queryset,sortfield,desc):
     :param desc: 正反序
     :return: queryset类型
     '''
-    if desc in ('1', u'1', 1):
-        sortfield = '-' + sortfield
-    queryset = queryset.order_by(sortfield)
-    return queryset
+    try:
+        if desc in ('1', u'1', 1):
+            sortfield = '-' + sortfield
+        queryset = queryset.order_by(sortfield)
+        return queryset
+    except FieldError:
+        raise InvestError(8891,msg='无效字段')
