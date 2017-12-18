@@ -111,7 +111,7 @@ class OrganizationView(viewsets.ModelViewSet):
                 page_index = 1
             queryset = self.filter_queryset(queryset)
             sortfield = request.GET.get('sort', 'createdtime')
-            desc = request.GET.get('desc', True)
+            desc = request.GET.get('desc', 1)
             queryset = mySortQuery(queryset, sortfield, desc)
             setrequestuser(request)
             if request.user.is_anonymous:

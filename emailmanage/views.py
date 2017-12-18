@@ -165,7 +165,7 @@ class EmailgroupsendlistView(viewsets.ModelViewSet):
                 page_index = 1
             queryset = self.filter_queryset(self.queryset).filter(datasource=request.user.datasource_id)
             sortfield = request.GET.get('sort', 'createdtime')
-            desc = request.GET.get('desc', True)
+            desc = request.GET.get('desc', 1)
             queryset = mySortQuery(queryset, sortfield, desc)
             try:
                 count = queryset.count()

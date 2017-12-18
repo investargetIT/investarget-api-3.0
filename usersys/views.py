@@ -134,7 +134,7 @@ class UserView(viewsets.ModelViewSet):
             else:
                 serializerclass = UserCommenSerializer
             sortfield = request.GET.get('sort', 'createdtime')
-            desc = request.GET.get('desc', True)
+            desc = request.GET.get('desc', 1)
             queryset = mySortQuery(queryset, sortfield, desc)
             count = queryset.count()
             try:
