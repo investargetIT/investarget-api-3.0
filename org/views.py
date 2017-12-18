@@ -86,7 +86,7 @@ class OrganizationView(viewsets.ModelViewSet):
                 else:
                     write_to_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg], obj)
         if obj.datasource != self.request.user.datasource:
-            raise InvestError(code=8888, msg='资源非同源')
+            raise InvestError(code=8888)
         return obj
 
 
@@ -104,7 +104,7 @@ class OrganizationView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(code=8888)
             else:
-                raise InvestError(code=8888, msg='source field is required')
+                raise InvestError(code=8888, msg='unavailable source')
             if not page_size:
                 page_size = 10
             if not page_index:
@@ -347,7 +347,7 @@ class OrgRemarkView(viewsets.ModelViewSet):
             except orgRemarks.DoesNotExist:
                 raise InvestError(code=5002)
         if obj.datasource != self.request.user.datasource:
-            raise InvestError(code=8888, msg='资源非同源')
+            raise InvestError(code=8888)
         return obj
 
     def get_org(self,orgid):

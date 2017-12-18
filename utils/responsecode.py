@@ -2,7 +2,7 @@
 responsecode = {
     '1000':'请求成功',
     '9999':'没标明状态码的错误',
-    '8888':'数据来源不合法,datasource不匹配',
+    '8888':'unavailable source',
     '8889':'用户未登录',
     '8890':'give obj but expect queryset',
 

@@ -107,7 +107,7 @@ class ProjectView(viewsets.ModelViewSet):
             else:
                 write_to_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg], obj)
         if obj.datasource != self.request.user.datasource:
-            raise InvestError(code=8888,msg='资源非同源')
+            raise InvestError(code=8888)
         return obj
 
     def list(self, request, *args, **kwargs):
@@ -124,7 +124,7 @@ class ProjectView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(code=8888)
             else:
-                raise InvestError(code=8888, msg='source field is required')
+                raise InvestError(code=8888, msg='unavailable source')
             if not max_size:
                 max_size = 10
             if not skip_count or skip_count < 1:
@@ -587,7 +587,7 @@ class ProjAttachmentView(viewsets.ModelViewSet):
             except attachment.DoesNotExist:
                 raise InvestError(code=40031)
         if obj.proj.datasource != self.request.user.datasource:
-            raise InvestError(code=8888, msg='资源非同源')
+            raise InvestError(code=8888)
         return obj
     def get_proj(self,pk):
         obj = read_from_cache('project_%s' % pk)
@@ -599,7 +599,7 @@ class ProjAttachmentView(viewsets.ModelViewSet):
             else:
                 write_to_cache('project_%s' % pk, obj)
         if obj.datasource != self.request.user.datasource:
-            raise InvestError(code=8888, msg='资源非同源')
+            raise InvestError(code=8888)
         if obj.is_deleted:
             raise InvestError(code=4002,msg='项目已删除')
         return obj
@@ -783,7 +783,7 @@ class ProjFinanceView(viewsets.ModelViewSet):
             except finance.DoesNotExist:
                 raise InvestError(code=40031)
         if obj.datasource != self.request.user.datasource:
-            raise InvestError(code=8888, msg='资源非同源')
+            raise InvestError(code=8888)
         return obj
     def get_proj(self,pk):
         obj = read_from_cache('project_%s' % pk)
@@ -795,7 +795,7 @@ class ProjFinanceView(viewsets.ModelViewSet):
             else:
                 write_to_cache('project_%s' % pk, obj)
         if obj.datasource != self.request.user.datasource:
-            raise InvestError(code=8888, msg='资源非同源')
+            raise InvestError(code=8888)
         if obj.is_deleted:
             raise InvestError(code=4002,msg='项目已删除')
         return obj
@@ -978,7 +978,7 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
             except finance.DoesNotExist:
                 raise InvestError(code=4006)
         if obj.datasource != self.request.user.datasource:
-            raise InvestError(code=8888, msg='资源非同源')
+            raise InvestError(code=8888)
         return obj
 
     def get_user(self,pk):
@@ -991,7 +991,7 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
             else:
                 write_to_cache('user_%s' % pk, obj)
         if obj.datasource != self.request.user.datasource:
-            raise InvestError(code=8888, msg='资源非同源')
+            raise InvestError(code=8888)
         if obj.is_deleted:
             raise InvestError(code=2002,msg='用户已删除')
         return obj

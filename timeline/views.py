@@ -72,7 +72,7 @@ class TimelineView(viewsets.ModelViewSet):
                 else:
                     write_to_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg], obj)
         if obj.datasource != self.request.user.datasource:
-            raise InvestError(code=8888,msg='资源非同源')
+            raise InvestError(code=8888)
         return obj
 
     @loginTokenIsAvailable()
@@ -357,7 +357,7 @@ class TimeLineRemarkView(viewsets.ModelViewSet):
         except timelineremark.DoesNotExist:
             raise InvestError(code=60021, msg='remark with this "%s" is not exist' % self.kwargs[lookup_url_kwarg])
         if obj.datasource != self.request.user.datasource:
-            raise InvestError(code=8888,msg='资源非同源')
+            raise InvestError(code=8888)
         return obj
 
     @loginTokenIsAvailable()

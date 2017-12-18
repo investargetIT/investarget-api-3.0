@@ -256,7 +256,7 @@ def mySortQuery(queryset,sortfield,desc):
     :param desc: 正反序
     :return: queryset类型
     '''
-    if desc:
+    if desc in ('1', u'1', 1):
         sortfield = '-' + sortfield
     queryset = queryset.order_by(sortfield)
     return queryset

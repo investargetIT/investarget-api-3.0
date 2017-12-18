@@ -55,7 +55,7 @@ class DataroomView(viewsets.ModelViewSet):
         except dataroom.DoesNotExist:
             raise InvestError(code=6002,msg='timeline with this "%s" is not exist' % self.kwargs[lookup_url_kwarg])
         if obj.datasource != self.request.user.datasource:
-            raise InvestError(code=8888,msg='资源非同源')
+            raise InvestError(code=8888)
         return obj
 
 
@@ -369,7 +369,7 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             except self.Model.DoesNotExist:
                 raise InvestError(code=7002,msg='dataroom with this （"%s"） is not exist' % self.kwargs['pk'])
         if obj.datasource != self.request.user.datasource:
-            raise InvestError(code=8888,msg='资源非同源')
+            raise InvestError(code=8888)
         return obj
 
     @loginTokenIsAvailable(['dataroom.admin_getdataroom',])
@@ -504,7 +504,7 @@ class User_DataroomfileView(viewsets.ModelViewSet):
             except self.Model.DoesNotExist:
                 raise InvestError(code=7002,msg='dataroom-user with this （"%s"） is not exist' % self.kwargs['pk'])
         if obj.datasource != self.request.user.datasource:
-            raise InvestError(code=8888,msg='资源非同源')
+            raise InvestError(code=8888)
         return obj
 
     @loginTokenIsAvailable()

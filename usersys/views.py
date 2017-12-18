@@ -110,7 +110,7 @@ class UserView(viewsets.ModelViewSet):
                 else:
                     write_to_cache(self.redis_key+'_%s'%self.kwargs[lookup_url_kwarg],obj)
         if obj.datasource != self.request.user.datasource:
-            raise InvestError(code=8888,msg='资源非同源')
+            raise InvestError(code=8888)
         return obj
 
     @loginTokenIsAvailable()
@@ -184,7 +184,7 @@ class UserView(viewsets.ModelViewSet):
                     else:
                         raise  InvestError(code=8888)
                 else:
-                    raise InvestError(code=8888,msg='source field is required,//forbidden')
+                    raise InvestError(code=8888,msg='unavailable source')
                 if not mobile or not email:
                     raise InvestError(code=2007, msg='mobile、email cannot all be null')
 
@@ -563,7 +563,7 @@ class UserView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(code=8888)
             else:
-                raise InvestError(code=8888, msg='source field is required')
+                raise InvestError(code=8888, msg='unavailable source')
             try:
                 user = self.get_queryset().get(mobile=mobile, datasource=userdatasource)
             except MyUser.DoesNotExist:
@@ -1078,7 +1078,7 @@ class UserRelationView(viewsets.ModelViewSet):
             except UserRelation.DoesNotExist:
                 raise InvestError(code=2011,msg='relation with pk = "%s" is not exist'%self.kwargs[lookup_url_kwarg])
         if obj.datasource != self.request.user.datasource:
-            raise InvestError(code=8888,msg='资源非同源')
+            raise InvestError(code=8888)
         return obj
 
     @loginTokenIsAvailable()
@@ -1234,7 +1234,7 @@ class UserFriendshipView(viewsets.ModelViewSet):
             except UserFriendship.DoesNotExist:
                 raise InvestError(code=2002)
         if obj.datasource != self.request.user.datasource:
-            raise InvestError(code=8888,msg='资源非同源')
+            raise InvestError(code=8888)
         return obj
 
     @loginTokenIsAvailable()
@@ -1422,7 +1422,7 @@ class GroupPermissionView(viewsets.ModelViewSet):
             "user must be is_authenticated"
         )
         if obj.datasource != self.request.user.datasource:
-            raise InvestError(code=8888, msg='资源非同源')
+            raise InvestError(code=8888)
         return obj
 
     @loginTokenIsAvailable()
@@ -1581,7 +1581,7 @@ def login(request):
             else:
                 raise InvestError(code=8888)
         else:
-            raise InvestError(code=8888, msg='datasource field is required')
+            raise InvestError(code=8888, msg='unavailable source')
         if not username or not password or not userdatasource:
             raise InvestError(code=20071,msg='参数不全')
         user = auth.authenticate(username=username, password=password, datasource=userdatasource)
