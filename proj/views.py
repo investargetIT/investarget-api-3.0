@@ -142,7 +142,7 @@ class ProjectView(viewsets.ModelViewSet):
                     queryset = queryset.filter(Q(isHidden=False,projstatus_id__in=[4,6,7,8])| Q(createuser=request.user)| Q(supportUser=request.user)| Q(takeUser=request.user)| Q(makeUser=request.user))
                     serializerclass = ProjListSerializer_user
             count = queryset.count()
-            queryset = queryset.order_by('-publishDate', '-createdtime')[int(skip_count):int(max_size)+int(skip_count)]
+            queryset = queryset.order_by('-createdtime')[int(skip_count):int(max_size)+int(skip_count)]
             responselist = []
             for instance in queryset:
                 actionlist = {'get': False, 'change': False, 'delete': False}

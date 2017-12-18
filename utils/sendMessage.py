@@ -4,7 +4,7 @@ import threading
 from dataroom.models import dataroom_User_file
 from msg.models import schedule
 from proj.models import project, favoriteProject
-from sourcetype.urls import datasource
+from sourcetype.models import DataSource
 from timeline.models import timelineTransationStatu
 from usersys.models import MyUser, UserRelation, UserFriendship
 from msg.views import saveMessage
@@ -21,7 +21,7 @@ sendAppmsg = True
 
 def getbase_domain(model):
     base_domain = None
-    if isinstance(model, datasource):
+    if isinstance(model, DataSource):
         base_domain = model.domain
     return base_domain
 
@@ -394,7 +394,7 @@ def sendmessage_dataroomfileupdate(model,receiver,types,sender=None):
                 if 'email' in types and sendEmail and checkEmailTrue(receiver.email):
                     destination = receiver.email
                     projectsign = 'umZlP3'
-                    vars = {'projectC': model.dataroom.proj.projtitleC, 'projectE': model.dataroom.proj.projtitleE}
+                    vars = {'projectC': getProjTitleWithSuperLink(model.dataroom.proj), 'projectE': getProjTitleWithSuperLink(model.dataroom.proj, 'en')}
                     xsendEmail(destination, projectsign, vars)
                 if 'sms' in types and sendSms:
                     destination = receiver.mobile
@@ -436,7 +436,7 @@ def sendmessage_projectpublish(model, receiver, types, sender=None):
                 if 'email' in types and sendEmail and checkEmailTrue(receiver.email):
                     destination = receiver.email
                     projectsign = 'IszFR1'
-                    vars = {'projectC': model.dataroom.proj.projtitleC, 'projectE': model.dataroom.proj.projtitleE}
+                    vars = {'projectC': getProjTitleWithSuperLink(model), 'projectE': getProjTitleWithSuperLink(model, 'en')}
                     xsendEmail(destination, projectsign, vars)
                 if 'webmsg' in types and sendWebmsg:
                     content = '您的项目%s，状态变更为已发布。' % model.dataroom.proj.projtitleC
@@ -513,16 +513,6 @@ def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
                     bdage = 1
                     n_extras = {}
                     pushnotification(content, receiver_alias, bdage, n_extras)
-                # if 'email' in types and sendEmail and checkEmailTrue(receiver.email):
-                #     destination = receiver.email
-                #     projectsign = ''
-                #     vars = {}
-                #     xsendEmail(destination, projectsign, vars)
-                # if 'sms' in types and sendSms:
-                #     destination = receiver.mobile
-                #     projectsign = 'zzzz'
-                #     vars = {'code': 'sss', 'time': '10'}
-                #     xsendSms(destination, projectsign, vars)
                 if 'webmsg' in types and sendWebmsg:
                     content = '您有一个时间轴提醒到期'
                     title = '时间轴到期提醒'
