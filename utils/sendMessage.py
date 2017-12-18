@@ -165,7 +165,7 @@ def sendmessage_favoriteproject(model,receiver,sender=None):
     if checkReceiverToSendMsg(receiver):
         sendmessage_favoriteprojectThread(model,receiver,sender).start()
 
-def sendmessage_traderchange(model,receiver,types,sender=None):
+def sendmessage_traderadd(model,receiver,types,sender=None):
     """
     :param model: UserRelation type
     :param receiver: myuser type
@@ -188,14 +188,14 @@ def sendmessage_traderchange(model,receiver,types,sender=None):
             sender = self.sender
             if isinstance(model, UserRelation):
                 if 'app' in types and sendAppmsg:
-                    content = '交易师已更换'
+                    content = '交易师已添加'
                     receiver_alias = receiver.id
                     bdage = 1
                     n_extras = {}
                     pushnotification(content, receiver_alias,  bdage, n_extras)
                 if 'email' in types and sendEmail and checkEmailTrue(receiver.email):
                     destination = receiver.email
-                    projectsign = 'evsM7'
+                    projectsign = 'X6JEv3'
                     vars = {'nameC':model.traderuser.usernameC,'nameE':model.traderuser.usernameE}
                     xsendEmail(destination, projectsign, vars)
                 if 'sms' in types and sendSms:
@@ -204,8 +204,8 @@ def sendmessage_traderchange(model,receiver,types,sender=None):
                     vars = {'user': model.traderuser.usernameC}
                     xsendSms(destination, projectsign, vars)
                 if 'webmsg' in types and sendWebmsg:
-                    content = '您的交易师已更换为%s，感谢您的信任与支持' % model.traderuser.usernameC
-                    title = '交易师已更换'
+                    content = '已为您添加交易师%s，感谢您的信任与支持' % model.traderuser.usernameC
+                    title = '交易师已添加'
                     messagetype = 2
                     saveMessage(content, messagetype, title, receiver, sender,modeltype='UserRelation',sourceid=model.id)
 

@@ -3,10 +3,10 @@
 
 userpermfield = {
     'usersys.admin_changeuser':[],
-    'usersys.trader_changeuser':['groups','createuser','createdtime'],
+    'usersys.trader_changeuser':['groups', 'createuser', 'createdtime', 'mobile', 'email', 'wechat'],
     'usersys.admin_adduser':[],
     'usersys.trader_adduser':[],
-    'changeself':['groups','createuser','createdtime'],
+    'changeself':['groups', 'createuser', 'createdtime'],
 }
 
 projectpermfield = {

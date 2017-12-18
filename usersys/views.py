@@ -28,7 +28,7 @@ from usersys.serializer import UserSerializer, UserListSerializer, UserRelationS
 from sourcetype.models import Tag, DataSource
 from utils import perimissionfields
 from utils.customClass import JSONResponse, InvestError, RelationFilter
-from utils.sendMessage import sendmessage_userauditstatuchange, sendmessage_userregister, sendmessage_traderchange, \
+from utils.sendMessage import sendmessage_userauditstatuchange, sendmessage_userregister, sendmessage_traderadd, \
     sendmessage_usermakefriends
 from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable,\
     catchexcption, cache_delete_key, returnDictChangeToLanguage, returnListChangeToLanguage, SuccessResponse, \
@@ -472,7 +472,7 @@ class UserView(viewsets.ModelViewSet):
                         messagelist.append((user,sendmsg))
                     for user,sendmsg in messagelist:
                         if sendmsg:
-                            sendmessage_userauditstatuchange(user,user,['app','email','webmsg'],sender=request.user)
+                            sendmessage_userauditstatuchange(user,user,['app','email', 'sms','webmsg'],sender=request.user)
                 return JSONResponse(SuccessResponse(returnListChangeToLanguage(userlist,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -1050,6 +1050,8 @@ class UserRelationView(viewsets.ModelViewSet):
                     add_perm('usersys.user_getuserrelation', relation.traderuser, relation)
                     add_perm('usersys.user_changeuserrelation', relation.traderuser, relation)
                     add_perm('usersys.user_deleteuserrelation', relation.traderuser, relation)
+                    sendmessage_traderadd(relation, relation.investoruser, ['email', 'app', 'sms', 'webmsg'],
+                                             sender=request.user)
                 else:
                     raise InvestError(code=20071,msg='%s'%newrelation.errors)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(UserRelationSerializer(relation).data,lang)))
@@ -1109,12 +1111,8 @@ class UserRelationView(viewsets.ModelViewSet):
                 if not isinstance(relationdatalist,list) or not relationdatalist:
                     raise InvestError(2007,msg='expect a not null relation data list')
                 newlist = []
-                sendmessagelist = []
                 for relationdata in relationdatalist:
-                    sendmsg = False
                     relation = self.get_object(relationdata['id'])
-                    if relationdata.get('traderuser',None) and relationdata.get('traderuser') != relation.traderuser_id:
-                        sendmsg = True
                     if request.user.has_perm('usersys.admin_changeuserrelation'):
                         pass
                     elif request.user.has_perm('usersys.user_changeuserrelation', relation):
@@ -1130,10 +1128,6 @@ class UserRelationView(viewsets.ModelViewSet):
                     else:
                         raise InvestError(code=20071,msg=newrelationseria.errors)
                     newlist.append(UserRelationSerializer(newrelation).data)
-                    sendmessagelist.append((newrelation,sendmsg))
-                for newrelation, sendmsg in sendmessagelist:
-                    if sendmsg:
-                        sendmessage_traderchange(newrelation, newrelation.investoruser,['email', 'app', 'sms', 'webmsg'], sender=request.user)
                 return JSONResponse(SuccessResponse(returnListChangeToLanguage(newlist,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
