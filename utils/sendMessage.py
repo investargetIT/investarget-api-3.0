@@ -238,7 +238,7 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                     if model.userstatus.id == 2:
                         content = '您在海拓注册的%s账号已经通过审核，欢迎加入海拓交易平台。'% model.usernameC
                     else:
-                        content = '您在海拓注册的%s账号%s，如有疑问，请咨询相关工作人员。。'%(model.usernameC, model.userstatu.nameC)
+                        content = '您在海拓注册的%s账号%s，如有疑问，请咨询相关工作人员。。'%(model.usernameC, model.userstatus.nameC)
                     receiver_alias = receiver.id
                     bdage = 1
                     n_extras = {}
@@ -265,7 +265,7 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                         content = '您在海拓注册的%s账号已经通过审核，欢迎加入海拓交易平台。'% model.usernameC
                         title = '账号状态更改'
                     else:
-                        content = '您在海拓注册的%s账号%s，如有疑问，请咨询相关工作人员。。'%(model.usernameC, model.userstatu.nameC)
+                        content = '您在海拓注册的%s账号%s，如有疑问，请咨询相关工作人员。。'%(model.usernameC, model.userstatus.nameC)
                         title = '账号状态更改'
                     messagetype = 3
                     saveMessage(content, messagetype, title, receiver, sender,modeltype='MyUser',sourceid=model.id)
