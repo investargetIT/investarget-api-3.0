@@ -11,10 +11,10 @@ from msg.views import saveMessage
 from third.views.jpush import pushnotification
 from third.views.submail import xsendSms, xsendEmail
 
-sendEmail = False
-sendSms = False
+sendEmail = True
+sendSms = True
 sendWebmsg = True
-sendAppmsg = False
+sendAppmsg = True
 
 
 
