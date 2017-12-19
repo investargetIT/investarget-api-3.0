@@ -433,7 +433,7 @@ def getmenulist(user):
         qslist.append(allmenuobj.filter(id__in=[2, 23]))
     if user.has_perm('BD.user_getMeetBD') or user.has_perm('BD.manageMeetBD'):         # 会议bd管理
         qslist.append(allmenuobj.filter(id__in=[29, 23]))
-    if user.has_perm('usersys.as_admin'):#日志查询
+    if user.has_perm('APILog.manage_userinfolog'):#日志查询
         qslist.append(allmenuobj.filter(id__in=[9]))
     if user.has_perm('msg.admin_manageSchedule'):#日程管理
         qslist.append(allmenuobj.filter(id__in=[25]))
