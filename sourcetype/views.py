@@ -421,16 +421,18 @@ def getmenulist(user):
     allmenuobj = webmenu.objects.all()
     if user.has_perm('usersys.as_admin'):
         qslist.append(allmenuobj.filter(id__in=[5]))
-    if user.has_perm('usersys.as_investor'):
+    if user.has_perm('usersys.as_investor') and not user.is_superuser:
         qslist.append(allmenuobj.filter(id__in=[13]))
-    if user.has_perm('usersys.as_trader'):
+    if user.has_perm('usersys.as_trader') and not user.is_superuser:
         qslist.append(allmenuobj.filter(id__in=[12]))
     if user.has_perm('org.admin_getorg'):#机构 、邮件管理
         qslist.append(allmenuobj.filter(id__in=[3, 23]))
-    if user.has_perm('BD.getProjectBD') or user.has_perm('BD.manageProjectBD'): # 项目bd管理
+    if user.has_perm('BD.user_getProjectBD') or user.has_perm('BD.manageProjectBD'): # 项目bd管理
         qslist.append(allmenuobj.filter(id__in=[22, 23]))
-    if user.has_perm('BD.getOrgBD') or user.has_perm('BD.manageOrgBD'):         # 机构bd管理
+    if user.has_perm('BD.user_getOrgBD') or user.has_perm('BD.manageOrgBD'):         # 机构bd管理
         qslist.append(allmenuobj.filter(id__in=[2, 23]))
+    if user.has_perm('BD.user_getMeetBD') or user.has_perm('BD.manageMeetBD'):         # 会议bd管理
+        qslist.append(allmenuobj.filter(id__in=[29, 23]))
     if user.has_perm('usersys.as_admin'):#日志查询
         qslist.append(allmenuobj.filter(id__in=[9]))
     if user.has_perm('msg.admin_manageSchedule'):#日程管理
@@ -442,5 +444,5 @@ def getmenulist(user):
     if user.has_perm('proj.admin_addproj') or user.has_perm('proj.user_addproj'):
         qslist.append(allmenuobj.filter(id__in=[19]))
     qslist.append(allmenuobj.filter(id__in=[1, 4, 6, 7, 8, 10, 11, 14, 15, 16, 18, 20, 21, 27, 28]))
-    qsres = reduce(lambda x,y:x|y,qslist).distinct().order_by('index')
+    qsres = reduce(lambda x,y:x|y,qslist).distinct().filter(is_deleted=False).order_by('index')
     return WebMenuSerializer(qsres,many=True).data

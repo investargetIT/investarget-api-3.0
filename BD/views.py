@@ -14,7 +14,7 @@ from BD.serializers import ProjectBDSerializer, ProjectBDCreateSerializer, Proje
     OrgBDSerializer, MeetingBDSerializer, MeetingBDCreateSerializer
 from utils.customClass import RelationFilter, InvestError, JSONResponse
 from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
-    returnListChangeToLanguage, catchexcption, returnDictChangeToLanguage, mySortQuery
+    returnListChangeToLanguage, catchexcption, returnDictChangeToLanguage, mySortQuery, add_perm, rem_perm
 
 
 class ProjectBDFilter(FilterSet):
@@ -63,7 +63,7 @@ class ProjectBDView(viewsets.ModelViewSet):
 
 
 
-    @loginTokenIsAvailable(['BD.getProjectBD','BD.manageProjectBD'])
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')
@@ -74,6 +74,12 @@ class ProjectBDView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
+            if request.user.has_perm('BD.manageProjectBD'):
+                pass
+            elif request.user.has_perm('BD.user_getProjectBD'):
+                queryset = queryset.filter(manager=request.user)
+            else:
+                raise InvestError(2009)
             sortfield = request.GET.get('sort', 'createdtime')
             desc = request.GET.get('desc', 1)
             queryset = mySortQuery(queryset, sortfield, desc)
@@ -103,6 +109,8 @@ class ProjectBDView(viewsets.ModelViewSet):
                 projectBD = ProjectBDCreateSerializer(data=data)
                 if projectBD.is_valid():
                     newprojectBD = projectBD.save()
+                    if newprojectBD.manager:
+                        add_perm('BD.user_manageProjectBD', newprojectBD.manager, newprojectBD)
                 else:
                     raise InvestError(4009,msg='项目BD创建失败——%s'%projectBD.error_messages)
                 if comments:
@@ -117,11 +125,17 @@ class ProjectBDView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['BD.getProjectBD','BD.manageProjectBD'])
+    @loginTokenIsAvailable()
     def retrieve(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
             instance = self.get_object()
+            if request.user.has_perm('BD.manageProjectBD'):
+                pass
+            elif request.user.has_perm('BD.user_manageProjectBD', instance):
+                pass
+            else:
+                raise InvestError(2009)
             serializer = self.serializer_class(instance)
             return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data, lang)))
         except InvestError as err:
@@ -130,18 +144,29 @@ class ProjectBDView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['BD.manageProjectBD',])
+    @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
         try:
             data = request.data
             lang = request.GET.get('lang')
             instance = self.get_object()
-            data['createuser'] = request.user.id
-            data['datasource'] = request.user.datasource.id
+            oldmanager = instance.manager
+            data.pop('createuser', None)
+            data.pop('datasource', None)
+            if request.user.has_perm('BD.manageProjectBD'):
+                pass
+            elif request.user.has_perm('BD.user_manageProjectBD', instance):
+                data = {'bd_status': data.get('bd_status', instance.bd_status_id)}
+            else:
+                raise InvestError(2009)
             with transaction.atomic():
                 projectBD = ProjectBDCreateSerializer(instance,data=data)
                 if projectBD.is_valid():
                     newprojectBD = projectBD.save()
+                    oldmanager_id = data.get('manager', None)
+                    if oldmanager_id and oldmanager_id != oldmanager.id:
+                        add_perm('BD.user_manageProjectBD', newprojectBD.manager, newprojectBD)
+                        rem_perm('BD.user_manageProjectBD', oldmanager, newprojectBD)
                 else:
                     raise InvestError(4009, msg='项目BD修改失败——%s' % projectBD.error_messages)
                 return JSONResponse(
@@ -158,11 +183,11 @@ class ProjectBDView(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 instance = self.get_object()
-                # instance.is_deleted = True
-                # instance.deleteduser = request.user
-                # instance.deletedtime = datetime.datetime.now()
-                # instance.save()
-                instance.delete()
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
+                instance.ProjectBD_comments.filter(is_deleted=False).update(is_deleted=True, deleteduser=request.user, deletedtime=datetime.datetime.now())
             return JSONResponse(SuccessResponse({'isDeleted': True,}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -198,7 +223,7 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
             raise InvestError(code=8890)
         return queryset
 
-    @loginTokenIsAvailable(['BD.getProjectBD','BD.manageProjectBD'])
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')
@@ -209,9 +234,12 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
-            sortfield = request.GET.get('sort', 'createdtime')
-            desc = request.GET.get('desc', 1)
-            queryset = mySortQuery(queryset, sortfield, desc)
+            if request.user.has_perm('BD.manageProjectBD'):
+                pass
+            elif request.user.has_perm('BD.user_getProjectBD'):
+                queryset = queryset.filter(projectBD__in=request.user.user_projBDs)
+            else:
+                raise InvestError(2009)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -226,10 +254,17 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['BD.manageProjectBD'])
+    @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
+            bdinstance = ProjectBD.objects.get(id=int(data['projectBD']))
+            if request.user.has_perm('BD.manageProjectBD'):
+                pass
+            elif request.user.has_perm('BD.user_manageProjectBD', bdinstance):
+                pass
+            else:
+                raise InvestError(2009)
             lang = request.GET.get('lang')
             data['createuser'] = request.user.id
             data['datasource'] = request.user.datasource.id
@@ -251,11 +286,10 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 instance = self.get_object()
-                # instance.is_deleted = True
-                # instance.deleteduser = request.user
-                # instance.deletedtime = datetime.datetime.now()
-                # instance.save()
-                instance.delete()
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
             return JSONResponse(SuccessResponse({'isDeleted': True, }))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -306,7 +340,7 @@ class OrgBDView(viewsets.ModelViewSet):
 
 
 
-    @loginTokenIsAvailable(['BD.getOrgBD','BD.manageOrgBD'])
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')
@@ -317,6 +351,15 @@ class OrgBDView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
+            if request.user.has_perm('BD.manageOrgBD'):
+                pass
+            elif request.user.has_perm('BD.user_getOrgBD'):
+                queryset = queryset.filter(manager=request.user)
+            else:
+                raise InvestError(2009)
+            sortfield = request.GET.get('sort', 'createdtime')
+            desc = request.GET.get('desc', 1)
+            queryset = mySortQuery(queryset, sortfield, desc)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -343,6 +386,8 @@ class OrgBDView(viewsets.ModelViewSet):
                 orgBD = OrgBDCreateSerializer(data=data)
                 if orgBD.is_valid():
                     neworgBD = orgBD.save()
+                    if neworgBD.manager:
+                        add_perm('BD.user_manageOrgBD', neworgBD.manager, neworgBD)
                 else:
                     raise InvestError(5004,msg='机构BD创建失败——%s'%orgBD.error_messages)
                 if comments:
@@ -357,11 +402,17 @@ class OrgBDView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['BD.getOrgBD','BD.manageOrgBD'])
+    @loginTokenIsAvailable()
     def retrieve(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
             instance = self.get_object()
+            if request.user.has_perm('BD.manageOrgBD'):
+                pass
+            elif request.user.has_perm('BD.user_manageOrgBD', instance):
+                pass
+            else:
+                raise InvestError(2009)
             serializer = self.serializer_class(instance)
             return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data, lang)))
         except InvestError as err:
@@ -370,18 +421,29 @@ class OrgBDView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['BD.manageOrgBD',])
+    @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
         try:
             data = request.data
             lang = request.GET.get('lang')
             instance = self.get_object()
-            data['createuser'] = request.user.id
-            data['datasource'] = request.user.datasource.id
+            oldmanager = instance.manager
+            data.pop('createuser', None)
+            data.pop('datasource', None)
+            if request.user.has_perm('BD.manageOrgBD'):
+                pass
+            elif request.user.has_perm('BD.user_manageOrgBD', instance):
+                data = {'bd_status': data.get('bd_status', instance.bd_status_id)}
+            else:
+                raise InvestError(2009)
             with transaction.atomic():
                 orgBD = OrgBDCreateSerializer(instance,data=data)
                 if orgBD.is_valid():
                     neworgBD = orgBD.save()
+                    oldmanager_id = data.get('manager', None)
+                    if oldmanager_id and oldmanager_id != oldmanager.id:
+                        add_perm('BD.user_manageOrgBD', neworgBD.manager, neworgBD)
+                        rem_perm('BD.user_manageOrgBD', oldmanager, neworgBD)
                 else:
                     raise InvestError(5004, msg='机构BD修改失败——%s' % orgBD.error_messages)
                 return JSONResponse(
@@ -398,11 +460,12 @@ class OrgBDView(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 instance = self.get_object()
-                # instance.is_deleted = True
-                # instance.deleteduser = request.user
-                # instance.deletedtime = datetime.datetime.now()
-                # instance.save()
-                instance.delete()
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
+                instance.OrgBD_comments.filter(is_deleted=False).update(is_deleted=True, deleteduser=request.user,
+                                                                        deletedtime=datetime.datetime.now())
             return JSONResponse(SuccessResponse({'isDeleted': True,}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -440,7 +503,7 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
 
 
 
-    @loginTokenIsAvailable(['BD.getOrgBD','BD.manageOrgBD'])
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')
@@ -451,6 +514,12 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
+            if request.user.has_perm('BD.manageOrgBD'):
+                pass
+            elif request.user.has_perm('BD.user_manageOrgBD'):
+                queryset = queryset.filter(orgBD__in=request.user.user_orgBDs)
+            else:
+                raise InvestError(2009)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -466,10 +535,17 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
-    @loginTokenIsAvailable(['BD.manageOrgBD'])
+    @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
+            bdinstance = ProjectBD.objects.get(id=int(data['orgBD']))
+            if request.user.has_perm('BD.manageOrgBD'):
+                pass
+            elif request.user.has_perm('BD.user_manageOrgBD', bdinstance):
+                pass
+            else:
+                raise InvestError(2009)
             lang = request.GET.get('lang')
             data['createuser'] = request.user.id
             data['datasource'] = request.user.datasource.id
@@ -492,11 +568,10 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 instance = self.get_object()
-                # instance.is_deleted = True
-                # instance.deleteduser = request.user
-                # instance.deletedtime = datetime.datetime.now()
-                # instance.save()
-                instance.delete()
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
             return JSONResponse(SuccessResponse({'isDeleted': True, }))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -536,7 +611,7 @@ class MeetingBDView(viewsets.ModelViewSet):
         return queryset
 
 
-    @loginTokenIsAvailable(['BD.getMeetBD','BD.manageMeetBD'])
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')
@@ -547,6 +622,12 @@ class MeetingBDView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
+            if request.user.has_perm('BD.manageMeetBD'):
+                pass
+            elif request.user.has_perm('BD.user_getMeetBD'):
+                queryset = queryset.filter(manager=request.user)
+            else:
+                raise InvestError(2009)
             sortfield = request.GET.get('sort', 'createdtime')
             desc = request.GET.get('desc', 1)
             queryset = mySortQuery(queryset, sortfield, desc)
@@ -572,23 +653,31 @@ class MeetingBDView(viewsets.ModelViewSet):
             data['createuser'] = request.user.id
             data['datasource'] = request.user.datasource.id
             with transaction.atomic():
-                orgBD = MeetingBDCreateSerializer(data=data)
-                if orgBD.is_valid():
-                    neworgBD = orgBD.save()
+                meetBD = MeetingBDCreateSerializer(data=data)
+                if meetBD.is_valid():
+                    newMeetBD = meetBD.save()
+                    if newMeetBD.manager:
+                        add_perm('BD.user_manageMeetBD', newMeetBD.manager, newMeetBD)
                 else:
-                    raise InvestError(5005,msg='会议BD创建失败——%s'%orgBD.error_messages)
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(MeetingBDSerializer(neworgBD).data,lang)))
+                    raise InvestError(5005,msg='会议BD创建失败——%s'%meetBD.error_messages)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(MeetingBDSerializer(newMeetBD).data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['BD.getMeetBD','BD.manageMeetBD'])
+    @loginTokenIsAvailable()
     def retrieve(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
             instance = self.get_object()
+            if request.user.has_perm('BD.manageMeetBD'):
+                pass
+            elif request.user.has_perm('BD.user_manageMeetBD', instance):
+                pass
+            else:
+                raise InvestError(2009)
             serializer = self.serializer_class(instance)
             return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data, lang)))
         except InvestError as err:
@@ -597,22 +686,35 @@ class MeetingBDView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['BD.manageMeetBD',])
+    @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
         try:
             data = request.data
+            data.pop('createuser', None)
+            data.pop('datasource', None)
             lang = request.GET.get('lang')
             instance = self.get_object()
-            data['createuser'] = request.user.id
-            data['datasource'] = request.user.datasource.id
+            oldmanager = instance.manager
+            if request.user.has_perm('BD.manageMeetBD'):
+                pass
+            elif request.user.has_perm('BD.user_manageMeetBD', instance):
+                data = {'comments': data.get('comments', instance.comments),
+                        'attachment': data.get('attachment', instance.attachment),
+                        'attachmentbucket': data.get('attachmentbucket', instance.attachmentbucket),}
+            else:
+                raise InvestError(2009)
             with transaction.atomic():
-                orgBD = MeetingBDCreateSerializer(instance,data=data)
-                if orgBD.is_valid():
-                    neworgBD = orgBD.save()
+                meetBD = MeetingBDCreateSerializer(instance,data=data)
+                if meetBD.is_valid():
+                    newMeetBD = meetBD.save()
+                    oldmanager_id = data.get('manager', None)
+                    if oldmanager_id and oldmanager_id != oldmanager.id:
+                        add_perm('BD.user_manageMeetBD', newMeetBD.manager, newMeetBD)
+                        rem_perm('BD.user_manageMeetBD', oldmanager, newMeetBD)
                 else:
-                    raise InvestError(5005, msg='会议BD修改失败——%s' % orgBD.error_messages)
+                    raise InvestError(5005, msg='会议BD修改失败——%s' % meetBD.error_messages)
                 return JSONResponse(
-                    SuccessResponse(returnDictChangeToLanguage(MeetingBDSerializer(neworgBD).data, lang)))
+                    SuccessResponse(returnDictChangeToLanguage(MeetingBDSerializer(newMeetBD).data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:

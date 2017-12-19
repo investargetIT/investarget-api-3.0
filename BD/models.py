@@ -35,8 +35,9 @@ class ProjectBD(MyModel):
 
     class Meta:
         permissions = (
-            ('manageProjectBD', '管理项目BD'),
-            ('getProjectBD', '查看项目BD'),
+            ('manageProjectBD', '管理员管理项目BD'),
+            ('user_getProjectBD', u'用户查看个人项目BD'),
+            ('user_manageProjectBD', '用户管理个人项目BD（object级别）'),
         )
 
     def save(self, *args, **kwargs):
@@ -90,7 +91,8 @@ class OrgBD(MyModel):
     class Meta:
         permissions = (
             ('manageOrgBD', '管理机构BD'),
-            ('getOrgBD', '查看机构BD'),
+            ('user_getOrgBD', u'用户查看个人机构BD'),
+            ('user_manageOrgBD', '用户管理个人机构BD（object级别）'),
         )
 
     def save(self, *args, **kwargs):
@@ -138,6 +140,7 @@ class MeetingBD(MyModel):
     comments = models.TextField(blank=True, default=False, help_text='会议纪要')
     meet_date = models.DateTimeField(blank=True, help_text='会议时间')
     title = models.TextField(blank=True, null=True, help_text='会议标题')
+    attachmentbucket = models.CharField(max_length=16, blank=True, default='image', help_text='附件存储空间')
     attachment = models.CharField(max_length=64, blank=True, null=True, help_text='会议附件')
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_MeetBD')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_MeetBD')
@@ -147,7 +150,8 @@ class MeetingBD(MyModel):
     class Meta:
         permissions = (
             ('manageMeetBD', '管理会议BD'),
-            ('getMeetBD', '查看会议BD'),
+            ('user_getMeetBD', u'用户查看个人会议BD'),
+            ('user_manageMeetBD', '用户管理个人会议BD（object级别）'),
         )
 
     def save(self, *args, **kwargs):

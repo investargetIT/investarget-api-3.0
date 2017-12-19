@@ -1,3 +1,4 @@
+#coding=utf-8
 from __future__ import unicode_literals
 from django.db import models
 from utils.customClass import MyModel
@@ -50,3 +51,6 @@ class userinfoupdatelog(MyModel):
     datasource = models.PositiveSmallIntegerField(blank=True, default=1)
     class Meta:
         db_table = 'LOG_userinfoupdate'
+        permissions = (
+            ('manage_userinfolog', u'查询用户信息修改日志'),
+        )

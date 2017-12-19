@@ -395,7 +395,7 @@ class UserRelation(MyModel):
             ('admin_deleteuserrelation', u'管理员删除用户联系'),
             ('admin_getuserrelation', u'管理员查看用户联系'),
 
-            ('user_adduserrelation', u'用户建立用户联系'),
+
             ('user_changeuserrelation', u'用户改用户联系（obj级别）'),
             ('user_deleteuserrelation', u'用户删除用户联系（obj级别）'),
             ('user_getuserrelation', u'用户查看用户联系（obj级别）'),
