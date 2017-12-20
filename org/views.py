@@ -397,7 +397,7 @@ class OrgRemarkView(viewsets.ModelViewSet):
             org = self.get_org(orgid=orgid)
             if request.user.has_perm('org.admin_addorgremark'):
                 pass
-            elif request.user.has_perm('org.user_addorgremark',org):
+            elif request.user.has_perm('org.user_addorgremark'):
                 pass
             else:
                 raise InvestError(code=2009)

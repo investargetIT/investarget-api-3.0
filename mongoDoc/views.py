@@ -471,7 +471,7 @@ class ProjectRemarkView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filterqueryset(request,self.queryset)
-            if not request.user.has_perm('usersys.admin_getmongoprojremark'):
+            if request.user.has_perm('usersys.admin_getmongoprojremark'):
                 queryset = queryset(datasource=request.user.datasource_id)
             else:
                 queryset = queryset(createuser_id=request.user.id)

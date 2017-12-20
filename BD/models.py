@@ -37,6 +37,7 @@ class ProjectBD(MyModel):
         permissions = (
             ('manageProjectBD', '管理员管理项目BD'),
             ('user_getProjectBD', u'用户查看个人项目BD'),
+            ('user_addProjectBD', u'用户新建个人项目BD'),
             ('user_manageProjectBD', '用户管理个人项目BD（object级别）'),
         )
 
@@ -82,6 +83,7 @@ class OrgBD(MyModel):
     usermobile = models.CharField(max_length=64,blank=True,null=True,help_text='电话')
     bduser = MyForeignKey(MyUser,blank=True,null=True,help_text='bd对象id')
     manager = MyForeignKey(MyUser,blank=True,null=True,help_text='负责人',related_name='user_orgBDs')
+    isimportant = models.BooleanField(blank=True, default=False, help_text='是否重点BD')
     bd_status = MyForeignKey(BDStatus,blank=True,null=True,help_text='bd状态')
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_OrgBD')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_OrgBD')

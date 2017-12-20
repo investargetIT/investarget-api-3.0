@@ -3,6 +3,7 @@ import traceback
 
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction
+from django.db.models import Q
 from django.db.models import QuerySet
 from django_filters import FilterSet
 import datetime
@@ -97,7 +98,7 @@ class ProjectBDView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
-    @loginTokenIsAvailable(['BD.manageProjectBD',])
+    @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
@@ -105,6 +106,12 @@ class ProjectBDView(viewsets.ModelViewSet):
             comments = data.get('comments',None)
             data['createuser'] = request.user.id
             data['datasource'] = request.user.datasource.id
+            if request.user.has_perm('BD.manageProjectBD'):
+                pass
+            elif request.user.has_perm('BD.user_addProjectBD'):
+                data['manager'] = request.user.id
+            else:
+                raise InvestError(2009)
             with transaction.atomic():
                 projectBD = ProjectBDCreateSerializer(data=data)
                 if projectBD.is_valid():
@@ -354,12 +361,14 @@ class OrgBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
             elif request.user.has_perm('BD.user_getOrgBD'):
-                queryset = queryset.filter(manager=request.user)
+                queryset = queryset.filter(Q(manager=request.user) | Q(proj__in=request.user.usertake_projs) | Q(proj__in=request.user.usermake_projs))
             else:
                 raise InvestError(2009)
             sortfield = request.GET.get('sort', 'createdtime')
             desc = request.GET.get('desc', 1)
-            queryset = mySortQuery(queryset, sortfield, desc)
+            if desc in ('1', u'1', 1):
+                sortfield = '-' + sortfield
+            queryset = queryset.order_by('isimportant', sortfield)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -625,7 +634,7 @@ class MeetingBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageMeetBD'):
                 pass
             elif request.user.has_perm('BD.user_getMeetBD'):
-                queryset = queryset.filter(manager=request.user)
+                queryset = queryset.filter(Q(manager=request.user) | Q(proj__in=request.user.usertake_projs) | Q(proj__in=request.user.usermake_projs))
             else:
                 raise InvestError(2009)
             sortfield = request.GET.get('sort', 'createdtime')
