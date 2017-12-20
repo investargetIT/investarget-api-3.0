@@ -58,8 +58,8 @@ def addWaterMark(pdfpath='water.pdf',watermarkcontent=None):
     watermarkpath = pdfpath.split('.')[0] + '-water' + '.pdf'
     out_path = pdfpath.split('.')[0] + '-out' + '.pdf'
     c = canvas.Canvas(watermarkpath)
-    x = 16
-    y = 1
+    x = 20
+    y = 5
     # 设置字体
     c.setFont("song", 40)
     c.rotate(45)
@@ -98,8 +98,8 @@ def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
     pdfmetrics.registerFont(TTFont('song', APILOG_PATH['pdfwaterfontPath']))
     watermarkpath = pdfpaths[0].split('.')[0] + '-water' + '.pdf'
     c = canvas.Canvas(watermarkpath)
-    x = 16
-    y = 1
+    x = 20
+    y = 5
     # 设置字体
     c.setFont("song", 40)
     # 旋转45度，坐标系被旋转
