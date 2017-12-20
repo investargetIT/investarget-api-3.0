@@ -361,7 +361,7 @@ class OrgBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
             elif request.user.has_perm('BD.user_getOrgBD'):
-                queryset = queryset.filter(Q(manager=request.user) | Q(proj__in=request.user.usertake_projs) | Q(proj__in=request.user.usermake_projs))
+                queryset = queryset.filter(Q(manager=request.user) | Q(proj__in=request.user.usertake_projs.all()) | Q(proj__in=request.user.usermake_projs.all()))
             else:
                 raise InvestError(2009)
             sortfield = request.GET.get('sort', 'createdtime')
@@ -526,7 +526,7 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
             elif request.user.has_perm('BD.user_manageOrgBD'):
-                queryset = queryset.filter(orgBD__in=request.user.user_orgBDs)
+                queryset = queryset.filter(orgBD__in=request.user.user_orgBDs.all())
             else:
                 raise InvestError(2009)
             try:
@@ -634,7 +634,7 @@ class MeetingBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageMeetBD'):
                 pass
             elif request.user.has_perm('BD.user_getMeetBD'):
-                queryset = queryset.filter(Q(manager=request.user) | Q(proj__in=request.user.usertake_projs) | Q(proj__in=request.user.usermake_projs))
+                queryset = queryset.filter(Q(manager=request.user) | Q(proj__in=request.user.usertake_projs.all()) | Q(proj__in=request.user.usermake_projs.all()))
             else:
                 raise InvestError(2009)
             sortfield = request.GET.get('sort', 'createdtime')

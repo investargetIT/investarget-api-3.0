@@ -249,14 +249,14 @@ class OrganizationView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['org.admin_deleteorg',])
+    @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
             lang = request.GET.get('lang')
             if request.user.has_perm('org.admin_deleteorg'):
                 pass
-            elif request.user.has_perm('org.user_deleteorg',instance):
+            elif request.user.has_perm('org.user_deleteorg',instance) and instance.orgstatus != 2:
                 pass
             else:
                 raise InvestError(code=2009)
