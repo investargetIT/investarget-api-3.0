@@ -222,6 +222,7 @@ class DataroomView(viewsets.ModelViewSet):
             instance = self.get_object()
             userid = request.GET.get('user',None)
             watermarkcontent = request.GET.get('water',None)
+            watermarkcontent = str(watermarkcontent).split(',')
             qs = instance.dataroom_directories.all().filter(is_deleted=False)
             rootpath = APILOG_PATH['dataroomFilePath'] + '/' + 'dataroom_%s%s'%(str(instance.id), '_%s'%userid if userid else '')
             startMakeDataroomZip(qs, rootpath , instance,userid,watermarkcontent)

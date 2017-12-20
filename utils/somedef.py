@@ -50,8 +50,10 @@ def makeAvatar(name):
 
 #水印增加（单文件）
 def addWaterMark(pdfpath='water.pdf',watermarkcontent=None):
-    if watermarkcontent is None:
-        watermarkcontent = u'多维海拓'
+    if not isinstance(watermarkcontent, list):
+        watermarkcontent = []
+    while len(watermarkcontent) != 3:
+        watermarkcontent.append(u'多维海拓')
     pdfmetrics.registerFont(TTFont('song', APILOG_PATH['pdfwaterfontPath']))
     watermarkpath = pdfpath.split('.')[0] + '-water' + '.pdf'
     out_path = pdfpath.split('.')[0] + '-out' + '.pdf'
@@ -63,11 +65,11 @@ def addWaterMark(pdfpath='water.pdf',watermarkcontent=None):
     c.rotate(45)
     # 设置透明度，1为不透明
     c.setFillAlpha(0.1)
-    c.drawCentredString((x - 3) * cm, (y - 3) * cm, watermarkcontent)
+    c.drawCentredString((x - 3) * cm, (y - 3) * cm, watermarkcontent[0])
     c.setFillAlpha(0.1)
-    c.drawCentredString(x * cm, y * cm, watermarkcontent)
+    c.drawCentredString(x * cm, y * cm, watermarkcontent[1])
     c.setFillAlpha(0.1)
-    c.drawCentredString((x + 3) * cm, (y + 3) * cm, watermarkcontent)
+    c.drawCentredString((x + 3) * cm, (y + 3) * cm, watermarkcontent[2])
     c.save()
     watermark = PdfFileReader(open(watermarkpath, "rb"))
 
@@ -89,8 +91,10 @@ def addWaterMark(pdfpath='water.pdf',watermarkcontent=None):
 def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
     if len(pdfpaths) == 0:
         return 20071
-    if watermarkcontent is None:
-        watermarkcontent = u'多维海拓'
+    if not isinstance(watermarkcontent, list):
+        watermarkcontent = []
+    while len(watermarkcontent) != 3:
+        watermarkcontent.append(u'多维海拓')
     pdfmetrics.registerFont(TTFont('song', APILOG_PATH['pdfwaterfontPath']))
     watermarkpath = pdfpaths[0].split('.')[0] + '-water' + '.pdf'
     c = canvas.Canvas(watermarkpath)
@@ -102,11 +106,11 @@ def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
     c.rotate(45)
     # 设置透明度，1为不透明
     c.setFillAlpha(0.1)
-    c.drawCentredString((x - 3) * cm, (y - 3) * cm, watermarkcontent)
+    c.drawCentredString((x - 3) * cm, (y - 3) * cm, watermarkcontent[2])
     c.setFillAlpha(0.1)
-    c.drawCentredString(x * cm, y * cm, watermarkcontent)
+    c.drawCentredString(x * cm, y * cm, watermarkcontent[1])
     c.setFillAlpha(0.1)
-    c.drawCentredString((x + 3) * cm, (y + 3) * cm, watermarkcontent)
+    c.drawCentredString((x + 3) * cm, (y + 3) * cm, watermarkcontent[0])
     c.save()
     watermark = PdfFileReader(open(watermarkpath, "rb"))
     # Get our files ready

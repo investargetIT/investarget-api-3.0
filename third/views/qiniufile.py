@@ -225,32 +225,32 @@ def downloadFileToPath(key,bucket,path):
         return path
 
 
-@api_view(['GET'])
-@checkRequestToken()
-def downloadPdfFileAndAddWatermark(request):
-    try:
-        bucket = request.GET.get('bucket','file')
-        key = request.GET.get('key','file')
-        filename = request.GET.get('filename', key)
-        watermarkcontent = request.user.email
-        if '.pdf' not in key:
-            pass
-        download_url = getUrlWithBucketAndKey(bucket, key)
-        r = requests.get(download_url)
-        if r.status_code != 200:
-            raise InvestError(8002,msg=repr(r.content))
-        savepath = APILOG_PATH['pdfpath_base'] + 'PDF' + datetime.datetime.now().strftime('%y%m%d%H%M%S') + key
-        with open(savepath, "wb") as code:
-            code.write(r.content)
-        out_path = addWaterMark(savepath, watermarkcontent)
-        fn = open(out_path, 'rb')
-        response = StreamingHttpResponse(file_iterator(fn))
-        response['Content-Type'] = 'application/octet-stream'
-        response["content-disposition"] = 'attachment;filename=%s' % filename
-        os.remove(out_path)
-        return response
-    except InvestError as err:
-        return JSONResponse(InvestErrorResponse(err))
-    except Exception:
-        catchexcption(request)
-        return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+# @api_view(['GET'])
+# @checkRequestToken()
+# def downloadPdfFileAndAddWatermark(request):
+#     try:
+#         bucket = request.GET.get('bucket','file')
+#         key = request.GET.get('key','file')
+#         filename = request.GET.get('filename', key)
+#         watermarkcontent = request.user.email
+#         if '.pdf' not in key:
+#             pass
+#         download_url = getUrlWithBucketAndKey(bucket, key)
+#         r = requests.get(download_url)
+#         if r.status_code != 200:
+#             raise InvestError(8002,msg=repr(r.content))
+#         savepath = APILOG_PATH['pdfpath_base'] + 'PDF' + datetime.datetime.now().strftime('%y%m%d%H%M%S') + key
+#         with open(savepath, "wb") as code:
+#             code.write(r.content)
+#         out_path = addWaterMark(savepath, watermarkcontent)
+#         fn = open(out_path, 'rb')
+#         response = StreamingHttpResponse(file_iterator(fn))
+#         response['Content-Type'] = 'application/octet-stream'
+#         response["content-disposition"] = 'attachment;filename=%s' % filename
+#         os.remove(out_path)
+#         return response
+#     except InvestError as err:
+#         return JSONResponse(InvestErrorResponse(err))
+#     except Exception:
+#         catchexcption(request)
+#         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
