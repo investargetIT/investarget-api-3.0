@@ -53,6 +53,8 @@ class ProjectBD(MyModel):
             self.source_type = 0
         else:
             self.source_type = 1
+        if not self.manager.onjob:
+            raise InvestError(2024)
         return super(ProjectBD, self).save(*args, **kwargs)
 
 
@@ -105,6 +107,8 @@ class OrgBD(MyModel):
             self.usermobile = self.bduser.mobile
             self.usertitle = self.bduser.title
         self.datasource = self.manager.datasource_id
+        if not self.manager.onjob:
+            raise InvestError(2024)
         if self.pk and self.is_deleted == False:
             if self.bd_status.nameC == 'BD成功':
                 makeUserRelation(self.bduser,self.manager)
@@ -159,6 +163,8 @@ class MeetingBD(MyModel):
     def save(self, *args, **kwargs):
         if self.manager is None:
             raise InvestError(2007, msg='manager can`t be null')
+        if not self.manager.onjob:
+            raise InvestError(2024)
         if self.bduser:
             self.username = self.bduser.usernameC
             self.usermobile = self.bduser.mobile

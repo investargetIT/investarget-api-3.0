@@ -101,7 +101,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin,MyModel):
     email = models.EmailField(help_text='邮箱', max_length=48,db_index=True,blank=True,null=True)
     title = MyForeignKey(TitleType,blank=True,null=True,related_name='title_users')
     gender = models.BooleanField(blank=True,default=0,help_text=('0=男，1=女'))
-
+    onjob = models.BooleanField(blank=True, default=True, help_text='是否在职')
     remark = models.TextField(help_text='用户个人备注',blank=True,null=True)
     school = MyForeignKey(School,help_text='院校',blank=True,null=True,related_name='school_users')
     specialty = MyForeignKey(Specialty,help_text='专业',blank=True,null=True,related_name='profession_users')
