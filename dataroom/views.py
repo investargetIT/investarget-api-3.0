@@ -253,10 +253,10 @@ class DataroomView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['dataroom.downloadDataroom'])
+    @loginTokenIsAvailable()
     def downloadDataroomZip(self, request, *args, **kwargs):
         try:
-            user =checkrequesttoken(request.GET.get('token',None))
+            user = checkrequesttoken(request.GET.get('token',None))
             if not user.has_perm('dataroom.downloadDataroom'):
                 raise InvestError(2009)
             path = request.GET.get('path',None)
