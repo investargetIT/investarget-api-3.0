@@ -253,7 +253,6 @@ class DataroomView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
     def downloadDataroomZip(self, request, *args, **kwargs):
         try:
             user = checkrequesttoken(request.GET.get('token',None))
