@@ -500,7 +500,6 @@ class ProjectView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @detail_route(methods=['get'])
-    @loginTokenIsAvailable(['proj.shareproj'])
     def sendPDF(self, request, *args, **kwargs):
         try:
             request.user = checkrequesttoken(request.GET.get('acw_tk'))

@@ -3,7 +3,7 @@ import traceback
 
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.db.models import QuerySet
 from django_filters import FilterSet
 import datetime
@@ -84,6 +84,10 @@ class ProjectBDView(viewsets.ModelViewSet):
             sortfield = request.GET.get('sort', 'createdtime')
             desc = request.GET.get('desc', 1)
             queryset = mySortQuery(queryset, sortfield, desc)
+            countres = queryset.values_list('manager').annotate(Count('manager'))
+            countlist = []
+            for manager_count in countres:
+                countlist.append({'manager': manager_count[0], 'count': manager_count[1]})
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -91,7 +95,7 @@ class ProjectBDView(viewsets.ModelViewSet):
             except EmptyPage:
                 return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             serializer = ProjectBDSerializer(queryset, many=True)
-            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang),'manager_count':countlist}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -364,6 +368,10 @@ class OrgBDView(viewsets.ModelViewSet):
                 queryset = queryset.filter(Q(manager=request.user) | Q(proj__in=request.user.usertake_projs.all()) | Q(proj__in=request.user.usermake_projs.all()))
             else:
                 raise InvestError(2009)
+            countres = queryset.values_list('manager').annotate(Count('manager'))
+            countlist = []
+            for manager_count in countres:
+                countlist.append({'manager':manager_count[0],'count':manager_count[1]})
             sortfield = request.GET.get('sort', 'createdtime')
             desc = request.GET.get('desc', 1)
             if desc in ('1', u'1', 1):
@@ -376,7 +384,7 @@ class OrgBDView(viewsets.ModelViewSet):
             except EmptyPage:
                 return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             serializer = OrgBDSerializer(queryset, many=True)
-            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang), 'manager_count':countlist}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
