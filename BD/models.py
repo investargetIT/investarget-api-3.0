@@ -7,7 +7,7 @@ from django.db import models
 # Create your models here.
 from org.models import organization
 from proj.models import project
-from sourcetype.models import Country, BDStatus
+from sourcetype.models import BDStatus, OrgArea
 from sourcetype.models import TitleType
 from usersys.models import MyUser
 from usersys.views import makeUserRelation, makeUserRemark
@@ -18,7 +18,7 @@ bd_sourcetype = (
     (1,'其他')
 )
 class ProjectBD(MyModel):
-    location = MyForeignKey(Country,blank=True,null=True,help_text='项目地区')
+    location = MyForeignKey(OrgArea,blank=True,null=True,help_text='项目地区')
     com_name = models.TextField(blank=True,null=True,help_text='公司名称/项目名称')
     usertitle = MyForeignKey(TitleType,blank=True,null=True,help_text='职位')
     username = models.CharField(max_length=64,blank=True,null=True,help_text='姓名')
