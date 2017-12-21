@@ -560,6 +560,49 @@ def sendmessage_schedulemsg(model,receiver,types,sender=None):
         sendmessage_schedulemsgThread(model,receiver,types,sender).start()
 
 
+def sendmessage_orgBDMessage(model,receiver,types,sender=None):
+    """
+    :param model: UserFriendship type
+    :param receiver: myuser type
+    :param types: list
+    :param sender: myuser type
+    :return: None
+    """
+    class sendmessage_orgBDMessageThread(threading.Thread):
+        def __init__(self, model, receiver, types, sender = None):
+            self.model = model
+            self.receiver = receiver
+            self.types = types
+            self.sender = sender
+            threading.Thread.__init__(self)
+
+        def run(self):
+            types = self.types
+            receiver = self.receiver
+            model = self.model
+            sender = self.sender
+            if 'app' in types and sendAppmsg:
+                content = '您有一个新机构BD任务'
+                receiver_alias = receiver.id
+                bdage = 1
+                n_extras = {}
+                pushnotification(content, receiver_alias, bdage, n_extras)
+            if 'webmsg' in types and sendWebmsg:
+                content = '您有一个新机构BD任务'
+                title = '机构BD'
+                messagetype = 12
+                saveMessage(content, messagetype, title, receiver, sender, modeltype='OrgBD', sourceid=model.id)
+            if 'sms' in types and sendSms:
+                destination = receiver.mobile
+                projectsign = 'M2d4Q3'
+                vars = {}
+                xsendSms(destination, projectsign, vars)
+
+
+    if checkReceiverToSendMsg(receiver):
+        sendmessage_orgBDMessageThread(model,receiver,types,sender).start()
+
+
 
 def checkReceiverToSendMsg(receiver):
     if receiver is not None:

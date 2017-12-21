@@ -14,6 +14,7 @@ from BD.serializers import ProjectBDSerializer, ProjectBDCreateSerializer, Proje
     ProjectBDCommentsSerializer, OrgBDCommentsSerializer, OrgBDCommentsCreateSerializer, OrgBDCreateSerializer, \
     OrgBDSerializer, MeetingBDSerializer, MeetingBDCreateSerializer
 from utils.customClass import RelationFilter, InvestError, JSONResponse
+from utils.sendMessage import sendmessage_orgBDMessage
 from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
     returnListChangeToLanguage, catchexcption, returnDictChangeToLanguage, mySortQuery, add_perm, rem_perm
 
@@ -412,6 +413,8 @@ class OrgBDView(viewsets.ModelViewSet):
                     commentinstance = OrgBDCommentsCreateSerializer(data=data)
                     if commentinstance.is_valid():
                         commentinstance.save()
+                sendmessage_orgBDMessage(neworgBD, receiver=neworgBD.manager,
+                                    types=['app', 'wenmsg', 'sms'], sender=request.user)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgBDSerializer(neworgBD).data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -461,6 +464,8 @@ class OrgBDView(viewsets.ModelViewSet):
                     if oldmanager_id and oldmanager_id != oldmanager.id:
                         add_perm('BD.user_manageOrgBD', neworgBD.manager, neworgBD)
                         rem_perm('BD.user_manageOrgBD', oldmanager, neworgBD)
+                        sendmessage_orgBDMessage(neworgBD, receiver=neworgBD.manager,
+                                                 types=['app', 'wenmsg', 'sms'], sender=request.user)
                 else:
                     raise InvestError(5004, msg='机构BD修改失败——%s' % orgBD.error_messages)
                 return JSONResponse(
