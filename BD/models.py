@@ -18,7 +18,7 @@ bd_sourcetype = (
     (1,'其他')
 )
 class ProjectBD(MyModel):
-    location = MyForeignKey(OrgArea,blank=True,null=True,help_text='项目地区')
+    location = MyForeignKey(OrgArea, blank=True, null=True, help_text='项目地区')
     com_name = models.TextField(blank=True,null=True,help_text='公司名称/项目名称')
     usertitle = MyForeignKey(TitleType,blank=True,null=True,help_text='职位')
     username = models.CharField(max_length=64,blank=True,null=True,help_text='姓名')
