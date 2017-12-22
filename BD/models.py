@@ -109,6 +109,10 @@ class OrgBD(MyModel):
         self.datasource = self.manager.datasource_id
         if not self.manager.onjob:
             raise InvestError(2024)
+        if self.is_deleted is False:
+            if self.proj:
+                if self.proj.projstatus < 4:
+                    raise InvestError(5003,msg='项目尚未终审发布')
         if self.pk and self.is_deleted == False:
             if self.bd_status.nameC == 'BD成功':
                 makeUserRelation(self.bduser,self.manager)
