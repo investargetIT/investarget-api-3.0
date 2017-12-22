@@ -13,6 +13,7 @@ from BD.models import ProjectBD, ProjectBDComments, OrgBDComments, OrgBD, Meetin
 from BD.serializers import ProjectBDSerializer, ProjectBDCreateSerializer, ProjectBDCommentsCreateSerializer, \
     ProjectBDCommentsSerializer, OrgBDCommentsSerializer, OrgBDCommentsCreateSerializer, OrgBDCreateSerializer, \
     OrgBDSerializer, MeetingBDSerializer, MeetingBDCreateSerializer
+from proj.models import project
 from utils.customClass import RelationFilter, InvestError, JSONResponse
 from utils.sendMessage import sendmessage_orgBDMessage
 from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
@@ -94,7 +95,7 @@ class ProjectBDView(viewsets.ModelViewSet):
                 queryset = Paginator(queryset, page_size)
                 queryset = queryset.page(page_index)
             except EmptyPage:
-                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+                return JSONResponse(SuccessResponse({'count': 0, 'data': [], 'manager_count':countlist}))
             serializer = ProjectBDSerializer(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang),'manager_count':countlist}))
         except InvestError as err:
@@ -383,7 +384,7 @@ class OrgBDView(viewsets.ModelViewSet):
                 queryset = Paginator(queryset, page_size)
                 queryset = queryset.page(page_index)
             except EmptyPage:
-                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+                return JSONResponse(SuccessResponse({'count': 0, 'data': [], 'manager_count':countlist}))
             serializer = OrgBDSerializer(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang), 'manager_count':countlist}))
         except InvestError as err:
@@ -392,7 +393,7 @@ class OrgBDView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
-    @loginTokenIsAvailable(['BD.manageOrgBD',])
+    @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
@@ -400,6 +401,16 @@ class OrgBDView(viewsets.ModelViewSet):
             comments = data.get('comments',None)
             data['createuser'] = request.user.id
             data['datasource'] = request.user.datasource.id
+            if request.user.has_perm('BD.manageOrgBD'):
+                pass
+            else:
+                proj = data.get('proj', None)
+                if proj:
+                    projinstance = project.objects.get(id=proj, is_deleted=False, datasource=request.user.datasource)
+                    if request.user not in [projinstance.takeUser, projinstance.makeUser]:
+                        raise InvestError(2009)
+                else:
+                    raise InvestError(2009)
             with transaction.atomic():
                 orgBD = OrgBDCreateSerializer(data=data)
                 if orgBD.is_valid():

@@ -145,7 +145,7 @@ class ProjectView(viewsets.ModelViewSet):
             queryset = queryset.order_by('-createdtime')[int(skip_count):int(max_size)+int(skip_count)]
             responselist = []
             for instance in queryset:
-                actionlist = {'get': False, 'change': False, 'delete': False}
+                actionlist = {'get': False, 'change': False, 'delete': False, 'canAddOrgBD':False}
                 if request.user.is_anonymous:
                     pass
                 else:
@@ -156,6 +156,8 @@ class ProjectView(viewsets.ModelViewSet):
                     if request.user.has_perm('proj.admin_deleteproj') or request.user.has_perm('proj.user_deleteproj',
                                                                                              instance):
                         actionlist['delete'] = True
+                    if request.user.has_perm('BD.manageOrgBD') or request.user in [instance.takeUser, instance.makeUser]:
+                        actionlist['canAddOrgBD'] = True
                 instancedata = serializerclass(instance).data
                 instancedata['action'] = actionlist
                 responselist.append(instancedata)
