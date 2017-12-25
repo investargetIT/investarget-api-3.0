@@ -33,7 +33,7 @@ class UserCommenSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MyUser
-        fields = ('id', 'usernameC', 'usernameE', 'tags', 'userstatus', 'photourl', 'title')
+        fields = ('id', 'usernameC', 'usernameE', 'tags', 'userstatus', 'photourl', 'title', 'onjob')
 
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_usertags__is_deleted=False)
@@ -69,7 +69,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MyUser
-        fields = ('usernameC', 'usernameE', 'org', 'department', 'mobile', 'email', 'wechat', 'title', 'id', 'tags', 'userstatus', 'photourl', 'orgarea', 'country')
+        fields = ('usernameC', 'usernameE', 'org', 'department', 'mobile', 'email', 'wechat', 'title', 'id', 'tags', 'userstatus', 'photourl', 'orgarea', 'country', 'onjob')
         depth = 1
 
     def get_tags(self, obj):
