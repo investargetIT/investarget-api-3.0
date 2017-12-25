@@ -412,7 +412,7 @@ class ProjectView(viewsets.ModelViewSet):
                     cache_delete_key(self.redis_key + '_%s' % pro.id)
                 else:
                     raise InvestError(code=4001,msg='data有误_%s' %  proj.errors)
-                if sendmsg:
+                if sendmsg and not proj.ismarketplace:
                     sendmessage_projectpublish(pro,pro.supportUser,['email',],sender=request.user)
                     pulishProjectCreateDataroom(pro, request.user)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(ProjSerializer(pro).data,lang)))
