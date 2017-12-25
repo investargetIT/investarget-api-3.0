@@ -649,8 +649,6 @@ def pulishProjectCreateDataroom(proj, user):
 
 
 def deleteInstance(instance, deleteuser):
-    if instance.is_deleted:
-        raise InvestError(code=7002, msg='%s不存在，已被删除'%instance.id)
     if instance.isFile:
         bucket = instance.bucket
         key = instance.key
