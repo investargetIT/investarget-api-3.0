@@ -24,7 +24,8 @@ from proj.serializer import ProjSerializer, FinanceSerializer, ProjCreatSerializ
     ProjCommonSerializer, FinanceChangeSerializer, FinanceCreateSerializer, FavoriteSerializer, \
     FavoriteCreateSerializer, ProjAttachmentSerializer, ProjListSerializer_admin , ProjListSerializer_user, \
     ProjDetailSerializer_admin_withoutsecretinfo, ProjDetailSerializer_admin_withsecretinfo, ProjDetailSerializer_user_withoutsecretinfo, \
-    ProjDetailSerializer_user_withsecretinfo, ProjAttachmentCreateSerializer, ProjIndustryCreateSerializer
+    ProjDetailSerializer_user_withsecretinfo, ProjAttachmentCreateSerializer, ProjIndustryCreateSerializer, \
+    ProjDetailSerializer_all
 from sourcetype.models import Tag, Industry, TransactionType, DataSource, Service
 from third.views.jpush import pushnotification
 from third.views.qiniufile import deleteqiniufile
@@ -243,6 +244,8 @@ class ProjectView(viewsets.ModelViewSet):
                                           msg='data有误_%s' % proj.errors)
                 setUserObjectPermission(request.user, pro,
                                         ['proj.user_getproj', 'proj.user_changeproj', 'proj.user_deleteproj'])
+                setUserObjectPermission(pro.supportUser, pro,
+                                        ['proj.user_getproj', 'proj.user_changeproj', 'proj.user_deleteproj'])
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(ProjSerializer(pro).data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -255,7 +258,10 @@ class ProjectView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             clienttype = request.META.get('HTTP_CLIENTTYPE')
-            if request.user.has_perm('proj.admin_getproj') :
+            instance = self.get_object()
+            if request.user in (instance.supportUser, instance.takeUser, instance.makeUser) or request.user.is_superuser:
+                serializerclass = ProjDetailSerializer_all
+            elif request.user.has_perm('proj.admin_getproj') :
                 if request.user.has_perm('proj.get_secretinfo'):
                     serializerclass = ProjDetailSerializer_admin_withsecretinfo
                 else:
@@ -265,7 +271,7 @@ class ProjectView(viewsets.ModelViewSet):
                     serializerclass = ProjDetailSerializer_user_withsecretinfo
                 else:
                     serializerclass = ProjDetailSerializer_user_withoutsecretinfo
-            instance = self.get_object()
+
             if instance.isHidden:
                 if request.user.has_perm('proj.user_getproj', instance) or request.user.has_perm(
                         'proj.admin_getproj'):
@@ -331,11 +337,9 @@ class ProjectView(viewsets.ModelViewSet):
                     sendmsg = True
                     projdata['publishDate'] = datetime.datetime.now()
             keylist = projdata.keys()
-            editlist1 = [key for key in keylist if key in ['phoneNumber', 'email', 'contactPerson']]
             editlist2 = [key for key in keylist if key in ['takeUser', 'makeUser',]]
-            if len(editlist1) > 0:
-                if not request.user.has_perm('proj.get_secretinfo'):
-                    raise  InvestError(2009,msg='没有权限修改%s'%editlist1)
+            if projdata.pop('supportUser', None):
+                raise InvestError(2009, msg='上传人无法修改')
             if len(editlist2) > 0:
                 if not request.user.has_perm('proj.admin_changeproj'):
                     raise  InvestError(2009,msg='没有权限修改%s'%editlist2)

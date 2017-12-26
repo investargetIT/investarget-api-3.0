@@ -145,8 +145,6 @@ class FavoriteSerializer(serializers.ModelSerializer):
 
 # list
 class ProjListSerializer_admin(serializers.ModelSerializer):
-    # finance = serializers.SerializerMethodField()
-    # attachment = serializers.SerializerMethodField()
     country = countrySerializer()
     tags = serializers.SerializerMethodField()
     industries = serializers.SerializerMethodField()
@@ -175,17 +173,6 @@ class ProjListSerializer_admin(serializers.ModelSerializer):
             return transactionTypeSerializer(qs,many=True).data
         return None
 
-    def get_finance(self, obj):
-        usertrader = obj.proj_finances.filter(is_deleted=False)
-        if usertrader.exists():
-            return FinanceSerializer(usertrader,many=True).data
-        return None
-
-    def get_attachment(self, obj):
-        usertrader = obj.proj_attachment.filter(is_deleted=False)
-        if usertrader.exists():
-            return ProjAttachmentSerializer(usertrader, many=True).data
-        return None
 
 
 class ProjListSerializer_user(serializers.ModelSerializer):
@@ -260,9 +247,10 @@ class ProjDetailSerializer_admin_withsecretinfo(serializers.ModelSerializer):
         return None
 
     def get_finance(self, obj):
-        usertrader = obj.proj_finances.filter(is_deleted=False)
-        if usertrader.exists():
-            return FinanceSerializer(usertrader, many=True).data
+        if obj.financeIsPublic:
+            usertrader = obj.proj_finances.filter(is_deleted=False)
+            if usertrader.exists():
+                return FinanceSerializer(usertrader, many=True).data
         return None
 
     def get_attachment(self, obj):
@@ -314,9 +302,10 @@ class ProjDetailSerializer_user_withsecretinfo(serializers.ModelSerializer):
         return None
 
     def get_finance(self, obj):
-        usertrader = obj.proj_finances.filter(is_deleted=False)
-        if usertrader.exists():
-            return FinanceSerializer(usertrader, many=True).data
+        if obj.financeIsPublic:
+            usertrader = obj.proj_finances.filter(is_deleted=False)
+            if usertrader.exists():
+                return FinanceSerializer(usertrader, many=True).data
         return None
 
     def get_attachment(self, obj):
@@ -376,9 +365,10 @@ class ProjDetailSerializer_admin_withoutsecretinfo(serializers.ModelSerializer):
         return None
 
     def get_finance(self, obj):
-        usertrader = obj.proj_finances.filter(is_deleted=False)
-        if usertrader.exists():
-            return FinanceSerializer(usertrader, many=True).data
+        if obj.financeIsPublic:
+            usertrader = obj.proj_finances.filter(is_deleted=False)
+            if usertrader.exists():
+                return FinanceSerializer(usertrader, many=True).data
         return None
 
     def get_attachment(self, obj):
@@ -405,6 +395,64 @@ class ProjDetailSerializer_user_withoutsecretinfo(serializers.ModelSerializer):
     class Meta:
         model = project
         exclude = ('supportUser', 'takeUser', 'makeUser', 'phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail','realname')
+        depth = 1
+
+    def get_service(self, obj):
+        qs = obj.service.filter(service_projects__is_deleted=False)
+        if qs.exists():
+            return serviceSerializer(qs, many=True).data
+        return None
+
+    def get_tags(self, obj):
+        qs = obj.tags.filter(tag_projects__is_deleted=False)
+        if qs.exists():
+            return tagSerializer(qs,many=True).data
+        return None
+
+    def get_industries(self, obj):
+        qs = obj.project_industries.filter(is_deleted=False)
+        if qs.exists():
+            return ProjIndustrySerializer(qs,many=True).data
+        return None
+
+    def get_transactionType(self, obj):
+        qs = obj.transactionType.filter(transactionType_projects__is_deleted=False)
+        if qs.exists():
+            return transactionTypeSerializer(qs,many=True).data
+        return None
+
+    def get_finance(self, obj):
+        if obj.financeIsPublic:
+            usertrader = obj.proj_finances.filter(is_deleted=False)
+            if usertrader.exists():
+                return FinanceSerializer(usertrader, many=True).data
+        return None
+
+    def get_attachment(self, obj):
+        usertrader = obj.proj_attachment.filter(is_deleted=False)
+        if usertrader.exists():
+            return ProjAttachmentSerializer(usertrader, many=True).data
+        return None
+
+    def get_linkpdfurl(self, obj):
+        if obj.linkpdfkey and obj.ismarketplace:
+            return getUrlWithBucketAndKey('file',obj.linkpdfkey)
+        return None
+
+
+class ProjDetailSerializer_all(serializers.ModelSerializer):
+    tags = serializers.SerializerMethodField()
+    service = serializers.SerializerMethodField()
+    industries = serializers.SerializerMethodField()
+    transactionType = serializers.SerializerMethodField()
+    finance = serializers.SerializerMethodField()
+    attachment = serializers.SerializerMethodField()
+    country = countrySerializer()
+    linkpdfurl = serializers.SerializerMethodField()
+
+    class Meta:
+        model = project
+        exclude = ('createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail',)
         depth = 1
 
     def get_service(self, obj):
