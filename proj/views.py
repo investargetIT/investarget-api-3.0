@@ -184,7 +184,7 @@ class ProjectView(viewsets.ModelViewSet):
             financedata = projdata.pop('finance',None)
             servicedata = projdata.pop('service',None)
             keylist = projdata.keys()
-            editlist2 = [key for key in keylist if key in ['takeUser', 'makeUser', ]]
+            editlist2 = [key for key in keylist if key in ['takeUser', 'makeUser', 'supportUser']]
             if len(editlist2) > 0:
                 if not request.user.has_perm('proj.admin_addproj'):
                     raise InvestError(2009, msg='没有权限edit%s' % editlist2)

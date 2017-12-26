@@ -108,6 +108,8 @@ class project(MyModel):
                 rem_perm('proj.user_deleteproj', self.createuser, self)
         if self.projstatus_id >= 4 and self.is_deleted == False:
             self.checkProjInfo()
+        if self.supportUser is None:
+            self.supportUser = self.createuser
         if self.code is None:
             self.code = 'P' + datetime.datetime.now().strftime('%Y%m%d%H%M%S')
         super(project,self).save(force_insert,force_update,using,update_fields)
