@@ -87,6 +87,8 @@ class ProjAttachmentSerializer(serializers.ModelSerializer):
 
 class ProjSerializer(serializers.ModelSerializer):
     supportUser = UserCommenSerializer()
+    takeUser = UserCommenSerializer()
+    makeUser = UserCommenSerializer()
     proj_finances = ProjFinanceSerializer(many=True)
     proj_attachment = ProjAttachmentSerializer(many=True)
 
@@ -220,7 +222,6 @@ class ProjDetailSerializer_admin_withsecretinfo(serializers.ModelSerializer):
     class Meta:
         model = project
         exclude = ('createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail',)
-        depth = 1
 
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_projects__is_deleted=False)
@@ -281,7 +282,6 @@ class ProjDetailSerializer_user_withsecretinfo(serializers.ModelSerializer):
     class Meta:
         model = project
         exclude = ('createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail')
-        depth = 1
 
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_projects__is_deleted=False)
@@ -330,6 +330,9 @@ class ProjDetailSerializer_admin_withoutsecretinfo(serializers.ModelSerializer):
     service = serializers.SerializerMethodField()
     industries = serializers.SerializerMethodField()
     country = countrySerializer()
+    supportUser = UserCommenSerializer()
+    takeUser = UserCommenSerializer()
+    makeUser = UserCommenSerializer()
     transactionType = serializers.SerializerMethodField()
     finance = serializers.SerializerMethodField()
     attachment = serializers.SerializerMethodField()
@@ -338,7 +341,6 @@ class ProjDetailSerializer_admin_withoutsecretinfo(serializers.ModelSerializer):
     class Meta:
         model = project
         exclude = ('supportUser', 'takeUser', 'makeUser', 'phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail','realname')
-        depth = 1
 
     def get_service(self, obj):
         qs = obj.service.filter(service_projects__is_deleted=False)
@@ -390,12 +392,14 @@ class ProjDetailSerializer_user_withoutsecretinfo(serializers.ModelSerializer):
     finance = serializers.SerializerMethodField()
     attachment = serializers.SerializerMethodField()
     country = countrySerializer()
+    supportUser = UserCommenSerializer()
+    takeUser = UserCommenSerializer()
+    makeUser = UserCommenSerializer()
     linkpdfurl = serializers.SerializerMethodField()
 
     class Meta:
         model = project
         exclude = ('supportUser', 'takeUser', 'makeUser', 'phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail','realname')
-        depth = 1
 
     def get_service(self, obj):
         qs = obj.service.filter(service_projects__is_deleted=False)
@@ -448,12 +452,14 @@ class ProjDetailSerializer_all(serializers.ModelSerializer):
     finance = serializers.SerializerMethodField()
     attachment = serializers.SerializerMethodField()
     country = countrySerializer()
+    supportUser = UserCommenSerializer()
+    takeUser = UserCommenSerializer()
+    makeUser = UserCommenSerializer()
     linkpdfurl = serializers.SerializerMethodField()
 
     class Meta:
         model = project
         exclude = ('createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail',)
-        depth = 1
 
     def get_service(self, obj):
         qs = obj.service.filter(service_projects__is_deleted=False)
