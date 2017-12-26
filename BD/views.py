@@ -572,7 +572,7 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
-            bdinstance = ProjectBD.objects.get(id=int(data['orgBD']))
+            bdinstance = OrgBD.objects.get(id=int(data['orgBD']))
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
             elif request.user.has_perm('BD.user_manageOrgBD', bdinstance):
