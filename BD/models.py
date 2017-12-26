@@ -10,7 +10,7 @@ from proj.models import project
 from sourcetype.models import BDStatus, OrgArea
 from sourcetype.models import TitleType
 from usersys.models import MyUser
-from usersys.views import makeUserRelation, makeUserRemark
+from usersys.views import makeUserRemark
 from utils.customClass import MyForeignKey, InvestError, MyModel
 
 bd_sourcetype = (
@@ -115,10 +115,10 @@ class OrgBD(MyModel):
                     raise InvestError(5003,msg='项目尚未终审发布')
         if self.pk and self.is_deleted == False:
             if self.bd_status.nameC == 'BD成功':
-                makeUserRelation(self.bduser,self.manager)
-                comments = self.OrgBD_comments.all().filter(is_deleted=False)
-                for comment in comments:
-                    makeUserRemark(self.bduser,comment,self.manager)
+                if self.bduser:
+                    comments = self.OrgBD_comments.all().filter(is_deleted=False)
+                    for comment in comments:
+                        makeUserRemark(self.bduser,comment,self.manager)
         return super(OrgBD, self).save(*args, **kwargs)
 
 class OrgBDComments(MyModel):
