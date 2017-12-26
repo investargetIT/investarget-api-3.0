@@ -425,7 +425,7 @@ class OrgBDView(viewsets.ModelViewSet):
                     if commentinstance.is_valid():
                         commentinstance.save()
                 sendmessage_orgBDMessage(neworgBD, receiver=neworgBD.manager,
-                                    types=['app', 'wenmsg', 'sms'], sender=request.user)
+                                    types=['app', 'webmsg', 'sms'], sender=request.user)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgBDSerializer(neworgBD).data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
