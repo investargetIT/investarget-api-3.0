@@ -79,7 +79,7 @@ class DataroomView(viewsets.ModelViewSet):
             if request.user.has_perm('dataroom.admin_getdataroom'):
                 queryset = queryset
             else:
-                queryset = queryset.filter(Q(dataroom_users__in=request.user.user_datatooms.all()) | Q(proj__takeUser=request.user) | Q(proj__makeUser=request.user))
+                queryset = queryset.filter(Q(dataroom_users__in=request.user.user_datatooms.all()) | Q(proj__takeUser=request.user) | Q(proj__makeUser=request.user)).distinct()
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -383,7 +383,7 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             dataroominstance = dataroom.objects.get(id=dataroomid, is_deleted=False)
             if request.user.has_perm('dataroom.admin_getdataroom'):
                 pass
-            elif request.user.user in (dataroominstance.proj.takeUser, dataroominstance.proj.makeUser, dataroominstance.proj.supportUser):
+            elif request.user in (dataroominstance.proj.takeUser, dataroominstance.proj.makeUser, dataroominstance.proj.supportUser):
                 pass
             else:
                 raise InvestError(2009)

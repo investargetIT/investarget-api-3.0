@@ -44,7 +44,7 @@ class timeline(MyModel):
             raise InvestError(20071,msg='datasource/proj/investor/trader cannot be null')
         if self.proj.projstatus_id < 4:
             raise InvestError(5003,msg='项目尚未终审发布')
-        if self.trader.userstatus_id != 2 or self.investor.userstatus_id != 2:
+        if self.trader.userstatus_id != 2:
             raise InvestError(2022)
         try:
             if self.pk:
@@ -97,8 +97,8 @@ class timelineTransationStatu(MyModel):
         db_table = 'timelineTransationStatus'
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
-        if self.timeline.isClose:
-            raise InvestError(6004)
+        # if self.timeline.isClose:
+        #     raise InvestError(6004)
         if self.alertCycle:
             if not self.inDate:
                 self.inDate = datetime.datetime.now() + datetime.timedelta(hours=self.alertCycle * 24)

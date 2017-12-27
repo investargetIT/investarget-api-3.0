@@ -344,7 +344,6 @@ class ProjectView(viewsets.ModelViewSet):
                 if not request.user.has_perm('proj.admin_changeproj'):
                     raise  InvestError(2009,msg='没有权限修改%s'%editlist2)
             with transaction.atomic():
-                # rem_perm('proj.user_getproj',)
                 proj = ProjCreatSerializer(pro,data=projdata)
                 if proj.is_valid():
                     pro = proj.save()
@@ -417,8 +416,6 @@ class ProjectView(viewsets.ModelViewSet):
                     cache_delete_key(self.redis_key + '_%s' % pro.id)
                 else:
                     raise InvestError(code=4001,msg='data有误_%s' %  proj.errors)
-                # setUserObjectPermission(pro.supportUser, pro,
-                #                         ['proj.user_getproj', 'proj.user_changeproj', 'proj.user_deleteproj'])
                 if sendmsg and not pro.ismarketplace:
                     sendmessage_projectpublish(pro,pro.supportUser,['email',],sender=request.user)
                     pulishProjectCreateDataroom(pro, request.user)

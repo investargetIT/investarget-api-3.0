@@ -306,8 +306,8 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                         saveMessage(content, messagetype, title, receiver, sender,modeltype='MyUser',sourceid=model.id)
                     except Exception:
                         logexcption()
-
-    sendmessage_auditstatuchangeThread(model,receiver,types,sender).start()
+    if checkReceiverToSendMsg(receiver):
+        sendmessage_auditstatuchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_userregister(model,receiver,types,sender=None):
     """
