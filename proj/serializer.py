@@ -330,9 +330,6 @@ class ProjDetailSerializer_admin_withoutsecretinfo(serializers.ModelSerializer):
     service = serializers.SerializerMethodField()
     industries = serializers.SerializerMethodField()
     country = countrySerializer()
-    supportUser = UserCommenSerializer()
-    takeUser = UserCommenSerializer()
-    makeUser = UserCommenSerializer()
     transactionType = serializers.SerializerMethodField()
     finance = serializers.SerializerMethodField()
     attachment = serializers.SerializerMethodField()
@@ -392,9 +389,6 @@ class ProjDetailSerializer_user_withoutsecretinfo(serializers.ModelSerializer):
     finance = serializers.SerializerMethodField()
     attachment = serializers.SerializerMethodField()
     country = countrySerializer()
-    supportUser = UserCommenSerializer()
-    takeUser = UserCommenSerializer()
-    makeUser = UserCommenSerializer()
     linkpdfurl = serializers.SerializerMethodField()
 
     class Meta:
