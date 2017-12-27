@@ -5,6 +5,7 @@ import traceback
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction
 from django.db.models import F
+from django.db.models import Q
 from django.http import StreamingHttpResponse
 from rest_framework import filters, viewsets
 
@@ -306,7 +307,6 @@ def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcon
                 path = getPathWithFile(file_obj, self.path)
                 savepath = downloadFileToPath(key=file_obj.realfilekey, bucket=file_obj.bucket, path=path)
                 if savepath:
-                    print savepath
                     filetype = path.split('.')[-1]
                     if filetype in ['pdf', u'pdf']:
                         filepaths.append(path)
@@ -373,13 +373,20 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             raise InvestError(code=8888)
         return obj
 
-    @loginTokenIsAvailable(['dataroom.admin_getdataroom',])
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang',None)
             dataroomid = request.GET.get('dataroom',None)
             if dataroomid is None:
                 raise InvestError(code=20072,msg='dataroom 不能空')
+            dataroominstance = dataroom.objects.get(id=dataroomid, is_deleted=False)
+            if request.user.has_perm('dataroom.admin_getdataroom'):
+                pass
+            elif request.user.user in (dataroominstance.proj.takeUser, dataroominstance.proj.makeUser, dataroominstance.proj.supportUser):
+                pass
+            else:
+                raise InvestError(2009)
             queryset = self.filter_queryset(self.get_queryset()).filter(datasource=self.request.user.datasource)
             count = queryset.count()
             serializer = DataroomdirectoryorfileSerializer(queryset, many=True)
@@ -515,12 +522,13 @@ class User_DataroomfileView(viewsets.ModelViewSet):
             user = request.GET.get('user',None)
             if request.user.has_perm('dataroom.admin_getdataroom'):
                 filters = {'datasource':self.request.user.datasource}
+                queryset = self.filter_queryset(self.get_queryset()).filter(**filters)
             else:
                 filters = {'datasource':self.request.user.datasource, 'user':request.user.id}
                 if user:
                     if user != request.user.id:
                         raise InvestError(2009)
-            queryset = self.filter_queryset(self.get_queryset()).filter(**filters)
+                queryset = self.filter_queryset(self.get_queryset()).filter(Q(**filters) | Q(dataroom__takeUser=request.user) | Q(dataroom__makeUser=request.user))
             count = queryset.count()
             serializer = User_DataroomSerializer(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
@@ -539,6 +547,8 @@ class User_DataroomfileView(viewsets.ModelViewSet):
             if request.user.has_perm('dataroom.admin_getdataroom'):
                 serializerclass = User_DataroomfileSerializer
             elif request.user == instance.user:
+                serializerclass = User_DataroomfileSerializer
+            elif request.user in (instance.dataroom.proj.takeUser, instance.dataroom.proj.makeUser):
                 serializerclass = User_DataroomfileSerializer
             else:
                 raise InvestError(code=2009)
