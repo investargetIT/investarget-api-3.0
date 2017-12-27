@@ -222,6 +222,7 @@ class ProjDetailSerializer_admin_withsecretinfo(serializers.ModelSerializer):
     class Meta:
         model = project
         exclude = ('createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail',)
+        depth = 1
 
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_projects__is_deleted=False)
@@ -282,6 +283,7 @@ class ProjDetailSerializer_user_withsecretinfo(serializers.ModelSerializer):
     class Meta:
         model = project
         exclude = ('createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail')
+        depth = 1
 
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_projects__is_deleted=False)
@@ -338,6 +340,7 @@ class ProjDetailSerializer_admin_withoutsecretinfo(serializers.ModelSerializer):
     class Meta:
         model = project
         exclude = ('supportUser', 'takeUser', 'makeUser', 'phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail','realname')
+        depth = 1
 
     def get_service(self, obj):
         qs = obj.service.filter(service_projects__is_deleted=False)
@@ -394,6 +397,7 @@ class ProjDetailSerializer_user_withoutsecretinfo(serializers.ModelSerializer):
     class Meta:
         model = project
         exclude = ('supportUser', 'takeUser', 'makeUser', 'phoneNumber', 'email', 'contactPerson','createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail','realname')
+        depth = 1
 
     def get_service(self, obj):
         qs = obj.service.filter(service_projects__is_deleted=False)
@@ -454,6 +458,7 @@ class ProjDetailSerializer_all(serializers.ModelSerializer):
     class Meta:
         model = project
         exclude = ('createuser', 'lastmodifyuser', 'deleteduser', 'deletedtime', 'datasource','isSendEmail',)
+        depth = 1
 
     def get_service(self, obj):
         qs = obj.service.filter(service_projects__is_deleted=False)
