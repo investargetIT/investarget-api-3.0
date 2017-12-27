@@ -34,7 +34,7 @@ from utils.somedef import addWaterMark, file_iterator
 from utils.sendMessage import sendmessage_favoriteproject, sendmessage_projectpublish
 from utils.util import catchexcption, read_from_cache, write_to_cache, loginTokenIsAvailable, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser, \
-    setUserObjectPermission, cache_delete_key, checkrequesttoken
+    setUserObjectPermission, cache_delete_key, checkrequesttoken, rem_perm
 from utils.customClass import JSONResponse, InvestError, RelationFilter
 from django_filters import FilterSet
 
@@ -344,6 +344,7 @@ class ProjectView(viewsets.ModelViewSet):
                 if not request.user.has_perm('proj.admin_changeproj'):
                     raise  InvestError(2009,msg='没有权限修改%s'%editlist2)
             with transaction.atomic():
+                # rem_perm('proj.user_getproj',)
                 proj = ProjCreatSerializer(pro,data=projdata)
                 if proj.is_valid():
                     pro = proj.save()
@@ -416,6 +417,8 @@ class ProjectView(viewsets.ModelViewSet):
                     cache_delete_key(self.redis_key + '_%s' % pro.id)
                 else:
                     raise InvestError(code=4001,msg='data有误_%s' %  proj.errors)
+                # setUserObjectPermission(pro.supportUser, pro,
+                #                         ['proj.user_getproj', 'proj.user_changeproj', 'proj.user_deleteproj'])
                 if sendmsg and not pro.ismarketplace:
                     sendmessage_projectpublish(pro,pro.supportUser,['email',],sender=request.user)
                     pulishProjectCreateDataroom(pro, request.user)
@@ -527,7 +530,7 @@ class ProjectView(viewsets.ModelViewSet):
             pdfpath = APILOG_PATH['pdfpath_base'] + 'P' + datetime.datetime.now().strftime('%Y%m%d%H%M%S') + '.pdf'
             config = pdfkit.configuration(wkhtmltopdf=APILOG_PATH['wkhtmltopdf'])
             aaa = pdfkit.from_url(PROJECTPDF_URLPATH + str(proj.id)+'&lang=%s'%lang, pdfpath, configuration=config, options=options)
-            out_path = addWaterMark(pdfpath,watermarkcontent=[request.user.usernameC, request.user.org__orgnameC if request.user.org else request.user.email, request.user.email])
+            out_path = addWaterMark(pdfpath,watermarkcontent=[request.user.usernameC, request.user.org.orgnameC if request.user.org else request.user.email, request.user.email])
             if aaa:
                 fn = open(out_path, 'rb')
                 response = StreamingHttpResponse(file_iterator(fn))
