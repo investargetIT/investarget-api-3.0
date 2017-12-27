@@ -79,7 +79,7 @@ class DataroomView(viewsets.ModelViewSet):
             if request.user.has_perm('dataroom.admin_getdataroom'):
                 queryset = queryset
             else:
-                queryset = queryset.filter(dataroom_users__in=request.user.user_datatooms.all())
+                queryset = queryset.filter(Q(dataroom_users__in=request.user.user_datatooms.all()) | Q(proj__takeUser=request.user) | Q(proj__makeUser=request.user))
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -521,14 +521,13 @@ class User_DataroomfileView(viewsets.ModelViewSet):
             lang = request.GET.get('lang', 'cn')
             user = request.GET.get('user',None)
             if request.user.has_perm('dataroom.admin_getdataroom'):
-                filters = {'datasource':self.request.user.datasource}
+                filters = {'datasource':request.user.datasource}
                 queryset = self.filter_queryset(self.get_queryset()).filter(**filters)
             else:
-                filters = {'datasource':self.request.user.datasource, 'user':request.user.id}
                 if user:
                     if user != request.user.id:
                         raise InvestError(2009)
-                queryset = self.filter_queryset(self.get_queryset()).filter(Q(**filters) | Q(dataroom__takeUser=request.user) | Q(dataroom__makeUser=request.user))
+                queryset = self.filter_queryset(self.get_queryset()).filter(Q(datasource=request.user.datasource,user=request.user) | Q(dataroom__proj__takeUser=request.user) | Q(dataroom__proj__makeUser=request.user))
             count = queryset.count()
             serializer = User_DataroomSerializer(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
