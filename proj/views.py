@@ -825,16 +825,19 @@ class ProjFinanceView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
-            if not request.user.has_perm('proj.admin_getproj'):
-                queryset = queryset
-            else:
-                queryset = queryset.filter(proj=proj)
+            if not proj.financeIsPublic:
+                if request.user in (proj.supportUser, proj.takeUser, proj.makeUser) or request.user.is_superuser:
+                    pass
+                elif request.user.has_perm('proj.admin_getproj'):
+                    pass
+                else:
+                    return JSONResponse(SuccessResponse({'count':0,'data':[]}, msg='没有符合的结果'))
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
                 queryset = queryset.page(page_index)
             except EmptyPage:
-                return JSONResponse(SuccessResponse([],msg='没有符合的结果'))
+                return JSONResponse(SuccessResponse({'count':0,'data':[]}, msg='没有符合的结果'))
             serializer = FinanceSerializer(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
