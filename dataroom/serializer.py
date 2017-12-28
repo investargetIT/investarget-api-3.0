@@ -49,12 +49,13 @@ class User_DataroomfileCreateSerializer(serializers.ModelSerializer):
 class User_DataroomSerializer(serializers.ModelSerializer):
     dataroom = DataroomSerializer()
     user = UserInfoSerializer()
+    trader = UserInfoSerializer()
     class Meta:
         model = dataroom_User_file
-        fields = ('id', 'dataroom', 'user')
+        fields = ('id', 'dataroom', 'user', 'trader')
 
 class User_DataroomfileSerializer(serializers.ModelSerializer):
     files = DataroomdirectoryorfileSerializer(many=True)
     class Meta:
         model = dataroom_User_file
-        fields = ('id', 'dataroom', 'user', 'files')
+        fields = ('id', 'dataroom', 'user', 'files', 'trader')

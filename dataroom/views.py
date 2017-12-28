@@ -79,7 +79,7 @@ class DataroomView(viewsets.ModelViewSet):
             if request.user.has_perm('dataroom.admin_getdataroom'):
                 queryset = queryset
             else:
-                queryset = queryset.filter(Q(dataroom_users__in=request.user.user_datatooms.all()) | Q(proj__takeUser=request.user) | Q(proj__makeUser=request.user)).distinct()
+                queryset = queryset.filter(Q(dataroom_users__in=request.user.user_datarooms.all()) | Q(proj__takeUser=request.user) | Q(proj__makeUser=request.user)).distinct()
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -383,7 +383,9 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             dataroominstance = dataroom.objects.get(id=dataroomid, is_deleted=False)
             if request.user.has_perm('dataroom.admin_getdataroom'):
                 pass
-            elif request.user in (dataroominstance.proj.takeUser, dataroominstance.proj.makeUser, dataroominstance.proj.supportUser):
+            elif request.user in (dataroominstance.proj.takeUser, dataroominstance.proj.makeUser):
+                pass
+            elif dataroom_User_file.objects.filter(trader=request.user,dataroom=dataroominstance,is_deleted=False).exists():
                 pass
             else:
                 raise InvestError(2009)
@@ -527,7 +529,7 @@ class User_DataroomfileView(viewsets.ModelViewSet):
                 if user:
                     if user != request.user.id:
                         raise InvestError(2009)
-                queryset = self.filter_queryset(self.get_queryset()).filter(Q(datasource=request.user.datasource,user=request.user) | Q(dataroom__proj__takeUser=request.user) | Q(dataroom__proj__makeUser=request.user))
+                queryset = self.filter_queryset(self.get_queryset()).filter(Q(datasource=request.user.datasource,user=request.user) | Q(datasource=request.user.datasource,trader=request.user) | Q(dataroom__proj__takeUser=request.user) | Q(dataroom__proj__makeUser=request.user))
             count = queryset.count()
             serializer = User_DataroomSerializer(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
@@ -578,21 +580,27 @@ class User_DataroomfileView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['dataroom.admin_changedataroom'])
+    @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
         try:
             data = request.data
             lang = request.GET.get('lang')
             user_dataroom = self.get_object()
             files = data.get('files', [])
+            if request.user.has_perm('dataroom.admin_changedataroom'):
+                pass
+            elif request.user == user_dataroom.trader:
+                pass
+            else:
+                raise InvestError(2009)
             with transaction.atomic():
                 user_dataroomserializer = User_DataroomfileCreateSerializer(user_dataroom, data={'files': files})
                 if user_dataroomserializer.is_valid():
                     user_dataroomserializer.save()
                 else:
                     raise InvestError(code=20071, msg='data有误_%s' % user_dataroomserializer.errors)
-                sendmessage_dataroomfileupdate(user_dataroom, user_dataroom.user,
-                                               ['sms', 'email', 'webmsg', 'app'], sender=request.user)
+                # sendmessage_dataroomfileupdate(user_dataroom, user_dataroom.user,
+                #                                ['sms', 'email', 'webmsg', 'app'], sender=request.user)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(user_dataroomserializer.data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))

@@ -6,6 +6,7 @@ import random
 
 from PyPDF2 import PdfFileReader
 from PyPDF2 import PdfFileWriter
+from reportlab.lib.pagesizes import A1
 from reportlab.pdfgen import canvas
 
 from invest.settings import APILOG_PATH
@@ -52,24 +53,29 @@ def makeAvatar(name):
 def addWaterMark(pdfpath='water.pdf',watermarkcontent=None):
     if not isinstance(watermarkcontent, list):
         watermarkcontent = []
-    while len(watermarkcontent) != 3:
+    while len(watermarkcontent) < 3:
         watermarkcontent.append(u'多维海拓')
     pdfmetrics.registerFont(TTFont('song', APILOG_PATH['pdfwaterfontPath']))
     watermarkpath = pdfpath.split('.')[0] + '-water' + '.pdf'
     out_path = pdfpath.split('.')[0] + '-out' + '.pdf'
-    c = canvas.Canvas(watermarkpath)
-    x = 20
-    y = 5
-    # 设置字体
-    c.setFont("song", 40)
+    c = canvas.Canvas(watermarkpath, A1)
     c.rotate(45)
-    # 设置透明度，1为不透明
-    c.setFillAlpha(0.05)
-    c.drawCentredString((x - 3) * cm, (y - 3) * cm, watermarkcontent[0])
-    c.setFillAlpha(0.05)
-    c.drawCentredString(x * cm, y * cm, watermarkcontent[1])
-    c.setFillAlpha(0.05)
-    c.drawCentredString((x + 3) * cm, (y + 3) * cm, watermarkcontent[2])
+    c.translate(0, -A1[1] * 0.5)
+    width0 = c.stringWidth(text=watermarkcontent[0], fontName='song', fontSize=40)
+    width1 = c.stringWidth(text=watermarkcontent[1], fontName='song', fontSize=40)
+    width2 = c.stringWidth(text=watermarkcontent[2], fontName='song', fontSize=40)
+    y = 0
+    while y < A1[1]:
+        x = 100
+        while x < A1[0]:
+            c.setFillAlpha(0.05)
+            c.drawCentredString(x, y, watermarkcontent[0])
+            x = x + width0 + 50
+            c.drawCentredString(x, y, watermarkcontent[1])
+            x = x + width1 + 100
+            c.drawCentredString(x, y, watermarkcontent[2])
+            x = x + width2 + 50
+        y += 60
     c.save()
     watermark = PdfFileReader(open(watermarkpath, "rb"))
 
@@ -93,24 +99,28 @@ def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
         return 20071
     if not isinstance(watermarkcontent, list):
         watermarkcontent = []
-    while len(watermarkcontent) != 3:
+    while len(watermarkcontent) < 3:
         watermarkcontent.append(u'多维海拓')
     pdfmetrics.registerFont(TTFont('song', APILOG_PATH['pdfwaterfontPath']))
     watermarkpath = pdfpaths[0].split('.')[0] + '-water' + '.pdf'
-    c = canvas.Canvas(watermarkpath)
-    x = 20
-    y = 5
-    # 设置字体
-    c.setFont("song", 40)
-    # 旋转45度，坐标系被旋转
+    c = canvas.Canvas(watermarkpath, A1)
     c.rotate(45)
-    # 设置透明度，1为不透明
-    c.setFillAlpha(0.05)
-    c.drawCentredString((x - 3) * cm, (y - 3) * cm, watermarkcontent[2])
-    c.setFillAlpha(0.05)
-    c.drawCentredString(x * cm, y * cm, watermarkcontent[1])
-    c.setFillAlpha(0.05)
-    c.drawCentredString((x + 3) * cm, (y + 3) * cm, watermarkcontent[0])
+    c.translate(0, -A1[1] * 0.5)
+    width0 = c.stringWidth(text=watermarkcontent[0], fontName='song', fontSize=40)
+    width1 = c.stringWidth(text=watermarkcontent[1], fontName='song', fontSize=40)
+    width2 = c.stringWidth(text=watermarkcontent[2], fontName='song', fontSize=40)
+    y = 0
+    while y < A1[1]:
+        x = 100
+        while x < A1[0]:
+            c.setFillAlpha(0.05)
+            c.drawCentredString(x, y, watermarkcontent[0])
+            x = x + width0 + 50
+            c.drawCentredString(x, y, watermarkcontent[1])
+            x = x + width1 + 100
+            c.drawCentredString(x, y, watermarkcontent[2])
+            x = x + width2 + 100
+        y += 60
     c.save()
     watermark = PdfFileReader(open(watermarkpath, "rb"))
     # Get our files ready
