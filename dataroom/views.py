@@ -547,7 +547,7 @@ class User_DataroomfileView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user.has_perm('dataroom.admin_getdataroom'):
                 serializerclass = User_DataroomfileSerializer
-            elif request.user == instance.user:
+            elif request.user == instance.user or request.user == instance.trader:
                 serializerclass = User_DataroomfileSerializer
             elif request.user in (instance.dataroom.proj.takeUser, instance.dataroom.proj.makeUser):
                 serializerclass = User_DataroomfileSerializer
