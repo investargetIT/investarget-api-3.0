@@ -203,9 +203,9 @@ class UserView(viewsets.ModelViewSet):
                     raise InvestError(code=20042)
                 type = data.pop('type',None)
                 if type in ['trader', u'trader']:
-                    groupname = '未审核交易师'
+                    groupname = '初级交易师'
                 else:
-                    groupname = '未审核投资人'
+                    groupname = '初级投资人'
                 if not groupname:
                     raise InvestError(code=2007,msg='type cannot be null')
                 try:

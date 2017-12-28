@@ -149,15 +149,18 @@ class OrganizationView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['org.admin_addorg','org.user_addorg'])
+    @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
         data = request.data
         lang = request.GET.get('lang')
         data['createuser'] = request.user.id
         data['datasource'] = request.user.datasource.id
-        IPOdate = data.pop('IPOdate', None)
-        if IPOdate not in ['None', None, u'None', 'none','',' ']:
-            data['IPOdate'] = datetime.datetime.strptime(IPOdate[0:10],'%Y-%m-%d')
+        if request.user.has_perm('org.admin_addorg'):
+            pass
+        elif request.user.has_perm('org.user_addorg'):
+            data['orgstatus'] = 1
+        else:
+            raise InvestError(2009)
         try:
             with transaction.atomic():
                 orgTransactionPhases = data.pop('orgtransactionphase', None)
@@ -219,7 +222,7 @@ class OrganizationView(viewsets.ModelViewSet):
             if request.user.has_perm('org.admin_changeorg'):
                 pass
             elif request.user.has_perm('org.user_changeorg', org):
-                pass
+                data.pop('orgstatus', None)
             else:
                 raise InvestError(code=2009)
             with transaction.atomic():
