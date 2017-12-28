@@ -72,11 +72,11 @@ def addWaterMark(pdfpath='water.pdf',watermarkcontent=None):
         while x < A1[0]:
             c.setFillAlpha(0.05)
             c.drawCentredString(x, y, watermarkcontent[0])
-            x = x + width0 + 50
+            x = x + width0 * 2
             c.drawCentredString(x, y, watermarkcontent[1])
-            x = x + width1 + 100
+            x = x + width1 * 2
             c.drawCentredString(x, y, watermarkcontent[2])
-            x = x + width2 + 50
+            x = x + width2 * 2
         y += 60
     c.save()
     watermark = PdfFileReader(open(watermarkpath, "rb"))
@@ -119,11 +119,11 @@ def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
         while x < A1[0]:
             c.setFillAlpha(0.05)
             c.drawCentredString(x, y, watermarkcontent[0])
-            x = x + width0 + 50
+            x = x + width0 * 2
             c.drawCentredString(x, y, watermarkcontent[1])
-            x = x + width1 + 100
+            x = x + width1 * 2
             c.drawCentredString(x, y, watermarkcontent[2])
-            x = x + width2 + 50
+            x = x + width2 * 2
         y += 60
     c.save()
     watermark = PdfFileReader(open(watermarkpath, "rb"))
