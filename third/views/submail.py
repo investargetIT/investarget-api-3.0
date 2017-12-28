@@ -154,10 +154,18 @@ def sendSmscode(request):
         mobilecode = MobileAuthCode(mobile=destination)
         mobilecode.save()
         varsdict = {'code': mobilecode.code, 'time': '30'}
-        if areacode in ['86',86]:
-            response = xsendSms(destination, SMSCODE_projectsign[str(source)], varsdict)
+        if areacode in ['86', 86, None]:
+            projectsign = SMSCODE_projectsign[str(source)]['in']
+            if projectsign:
+                response = xsendSms(destination, projectsign, varsdict)
+            else:
+                raise InvestError(30011, msg='没有建立相应短信模板')
         else:
-            response = xsendInternationalsms('+%s'%areacode + destination, SMSCODE_projectsign[str(source)], varsdict)
+            projectsign = SMSCODE_projectsign[str(source)]['out']
+            if projectsign:
+                response = xsendInternationalsms('+%s'%areacode + destination, projectsign, varsdict)
+            else:
+                raise InvestError(30012, msg='没有建立相应短信模板')
         success = response.get('status',None)
         if success:
             response['smstoken'] = mobilecode.token
