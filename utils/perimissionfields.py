@@ -3,7 +3,7 @@
 
 userpermfield = {
     'usersys.admin_changeuser':[],
-    'usersys.trader_changeuser':['groups', 'createuser', 'createdtime', 'mobile', 'email', 'wechat'],
+    'usersys.trader_changeuser':['groups', 'createuser', 'createdtime', 'mobile', 'email',],
     'usersys.admin_adduser':[],
     'usersys.trader_adduser':[],
     'changeself':['groups', 'createuser', 'createdtime'],
