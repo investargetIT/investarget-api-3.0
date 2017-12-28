@@ -60,11 +60,12 @@ def addWaterMark(pdfpath='water.pdf',watermarkcontent=None):
     out_path = pdfpath.split('.')[0] + '-out' + '.pdf'
     c = canvas.Canvas(watermarkpath, A1)
     c.rotate(45)
-    c.setFont("song", 40)
+    fontsize = 20
+    c.setFont("song", fontsize)
     c.translate(0, -A1[1] * 0.5)
-    width0 = c.stringWidth(text=watermarkcontent[0], fontName='song', fontSize=40)
-    width1 = c.stringWidth(text=watermarkcontent[1], fontName='song', fontSize=40)
-    width2 = c.stringWidth(text=watermarkcontent[2], fontName='song', fontSize=40)
+    width0 = c.stringWidth(text=watermarkcontent[0], fontName='song', fontSize=fontsize)
+    width1 = c.stringWidth(text=watermarkcontent[1], fontName='song', fontSize=fontsize)
+    width2 = c.stringWidth(text=watermarkcontent[2], fontName='song', fontSize=fontsize)
     y = 0
     while y < A1[1]:
         x = 100
@@ -106,11 +107,12 @@ def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
     watermarkpath = pdfpaths[0].split('.')[0] + '-water' + '.pdf'
     c = canvas.Canvas(watermarkpath, A1)
     c.rotate(45)
-    c.setFont("song", 40)
+    fontsize = 20
+    c.setFont("song", fontsize)
     c.translate(0, -A1[1] * 0.5)
-    width0 = c.stringWidth(text=watermarkcontent[0], fontName='song', fontSize=40)
-    width1 = c.stringWidth(text=watermarkcontent[1], fontName='song', fontSize=40)
-    width2 = c.stringWidth(text=watermarkcontent[2], fontName='song', fontSize=40)
+    width0 = c.stringWidth(text=watermarkcontent[0], fontName='song', fontSize=fontsize)
+    width1 = c.stringWidth(text=watermarkcontent[1], fontName='song', fontSize=fontsize)
+    width2 = c.stringWidth(text=watermarkcontent[2], fontName='song', fontSize=fontsize)
     y = 0
     while y < A1[1]:
         x = 100
@@ -121,7 +123,7 @@ def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
             c.drawCentredString(x, y, watermarkcontent[1])
             x = x + width1 + 100
             c.drawCentredString(x, y, watermarkcontent[2])
-            x = x + width2 + 100
+            x = x + width2 + 50
         y += 60
     c.save()
     watermark = PdfFileReader(open(watermarkpath, "rb"))
