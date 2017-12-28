@@ -60,6 +60,7 @@ def addWaterMark(pdfpath='water.pdf',watermarkcontent=None):
     out_path = pdfpath.split('.')[0] + '-out' + '.pdf'
     c = canvas.Canvas(watermarkpath, A1)
     c.rotate(45)
+    c.setFont("song", 40)
     c.translate(0, -A1[1] * 0.5)
     width0 = c.stringWidth(text=watermarkcontent[0], fontName='song', fontSize=40)
     width1 = c.stringWidth(text=watermarkcontent[1], fontName='song', fontSize=40)
@@ -105,6 +106,7 @@ def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
     watermarkpath = pdfpaths[0].split('.')[0] + '-water' + '.pdf'
     c = canvas.Canvas(watermarkpath, A1)
     c.rotate(45)
+    c.setFont("song", 40)
     c.translate(0, -A1[1] * 0.5)
     width0 = c.stringWidth(text=watermarkcontent[0], fontName='song', fontSize=40)
     width1 = c.stringWidth(text=watermarkcontent[1], fontName='song', fontSize=40)
