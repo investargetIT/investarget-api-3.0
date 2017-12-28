@@ -79,7 +79,7 @@ class DataroomView(viewsets.ModelViewSet):
             if request.user.has_perm('dataroom.admin_getdataroom'):
                 queryset = queryset
             else:
-                queryset = queryset.filter(Q(dataroom_users__in=request.user.user_datarooms.all()) | Q(proj__takeUser=request.user) | Q(proj__makeUser=request.user)).distinct()
+                queryset = queryset.filter(Q(dataroom_users__in=request.user.user_datarooms.all()) | Q(dataroom_users__in=request.user.trader_datarooms.all()) | Q(proj__takeUser=request.user) | Q(proj__makeUser=request.user)).distinct()
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
