@@ -260,9 +260,7 @@ class ShareToken(models.Model):
 
     class Meta:
         db_table = 'project_sharetoken'
-        permissions = (
-            ('shareproj','分享项目权限'),
-        )
+
     def timeout(self):
         return datetime.timedelta(hours=24 * 1) - (datetime.datetime.now() - self.created)
 
