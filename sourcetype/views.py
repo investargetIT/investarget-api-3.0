@@ -419,7 +419,7 @@ class OrgtitletableView(viewsets.ModelViewSet):
 def getmenulist(user):
     qslist = []
     allmenuobj = webmenu.objects.all()
-    if user.has_perm('usersys.as_admin'):
+    if user.has_perm('usersys.admin_getuser'):
         qslist.append(allmenuobj.filter(id__in=[5]))
     if user.has_perm('usersys.as_investor') and not user.is_superuser:
         qslist.append(allmenuobj.filter(id__in=[13]))
