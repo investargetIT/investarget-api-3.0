@@ -425,13 +425,13 @@ class UserView(viewsets.ModelViewSet):
                                     raise InvestError(code=2007, msg='group bust be an available id')
                                 if groupinstance not in user.groups.all():
                                     if user.has_perm('usersys.as_trader'):
-                                        if Permission.objects.get(codename='as_trader', content_type__app_label='usersys') not in groupinstance.permissions:
+                                        if Permission.objects.get(codename='as_trader', content_type__app_label='usersys') not in groupinstance.permissions.all():
                                             if user.trader_relations.all().filter(is_deleted=False).exists():
                                                 raise InvestError(2010, msg='该用户名下有对接投资人，请先处理')
                                             if user.trader_timelines.all().filter(is_deleted=False).exists():
                                                 raise InvestError(2010, msg='该用户名下有对接时间轴，请先处理')
                                     if user.has_perm('usersys.as_investor'):
-                                        if Permission.objects.get(codename='as_investor', content_type__app_label='usersys') not in groupinstance.permissions:
+                                        if Permission.objects.get(codename='as_investor', content_type__app_label='usersys') not in groupinstance.permissions.all():
                                             if user.investor_relations.all().filter(is_deleted=False).exists():
                                                 raise InvestError(2010, msg='该用户名下有对接交易师，请先处理')
                                             if user.investor_timelines.all().filter(is_deleted=False).exists():
