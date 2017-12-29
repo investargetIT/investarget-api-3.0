@@ -69,7 +69,9 @@ class OrgBDSerializer(serializers.ModelSerializer):
     usertitle = titleTypeSerializer()
     bd_status = BDStatusSerializer()
     manager = UserCommenSerializer()
-    wxchat = serializers.SerializerMethodField()
+    wechat = serializers.SerializerMethodField()
+    email = serializers.SerializerMethodField()
+    useinfo = serializers.SerializerMethodField()
 
     class Meta:
         model = OrgBD
@@ -81,9 +83,19 @@ class OrgBDSerializer(serializers.ModelSerializer):
             return OrgBDCommentsSerializer(qs,many=True).data
         return None
 
-    def get_wxchat(self, obj):
+    def get_wechat(self, obj):
         if obj.bduser:
             return obj.bduser.wechat
+        return None
+
+    def get_email(self, obj):
+        if obj.bduser:
+            return obj.bduser.email
+        return None
+
+    def get_useinfo(self, obj):
+        if obj.bduser:
+            return UserCommenSerializer(obj.bduser).data
         return None
 
 
