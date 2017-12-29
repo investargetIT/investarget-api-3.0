@@ -843,10 +843,6 @@ class UserRemarkView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
-            if request.user.has_perm('usersys.admin_getuser'):
-                pass
-            else:
-                queryset = queryset.filter(createuser_id=request.user.id)
             sort = request.GET.get('sort')
             if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
                 queryset = queryset.order_by('-lastmodifytime', '-createdtime')
