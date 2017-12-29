@@ -706,7 +706,7 @@ class UnReachUserView(viewsets.ModelViewSet):
             raise InvestError(code=8890)
         return queryset
 
-    @loginTokenIsAvailable(['usersys.admin_getuser',])
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')
@@ -736,7 +736,7 @@ class UnReachUserView(viewsets.ModelViewSet):
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['usersys.admin_adduser',])
+    @loginTokenIsAvailable(['usersys.admin_adduser','usersys.user_adduser'])
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
@@ -757,7 +757,7 @@ class UnReachUserView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
-    @loginTokenIsAvailable(['usersys.admin_getuser',])
+    @loginTokenIsAvailable()
     def retrieve(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
