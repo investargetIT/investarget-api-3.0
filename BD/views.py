@@ -23,6 +23,7 @@ from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorRespon
 class ProjectBDFilter(FilterSet):
     com_name = RelationFilter(filterstr='com_name',lookup_method='icontains')
     location = RelationFilter(filterstr='location', lookup_method='in')
+    country = RelationFilter(filterstr='country', lookup_method='in')
     username = RelationFilter(filterstr='username', lookup_method='icontains')
     usermobile = RelationFilter(filterstr='usermobile', lookup_method='contains')
     source = RelationFilter(filterstr='source',lookup_method='icontains')
