@@ -39,6 +39,8 @@ class dataroom(MyModel):
             ('admin_adddataroom', '管理员添加dataroom'),
             ('admin_closedataroom', '管理员关闭dataroom'),
             ('downloadDataroom','打包下载dataroom'),
+            ('user_adddataroomfile', '用户上传dataroom文件'),
+            ('user_deletedataroomfile', '用户删除dataroom文件'),
         )
 
     def save(self, force_insert=False, force_update=False, using=None,

@@ -317,7 +317,7 @@ class ProjectView(viewsets.ModelViewSet):
             projdata = request.data
             if request.user.has_perm('proj.admin_changeproj'):
                 pass
-            elif request.user.has_perm('proj.user_changeproj',pro):
+            elif request.user.has_perm('proj.user_changeproj',pro) or request.user in [pro.takeUser, pro.makeUser, pro.supportUser]:
                 if projdata.get('projstatus', None) and projdata.get('projstatus', None) >= 4:
                     raise InvestError(2009,msg='只有管理员才能修改到该状态')
             else:
@@ -433,8 +433,9 @@ class ProjectView(viewsets.ModelViewSet):
             lang = request.GET.get('lang')
             if request.user.has_perm('proj.admin_deleteproj'):
                 pass
-            elif request.user.has_perm('proj.user_deleteproj',instance):
-                pass
+            elif request.user.has_perm('proj.user_deleteproj',instance) or request.user in [instance.takeUser, instance.makeUser, instance.supportUser]:
+                if instance.projstatus_id >= 4:
+                    raise InvestError(2009, msg='没有权限，请联系管理员删除')
             else:
                 raise InvestError(code=2009)
             if instance.proj_datarooms.filter(is_deleted=False,proj=instance).exists():

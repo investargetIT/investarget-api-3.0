@@ -399,14 +399,24 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['dataroom.admin_adddataroom',])
+    @loginTokenIsAvailable(['dataroom.admin_adddataroom', 'dataroom.user_adddataroomfile'])
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
             lang = request.GET.get('lang')
             dataroomid = data.get('dataroom', None)
+            dataroominstance = dataroom.objects.get(id=dataroomid, is_deleted=False)
             data['createuser'] = request.user.id
             data['datasource'] = request.user.datasource.id
+            if request.user.has_perm('dataroom.admin_adddataroom'):
+                pass
+            elif request.user.has_perm('dataroom.user_adddataroomfile'):
+                if request.user in (dataroominstance.proj.takeUser, dataroominstance.proj.makeUser, dataroominstance.proj.supportUser):
+                    pass
+                else:
+                    raise InvestError(2009, msg='非承揽承做无法上传文件')
+            else:
+                raise InvestError(2009, msg='没有上传文件的权限')
             if data.get('parent', None):
                 parentfile = self.get_object(data['parent'])
                 if parentfile.isFile:
@@ -469,7 +479,7 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
 
 
 
-    @loginTokenIsAvailable(['dataroom.admin_deletedataroom',])
+    @loginTokenIsAvailable(['dataroom.admin_deletedataroom', 'dataroom.user_deletedataroomfile'])
     def destroy(self, request, *args, **kwargs):
         try:
             filelist = request.data.get('filelist',None)
@@ -478,6 +488,17 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             with transaction.atomic():
                 for fileid in filelist:
                     instance = self.get_object(fileid)
+                    if request.user.has_perm('dataroom.admin_deletedataroom'):
+                        pass
+                    elif request.user.has_perm('dataroom.user_deletedataroomfile'):
+                        if request.user in (instance.dataroom.proj.takeUser, instance.dataroom.proj.makeUser,
+                                            instance.dataroom.proj.supportUser):
+                            pass
+                        else:
+                            raise InvestError(2009, msg='非承揽承做无法删除文件')
+                    else:
+                        raise InvestError(2009, msg='没有删除文件的权限')
+
                     deleteInstance(instance, request.user)
                 return JSONResponse(SuccessResponse(filelist))
         except InvestError as err:
