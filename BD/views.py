@@ -83,13 +83,13 @@ class ProjectBDView(viewsets.ModelViewSet):
                 queryset = queryset.filter(manager=request.user)
             else:
                 raise InvestError(2009)
-            sortfield = request.GET.get('sort', 'createdtime')
-            desc = request.GET.get('desc', 1)
-            queryset = mySortQuery(queryset, sortfield, desc)
             countres = queryset.values_list('manager').annotate(Count('manager'))
             countlist = []
             for manager_count in countres:
                 countlist.append({'manager': manager_count[0], 'count': manager_count[1]})
+            sortfield = request.GET.get('sort', 'createdtime')
+            desc = request.GET.get('desc', 1)
+            queryset = mySortQuery(queryset, sortfield, desc)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)

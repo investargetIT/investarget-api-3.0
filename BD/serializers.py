@@ -73,7 +73,7 @@ class OrgBDSerializer(serializers.ModelSerializer):
     email = serializers.SerializerMethodField()
     useinfo = serializers.SerializerMethodField()
     createuser = UserCommenSerializer()
-    
+
     class Meta:
         model = OrgBD
         exclude = ('deleteduser', 'deletedtime', 'datasource', 'is_deleted')
