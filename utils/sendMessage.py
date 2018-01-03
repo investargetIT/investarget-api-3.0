@@ -10,6 +10,7 @@ from usersys.models import MyUser, UserRelation, UserFriendship
 from msg.views import saveMessage
 from third.views.jpush import pushnotification
 from third.views.submail import xsendSms, xsendEmail
+from utils.messagejson import MESSAGE_DICT
 from utils.util import logexcption, checkEmailTrue
 
 sendEmail = True
@@ -109,7 +110,7 @@ favoriteTypeConf = {
 
 
 
-def sendmessage_favoriteproject(model,receiver,sender=None):
+def sendmessage_favoriteproject(model,receiver, sender=None):
     """
     :param model: favoriteProject type
     :param receiver: myuser type
@@ -122,19 +123,36 @@ def sendmessage_favoriteproject(model,receiver,sender=None):
             self.model = model
             self.receiver = receiver
             self.sender = sender
+            self.paths = ['sms','app','email','webmsg']
             threading.Thread.__init__(self)
 
         def run(self):
             receiver = self.receiver
             model = self.model
             sender = self.sender
+            paths = self.paths
             if isinstance(model, favoriteProject):
                 if model.favoritetype_id != 4 and model.favoritetype_id != 2:
-                    msgconfig = favoriteTypeConf[str(model.favoritetype_id)]
-                    paths = msgconfig['paths']
+                    lang = 'cn'
+                    if self.receiver.country:
+                        if self.receiver.country.areaCode not in ['86', u'86']:
+                            lang = 'en'
+                    if model.favoritetype_id == 1:
+                        msgdic = MESSAGE_DICT['systemrecommendproject']
+                        vars = 1
+                    elif model.favoritetype_id == 3:
+                        msgdic = MESSAGE_DICT['traderrecommendproject']
+                    elif model.favoritetype_id == 5:
+                        msgdic = MESSAGE_DICT['investorinvestproject']
+                    else:
+                        return
+                    if model.favoritetype_id in [3, 5]:
+                        content = msgdic['content_%s' % lang] % (sender.usernameC, model.proj.projtitleC)
+                    else:
+                        content = msgdic['content_%s' % lang] % model.proj.projtitleC
+                    title = msgdic['title_%s' % lang]
                     if 'app' in paths and sendAppmsg:
                         try:
-                            content = (msgconfig['app']['content']) % model.proj.projtitleC
                             receiver_alias = receiver.id
                             bdage = 1
                             n_extras = {}
@@ -144,7 +162,7 @@ def sendmessage_favoriteproject(model,receiver,sender=None):
                     if 'email' in paths and sendEmail and checkEmailTrue(receiver.email):
                         try:
                             destination = receiver.email
-                            projectsign = msgconfig['email']['projectsign']
+                            projectsign = msgdic['email_sign']
                             if model.favoritetype_id in [3,5]:
                                 vars = {'NameC': sender.usernameC, 'NameE': sender.usernameE, 'projectC': getProjTitleWithSuperLink(model.proj), 'projectE':getProjTitleWithSuperLink(model.proj,'en')}
                             else:
@@ -155,7 +173,7 @@ def sendmessage_favoriteproject(model,receiver,sender=None):
                     if 'sms' in paths and sendSms:
                         try:
                             destination = receiver.mobile
-                            projectsign = msgconfig['sms']['projectsign']
+                            projectsign =  msgdic['sms_sign']
                             if model.favoritetype_id in [3,5]:
                                 vars = {'user': sender.usernameC, 'project': model.proj.projtitleC, }
                             else:
@@ -165,18 +183,13 @@ def sendmessage_favoriteproject(model,receiver,sender=None):
                             logexcption()
                     if 'webmsg' in paths and sendWebmsg:
                         try:
-                            if model.favoritetype_id in [3,5]:
-                                content = (msgconfig['webmsg']['content']) % (sender.usernameC, model.proj.projtitleC)
-                            else:
-                                content = (msgconfig['webmsg']['content']) % model.proj.projtitleC
-                            title = msgconfig['webmsg']['title']
-                            messagetype = msgconfig['webmsg']['messagetype']
+                            messagetype = msgdic['messagetype']
                             saveMessage(content, messagetype, title, receiver, sender,modeltype='favoriteProject',sourceid=model.id)
                         except Exception:
                             logexcption()
 
     if checkReceiverToSendMsg(receiver):
-        sendmessage_favoriteprojectThread(model,receiver,sender).start()
+        sendmessage_favoriteprojectThread(model, receiver, sender).start()
 
 def sendmessage_traderadd(model,receiver,types,sender=None):
     """
@@ -200,9 +213,16 @@ def sendmessage_traderadd(model,receiver,types,sender=None):
             model = self.model
             sender = self.sender
             if isinstance(model, UserRelation):
+                lang = 'cn'
+                if self.receiver.country:
+                    if self.receiver.country.areaCode not in ['86', u'86']:
+                        lang = 'en'
+                msgdic = MESSAGE_DICT['traderadd']
+                title = msgdic['title_%s'%lang]
+                content = msgdic['content_%s'%lang]
+                messagetype = msgdic['messagetype']
                 if 'app' in types and sendAppmsg:
                     try:
-                        content = '交易师已添加'
                         receiver_alias = receiver.id
                         bdage = 1
                         n_extras = {}
@@ -227,9 +247,6 @@ def sendmessage_traderadd(model,receiver,types,sender=None):
                         logexcption()
                 if 'webmsg' in types and sendWebmsg:
                     try:
-                        content = '已为您添加交易师%s，感谢您的信任与支持' % model.traderuser.usernameC
-                        title = '交易师已添加'
-                        messagetype = 2
                         saveMessage(content, messagetype, title, receiver, sender,modeltype='UserRelation',sourceid=model.id)
                     except Exception:
                         logexcption()
@@ -259,12 +276,22 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
             model = self.model
             sender = self.sender
             if isinstance(model, MyUser):
+                lang = 'cn'
+                if self.receiver.country:
+                    if self.receiver.country.areaCode not in ['86', u'86']:
+                        lang = 'en'
+                if model.userstatus.id == 2:
+                    msgdic = MESSAGE_DICT['userauditpass']
+                elif model.userstatus.id == 3:
+                    msgdic = MESSAGE_DICT['userauditunpass']
+                else:
+                    return
+                title = msgdic['title_%s' % lang]
+                content = msgdic['content_%s' % lang]% (model.datasource.nameC, model.usernameC)
+                messagetype = msgdic['messagetype']
+
                 if 'app' in types and sendAppmsg:
                     try:
-                        if model.userstatus.id == 2:
-                            content = '您在%s注册的%s账号已经通过审核，欢迎加入%s交易平台。'% (model.datasource.nameC, model.usernameC, model.datasource.nameC)
-                        else:
-                            content = '您在%s注册的%s账号%s，如有疑问，请咨询相关工作人员。'% (model.datasource.nameC, model.usernameC, model.userstatus.nameC)
                         receiver_alias = receiver.id
                         bdage = 1
                         n_extras = {}
@@ -296,14 +323,7 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                         logexcption()
                 if 'webmsg' in types and sendWebmsg:
                     try:
-                        if model.userstatus.id == 2:
-                            content = '您在%s注册的%s账号已经通过审核，欢迎加入%s交易平台。'% (model.datasource.nameC, model.usernameC, model.datasource.nameC)
-                            title = '账号状态更改'
-                        else:
-                            content = '您在%s注册的%s账号%s，如有疑问，请咨询相关工作人员。'% (model.datasource.nameC, model.usernameC, model.userstatus.nameC)
-                            title = '账号状态更改'
-                        messagetype = 3
-                        saveMessage(content, messagetype, title, receiver, sender,modeltype='MyUser',sourceid=model.id)
+                        saveMessage(content, messagetype, title, receiver, sender, modeltype='MyUser',sourceid=model.id)
                     except Exception:
                         logexcption()
     if checkReceiverToSendMsg(receiver):
@@ -331,9 +351,16 @@ def sendmessage_userregister(model,receiver,types,sender=None):
             model = self.model
             sender = self.sender
             if isinstance(model, MyUser):
+                lang = 'cn'
+                if self.receiver.country:
+                    if self.receiver.country.areaCode not in ['86', u'86']:
+                        lang = 'en'
+                msgdic = MESSAGE_DICT['userregister']
+                title = msgdic['title_%s' % lang]
+                content = msgdic['content_%s' % lang] % (model.datasource.nameC, model.usernameC)
+                messagetype = msgdic['messagetype']
                 if 'app' in types and sendAppmsg:
                     try:
-                        content = '我们已收到您提交的注册申请。我们将在24小时内与您取得联系，进行用户信息审核，并明确您的意向和需求。请您耐心等待！审核结果将通过邮件和短信通知您。感谢您对多维海拓的关注！'
                         receiver_alias = receiver.id
                         bdage = 1
                         n_extras = {}
@@ -350,9 +377,6 @@ def sendmessage_userregister(model,receiver,types,sender=None):
                         logexcption()
                 if 'webmsg' in types and sendWebmsg:
                     try:
-                        content = '我们已收到您提交的注册申请。我们将在24小时内与您取得联系，进行用户信息审核，并明确您的意向和需求。请您耐心等待！审核结果将通过邮件和短信通知您。感谢您对多维海拓的关注！'
-                        title = '账号注册成功，审核工作会在24小时内开始。'
-                        messagetype = 5
                         saveMessage(content, messagetype, title, receiver, sender,modeltype='MyUser',sourceid=model.id)
                     except Exception:
                         logexcption()
@@ -384,9 +408,16 @@ def sendmessage_timelineauditstatuchange(model,receiver,types,sender=None):
             model = self.model
             sender = self.sender
             if isinstance(model, timelineTransationStatu):
+                lang = 'cn'
+                if self.receiver.country:
+                    if self.receiver.country.areaCode not in ['86', u'86']:
+                        lang = 'en'
+                msgdic = MESSAGE_DICT['timelineauditstatuchange']
+                title = msgdic['title_%s' % lang]
+                content = msgdic['content_%s' % lang] % model.timeline.proj.projtitleC
+                messagetype = msgdic['messagetype']
                 if 'app' in types and sendAppmsg:
                     try:
-                        content = '您的项目%s时间轴状态已更新，点击查看最新状态'%model.timeline.proj.projtitleC
                         receiver_alias = receiver.id
                         bdage = 1
                         n_extras = {}
@@ -411,9 +442,6 @@ def sendmessage_timelineauditstatuchange(model,receiver,types,sender=None):
                         logexcption()
                 if 'webmsg' in types and sendWebmsg:
                     try:
-                        content = '您的项目%s时间轴状态已更新，点击查看最新状态'%model.timeline.proj.projtitleC
-                        title = '时间轴状态更新'
-                        messagetype = 6
                         saveMessage(content, messagetype, title, receiver, sender,modeltype='timelineTransationStatu',sourceid=model.id)
                     except Exception:
                         logexcption()
@@ -503,6 +531,14 @@ def sendmessage_projectpublish(model, receiver, types, sender=None):
             model = self.model
             sender = self.sender
             if isinstance(model, project):
+                lang = 'cn'
+                if self.receiver.country:
+                    if self.receiver.country.areaCode not in ['86', u'86']:
+                        lang = 'en'
+                msgdic = MESSAGE_DICT['projectpublish']
+                title = msgdic['title_%s' % lang]
+                content = msgdic['content_%s' % lang] % model.dataroom.proj.projtitleC
+                messagetype = msgdic['messagetype']
                 if 'email' in types and sendEmail and checkEmailTrue(receiver.email):
                     try:
                         destination = receiver.email
@@ -513,9 +549,6 @@ def sendmessage_projectpublish(model, receiver, types, sender=None):
                         logexcption()
                 if 'webmsg' in types and sendWebmsg:
                     try:
-                        content = '您的项目%s，状态变更为已发布。' % model.dataroom.proj.projtitleC
-                        title = '项目状态变更'
-                        messagetype = 8
                         saveMessage(content, messagetype, title, receiver, sender,modeltype='project',sourceid=model.id)
                     except Exception:
                         logexcption()
@@ -545,9 +578,16 @@ def sendmessage_usermakefriends(model,receiver,types,sender=None):
             model = self.model
             sender = self.sender
             if isinstance(model, UserFriendship):
+                lang = 'cn'
+                if self.receiver.country:
+                    if self.receiver.country.areaCode not in ['86', u'86']:
+                        lang = 'en'
+                msgdic = MESSAGE_DICT['usermakefriends']
+                title = msgdic['title_%s' % lang]
+                content = msgdic['content_%s' % lang]
+                messagetype = msgdic['messagetype']
                 if 'app' in types and sendAppmsg:
                     try:
-                        content = '您有一个好友添加申请'
                         receiver_alias = receiver.id
                         bdage = 1
                         n_extras = {}
@@ -556,9 +596,6 @@ def sendmessage_usermakefriends(model,receiver,types,sender=None):
                         logexcption()
                 if 'webmsg' in types and sendWebmsg:
                     try:
-                        content = '您有一个好友添加申请'
-                        title = '好友添加申请'
-                        messagetype = 9
                         saveMessage(content, messagetype, title, receiver, sender,modeltype='UserFriendship',sourceid=model.id)
                     except Exception:
                         logexcption()
@@ -588,9 +625,16 @@ def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
             model = self.model
             sender = self.sender
             if isinstance(model, timelineTransationStatu):
+                lang = 'cn'
+                if self.receiver.country:
+                    if self.receiver.country.areaCode not in ['86', u'86']:
+                        lang = 'en'
+                msgdic = MESSAGE_DICT['timelinealertcycleexpire']
+                title = msgdic['title_%s' % lang]
+                content = msgdic['content_%s' % lang]
+                messagetype = msgdic['messagetype']
                 if 'app' in types and sendAppmsg:
                     try:
-                        content = '您有一个时间轴提醒到期'
                         receiver_alias = receiver.id
                         bdage = 1
                         n_extras = {}
@@ -599,9 +643,6 @@ def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
                         logexcption()
                 if 'webmsg' in types and sendWebmsg:
                     try:
-                        content = '您有一个时间轴提醒到期'
-                        title = '时间轴到期提醒'
-                        messagetype = 10
                         saveMessage(content, messagetype, title, receiver, sender,modeltype='timelineTransationStatu',sourceid=model.id)
                     except Exception:
                         logexcption()
@@ -631,9 +672,16 @@ def sendmessage_schedulemsg(model,receiver,types,sender=None):
             model = self.model
             sender = self.sender
             if isinstance(model, schedule):
+                lang = 'cn'
+                if self.receiver.country:
+                    if self.receiver.country.areaCode not in ['86', u'86']:
+                        lang = 'en'
+                msgdic = MESSAGE_DICT['schedulemsg']
+                title = msgdic['title_%s' % lang]
+                content = msgdic['content_%s' % lang]
+                messagetype = msgdic['messagetype']
                 if 'app' in types and sendAppmsg:
                     try:
-                        content = '您有一个日程今天到期'
                         receiver_alias = receiver.id
                         bdage = 1
                         n_extras = {}
@@ -642,9 +690,6 @@ def sendmessage_schedulemsg(model,receiver,types,sender=None):
                         logexcption()
                 if 'webmsg' in types and sendWebmsg:
                     try:
-                        content = '您有一个日程今天到期'
-                        title = '日程到期'
-                        messagetype = 11
                         saveMessage(content, messagetype, title, receiver, sender,modeltype='schedule',sourceid=model.id)
                     except Exception:
                         logexcption()
@@ -674,9 +719,16 @@ def sendmessage_orgBDMessage(model,receiver,types,sender=None):
             receiver = self.receiver
             model = self.model
             sender = self.sender
+            lang = 'cn'
+            if self.receiver.country:
+                if self.receiver.country.areaCode not in ['86', u'86']:
+                    lang = 'en'
+            msgdic = MESSAGE_DICT['timelinealertcycleexpire']
+            title = msgdic['title_%s' % lang]
+            content = msgdic['content_%s' % lang]
+            messagetype = msgdic['messagetype']
             if 'app' in types and sendAppmsg:
                 try:
-                    content = '您有一个新机构BD任务'
                     receiver_alias = receiver.id
                     bdage = 1
                     n_extras = {}
@@ -685,16 +737,13 @@ def sendmessage_orgBDMessage(model,receiver,types,sender=None):
                     logexcption()
             if 'webmsg' in types and sendWebmsg:
                 try:
-                    content = '您有一个新机构BD任务'
-                    title = '机构BD'
-                    messagetype = 12
                     saveMessage(content, messagetype, title, receiver, sender, modeltype='OrgBD', sourceid=model.id)
                 except Exception:
                     logexcption()
             if 'sms' in types and sendSms:
                 try:
                     destination = receiver.mobile
-                    projectsign = 'M2d4Q3'
+                    projectsign = msgdic['sms_sign']
                     vars = {}
                     xsendSms(destination, projectsign, vars)
                 except Exception:
