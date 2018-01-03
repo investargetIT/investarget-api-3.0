@@ -8,6 +8,7 @@ MESSAGE_DICT = {
         'title_en' : 'You have got a new recommended project',
         'content_cn' : '根据您的意向，系统向您推荐【%s】。',
         'content_en' : 'According to your investment criterion, InvesTarget recommended Project to you:【%s】.',
+        'messagetype': '1',
     },
     'traderrecommendproject':{
         "sms_sign": "S588p2",
@@ -16,6 +17,7 @@ MESSAGE_DICT = {
         'title_en' : 'You have got a new recommended project',
         'content_cn' : '您的交易师%s推荐给您项目【%s】。',
         'content_en' : 'According to your investment criterion, Transaction Manager %s recommended Project to you:【%s】.',
+        'messagetype': '2',
     },
     'investorinvestproject':{
         "sms_sign": "JzW3h",
@@ -24,6 +26,7 @@ MESSAGE_DICT = {
         'title_en' : 'Your investor has interests in project',
         'content_cn' : '您的投资者%s对项目【%s】感兴趣，请在48小时内联系投资者。',
         'content_en' : 'Your investor %s has interests in project 【%s】, please contact your investor in 48 hours',
+        'messagetype': '3',
     },
     "traderadd": {
         "sms_sign": "pT0yA4",
@@ -32,6 +35,7 @@ MESSAGE_DICT = {
         "title_en": "Your Transaction Manager has been assigned",
         "content_cn": "已为您添加交易师%s，感谢您的信任与支持！",
         "content_en": "You have been assigned for new Transaction Manager %s. Thank you for your trust and support in InvesTarget!",
+        'messagetype': '4',
     },
     "userauditpass":{
         "sms_sign": "EXIDv1",
@@ -40,6 +44,7 @@ MESSAGE_DICT = {
         "title_en": "Application has been approved",
         "content_cn": "您申请的Investarget海拓的【%s】已经通过审核，请继续使用海拓平台为您提供的服务。",
         "content_en": "Your application for【%s】on the InvesTarget platform has been approved. Please enjoy our services by continue using our platform.",
+        'messagetype': '5',
     },
     "userauditunpass":{
         "sms_sign": None,
@@ -48,6 +53,7 @@ MESSAGE_DICT = {
         "title_en": "Application has not been approved",
         "content_cn": "抱歉，您申请的Investarget海拓的【%s】未通过审核，请您重新登录并修改信息。另外我们的工作人员也将尽快与您取得联系，指导您进行下一步操作。",
         "content_en": "We are sorry to inform you that your application for 【%s】 on the InvesTarget platform has not been approved. Please log in and revise the information you have provided. Our staff will be in contact shortly and guide you through the next step of operation. Thank you for your patience.",
+        'messagetype': '5',
     },
     "userregister":{
         "sms_sign": None,
@@ -55,7 +61,9 @@ MESSAGE_DICT = {
         "title_cn": "申请将在24小时内完成审核",
         "title_en": "Application will be examined and verified in 24 hours",
         "content_cn": "您申请的Investarget海拓的【%s】将在24小时内完成审核，请继耐心等待后续通知。",
-        "content_en": "Your application for 【%s】 on the InvesTarget platform will be examined and verified within a 24-hour period. Please wait for further notice. Thank you for your patience."},
+        "content_en": "Your application for 【%s】 on the InvesTarget platform will be examined and verified within a 24-hour period. Please wait for further notice. Thank you for your patience.",
+        'messagetype': '5',
+    },
 
 
 
@@ -66,6 +74,7 @@ MESSAGE_DICT = {
         "title_en": "Your Transaction Manager has been assigned",
         "content_cn": "已为您添加交易师%s，感谢您的信任与支持！",
         "content_en": "You have been assigned for new Transaction Manager %s. Thank you for your trust and support in InvesTarget!",
+        'messagetype': '6',
     },
 
     # "dataroomfileupdate":{
@@ -81,7 +90,8 @@ MESSAGE_DICT = {
         "title_cn": "您的项目已经发布,",
         "title_en": "Your project  has been published",
         "content_cn": "您上传的【%s】项目已通过终审并在平台发布，可在登录后查看项目进展情况。",
-        "content_en": "Project【%s】 has been verified and published on our platform, you can see the progress after logging in."
+        "content_en": "Project【%s】 has been verified and published on our platform, you can see the progress after logging in.",
+        'messagetype': '7',
     },
 
     "usermakefriends":{
@@ -91,6 +101,7 @@ MESSAGE_DICT = {
         "title_en": "A friend application",
         "content_cn": "您有一个好友添加申请",
         "content_en": "You have a friend application",
+        'messagetype': '8',
     },
 
     "timelinealertcycleexpire":{
@@ -100,6 +111,7 @@ MESSAGE_DICT = {
         "title_en": "Timeline due",
         "content_cn": "您有一个项目时间轴提醒今天到期",
         "content_en": "You have a project timeline to remind due today",
+        'messagetype': '9',
     },
 
     "schedulemsg":{
@@ -109,6 +121,7 @@ MESSAGE_DICT = {
         "title_en": "Schedule due",
         "content_cn": "您有一个日程今天到期",
         "content_en": "You have a schedule due today",
+        'messagetype': '10',
     },
     "orgBDMessage":{
         "sms_sign": "M2d4Q3",
@@ -117,6 +130,7 @@ MESSAGE_DICT = {
         "title_en": "Schedule due",
         "content_cn": "您有一个新机构BD任务",
         "content_en": "You have a schedule due today",
+        'messagetype': '11',
     },
 }
 

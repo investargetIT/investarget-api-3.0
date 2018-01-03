@@ -98,6 +98,16 @@ Orgtitletable = views.OrgtitletableView.as_view({
         # 'post':'create',
 })
 
+AndroidVersion = views.AndroidAppVersionView.as_view({
+        'get': 'list',
+        'post':'create',
+})
+
+AndroidVersion_detail = views.AndroidAppVersionView.as_view({
+        'put': 'update',
+        'delete':'destroy',
+})
+
 
 
 urlpatterns = [
@@ -134,5 +144,9 @@ urlpatterns = [
     url(r'^character$', character,name='charactersource',),
 
     url(r'^orgtitletable$', Orgtitletable,name='Orgtitletablesource',),
+
+    url(r'^android$', AndroidVersion,name='AndroidVersion',),
+
+    url(r'^android/(?P<pk>\d+)/$', AndroidVersion_detail,name='AndroidVersion_detail',),
 
 ]

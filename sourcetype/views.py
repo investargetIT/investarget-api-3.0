@@ -7,14 +7,15 @@ from rest_framework import viewsets
 
 from sourcetype.models import Tag, TitleType, DataSource,Country,Industry, TransactionType, \
     TransactionPhases, OrgArea, CurrencyType, OrgType, CharacterType, ProjectStatus, TransactionStatus, orgtitletable, \
-    webmenu, Service, OrgAttribute, BDStatus
+    webmenu, Service, OrgAttribute, BDStatus, AndroidAppVersion
 from sourcetype.serializer import tagSerializer, countrySerializer, industrySerializer, \
     titleTypeSerializer, DataSourceSerializer, orgAreaSerializer, transactionTypeSerializer, transactionPhasesSerializer, \
     currencyTypeSerializer, orgTypeSerializer, characterTypeSerializer, ProjectStatusSerializer, \
     transactionStatuSerializer, OrgtitletableSerializer, WebMenuSerializer, serviceSerializer, orgAttributeSerializer, \
-    BDStatusSerializer
+    BDStatusSerializer, AndroidAppSerializer
 from utils.customClass import  JSONResponse, InvestError
-from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, returnListChangeToLanguage
+from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, returnListChangeToLanguage, \
+    catchexcption, loginTokenIsAvailable
 
 
 class TagView(viewsets.ModelViewSet):
@@ -411,6 +412,80 @@ class OrgtitletableView(viewsets.ModelViewSet):
             queryset = self.filter_queryset(self.get_queryset())
             serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+class AndroidAppVersionView(viewsets.ModelViewSet):
+    """
+        list:获取所有机构类型职位对照
+        create:新增机构类型职位对照
+        update:修改机构类型职位对照
+        destroy:删除机构类型职位对照
+    """
+    queryset = AndroidAppVersion.objects.all().filter(is_deleted=False)
+    serializer_class = AndroidAppSerializer
+
+    def list(self, request, *args, **kwargs):
+        try:
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = self.serializer_class(queryset, many=True)
+            return JSONResponse(SuccessResponse(serializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        try:
+            if not request.user.is_superuser:
+                raise InvestError(2009, msg='没有操作权限')
+            with transaction.atomic():
+                data = request.data
+                serializer = self.serializer_class(data=data)
+                if serializer.is_valid():
+                    serializer.save()
+                else:
+                    raise InvestError(code=20071, msg='data有误_%s' % serializer.error_messages)
+                return JSONResponse(SuccessResponse(serializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            if not request.user.is_superuser:
+                raise InvestError(2009, msg='没有操作权限')
+            with transaction.atomic():
+                data = request.data
+                serializer = self.serializer_class(instance, data=data)
+                if serializer.is_valid():
+                    serializer.save()
+                else:
+                    raise InvestError(code=20071, msg='data有误_%s' % serializer.error_messages)
+                return JSONResponse(SuccessResponse(serializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            raise InvestError(2009, msg='没有操作权限')
+        try:
+            instance = self.get_object()
+            instance.is_deleted = True
+            instance.save(update_fields=['is_deleted'])
+            return JSONResponse(SuccessResponse({'is_deleted': instance.is_deleted}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:

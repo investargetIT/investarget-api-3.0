@@ -324,6 +324,7 @@ class webmenu(models.Model):
     index = models.SmallIntegerField(blank=True, default=1)
     is_deleted = models.BooleanField(blank=True,default=False)
 
+
 class orgtitletable(models.Model):
     """
     机构职位对照表
@@ -334,16 +335,26 @@ class orgtitletable(models.Model):
     is_deleted = models.BooleanField(blank=True, default=False)
 
 
-
 class templatesign(models.Model):
     """
     模板标识sign
     """
-
     email_sign = models.CharField(max_length=32, blank=True, null=True)
     sms_sign = models.CharField(max_length=32, blank=True, null=True)
     name = models.CharField(max_length=32, blank=True, null=True, help_text='模板名称')
     email_type = models.SmallIntegerField(blank=True, default=1, help_text='邮件类型')
     webmsg_type = models.SmallIntegerField(blank=True, default=1, help_text='站内信类型')
     datasource = models.SmallIntegerField(blank=True, default=1)
+    is_deleted = models.BooleanField(blank=True, default=False)
+
+
+class AndroidAppVersion(models.Model):
+    """
+    安卓app 版本信息
+    """
+    version = models.CharField(max_length=32, blank=True, null=True)
+    build = models.IntegerField(blank=True, null=True)
+    path = models.CharField(max_length=32, blank=True, null=True, help_text='路径')
+    description = models.TextField(blank=True, help_text='描述')
+    updatetime = models.DateTimeField(blank=True, null=True, help_text='更新日期')
     is_deleted = models.BooleanField(blank=True, default=False)

@@ -245,8 +245,7 @@ class TimelineView(viewsets.ModelViewSet):
                         raise InvestError(code=20071, msg=timelineseria.errors)
                 cache_delete_key(self.redis_key + '_%s' % newtimeline.id)
                 if sendmessage:
-                    sendmessage_timelineauditstatuchange(newactivetimelinestatu, newtimeline.trader, ['app', 'email', 'webmsg'], sender=request.user)
-                    sendmessage_timelineauditstatuchange(newactivetimelinestatu, newtimeline.proj.supportUser, ['app', 'email', 'webmsg'], sender=request.user)
+                    sendmessage_timelineauditstatuchange(newactivetimelinestatu, newtimeline.proj.takeUser, ['app', 'email', 'webmsg'], sender=request.user)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(TimeLineSerializer(timeline).data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))

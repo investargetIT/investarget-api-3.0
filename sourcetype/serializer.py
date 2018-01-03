@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from sourcetype.models import TransactionType, TransactionPhases, Specialty, School, OrgArea, Tag, Industry, CurrencyType, \
     AuditStatus, ProjectStatus, OrgType, FavoriteType, MessageType, ClientType, TitleType, Country, \
-    DataSource, TransactionStatus, webmenu, CharacterType, orgtitletable, Service, OrgAttribute, BDStatus
+    DataSource, TransactionStatus, webmenu, CharacterType, orgtitletable, Service, OrgAttribute, BDStatus, AndroidAppVersion
 
 
 class AuditStatusSerializer(serializers.ModelSerializer):
@@ -161,3 +161,9 @@ class OrgtitletableSerializer(serializers.ModelSerializer):
         model = orgtitletable
         exclude = ('is_deleted',)
         depth = 1
+
+
+class AndroidAppSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AndroidAppVersion
+        exclude = ('is_deleted',)

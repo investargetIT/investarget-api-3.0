@@ -206,39 +206,42 @@ def checkSmsCode(request):
 
 
 def xsendSms(destination,projectsign,vars=None):
-    submail = MESSAGEXsend(MESSAGE_CONFIGS)
+    if projectsign:
+        submail = MESSAGEXsend(MESSAGE_CONFIGS)
 
-    '''
-    Optional para
-    recipient cell phone number
-    @Multi-para
-    '''
-    submail.add_to(destination)
+        '''
+        Optional para
+        recipient cell phone number
+        @Multi-para
+        '''
+        submail.add_to(destination)
 
-    '''
-    Optional para
-    set addressbook sign : Optional
-    add addressbook contacts to Multi-Recipients
-    @Multi-para
-    '''
-    # submail.add_address_book('subscribe')
+        '''
+        Optional para
+        set addressbook sign : Optional
+        add addressbook contacts to Multi-Recipients
+        @Multi-para
+        '''
+        # submail.add_address_book('subscribe')
 
-    '''
-    Required para
-    set message project sign
-    '''
-    submail.set_project(projectsign)
+        '''
+        Required para
+        set message project sign
+        '''
+        submail.set_project(projectsign)
 
-    '''
-    Optional para
-    submail email text content filter
-    @Multi-para
-    '''
-    if vars:
-        submail.vars = vars
-    # submail.add_var('code', '198276')
+        '''
+        Optional para
+        submail email text content filter
+        @Multi-para
+        '''
+        if vars:
+            submail.vars = vars
+        # submail.add_var('code', '198276')
 
-    return submail.xsend()
+        return submail.xsend()
+    else:
+        return None
 
 
 
