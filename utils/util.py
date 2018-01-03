@@ -264,3 +264,15 @@ def mySortQuery(queryset,sortfield,desc):
         return queryset
     except FieldError:
         raise InvestError(8891,msg='无效字段')
+
+
+# 验证邮箱
+fillemails = ['@investarget','@autospaceplus']
+
+def checkEmailTrue(email):
+    if email:
+        for fillemail in fillemails:
+            if fillemail in email:
+                return False
+        return True
+    return False

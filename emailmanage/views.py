@@ -8,6 +8,7 @@ import traceback
 
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction
+from django.db.models import Q
 from django.forms.models import model_to_dict
 from rest_framework import filters
 from rest_framework import viewsets
@@ -21,7 +22,7 @@ from third.views.submail import xsendEmail
 from usersys.models import MyUser
 from utils.customClass import InvestError, JSONResponse
 from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, catchexcption, \
-    logexcption, mySortQuery
+    logexcption, mySortQuery, checkEmailTrue
 
 #邮件群发模板
 Email_project_sign = 'y0dQe4'
@@ -29,7 +30,7 @@ Email_project_sign = 'y0dQe4'
 #收集邮件群发任务名单
 def getAllProjectsNeedToSendMail():
     try:
-        proj_qs = project.objects.filter(isSendEmail=True, is_deleted=False, datasource_id=1)
+        proj_qs = project.objects.filter(isSendEmail=True, is_deleted=False, datasource_id=1, projstatus_id=4)
         saveEmailGroupSendData(proj_qs)
         proj_qs.update(**{'isSendEmail': False})
     except Exception as err:
@@ -63,7 +64,7 @@ def saveEmailGroupSendData(projs):
         tagsname = Tag.objects.filter(id__in=tags).values_list('nameC')
         industriesname = Industry.objects.filter(industry_projects__proj=proj, is_deleted=False, industry_projects__is_deleted=False).values_list('industryC')
         transactionTypeName = TransactionType.objects.filter(transactionType_projects__proj=proj, is_deleted=False, transactionType_projects__is_deleted=False).values_list('nameC')
-        user_qs = Usergroupsendlistserializer(MyUser.objects.filter(tags__in=tags, user_usertags__is_deleted=False,datasource_id=proj.datasource_id).distinct(), many=True).data
+        user_qs = Usergroupsendlistserializer(MyUser.objects.filter(Q(is_deleted=False, user_usertags__tag__in=tags,user_usertags__is__deleted=False, datasource_id=proj.datasource_id) | Q(is_deleted=False, user_usertags__tags__isnull=True, user_usertags__is__deleted=False, datasource_id=proj.datasource_id)).distinct(), many=True).data
         datadic = {
             'projtitle': proj.projtitleC,
             'proj': {
@@ -116,7 +117,7 @@ def sendProjEmailToUser(proj,user,datasource):
         'errmsg' : None,
         'datasource' : datasource,
     }
-    if emailaddress:
+    if emailaddress and checkEmailTrue(emailaddress):
         varsdict = {
             'Title': proj['Title'],
             'Location':proj['Location'],
@@ -126,21 +127,18 @@ def sendProjEmailToUser(proj,user,datasource):
             'TransactionType': " ".join(proj['TransactionType']),
             'B_introducteC': proj['B_introducteC'],
         }
-        # response = xsendEmail(emailaddress, Email_project_sign, varsdict)
-        # if response.get('status'):
-        #     data['isSend'] = True
-        #     data['send_id'] = response.get('send_id')
-        #     data['sendtime'] = datetime.datetime.now()
-        # else:
-        #     data['errmsg'] = response
-        data['errmsg'] = 'test group send'
-    else:
-        data['errmsg'] = 'email 缺失'
-    emailsend = Emailgroupsendlistserializer(data=data)
-    if emailsend.is_valid():
-        emailsend.save()
-    else:
-        logexcption(msg=emailsend.error_messages)
+        response = xsendEmail(emailaddress, Email_project_sign, varsdict)
+        if response.get('status'):
+            data['isSend'] = True
+            data['send_id'] = response.get('send_id')
+            data['sendtime'] = datetime.datetime.now()
+        else:
+            data['errmsg'] = response
+        emailsend = Emailgroupsendlistserializer(data=data)
+        if emailsend.is_valid():
+            emailsend.save()
+        else:
+            logexcption(msg=emailsend.error_messages)
 
 class EmailgroupsendlistView(viewsets.ModelViewSet):
     """

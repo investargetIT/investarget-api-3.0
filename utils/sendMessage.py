@@ -10,7 +10,7 @@ from usersys.models import MyUser, UserRelation, UserFriendship
 from msg.views import saveMessage
 from third.views.jpush import pushnotification
 from third.views.submail import xsendSms, xsendEmail
-from utils.util import logexcption
+from utils.util import logexcption, checkEmailTrue
 
 sendEmail = True
 sendSms = True
@@ -129,7 +129,7 @@ def sendmessage_favoriteproject(model,receiver,sender=None):
             model = self.model
             sender = self.sender
             if isinstance(model, favoriteProject):
-                if model.favoritetype_id != 2:
+                if model.favoritetype_id != 4 and model.favoritetype_id != 2:
                     msgconfig = favoriteTypeConf[str(model.favoritetype_id)]
                     paths = msgconfig['paths']
                     if 'app' in paths and sendAppmsg:
@@ -711,15 +711,4 @@ def checkReceiverToSendMsg(receiver):
         if isinstance(receiver, MyUser):
             if getattr(receiver, 'datasource_id') == 1 and receiver.is_active:
                 return True
-    return False
-
-# 验证邮箱
-fillemails = ['@investarget','@autospaceplus']
-
-def checkEmailTrue(email):
-    if email:
-        for fillemail in fillemails:
-            if fillemail in email:
-                return False
-        return True
     return False
