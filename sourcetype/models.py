@@ -354,7 +354,7 @@ class AndroidAppVersion(models.Model):
     """
     version = models.CharField(max_length=32, blank=True, null=True)
     build = models.IntegerField(blank=True, null=True)
-    path = models.CharField(max_length=32, blank=True, null=True, help_text='路径')
+    path = models.CharField(max_length=128, blank=True, null=True, help_text='路径')
     description = models.TextField(blank=True, help_text='描述')
     updatetime = models.DateTimeField(blank=True, null=True, help_text='更新日期')
     is_deleted = models.BooleanField(blank=True, default=False)

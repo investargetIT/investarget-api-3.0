@@ -419,12 +419,7 @@ class OrgtitletableView(viewsets.ModelViewSet):
 
 
 class AndroidAppVersionView(viewsets.ModelViewSet):
-    """
-        list:获取所有机构类型职位对照
-        create:新增机构类型职位对照
-        update:修改机构类型职位对照
-        destroy:删除机构类型职位对照
-    """
+
     queryset = AndroidAppVersion.objects.all().filter(is_deleted=False)
     serializer_class = AndroidAppSerializer
 
