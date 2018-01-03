@@ -39,12 +39,17 @@ class ProjectBD(MyModel):
             ('manageProjectBD', '管理员管理项目BD'),
             ('user_getProjectBD', u'用户查看个人项目BD'),
             ('user_addProjectBD', u'用户新建个人项目BD'),
-            ('user_manageProjectBD', '用户管理个人项目BD（object级别）'),
+            ('user_manageProjectBD', '用户管理个人项目BD（obj级别）'),
         )
 
     def save(self, *args, **kwargs):
         if self.manager is None:
             raise InvestError(2007,msg='manager can`t be null')
+        if not self.datasource:
+            raise InvestError(2007, msg='datasource can`t be null')
+        if self.country:
+            if self.country.datasource != self.datasource:
+                raise  InvestError(8888, msg='datasource 不匹配')
         if self.bduser:
             self.username = self.bduser.usernameC
             self.usermobile = self.bduser.mobile
@@ -97,7 +102,8 @@ class OrgBD(MyModel):
         permissions = (
             ('manageOrgBD', '管理机构BD'),
             ('user_getOrgBD', u'用户查看个人机构BD'),
-            ('user_manageOrgBD', '用户管理个人机构BD（object级别）'),
+            ('user_addOrgBD', u'用户新建机构BD'),
+            ('user_manageOrgBD', '用户管理个人机构BD（obj级别）'),
         )
 
     def save(self, *args, **kwargs):
@@ -162,7 +168,7 @@ class MeetingBD(MyModel):
         permissions = (
             ('manageMeetBD', '管理会议BD'),
             ('user_getMeetBD', u'用户查看个人会议BD'),
-            ('user_manageMeetBD', '用户管理个人会议BD（object级别）'),
+            ('user_manageMeetBD', '用户管理个人会议BD（obj级别）'),
         )
 
     def save(self, *args, **kwargs):

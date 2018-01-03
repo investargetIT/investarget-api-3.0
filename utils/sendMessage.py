@@ -701,8 +701,8 @@ def sendmessage_orgBDMessage(model,receiver,types,sender=None):
                     logexcption()
 
 
-    if checkReceiverToSendMsg(receiver):
-        sendmessage_orgBDMessageThread(model,receiver,types,sender).start()
+    # if checkReceiverToSendMsg(receiver):
+    #     sendmessage_orgBDMessageThread(model,receiver,types,sender).start()
 
 
 # 判断是否发送消息

@@ -30,10 +30,12 @@ class UserCommenSerializer(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
     photourl = serializers.SerializerMethodField()
     title = titleTypeSerializer()
+    mobile = serializers.SerializerMethodField()
+    email = serializers.SerializerMethodField()
 
     class Meta:
         model = MyUser
-        fields = ('id', 'usernameC', 'usernameE', 'tags', 'userstatus', 'photourl', 'title', 'onjob')
+        fields = ('id', 'usernameC', 'usernameE', 'tags', 'userstatus', 'photourl', 'title', 'onjob', 'mobile', 'email')
 
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_usertags__is_deleted=False)
@@ -47,6 +49,27 @@ class UserCommenSerializer(serializers.ModelSerializer):
         else:
             return None
 
+    def get_mobile(self, obj):
+        if obj.mobile and obj.mobile not in ['', u'']:
+            length = len(obj.mobile)
+            if length > 4:
+                center = obj.mobile[(length - 4) // 2: (length - 4) // 2 + 4]
+            else:
+                center = obj.mobile
+            return str(obj.mobile).replace(center, '****')
+        else:
+            return None
+
+    def get_email(self, obj):
+        if obj.email and obj.email not in ['', u'']:
+            index = str(obj.email).find('@')
+            if index >= 0:
+                center = obj.email[0:index]
+            else:
+                center = obj.email
+            return str(obj.email).replace(center, '****')
+        else:
+            return None
 
 # 权限组基本信息
 class GroupSerializer(serializers.ModelSerializer):
@@ -217,31 +240,5 @@ class UserListSerializer(serializers.ModelSerializer):
     def get_photourl(self, obj):
         if obj.photoKey:
             return getUrlWithBucketAndKey('image',obj.photoKey)
-        else:
-            return None
-
-class UserListSerializer_hidemobile(UserListSerializer):
-    mobile = serializers.SerializerMethodField()
-    email = serializers.SerializerMethodField()
-
-    def get_mobile(self, obj):
-        if obj.mobile and obj.mobile not in ['', u'']:
-            length = len(obj.mobile)
-            if length > 4:
-                center = obj.mobile[(length - 4) // 2: (length - 4) // 2 + 4]
-            else:
-                center = obj.mobile
-            return str(obj.mobile).replace(center,'****')
-        else:
-            return None
-
-    def get_email(self, obj):
-        if obj.email and obj.email not in ['', u'']:
-            index = str(obj.email).find('@')
-            if index >= 0:
-                center = obj.email[0:index]
-            else:
-                center = obj.email
-            return str(obj.email).replace(center,'****')
         else:
             return None

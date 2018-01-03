@@ -151,8 +151,7 @@ class ProjectView(viewsets.ModelViewSet):
                     pass
                 else:
                     actionlist['get'] = True
-                    if request.user.has_perm('proj.admin_changeproj') or request.user.has_perm('proj.user_changeproj',
-                                                                                             instance):
+                    if request.user.has_perm('proj.admin_changeproj') or request.user.has_perm('proj.user_changeproj', instance) or request.user in [instance.takeUser, instance.makeUser, instance.supportUser]:
                         actionlist['change'] = True
                     if request.user.has_perm('proj.admin_deleteproj') or request.user.has_perm('proj.user_deleteproj',
                                                                                              instance):

@@ -408,7 +408,11 @@ class OrgBDView(viewsets.ModelViewSet):
                 proj = data.get('proj', None)
                 if proj:
                     projinstance = project.objects.get(id=proj, is_deleted=False, datasource=request.user.datasource)
-                    if request.user not in [projinstance.takeUser, projinstance.makeUser]:
+                    if request.user.has_perm('BD.user_addOrgBD'):
+                        pass
+                    elif request.user in [projinstance.takeUser, projinstance.makeUser]:
+                        pass
+                    else:
                         raise InvestError(2009)
                 else:
                     raise InvestError(2009)

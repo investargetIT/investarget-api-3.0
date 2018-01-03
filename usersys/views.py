@@ -24,8 +24,7 @@ from usersys.models import MyUser, UserRelation, userTags, UserFriendship, MyTok
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
     CreatUserSerializer , UserCommenSerializer , UserRelationCreateSerializer, UserFriendshipSerializer, \
     UserFriendshipDetailSerializer, UserFriendshipUpdateSerializer, GroupSerializer, GroupDetailSerializer, GroupCreateSerializer, PermissionSerializer, \
-    UpdateUserSerializer, UnreachUserSerializer, UserRemarkSerializer, UserRemarkCreateSerializer, \
-    UserListSerializer_hidemobile
+    UpdateUserSerializer, UnreachUserSerializer, UserRemarkSerializer, UserRemarkCreateSerializer
 from sourcetype.models import Tag, DataSource
 from utils import perimissionfields
 from utils.customClass import JSONResponse, InvestError, RelationFilter
@@ -132,9 +131,6 @@ class UserView(viewsets.ModelViewSet):
                 queryset = queryset.order_by('createdtime')
             if request.user.has_perm('usersys.admin_getuser'):
                 serializerclass = UserListSerializer
-                isStar = request.GET.get('starmobile', None)
-                if isStar in ['true', u'true']:
-                    serializerclass = UserListSerializer_hidemobile
             else:
                 serializerclass = UserCommenSerializer
             sortfield = request.GET.get('sort', 'createdtime')
