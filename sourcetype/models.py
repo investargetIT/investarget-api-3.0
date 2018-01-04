@@ -2,6 +2,8 @@
 from __future__ import unicode_literals
 
 import sys
+
+import datetime
 from django.db import models
 from utils.customClass import MyForeignKey
 
@@ -358,3 +360,10 @@ class AndroidAppVersion(models.Model):
     description = models.TextField(blank=True, help_text='描述')
     updatetime = models.DateTimeField(blank=True, null=True, help_text='更新日期')
     is_deleted = models.BooleanField(blank=True, default=False)
+
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if self.updatetime is None:
+            self.updatetime = datetime.datetime.now()
+        super(AndroidAppVersion, self).save(force_insert, force_update, using, update_fields)

@@ -67,9 +67,9 @@ class organization(MyModel):
             ('admin_getorg','管理员查看机构信息'),
 
             ('user_addorg', '用户新增机构'),
-            ('user_changeorg', '用户修改机构(obj级别权限)'),
-            ('user_deleteorg', '用户删除机构(obj级别权限)'),
-            ('user_getorg', '用户查看机构'),
+            ('user_changeorg', '用户修改机构(obj级别)'),
+            ('user_deleteorg', '用户删除机构(obj级别)'),
+            ('user_getorg', '用户查看机构（obj级别）'),
         )
 
     def activeTransactionPhase(self):
@@ -88,7 +88,7 @@ class organization(MyModel):
             oldorg = organization.objects.get(pk=self.pk)
             if self.orgnameC:
                 if organization.objects.exclude(pk=self.pk).filter(is_deleted=False,orgnameC=self.orgnameC,datasource=self.datasource).exists():
-                    raise InvestError(code=5001,msg='同名机构已存在,修改')
+                    raise InvestError(code=5001,msg='同名机构已存在,无法修改')
             if self.is_deleted and oldorg.createuser:
                 remove_perm('org.user_getorg', oldorg.createuser, self)
                 remove_perm('org.user_changeorg', oldorg.createuser, self)
@@ -96,7 +96,7 @@ class organization(MyModel):
         else:
             if self.orgnameC:
                 if organization.objects.filter(is_deleted=False,orgnameC=self.orgnameC,datasource=self.datasource).exists():
-                    raise InvestError(code=5001,msg='同名机构已存在，新增')
+                    raise InvestError(code=5001,msg='同名机构已存在，无法新增')
         super(organization,self).save(force_insert,force_update,using,update_fields)
 
 class orgTransactionPhase(MyModel):

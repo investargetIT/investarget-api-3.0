@@ -73,6 +73,7 @@ class OrgBDSerializer(serializers.ModelSerializer):
     email = serializers.SerializerMethodField()
     useinfo = serializers.SerializerMethodField()
     createuser = UserCommenSerializer()
+    makeUser = serializers.SerializerMethodField()
 
     class Meta:
         model = OrgBD
@@ -97,6 +98,12 @@ class OrgBDSerializer(serializers.ModelSerializer):
     def get_useinfo(self, obj):
         if obj.bduser:
             return UserCommenSerializer(obj.bduser).data
+        return None
+
+    def get_makeUser(self, obj):
+        if obj.proj:
+            if obj.proj.makeUser:
+                return obj.proj.makeUser_id
         return None
 
 
