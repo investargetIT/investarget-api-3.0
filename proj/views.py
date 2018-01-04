@@ -156,7 +156,7 @@ class ProjectView(viewsets.ModelViewSet):
                     if request.user.has_perm('proj.admin_deleteproj') or request.user.has_perm('proj.user_deleteproj',
                                                                                              instance):
                         actionlist['delete'] = True
-                    if request.user.has_perm('BD.manageOrgBD') or request.user in [instance.takeUser, instance.makeUser]:
+                    if request.user.has_perm('BD.manageOrgBD') or request.user.has_perm('BD.user_addOrgBD') or request.user in [instance.takeUser, instance.makeUser]:
                         actionlist['canAddOrgBD'] = True
                 instancedata = serializerclass(instance).data
                 instancedata['action'] = actionlist

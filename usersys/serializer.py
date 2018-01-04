@@ -56,7 +56,7 @@ class UserCommenSerializer(serializers.ModelSerializer):
                 center = obj.mobile[(length - 4) // 2: (length - 4) // 2 + 4]
             else:
                 center = obj.mobile
-            return str(obj.mobile).replace(center, '****')
+            return str(obj.mobile).replace(center, '****', 1)
         else:
             return None
 
@@ -67,7 +67,7 @@ class UserCommenSerializer(serializers.ModelSerializer):
                 center = obj.email[0:index]
             else:
                 center = obj.email
-            return str(obj.email).replace(center, '****')
+            return str(obj.email).replace(center, '****', 1)
         else:
             return None
 
