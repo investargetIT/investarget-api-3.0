@@ -47,6 +47,11 @@ class emailgroupsendlist(MyModel):
     signature = models.CharField(max_length=64, blank=True, null=True)
     datasource = models.IntegerField(blank=True, null=True)
 
+    class Meta:
+        permissions = (
+            ('getemailmanage', '查看邮件管理'),
+        )
+
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
         if not self.sendtime:

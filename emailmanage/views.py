@@ -152,7 +152,7 @@ class EmailgroupsendlistView(viewsets.ModelViewSet):
     serializer_class = Emailgroupsendlistserializer
 
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['emailmanage.getemailmanage',])
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')
