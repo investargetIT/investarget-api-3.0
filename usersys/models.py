@@ -248,8 +248,11 @@ class UserRemarks(MyModel):
 
     class Meta:
         db_table = 'user_remarks'
-
-
+        permissions = (
+            ('get_userremark', u'查看所有用户备注'),
+            ('update_userremark', u'修改所有用户备注'),
+            ('delete_userremark', u'删除所有用户备注'),
+        )
 
 
 class UnreachUser(MyModel):
