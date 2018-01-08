@@ -18,9 +18,6 @@ user_detail = views.UserView.as_view({
         'get': 'retrieve',   #查看详情
 })
 
-user_detailinfo = views.UserView.as_view({
-        'get':'getdetailinfo'
-})
 
 find_password = views.UserView.as_view({
         'post': 'findpassword',
@@ -111,7 +108,6 @@ urlpatterns = [
     url(r'^count$', getUserCount, name='getUserCount', ),
     url(r'^checkexists/$', checkUserAccountExist,name='user-checkUserAccountExist',),
     url(r'^(?P<pk>\d+)/$', user_detail,name='user-one'),
-    url(r'^detail/(?P<pk>\d+)/$', user_detailinfo,name='user-detailinfo'),
     url(r'^password/$', find_password ,name='find-password'),
     url(r'^password/(?P<pk>\d+)/$', change_password ,name='change-password'),
     url(r'^relationship/$', user_relationshiplist, name='user-relationshiplist'),

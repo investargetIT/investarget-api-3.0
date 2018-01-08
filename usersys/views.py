@@ -57,8 +57,7 @@ class UserView(viewsets.ModelViewSet):
     list:用户列表
     create:注册用户
     adduser:新增用户
-    retrieve:查看某一用户基本信息
-    getdetailinfo:查看某一用户详细信息
+    retrieve:查看某一用户信息
     findpassword:找回密码
     changepassword:修改密码
     resetpassword:重置密码
@@ -348,20 +347,6 @@ class UserView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             user = self.get_object()
-            serializer = UserCommenSerializer(user)
-            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))
-        except InvestError as err:
-            return JSONResponse(InvestErrorResponse(err))
-        except Exception:
-            catchexcption(request)
-            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
-    @detail_route(methods=['get'])
-    @loginTokenIsAvailable()
-    def getdetailinfo(self, request, *args, **kwargs):
-        try:
-            lang = request.GET.get('lang')
-            user = self.get_object()
             if request.user == user:
                 userserializer = UserSerializer
             else:
@@ -370,7 +355,7 @@ class UserView(viewsets.ModelViewSet):
                 elif request.user.has_perm('usersys.user_getuser', user):
                     userserializer = UserSerializer
                 else:
-                    raise InvestError(code=2009)
+                    userserializer = UserCommenSerializer
             serializer = userserializer(user)
             return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
