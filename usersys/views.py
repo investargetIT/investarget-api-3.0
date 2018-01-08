@@ -1036,11 +1036,22 @@ class UserRelationView(viewsets.ModelViewSet):
             data['createuser'] = request.user.id
             data['datasource'] = request.user.datasource.id
             lang = request.GET.get('lang')
+            try:
+                traderuser = MyUser.objects.get(id=data.get('traderuser', None))
+            except MyUser.DoesNotExist:
+                raise InvestError(2007, msg='交易师不存在')
             if request.user.has_perm('usersys.admin_adduserrelation'):
                 pass
             else:
-                if data.get('traderuser',None) != request.user.id and data.get('investoruser',None) != request.user.id:
-                    raise InvestError(2009,msg='非管理员权限')
+                if traderuser.id != request.user.id and data.get('investoruser',None) != request.user.id:
+                    projid = data.get('proj', None)
+                    if projid:
+                        if traderuser.usermake_projs.all().filter(id=projid).exists():
+                            pass
+                        else:
+                            raise InvestError(2009, msg='非管理员权限，无法创建')
+                    else:
+                        raise InvestError(2009,msg='非管理员权限')
             with transaction.atomic():
                 newrelation = UserRelationCreateSerializer(data=data)
                 if newrelation.is_valid():
