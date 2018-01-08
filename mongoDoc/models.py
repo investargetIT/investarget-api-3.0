@@ -110,8 +110,8 @@ class ProjIndustryInfo(Document):     #工商信息
     indus_base = DictField(null=True)  # 基本信息
     indus_member = ListField(null=True)  #主要成员
     indus_shareholder = ListField(null=True)  # 股权信息
-    indus_foreign_invest = ListField()   # 公司对外投资信息
-    indus_busi_info = ListField()    # 工商变更信息
+    indus_foreign_invest = ListField(null=True)   # 公司对外投资信息
+    indus_busi_info = ListField(null=True)    # 工商变更信息
     date = DateTimeField()
     meta = {'collection': projIndustryInfoMongoTableName,
             'indexes': ['com_id',]
