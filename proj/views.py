@@ -653,6 +653,8 @@ class ProjAttachmentView(viewsets.ModelViewSet):
                 pass
             elif request.user.has_perm('proj.user_changeproj',proj):
                 pass
+            elif request.user in [proj.createuser,proj.takeUser,proj.makeUser,proj.supportUser]:
+                pass
             else:
                 raise InvestError(code=2009,msg='没有增加该项目附件的权限')
             with transaction.atomic():
@@ -687,6 +689,8 @@ class ProjAttachmentView(viewsets.ModelViewSet):
                             pass
                         elif request.user.has_perm('proj.user_changeproj',projAttachment.proj):
                             pass
+                        elif request.user in [projAttachment.proj.createuser, projAttachment.proj.takeUser, projAttachment.proj.makeUser, projAttachment.proj.supportUser]:
+                            pass
                         else:
                             raise InvestError(code=2009)
                         f['lastmodifyuser'] = request.user.id
@@ -719,6 +723,9 @@ class ProjAttachmentView(viewsets.ModelViewSet):
                 for projattachmentid in attachmentidlist:
                     projattachment = self.get_object(projattachmentid)
                     if request.user.has_perm('proj.user_changeproj', projattachment.proj):
+                        pass
+                    elif request.user in [projattachment.proj.createuser, projattachment.proj.takeUser,
+                                          projattachment.proj.makeUser, projattachment.proj.supportUser]:
                         pass
                     elif request.user.has_perm('proj.admin_changeproj'):
                         pass
@@ -852,6 +859,9 @@ class ProjFinanceView(viewsets.ModelViewSet):
                 pass
             elif request.user.has_perm('proj.user_changeproj',proj):
                 pass
+            elif request.user in [proj.createuser, proj.takeUser,
+                                  proj.makeUser, proj.supportUser]:
+                pass
             else:
                 raise InvestError(code=2009,msg='没有增加该项目财务信息的权限')
             lang = request.GET.get('lang')
@@ -890,6 +900,8 @@ class ProjFinanceView(viewsets.ModelViewSet):
                             pass
                         elif request.user.has_perm('proj.user_changeproj',projfinance.proj):
                             pass
+                        elif request.user in [projfinance.proj.createuser, projfinance.proj.takeUser, projfinance.proj.makeUser, projfinance.proj.supportUser]:
+                            pass
                         else:
                             raise InvestError(code=2009,msg='没有权限修改项目（%s）的相关信息'%projfinance.proj)
                         f['lastmodifyuser'] = request.user.id
@@ -922,6 +934,9 @@ class ProjFinanceView(viewsets.ModelViewSet):
                 for projfinanceid in financeidlist:
                     projfinance = self.get_object(projfinanceid)
                     if request.user.has_perm('proj.user_changeproj', projfinance.proj):
+                        pass
+                    elif request.user in [projfinance.proj.createuser, projfinance.proj.takeUser,
+                                          projfinance.proj.makeUser, projfinance.proj.supportUser]:
                         pass
                     elif request.user.has_perm('proj.admin_changeproj'):
                         pass
