@@ -32,10 +32,11 @@ class UserCommenSerializer(serializers.ModelSerializer):
     title = titleTypeSerializer()
     mobile = serializers.SerializerMethodField()
     email = serializers.SerializerMethodField()
+    org = OrgCommonSerializer()
 
     class Meta:
         model = MyUser
-        fields = ('id', 'usernameC', 'usernameE', 'tags', 'userstatus', 'photourl', 'title', 'onjob', 'mobile', 'email')
+        fields = ('id', 'usernameC', 'usernameE', 'tags', 'userstatus', 'photourl', 'title', 'onjob', 'mobile', 'email', 'org')
 
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_usertags__is_deleted=False)
@@ -214,7 +215,7 @@ class UpdateUserSerializer(serializers.ModelSerializer):
 # 用户列表显示信息
 class UserListSerializer(serializers.ModelSerializer):
     groups = GroupSerializer(MyUser.groups,many=True)
-    org = OrgCommonSerializer(MyUser.org)
+    org = OrgCommonSerializer()
     tags = serializers.SerializerMethodField()
     trader_relation = serializers.SerializerMethodField()
     country = countrySerializer()
