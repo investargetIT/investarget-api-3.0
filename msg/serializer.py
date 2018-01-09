@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from msg.models import message, schedule
 from proj.serializer import ProjCommonSerializer
-from sourcetype.serializer import countrySerializer
+from sourcetype.serializer import countrySerializer, orgAreaSerializer
 from usersys.serializer import UserCommenSerializer,UserInfoSerializer
 
 
@@ -16,9 +16,11 @@ class ScheduleSerializer(serializers.ModelSerializer):
     createuser = UserCommenSerializer()
     country = countrySerializer()
     proj = ProjCommonSerializer()
+    location = orgAreaSerializer()
+
     class Meta:
         model = schedule
-        fields = ('id','comments','scheduledtime','user','address','projtitle','proj','createuser','createdtime','country')
+        fields = ('id','comments','scheduledtime','user','address','projtitle','proj','createuser','createdtime','country','location')
 
 
 
