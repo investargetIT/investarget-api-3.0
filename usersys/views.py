@@ -520,13 +520,10 @@ class UserView(viewsets.ModelViewSet):
                                         manager.all().update(is_deleted=True)
                                 except FieldDoesNotExist:
                                     pass
-                    instance.is_deleted = True
-                    instance.deleteduser = request.user
-                    instance.deletedtime = datetime.datetime.now()
-                    instance.save()
                     instance.user_usertags.all().update(is_deleted=True)
                     cache_delete_key(self.redis_key + '_%s' % instance.id)
-                    userlist.append(UserSerializer(instance).data)
+                    userlist.append({})
+                    instance.delete()
                 return JSONResponse(SuccessResponse(returnListChangeToLanguage(userlist,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
