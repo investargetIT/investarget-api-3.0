@@ -84,8 +84,8 @@ class ProjectBDComments(MyModel):
 
 
 class OrgBD(MyModel):
-    org = MyForeignKey(organization,blank=True,null=True,help_text='BD机构')
-    proj = MyForeignKey(project,blank=True,null=True,help_text='项目名称')
+    org = MyForeignKey(organization,blank=True,null=True,help_text='BD机构',related_name='org_orgBDs')
+    proj = MyForeignKey(project,blank=True,null=True,help_text='项目名称',related_name='proj_orgBDs')
     usertitle = MyForeignKey(TitleType,blank=True,null=True,help_text='职位')
     username = models.CharField(max_length=64,blank=True,null=True,help_text='姓名')
     usermobile = models.CharField(max_length=64,blank=True,null=True,help_text='电话')
