@@ -266,7 +266,7 @@ class OrganizationView(viewsets.ModelViewSet):
                 raise InvestError(code=2009)
             with transaction.atomic():
                 for link in ['org_users','org_orgTransactionPhases','org_remarks','org_unreachuser','org_orgBDs']:
-                    if link in ['org_users']:
+                    if link in ['org_users', 'org_orgBDs']:
                         manager = getattr(instance, link, None)
                         if not manager:
                             continue
