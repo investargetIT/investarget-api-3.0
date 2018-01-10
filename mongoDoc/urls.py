@@ -21,7 +21,7 @@ ProjectDataList = views.ProjectDataView.as_view({
 })
 
 ProjectIndustryInfoList = views.ProjectIndustryInfoView.as_view({
-        'get': 'list',
+        'get': 'retrieve',
         'post':'create',
 })
 

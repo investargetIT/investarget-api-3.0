@@ -330,33 +330,18 @@ class ProjectIndustryInfoView(viewsets.ModelViewSet):
     throttle_classes = (AppEventRateThrottle,)
     queryset = ProjIndustryInfo.objects.all()
     serializer_class = ProjIndustryInfoSerializer
-    filter_fields = ('com_id',)
 
 
 
     @loginTokenIsAvailable()
-    def list(self, request, *args, **kwargs):
+    def retrieve(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
-            queryset = self.filter_queryset(self.queryset)
-            sort = request.GET.get('sort')
-            if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
-                queryset = queryset.order_by('-com_id',)
-            else:
-                queryset = queryset.order_by('com_id',)
-            count = queryset.count()
-            try:
-                queryset = Paginator(queryset, page_size)
-                queryset = queryset.page(page_index)
-            except EmptyPage:
-                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
-            serializer = self.serializer_class(queryset,many=True)
-            return JSONResponse(SuccessResponse({'count':count,'data':serializer.data}))
+            com_id = request.GET.get('com_id', None)
+            if not com_id:
+                raise InvestError(2007, msg='com_id 不能为空')
+            instance = self.queryset.get(com_id=com_id)
+            serializer = self.serializer_class(instance)
+            return JSONResponse(SuccessResponse(serializer.data))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
