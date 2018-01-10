@@ -1,6 +1,7 @@
 #coding=utf-8
 from __future__ import unicode_literals
 
+from django.db.models import CASCADE
 from guardian.shortcuts import remove_perm, assign_perm
 from pypinyin import slug as hanzizhuanpinpin
 import binascii
@@ -239,7 +240,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin,MyModel):
 
 class UserRemarks(MyModel):
     id = models.AutoField(primary_key=True)
-    user = MyForeignKey(MyUser, related_name='user_remarks', blank=True, null=True)
+    user = MyForeignKey(MyUser, related_name='user_remarks', blank=True, null=True, on_delete=CASCADE)
     remark = models.TextField(blank=True, null=True)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_userremarks')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_userremarks')
@@ -258,7 +259,7 @@ class UserRemarks(MyModel):
 class UnreachUser(MyModel):
     name = models.CharField(max_length=128,blank=True,null=True)
     title = MyForeignKey(TitleType,blank=True,null=True)
-    org = MyForeignKey('org.organization',blank=True,null=True,related_name='org_unreachuser')
+    org = MyForeignKey('org.organization',blank=True,null=True,related_name='org_unreachuser',on_delete=CASCADE)
     mobile = models.CharField(max_length=32,blank=True,null=True)
     email = models.CharField(max_length=32,blank=True,null=True)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_unreachUsers')
@@ -275,7 +276,7 @@ class UnreachUser(MyModel):
 
 
 class userTags(MyModel):
-    user = MyForeignKey(MyUser,related_name='user_usertags',null=True,blank=True)
+    user = MyForeignKey(MyUser,related_name='user_usertags',null=True,blank=True,on_delete=CASCADE)
     tag = MyForeignKey(Tag, related_name='tag_usertags',null=True, blank=True)
     deleteduser = MyForeignKey(MyUser,blank=True, null=True,related_name='userdelete_usertags')
     createuser = MyForeignKey(MyUser,blank=True, null=True,related_name='usercreate_usertags')
@@ -292,7 +293,7 @@ class userTags(MyModel):
 
 class MyToken(models.Model):
     key = models.CharField('Key', max_length=48, primary_key=True)
-    user = MyForeignKey(MyUser, related_name='user_token',verbose_name=("MyUser"))
+    user = MyForeignKey(MyUser, related_name='user_token',verbose_name=("MyUser"),on_delete=CASCADE)
     created = models.DateTimeField(help_text="CreatedTime", auto_now_add=True,null=True)
     clienttype = MyForeignKey(ClientType,help_text='登录类型')
     is_deleted = models.BooleanField(help_text='是否已被删除',blank=True,default=False)
@@ -411,8 +412,8 @@ class UserRelation(MyModel):
 
 class UserFriendship(MyModel):
     id = models.AutoField(primary_key=True)
-    user = MyForeignKey(MyUser,related_name='user_friends',help_text='发起人')
-    friend = MyForeignKey(MyUser,related_name='friend_users',help_text='接收人')
+    user = MyForeignKey(MyUser,related_name='user_friends',help_text='发起人',on_delete=CASCADE)
+    friend = MyForeignKey(MyUser,related_name='friend_users',help_text='接收人',on_delete=CASCADE)
     isaccept = models.BooleanField(blank=True,default=False)
     accepttime = models.DateTimeField(blank=True,null=True)
     userallowgetfavoriteproj = models.BooleanField(blank=True,default=True,help_text='发起人允许好友查看自己的项目收藏')

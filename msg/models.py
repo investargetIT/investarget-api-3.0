@@ -6,6 +6,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
 # Create your models here.
+from django.db.models import CASCADE
+
 from proj.models import project
 from sourcetype.models import MessageType, DataSource, Country, OrgArea
 from usersys.models import MyUser
@@ -19,7 +21,7 @@ class message(MyModel):
     type = models.IntegerField(MessageType,blank=True,default=1,help_text='消息类型')
     messagetitle = models.CharField(max_length=128,verbose_name='消息标题',blank=True,null=True)
     sender = MyForeignKey(MyUser,blank=True,null=True,related_name='usersend_msgs')
-    receiver = MyForeignKey(MyUser,related_name='userreceive_msgs',blank=True,null=True)
+    receiver = MyForeignKey(MyUser,related_name='userreceive_msgs',blank=True,null=True,on_delete=CASCADE)
     isRead = models.BooleanField(verbose_name='是否已读',default=False,blank=True)
     sourcetype = models.CharField(max_length=32,blank=True,null=True,help_text='资源类型')
     sourceid = models.IntegerField(blank=True,null=True,help_text='关联资源id')
@@ -37,7 +39,7 @@ class message(MyModel):
         db_table = 'msg'
 
 class schedule(MyModel):
-    user = MyForeignKey(MyUser,blank=True,null=True,help_text='日程对象',related_name='user_beschedule')
+    user = MyForeignKey(MyUser,blank=True,null=True,help_text='日程对象',related_name='user_beschedule',on_delete=CASCADE)
     scheduledtime = models.DateTimeField(blank=True,null=True,help_text='日程预定时间',)
     comments = models.TextField(blank=True, null=True, help_text='内容')
     address = models.TextField(blank=True, null=True, help_text='具体地址')
