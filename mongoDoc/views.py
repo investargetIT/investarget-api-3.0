@@ -339,9 +339,13 @@ class ProjectIndustryInfoView(viewsets.ModelViewSet):
             com_id = request.GET.get('com_id', None)
             if not com_id:
                 raise InvestError(2007, msg='com_id 不能为空')
-            instance = self.queryset.get(com_id=com_id)
-            serializer = self.serializer_class(instance)
-            return JSONResponse(SuccessResponse(serializer.data))
+            com_qs = self.queryset.filter(com_id=com_id)
+            if com_qs.count() > 0:
+                instance = com_qs.first()
+                response = self.serializer_class(instance).data
+            else:
+                response = None
+            return JSONResponse(SuccessResponse(response))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
