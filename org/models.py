@@ -81,6 +81,12 @@ class organization(MyModel):
              update_fields=None):
         if not self.datasource:
             raise InvestError(code=8888,msg='机构datasource不能空')
+        if not self.orgnameC and not self.orgnameE:
+            raise InvestError(2007,msg='机构名称不能为空')
+        if self.orgnameC and not self.orgnameE:
+            self.orgnameE = self.orgnameC
+        if self.orgnameE and not self.orgnameC:
+            self.orgnameC = self.orgnameE
         if self.industry:
             if self.industry.datasource != self.datasource_id:
                 raise InvestError(8888)
