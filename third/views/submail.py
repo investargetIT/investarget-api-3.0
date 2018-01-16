@@ -287,9 +287,9 @@ def xsendInternationalsms(destination, projectsign, vars=None):
 
 def checkSubhookKey(token, signature):
     if token and signature:
-        keysign = token + signature
+        keysign = token + SUBHOOK_KEY
         m = hashlib.md5()
         m.update(keysign)
-        if SUBHOOK_KEY == m.hexdigest():
+        if signature == m.hexdigest():
             return True
     return False
