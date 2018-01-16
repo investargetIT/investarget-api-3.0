@@ -93,11 +93,15 @@ def saveEmailGroupSendData(projs):
 def sendEmailToUser():
     mongodatalist = readSendEmailDataFromMongo()
     for data in mongodatalist:
-        userlist = data['users']
-        projdata = data['proj']
-        datasource = data['datasource']
-        for user in userlist:
-            sendProjEmailToUser(projdata,user,datasource)
+        try:
+            userlist = data['users']
+            projdata = data['proj']
+            print projdata
+            datasource = data['datasource']
+            for user in userlist:
+                sendProjEmailToUser(projdata,user,datasource)
+        except Exception:
+            logexcption()
 
 
 
@@ -132,6 +136,7 @@ def sendProjEmailToUser(proj,user,datasource):
             'B_introducteC': proj['B_introducteC'],
         }
         response = xsendEmail(emailaddress, Email_project_sign, varsdict)
+        print response
         if response.get('status') in ['success', True, 1]:
             if response.has_key('return'):
                 if len(response['return']) > 0:
