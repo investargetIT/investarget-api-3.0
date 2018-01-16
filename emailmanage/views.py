@@ -31,12 +31,9 @@ Email_project_sign = 'y0dQe4'
 def getAllProjectsNeedToSendMail():
     try:
         proj_qs = project.objects.filter(isSendEmail=True, is_deleted=False, datasource_id=1, projstatus_id=4)
-        print 'proj'
-        print len(proj_qs)
         saveEmailGroupSendData(proj_qs)
         proj_qs.update(**{'isSendEmail': False})
     except Exception as err:
-        print err.message
         logexcption()
 
 
@@ -63,14 +60,10 @@ def UserQSToList(user_qs):
 def saveEmailGroupSendData(projs):
     for proj in projs:
         tags = proj.project_tags.all().filter(is_deleted=False).values('tag')
-        print 'tags'
-        print len(tags)
         tagsname = Tag.objects.filter(id__in=tags).values_list('nameC')
         industriesname = Industry.objects.filter(industry_projects__proj=proj, is_deleted=False, industry_projects__is_deleted=False).values_list('industryC')
         transactionTypeName = TransactionType.objects.filter(transactionType_projects__proj=proj, is_deleted=False, transactionType_projects__is_deleted=False).values_list('nameC')
-        user_qs = Usergroupsendlistserializer(MyUser.objects.filter(Q(is_deleted=False, user_usertags__tag__in=tags,user_usertags__is__deleted=False, datasource_id=proj.datasource_id) | Q(is_deleted=False, user_usertags__tags__isnull=True, user_usertags__is__deleted=False, datasource_id=proj.datasource_id)).distinct(), many=True).data
-        print 'user'
-        print len(user_qs)
+        user_qs = Usergroupsendlistserializer(MyUser.objects.filter(Q(is_deleted=False, user_usertags__tag__in=tags,user_usertags__is_deleted=False, datasource_id=proj.datasource_id) | Q(is_deleted=False, user_usertags__tag__isnull=True, user_usertags__is_deleted=False, datasource_id=proj.datasource_id)).distinct(), many=True).data
         datadic = {
             'projtitle': proj.projtitleC,
             'proj': {
