@@ -4,6 +4,7 @@ import datetime
 
 
 # Create your views here.
+import threading
 import traceback
 
 from django.core.paginator import Paginator, EmptyPage
@@ -26,11 +27,11 @@ from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorRespon
 
 #邮件群发模板
 Email_project_sign = 'y0dQe4'
-#
-# def test(request):
-#     sendEmailToUser()
-#     res = {}
-#     return JSONResponse(res)
+
+def test(request):
+    sendEmailToUser()
+    res = {}
+    return JSONResponse(res)
 
 #收集邮件群发任务名单
 def getAllProjectsNeedToSendMail():
@@ -99,10 +100,15 @@ def sendEmailToUser():
             print projdata
             datasource = data['datasource']
             for user in userlist:
-                sendProjEmailToUser(projdata,user,datasource)
+                sendmailprojtouserthreadstart(projdata,user,datasource)
         except Exception:
             logexcption()
 
+def sendmailprojtouserthreadstart(proj,user,datasource):
+    class task2_sendmailThread(threading.Thread):
+        def run(self):
+            sendProjEmailToUser(proj, user, datasource)
+    task2_sendmailThread().start()
 
 
 #发送邮件
