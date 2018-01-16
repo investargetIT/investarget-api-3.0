@@ -127,9 +127,9 @@ def sendProjEmailToUser(proj,user,datasource):
             'B_introducteC': proj['B_introducteC'],
         }
         response = xsendEmail(emailaddress, Email_project_sign, varsdict)
-        if response.get('status'):
+        if response.get('status') in [u'success', 'success', True, 1]:
             data['isSend'] = True
-            data['send_id'] = response.get('send_id')
+            data['send_id'] = response['return'][0].get('send_id')
             data['sendtime'] = datetime.datetime.now()
         else:
             data['errmsg'] = response
