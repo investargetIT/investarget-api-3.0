@@ -28,10 +28,6 @@ from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorRespon
 #邮件群发模板
 Email_project_sign = 'y0dQe4'
 
-def test(request):
-    sendEmailToUser()
-    res = {}
-    return JSONResponse(res)
 
 #收集邮件群发任务名单
 def getAllProjectsNeedToSendMail():
@@ -97,18 +93,12 @@ def sendEmailToUser():
         try:
             userlist = data['users']
             projdata = data['proj']
-            print projdata
             datasource = data['datasource']
             for user in userlist:
-                sendmailprojtouserthreadstart(projdata,user,datasource)
+                sendProjEmailToUser(projdata, user, datasource)
         except Exception:
             logexcption()
 
-def sendmailprojtouserthreadstart(proj,user,datasource):
-    class task2_sendmailThread(threading.Thread):
-        def run(self):
-            sendProjEmailToUser(proj, user, datasource)
-    task2_sendmailThread().start()
 
 
 #发送邮件
@@ -117,7 +107,7 @@ def sendProjEmailToUser(proj,user,datasource):
     financeAmount = '$' + str(proj.get('financeAmount_USD','xxxxxxxx'))+'(美元)'
     if proj['Location'] == '中国':
         if proj['currency'] == '人民币':
-            financeAmount = '$' + str(proj.get('financeAmount','xxxxxxxx'))+'(美元)'
+            financeAmount = '￥' + str(proj.get('financeAmount','xxxxxxxx'))+'(人民币)'
     data = {
         'proj' : proj['id'],
         'projtitle': proj['Title'],
@@ -137,26 +127,25 @@ def sendProjEmailToUser(proj,user,datasource):
             'Location':proj['Location'],
             'Industry': " ".join(proj['Industry']),
             'Tags': " ".join(proj['Tags']),
-            'FAUSD': financeAmount,
+            'FA': financeAmount,
             'TransactionType': " ".join(proj['TransactionType']),
             'B_introducteC': proj['B_introducteC'],
         }
         response = xsendEmail(emailaddress, Email_project_sign, varsdict)
-        print response
         if response.get('status') in ['success', True, 1]:
             if response.has_key('return'):
                 if len(response['return']) > 0:
                     data['isSend'] = True
                     data['send_id'] = response['return'][0].get('send_id')
                     data['sendtime'] = datetime.datetime.now()
-            data['errmsg'] = response
+            data['errmsg'] = repr(response)
         else:
-            data['errmsg'] = response
+            data['errmsg'] = repr(response)
         emailsend = Emailgroupsendlistserializer(data=data)
         if emailsend.is_valid():
             emailsend.save()
         else:
-            logexcption(msg=emailsend.error_messages)
+            raise InvestError(8888,msg=emailsend.error_messages)
 
 class EmailgroupsendlistView(viewsets.ModelViewSet):
     """
