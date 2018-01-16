@@ -19,7 +19,7 @@ from emailmanage.serializers import Emailgroupsendlistserializer, Usergroupsendl
 from mongoDoc.views import saveSendEmailDataToMongo, readSendEmailDataFromMongo
 from proj.models import project
 from sourcetype.models import Tag, TransactionType, Industry
-from third.views.submail import xsendEmail
+from third.views.submail import xsendEmail, checkSubhookKey
 from usersys.models import MyUser
 from utils.customClass import InvestError, JSONResponse
 from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, catchexcption, \
@@ -188,9 +188,14 @@ class EmailgroupsendlistView(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         try:
             data = request.data
-            send_id = data.get('send_id')
+            token = data.get('token')
+            signature = data.get('signature')
+            if not checkSubhookKey(token,signature):
+                raise InvestError(8888, msg='subhook验证未通过')
+            # send_id = data.get('send_id')
             try:
-                emailgroupsend = self.queryset.get(send_id=send_id)
+                # emailgroupsend = self.queryset.get(send_id=send_id)
+                emailgroupsend = self.queryset.first()
             except emailgroupsendlist.DoesNotExist:
                 return JSONResponse(SuccessResponse(None))
             with transaction.atomic():

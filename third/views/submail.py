@@ -1,5 +1,5 @@
 #coding=utf-8
-import json
+import hashlib
 import traceback
 
 import datetime
@@ -11,7 +11,8 @@ from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.message_xsend import M
 from rest_framework.decorators import api_view, throttle_classes
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 from third.models import MobileAuthCode
-from third.thirdconfig import MAIL_CONFIGS, MESSAGE_CONFIGS, INTERNATIONALMESSAGE_CONFIGS, SMSCODE_projectsign
+from third.thirdconfig import MAIL_CONFIGS, MESSAGE_CONFIGS, INTERNATIONALMESSAGE_CONFIGS, SMSCODE_projectsign, \
+    SUBHOOK_KEY
 from utils.customClass import JSONResponse, InvestError
 from utils.util import SuccessResponse, catchexcption, ExceptionResponse, InvestErrorResponse, checkIPAddress
 
@@ -284,7 +285,9 @@ def xsendInternationalsms(destination, projectsign, vars=None):
 
 
 
-# if request.META.has_key('HTTP_X_FORWARDED_FOR'):
-#     ip =  request.META['HTTP_X_FORWARDED_FOR']
-# else:
-#     ip = request.META['REMOTE_ADDR']
+def checkSubhookKey(token, signature):
+    if token and signature:
+        keysign = token + signature
+        if SUBHOOK_KEY == hashlib.md5(keysign):
+            return True
+    return False
