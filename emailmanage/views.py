@@ -26,6 +26,11 @@ from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorRespon
 
 #邮件群发模板
 Email_project_sign = 'y0dQe4'
+#
+# def test(request):
+#     sendEmailToUser()
+#     res = {}
+#     return JSONResponse(res)
 
 #收集邮件群发任务名单
 def getAllProjectsNeedToSendMail():
@@ -127,10 +132,13 @@ def sendProjEmailToUser(proj,user,datasource):
             'B_introducteC': proj['B_introducteC'],
         }
         response = xsendEmail(emailaddress, Email_project_sign, varsdict)
-        if response.get('status') in [u'success', 'success', True, 1]:
-            data['isSend'] = True
-            data['send_id'] = response['return'][0].get('send_id')
-            data['sendtime'] = datetime.datetime.now()
+        if response.get('status') in ['success', True, 1]:
+            if response.has_key('return'):
+                if len(response['return']) > 0:
+                    data['isSend'] = True
+                    data['send_id'] = response['return'][0].get('send_id')
+                    data['sendtime'] = datetime.datetime.now()
+            data['errmsg'] = response
         else:
             data['errmsg'] = response
         emailsend = Emailgroupsendlistserializer(data=data)
