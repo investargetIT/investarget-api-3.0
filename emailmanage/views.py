@@ -31,9 +31,9 @@ Email_project_sign = 'y0dQe4'
 def getAllProjectsNeedToSendMail():
     try:
         proj_qs = project.objects.filter(isSendEmail=True, is_deleted=False, datasource_id=1, projstatus_id=4)
-        saveEmailGroupSendData(proj_qs)
         print 'proj'
         print len(proj_qs)
+        saveEmailGroupSendData(proj_qs)
         proj_qs.update(**{'isSendEmail': False})
     except Exception as err:
         print err.message
