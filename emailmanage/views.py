@@ -191,7 +191,9 @@ class EmailgroupsendlistView(viewsets.ModelViewSet):
             token = data.get('token')
             signature = data.get('signature')
             if not checkSubhookKey(token,signature):
+                print 'subhook验证未通过'
                 raise InvestError(8888, msg='subhook验证未通过')
+            print 'subhook验证通过'
             # send_id = data.get('send_id')
             try:
                 # emailgroupsend = self.queryset.get(send_id=send_id)
@@ -199,12 +201,15 @@ class EmailgroupsendlistView(viewsets.ModelViewSet):
             except emailgroupsendlist.DoesNotExist:
                 return JSONResponse(SuccessResponse(None))
             with transaction.atomic():
+                print '开始更新'
                 data['isRead'] = True,
                 data['readtime'] = datetime.datetime.now(),
                 emailserializer = Emailgroupsendlistserializer(emailgroupsend, data=data)
                 if emailserializer.is_valid():
                     emailserializer.save()
+                    print '更新成功'
                 else:
+                    print '更新失败'
                     raise InvestError(code=20071,msg='data有误_%s' % emailserializer.errors)
                 return JSONResponse(SuccessResponse(None))
         except InvestError as err:

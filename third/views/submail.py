@@ -290,6 +290,8 @@ def checkSubhookKey(token, signature):
         keysign = token + SUBHOOK_KEY
         m = hashlib.md5()
         m.update(keysign)
-        if signature == m.hexdigest():
+        md5sign = m.hexdigest()
+        print md5sign
+        if signature == md5sign:
             return True
     return False
