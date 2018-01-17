@@ -85,7 +85,21 @@ def xsendEmail(destination,projectsign,vars=None):
     '''
     # submail.set_sender('no-reply@submail.cn','SUBMAIL')
 
+    '''
+    Optional para
+    set reply address
+    '''
+    # submail.set_reply('service@submail.cn')
 
+    '''
+    Optional para
+    set email subject
+    '''
+    # submail.set_subject('test SDK')
+    '''
+    Required para
+    set project sign
+    '''
     submail.set_project(projectsign)
 
     '''
@@ -95,7 +109,16 @@ def xsendEmail(destination,projectsign,vars=None):
     '''
     if vars:
         submail.vars = vars
+    # submail.add_var('NameC', 'c')
+    # submail.add_var('NameE', 'e')
 
+    '''
+    Optional para
+    submail email link content filter
+    @Multi-para
+    '''
+    # submail.add_link('developer', 'http://submail.cn/chs/developer')
+    # submail.add_link('store', 'http://submail.cn/chs/store')
 
     '''
     Optional para
@@ -264,11 +287,9 @@ def xsendInternationalsms(destination, projectsign, vars=None):
 
 def checkSubhookKey(token, signature):
     if token and signature:
-        keysign = token + SUBHOOK_KEY
+        keysign = token + signature
         m = hashlib.md5()
-        m.update(keysign)
-        md5sign = m.hexdigest()
-        print md5sign
-        if signature == md5sign:
+        m.update()
+        if SUBHOOK_KEY == hashlib.md5(keysign):
             return True
     return False
