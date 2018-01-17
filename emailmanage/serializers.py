@@ -14,4 +14,4 @@ class Usergroupsendlistserializer(serializers.ModelSerializer):
 class Emailgroupsendlistserializer(serializers.ModelSerializer):
     class Meta:
         model = emailgroupsendlist
-        exclude = ('is_deleted', 'email')
+        exclude = ('is_deleted', 'email', 'userEmail')
