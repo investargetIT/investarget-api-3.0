@@ -10,23 +10,8 @@ class Usergroupsendlistserializer(serializers.ModelSerializer):
         model = MyUser
         fields = ('id', 'usernameC', 'email')
 
-class Industrygroupsendlistserializer(serializers.ModelSerializer):
-    class Meta:
-        model = Industry
-        fields = ('industryC',)
-
-class TransactionTypegroupsendlistserializer(serializers.ModelSerializer):
-    class Meta:
-        model = TransactionType
-        fields = ('nameC',)
-
-class Taggroupsendlistserializer(serializers.ModelSerializer):
-    class Meta:
-        model = Tag
-        fields = ('nameC',)
-
 
 class Emailgroupsendlistserializer(serializers.ModelSerializer):
     class Meta:
         model = emailgroupsendlist
-        exclude = ('is_deleted',)
+        exclude = ('is_deleted', 'email')
