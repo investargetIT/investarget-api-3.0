@@ -101,8 +101,9 @@ def sendEmailToUser():
             userlist = data['users']
             projdata = data['proj']
             datasource = data['datasource']
-            for user in userlist:
-                sendProjEmailToUser(projdata, user, datasource)
+            # for user in userlist:
+            #     sendProjEmailToUser(projdata, user, datasource)
+            sendProjEmailToUser(projdata, userlist[0], datasource)
         except Exception:
             logexcption()
 
