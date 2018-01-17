@@ -64,7 +64,7 @@ class WebMessageView(viewsets.ModelViewSet):
                 page_size = 10
             if not page_index:
                 page_index = 1
-            queryset = self.filter_queryset(self.get_queryset()).filter(receiver=request.user.id)
+            queryset = self.filter_queryset(self.get_queryset()).filter(receiver=request.user.id).order_by('-createdtime',)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
