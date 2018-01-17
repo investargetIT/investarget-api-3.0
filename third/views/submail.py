@@ -14,7 +14,7 @@ from third.models import MobileAuthCode
 from third.thirdconfig import MAIL_CONFIGS, MESSAGE_CONFIGS, INTERNATIONALMESSAGE_CONFIGS, SMSCODE_projectsign, \
     SUBHOOK_KEY
 from utils.customClass import JSONResponse, InvestError
-from utils.util import SuccessResponse, catchexcption, ExceptionResponse, InvestErrorResponse, checkIPAddress
+from utils.util import SuccessResponse, catchexcption, ExceptionResponse, InvestErrorResponse, checkIPAddressCanPass
 
 
 
@@ -140,8 +140,7 @@ def sendSmscode(request):
         else:
             ip = request.META['REMOTE_ADDR']
         if ip:
-            times = checkIPAddress(ip)
-            if times > 3:
+            if not checkIPAddressCanPass(ip):
                 raise InvestError(code=3004,msg='单位时间内只能获取三次验证码')
         else:
             raise InvestError(code=3003)

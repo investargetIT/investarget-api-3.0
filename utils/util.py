@@ -58,15 +58,18 @@ def logexcption(msg=None):
     f.writelines(now.strftime('%H:%M:%S')+'\n'+ traceback.format_exc()+ msg if msg else ' ' +'\n\n')
     f.close()
 
-def checkIPAddress(ip):
+def checkIPAddressCanPass(ip):
     key = 'ip_%s'%str(ip)
     times = cache.get(key)
     if times:
+        if times >= 3:
+            return False
         times = times + 1
     else:
         times = 1
     cache.set(key, times, 60 * 60 * 1)
-    return times
+    return True
+
 #检查view内 request的token
 def loginTokenIsAvailable(permissions=None):#判断class级别权限
     def token_available(func):
