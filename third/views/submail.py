@@ -61,7 +61,7 @@ def xsendEmail(destination,projectsign,vars=None):
     '''
     submail = MAILXsend(MAIL_CONFIGS)
     submail.set_sender(MAIL_CONFIGS['from'])
-    submail.set_subject('test')
+    submail.set_subject('多维海拓-精品项目晨报')
     '''
     Optional para
     The First para: recipient email address
