@@ -87,9 +87,9 @@ MESSAGE_DICT = {
     'projectpublish':{
         'sms_sign': None,
         'email_sign': "IszFR1",
-        'title_cn': "您的项目已经发布,",
-        'title_en': "Your project  has been published",
-        'content_cn': "您上传的【%s】项目已通过终审并在平台发布，可在登录后查看项目进展情况。",
+        'title_cn': "项目已经发布,",
+        'title_en': "Project  has been published",
+        'content_cn': "【%s】项目已通过终审并在平台发布，可在登录后查看项目进展情况。",
         'content_en': "Project【%s】 has been verified and published on our platform, you can see the progress after logging in.",
         'messagetype': '7',
     },
