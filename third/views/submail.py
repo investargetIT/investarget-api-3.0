@@ -60,7 +60,6 @@ def xsendEmail(destination,projectsign,vars=None):
     init MESSAGEXsend class
     '''
     submail = MAILXsend(MAIL_CONFIGS)
-    submail.set_sender(MAIL_CONFIGS['from'])
     '''
     Optional para
     The First para: recipient email address
