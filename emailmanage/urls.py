@@ -9,5 +9,5 @@ sendemaillist = views.EmailgroupsendlistView.as_view({
 
 urlpatterns = [
     url(r'^$', sendemaillist,name='sendemail-list',),
-    # url(r'^test$', views.test, name='list', ),
+    url(r'^test$', views.test, name='list', ),
 ]
