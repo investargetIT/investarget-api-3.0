@@ -134,9 +134,13 @@ def sendmessage_favoriteproject(model,receiver, sender=None):
             if isinstance(model, favoriteProject):
                 if model.favoritetype_id != 4 and model.favoritetype_id != 2:
                     lang = 'cn'
+                    sendername = sender.usernameC
+                    projtitle = model.proj.projtitleC
                     if self.receiver.country:
-                        if self.receiver.country.areaCode not in ['86', u'86']:
+                        if self.receiver.country.areaCode not in ['86', u'86', None, '', u'']:
                             lang = 'en'
+                            sendername = sender.usernameE
+                            projtitle = model.proj.projtitleE
                     if model.favoritetype_id == 1:
                         msgdic = MESSAGE_DICT['systemrecommendproject']
                         vars = 1
@@ -147,9 +151,9 @@ def sendmessage_favoriteproject(model,receiver, sender=None):
                     else:
                         return
                     if model.favoritetype_id in [3, 5]:
-                        content = msgdic['content_%s' % lang] % (sender.usernameC, model.proj.projtitleC)
+                        content = msgdic['content_%s' % lang] % (sendername, projtitle)
                     else:
-                        content = msgdic['content_%s' % lang] % model.proj.projtitleC
+                        content = msgdic['content_%s' % lang] % projtitle
                     title = msgdic['title_%s' % lang]
                     if 'app' in paths and sendAppmsg:
                         try:
@@ -175,7 +179,7 @@ def sendmessage_favoriteproject(model,receiver, sender=None):
                             destination = receiver.mobile
                             projectsign =  msgdic['sms_sign']
                             if model.favoritetype_id in [3,5]:
-                                vars = {'user': sender.usernameC, 'project': model.proj.projtitleC, }
+                                vars = {'user': sendername, 'project': projtitle, }
                             else:
                                 vars = {'project':model.proj.projtitleC}
                             xsendSms(destination, projectsign, vars)
@@ -214,12 +218,14 @@ def sendmessage_traderadd(model,receiver,types,sender=None):
             sender = self.sender
             if isinstance(model, UserRelation):
                 lang = 'cn'
+                username = model.traderuser.usernameC
                 if self.receiver.country:
-                    if self.receiver.country.areaCode not in ['86', u'86']:
+                    if self.receiver.country.areaCode not in ['86', u'86', None, '', u'']:
                         lang = 'en'
+                        username = model.traderuser.usernameE
                 msgdic = MESSAGE_DICT['traderadd']
                 title = msgdic['title_%s'%lang]
-                content = msgdic['content_%s'%lang]
+                content = msgdic['content_%s'%lang] % username
                 messagetype = msgdic['messagetype']
                 if 'app' in types and sendAppmsg:
                     try:
@@ -277,9 +283,13 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
             sender = self.sender
             if isinstance(model, MyUser):
                 lang = 'cn'
+                datasourcename = model.datasource.nameC
+                username = model.usernameC
                 if self.receiver.country:
-                    if self.receiver.country.areaCode not in ['86', u'86']:
+                    if self.receiver.country.areaCode not in ['86', u'86', None, '', u'']:
                         lang = 'en'
+                        datasourcename = model.datasource.nameE
+                        username = model.usernameE
                 if model.userstatus.id == 2:
                     msgdic = MESSAGE_DICT['userauditpass']
                 elif model.userstatus.id == 3:
@@ -287,7 +297,7 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                 else:
                     return
                 title = msgdic['title_%s' % lang]
-                content = msgdic['content_%s' % lang]% (model.datasource.nameC, model.usernameC)
+                content = msgdic['content_%s' % lang]% (datasourcename, username)
                 messagetype = msgdic['messagetype']
 
                 if 'app' in types and sendAppmsg:
@@ -317,7 +327,7 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                         if model.userstatus.id == 2:
                             destination = receiver.mobile
                             projectsign = 'EXIDv1'
-                            vars = {'user': model.usernameC}
+                            vars = {'user': username}
                             xsendSms(destination, projectsign, vars)
                     except Exception:
                         logexcption()
@@ -352,12 +362,16 @@ def sendmessage_userregister(model,receiver,types,sender=None):
             sender = self.sender
             if isinstance(model, MyUser):
                 lang = 'cn'
+                datasourcename = model.datasource.nameC
+                username = model.usernameC
                 if self.receiver.country:
-                    if self.receiver.country.areaCode not in ['86', u'86']:
+                    if self.receiver.country.areaCode not in ['86', u'86', None, '', u'']:
                         lang = 'en'
+                        datasourcename = model.datasource.nameE
+                        username = model.usernameE
                 msgdic = MESSAGE_DICT['userregister']
                 title = msgdic['title_%s' % lang]
-                content = msgdic['content_%s' % lang] % (model.datasource.nameC, model.usernameC)
+                content = msgdic['content_%s' % lang] % (datasourcename, username)
                 messagetype = msgdic['messagetype']
                 if 'app' in types and sendAppmsg:
                     try:
@@ -409,12 +423,14 @@ def sendmessage_timelineauditstatuchange(model,receiver,types,sender=None):
             sender = self.sender
             if isinstance(model, timelineTransationStatu):
                 lang = 'cn'
+                projtitle =  model.timeline.proj.projtitleC
                 if self.receiver.country:
-                    if self.receiver.country.areaCode not in ['86', u'86']:
+                    if self.receiver.country.areaCode not in ['86', u'86', None, '', u'']:
                         lang = 'en'
+                        projtitle =  model.timeline.proj.projtitleE
                 msgdic = MESSAGE_DICT['timelineauditstatuchange']
                 title = msgdic['title_%s' % lang]
-                content = msgdic['content_%s' % lang] % model.timeline.proj.projtitleC
+                content = msgdic['content_%s' % lang] % projtitle
                 messagetype = msgdic['messagetype']
                 if 'app' in types and sendAppmsg:
                     try:
@@ -436,7 +452,7 @@ def sendmessage_timelineauditstatuchange(model,receiver,types,sender=None):
                     try:
                         destination = receiver.mobile
                         projectsign = 'tNEV93'
-                        vars = {'project': model.timeline.proj.projtitleC}
+                        vars = {'project': projtitle}
                         xsendSms(destination, projectsign, vars)
                     except Exception:
                         logexcption()
@@ -532,12 +548,14 @@ def sendmessage_projectpublish(model, receiver, types, sender=None):
             sender = self.sender
             if isinstance(model, project):
                 lang = 'cn'
+                projtitle = model.dataroom.proj.projtitleC
                 if self.receiver.country:
-                    if self.receiver.country.areaCode not in ['86', u'86']:
+                    if self.receiver.country.areaCode not in ['86', u'86', None, '', u'']:
                         lang = 'en'
+                        projtitle = model.dataroom.proj.projtitleE
                 msgdic = MESSAGE_DICT['projectpublish']
                 title = msgdic['title_%s' % lang]
-                content = msgdic['content_%s' % lang] % model.dataroom.proj.projtitleC
+                content = msgdic['content_%s' % lang] % projtitle
                 messagetype = msgdic['messagetype']
                 if 'email' in types and sendEmail and checkEmailTrue(receiver.email):
                     try:
@@ -580,7 +598,7 @@ def sendmessage_usermakefriends(model,receiver,types,sender=None):
             if isinstance(model, UserFriendship):
                 lang = 'cn'
                 if self.receiver.country:
-                    if self.receiver.country.areaCode not in ['86', u'86']:
+                    if self.receiver.country.areaCode not in ['86', u'86', None, '', u'']:
                         lang = 'en'
                 msgdic = MESSAGE_DICT['usermakefriends']
                 title = msgdic['title_%s' % lang]
@@ -627,7 +645,7 @@ def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
             if isinstance(model, timelineTransationStatu):
                 lang = 'cn'
                 if self.receiver.country:
-                    if self.receiver.country.areaCode not in ['86', u'86']:
+                    if self.receiver.country.areaCode not in ['86', u'86', None, '', u'']:
                         lang = 'en'
                 msgdic = MESSAGE_DICT['timelinealertcycleexpire']
                 title = msgdic['title_%s' % lang]
@@ -674,7 +692,7 @@ def sendmessage_schedulemsg(model,receiver,types,sender=None):
             if isinstance(model, schedule):
                 lang = 'cn'
                 if self.receiver.country:
-                    if self.receiver.country.areaCode not in ['86', u'86']:
+                    if self.receiver.country.areaCode not in ['86', u'86', None, '', u'']:
                         lang = 'en'
                 msgdic = MESSAGE_DICT['schedulemsg']
                 title = msgdic['title_%s' % lang]
@@ -721,7 +739,7 @@ def sendmessage_orgBDMessage(model,receiver,types,sender=None):
             sender = self.sender
             lang = 'cn'
             if self.receiver.country:
-                if self.receiver.country.areaCode not in ['86', u'86']:
+                if self.receiver.country.areaCode not in ['86', u'86', None, '', u'']:
                     lang = 'en'
             msgdic = MESSAGE_DICT['timelinealertcycleexpire']
             title = msgdic['title_%s' % lang]
