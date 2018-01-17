@@ -29,6 +29,13 @@ from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorRespon
 Email_project_sign = 'y0dQe4'
 
 
+def test(request):
+    class task_Thread(threading.Thread):
+        def run(self):
+            sendEmailToUser()
+    task_Thread().start()
+    return JSONResponse({})
+
 #收集邮件群发任务名单
 def getAllProjectsNeedToSendMail():
     try:
