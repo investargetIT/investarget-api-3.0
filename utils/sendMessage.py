@@ -548,11 +548,11 @@ def sendmessage_projectpublish(model, receiver, types, sender=None):
             sender = self.sender
             if isinstance(model, project):
                 lang = 'cn'
-                projtitle = model.dataroom.proj.projtitleC
+                projtitle = model.projtitleC
                 if self.receiver.country:
                     if self.receiver.country.areaCode not in ['86', u'86', None, '', u'']:
                         lang = 'en'
-                        projtitle = model.dataroom.proj.projtitleE
+                        projtitle = model.projtitleE
                 msgdic = MESSAGE_DICT['projectpublish']
                 title = msgdic['title_%s' % lang]
                 content = msgdic['content_%s' % lang] % projtitle
