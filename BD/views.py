@@ -554,8 +554,8 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
             queryset = self.filter_queryset(self.get_queryset())
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
-            elif request.user.has_perm('BD.user_manageOrgBD'):
-                queryset = queryset.filter(orgBD__in=request.user.user_orgBDs.all())
+            elif request.user.has_perm('BD.user_getOrgBD'):
+                queryset = queryset.filter(Q(orgBD__in=request.user.user_orgBDs.all()) | Q(orgBD__proj__in=request.user.usertake_projs.all()) | Q(orgBD__proj__in=request.user.usermake_projs.all()))
             else:
                 raise InvestError(2009)
             try:
