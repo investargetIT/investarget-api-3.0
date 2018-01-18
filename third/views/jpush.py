@@ -2,7 +2,7 @@
 # encoding=utf-8
 import time, random, json,  sys, os
 
-from third.thirdconfig import apps
+from third.thirdconfig import my_product, apns_production_boolean
 
 sys.path.insert(0, os.path.dirname(sys.path[0]))
 reload(sys)
@@ -11,8 +11,6 @@ sys.setdefaultencoding('utf8')
 import requests
 
 
-# 苹果的测试环境false,生产环境 v3
-apns_production_boolean = True
 
 '''''
     极光key配置
@@ -33,7 +31,7 @@ apns_production_boolean = True
 '''
 import base64
 
-my_secret = '%s:%s'%(apps['product']['app_key'],apps['product']['master_secret'])
+my_secret = '%s:%s'%(my_product['app_key'],my_product['master_secret'])
 #加密
 encode_secret = base64.b64encode(my_secret)
 
@@ -63,7 +61,6 @@ def https_request(app_key, body, url, content_type=None, version=None, params=No
 '''
 
 def push_params_v3(content, receiver_value, platform, bdage, n_extras):
-    global apns_production_boolean
     sendno = int(time.time() + random.randint(10000000, 99999900))
     payload = dict()
     payload['platform'] = platform
@@ -105,5 +102,5 @@ def pushnotification(receiver_alias,content,bdage,n_extras=None):
         ]
     n_extras = n_extras if n_extras else {}
     payload = push_params_v3(content=content,receiver_value=receiver_alias,platform=platform,bdage=bdage,n_extras=n_extras)
-    return jpush_v3(apps['product'],payload)
+    return jpush_v3(my_product,payload)
 
