@@ -55,10 +55,9 @@ class ProjectBD(MyModel):
             self.usermobile = self.bduser.mobile
             self.usertitle = self.bduser.title
         self.datasource = self.manager.datasource_id
-        if self.source == '全库搜索':
-            self.source_type = 0
-        else:
-            self.source_type = 1
+        if not self.source:
+            if self.source_type == 0:
+                self.sourcee = '全库搜索'
         if not self.manager.onjob:
             raise InvestError(2024)
         return super(ProjectBD, self).save(*args, **kwargs)
