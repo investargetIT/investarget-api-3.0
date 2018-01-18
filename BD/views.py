@@ -251,7 +251,7 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageProjectBD'):
                 pass
             elif request.user.has_perm('BD.user_getProjectBD'):
-                queryset = queryset.filter(projectBD__in=request.user.user_projBDs)
+                queryset = queryset.filter(projectBD__in=request.user.user_projBDs.all())
             else:
                 raise InvestError(2009)
             try:
