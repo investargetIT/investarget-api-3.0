@@ -683,13 +683,27 @@ class MeetingBDView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
-    @loginTokenIsAvailable(['BD.manageMeetBD',])
+    @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
             lang = request.GET.get('lang')
             data['createuser'] = request.user.id
             data['datasource'] = request.user.datasource.id
+            if request.user.has_perm('BD.manageMeetBD'):
+                pass
+            else:
+                proj = data.get('proj', None)
+                if proj:
+                    projinstance = project.objects.get(id=proj, is_deleted=False, datasource=request.user.datasource)
+                    if request.user.has_perm('BD.user_addMeetBD'):
+                        pass
+                    elif request.user in [projinstance.takeUser, projinstance.makeUser]:
+                        pass
+                    else:
+                        raise InvestError(2009)
+                else:
+                    raise InvestError(2009)
             with transaction.atomic():
                 meetBD = MeetingBDCreateSerializer(data=data)
                 if meetBD.is_valid():
@@ -714,6 +728,9 @@ class MeetingBDView(viewsets.ModelViewSet):
                 pass
             elif request.user.has_perm('BD.user_manageMeetBD', instance):
                 pass
+            elif request.user.has_perm('BD.user_getMeetBD'):
+                if request.user not in [instance.proj.takeUser, instance.proj.makeUser]:
+                    raise InvestError(2009)
             else:
                 raise InvestError(2009)
             serializer = self.serializer_class(instance)

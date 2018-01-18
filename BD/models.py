@@ -146,8 +146,8 @@ class OrgBDComments(MyModel):
 
 
 class MeetingBD(MyModel):
-    org = MyForeignKey(organization, blank=True, null=True, help_text='BD机构')
-    proj = MyForeignKey(project, blank=True, null=True, help_text='项目名称')
+    org = MyForeignKey(organization, blank=True, null=True, help_text='BD机构', related_name='org_meetBDs')
+    proj = MyForeignKey(project, blank=True, null=True, help_text='项目名称', related_name='proj_meetBDs')
     usertitle = MyForeignKey(TitleType, blank=True, null=True, help_text='职位')
     username = models.CharField(max_length=64, blank=True, null=True, help_text='姓名')
     usermobile = models.CharField(max_length=64, blank=True, null=True, help_text='电话')
@@ -167,6 +167,7 @@ class MeetingBD(MyModel):
         permissions = (
             ('manageMeetBD', '管理会议BD'),
             ('user_getMeetBD', u'用户查看个人会议BD'),
+            ('user_addMeetBD', u'用户新建个人会议BD'),
             ('user_manageMeetBD', '用户管理个人会议BD（obj级别）'),
         )
 
