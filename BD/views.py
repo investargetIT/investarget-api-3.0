@@ -429,8 +429,8 @@ class OrgBDView(viewsets.ModelViewSet):
                     commentinstance = OrgBDCommentsCreateSerializer(data=data)
                     if commentinstance.is_valid():
                         commentinstance.save()
-                sendmessage_orgBDMessage(neworgBD, receiver=neworgBD.manager,
-                                    types=['app', 'webmsg', 'sms'], sender=request.user)
+                if request.user != neworgBD.manager:
+                    sendmessage_orgBDMessage(neworgBD, receiver=neworgBD.manager, types=['app', 'webmsg', 'sms'], sender=request.user)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgBDSerializer(neworgBD).data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -480,8 +480,8 @@ class OrgBDView(viewsets.ModelViewSet):
                     if oldmanager_id and oldmanager_id != oldmanager.id:
                         add_perm('BD.user_manageOrgBD', neworgBD.manager, neworgBD)
                         rem_perm('BD.user_manageOrgBD', oldmanager, neworgBD)
-                        sendmessage_orgBDMessage(neworgBD, receiver=neworgBD.manager,
-                                                 types=['app', 'wenmsg', 'sms'], sender=request.user)
+                        if request.user != neworgBD.manager:
+                            sendmessage_orgBDMessage(neworgBD, receiver=neworgBD.manager, types=['app', 'wenmsg', 'sms'], sender=request.user)
                 else:
                     raise InvestError(5004, msg='机构BD修改失败——%s' % orgBD.error_messages)
                 return JSONResponse(

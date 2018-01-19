@@ -128,8 +128,8 @@ MESSAGE_DICT = {
         'email_sign': None,
         'title_cn': "机构BD,",
         'title_en': "Schedule due",
-        'content_cn': "您有一个新机构BD任务",
-        'content_en': "You have a schedule due today",
+        'content_cn': "您有一个新的机构BD任务",
+        'content_en': "You have a new schedule due today",
         'messagetype': '11',
     },
 }
