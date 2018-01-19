@@ -11,7 +11,7 @@ from org.models import organization, orgTransactionPhase, orgRemarks
 from org.serializer import OrgCommonSerializer, OrgDetailSerializer, \
      OrgRemarkDetailSerializer, OrgCreateSerializer, OrgUpdateSerializer
 from sourcetype.models import TransactionPhases, DataSource
-from utils.customClass import InvestError, JSONResponse, RelationFilter
+from utils.customClass import InvestError, JSONResponse, RelationFilter, MySearchFilter
 from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser, add_perm, \
     cache_delete_key, mySortQuery
@@ -43,7 +43,7 @@ class OrganizationView(viewsets.ModelViewSet):
     update:修改机构信息
     destroy:删除机构
     """
-    filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
+    filter_backends = (MySearchFilter,filters.DjangoFilterBackend,)
     queryset = organization.objects.filter(is_deleted=False)
     filter_class = OrganizationFilter
     search_fields = ('orgnameC','orgnameE','stockcode','org_users__orgarea__nameC','org_users__orgarea__nameE')

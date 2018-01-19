@@ -1,9 +1,13 @@
 import datetime
+
+import operator
 from django.db import models
 from django.http import HttpResponse
+from django.utils import six
 from qiniu.services.storage.upload_progress_recorder import UploadProgressRecorder
 from rest_framework import throttling
-from rest_framework.compat import is_authenticated
+from rest_framework.compat import is_authenticated, distinct
+from rest_framework.filters import SearchFilter
 from rest_framework.renderers import JSONRenderer
 
 from invest.settings import APILOG_PATH
@@ -46,6 +50,30 @@ class RelationFilter(Filter):
             return qs.filter(**{'%s__%s' % (self.filterstr,self.lookup_method): value, self.relationName:False}).distinct()
         else:
             return qs.filter(**{'%s__%s' % (self.filterstr, self.lookup_method): value}).distinct()
+
+class MySearchFilter(SearchFilter):
+    def filter_queryset(self, request, queryset, view):
+        search_fields = getattr(view, 'search_fields', None)
+        search_terms = self.get_search_terms(request)
+
+        if not search_fields or not search_terms:
+            return queryset
+
+        orm_lookups = [
+            self.construct_search(six.text_type(search_field))
+            for search_field in search_fields
+            ]
+
+        qslist = []
+        for search_term in search_terms:
+            queries = [
+                models.Q(**{orm_lookup: search_term})
+                for orm_lookup in orm_lookups
+                ]
+            qs = queryset.filter(reduce(operator.or_, queries))
+            qslist.append(qs)
+        queryset = reduce(lambda x,y:x|y,qslist).distinct()
+        return queryset
 
 
 class AppEventRateThrottle(throttling.SimpleRateThrottle):
