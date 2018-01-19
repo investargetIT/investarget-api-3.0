@@ -164,6 +164,9 @@ class TimelineView(viewsets.ModelViewSet):
                 for user in userlist:
                      add_perm('timeline.user_getline', user, newtimeline)
                 add_perm('timeline.user_changeline', newtimeline.trader, newtimeline)
+                add_perm('timeline.user_deleteline', newtimeline.trader, newtimeline)
+                add_perm('timeline.user_changeline', newtimeline.createuser, newtimeline)
+                add_perm('timeline.user_deleteline', newtimeline.createuser, newtimeline)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(TimeLineSerializer(newtimeline).data, lang)))
         except InvestError as err:
                 return JSONResponse(InvestErrorResponse(err))
