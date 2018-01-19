@@ -62,6 +62,9 @@ class timeline(MyModel):
                 for user in userlist:
                     rem_perm('timeline.user_getline', user, self)
                 rem_perm('timeline.user_changeline', self.trader, self)
+                rem_perm('timeline.user_deleteline', self.trader, self)
+                rem_perm('timeline.user_changeline', self.createuser, self)
+                rem_perm('timeline.user_deleteline', self.createuser, self)
             else:
                 oldrela = timeline.objects.get(pk=self.pk)
                 userlist1 = [oldrela.investor, oldrela.trader, oldrela.createuser, oldrela.proj.makeUser, oldrela.proj.takeUser,
@@ -74,11 +77,16 @@ class timeline(MyModel):
                     for user in userset1:
                         rem_perm('timeline.user_getline', user, self)
                     rem_perm('timeline.user_changeline', oldrela.trader, self)
-
+                    rem_perm('timeline.user_deleteline', oldrela.trader, self)
+                    rem_perm('timeline.user_changeline', oldrela.createuser, self)
+                    rem_perm('timeline.user_deleteline', oldrela.createuser, self)
 
                     for user in userset2:
                         add_perm('timeline.user_getline', user, self)
                     add_perm('timeline.user_changeline', self.trader, self)
+                    add_perm('timeline.user_deleteline', self.trader, self)
+                    add_perm('timeline.user_changeline', self.createuser, self)
+                    add_perm('timeline.user_deleteline', self.createuser, self)
         super(timeline,self).save(force_insert, force_update, using, update_fields)
 
 
