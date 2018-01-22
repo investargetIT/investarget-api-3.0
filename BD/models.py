@@ -154,7 +154,7 @@ class MeetingBD(MyModel):
     bduser = MyForeignKey(MyUser, blank=True, null=True, help_text='bd对象id')
     manager = MyForeignKey(MyUser, blank=True, null=True, help_text='负责人', related_name='user_MeetBDs')
     comments = models.TextField(blank=True, default=False, help_text='会议纪要')
-    meet_date = models.DateTimeField(blank=True, help_text='会议时间')
+    meet_date = models.DateTimeField(blank=True, null=True, help_text='会议时间')
     title = models.TextField(blank=True, null=True, help_text='会议标题')
     attachmentbucket = models.CharField(max_length=16, blank=True, default='image', help_text='附件存储空间')
     attachment = models.CharField(max_length=64, blank=True, null=True, help_text='会议附件')
