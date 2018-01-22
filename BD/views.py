@@ -368,7 +368,7 @@ class OrgBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
             elif request.user.has_perm('BD.user_getOrgBD'):
-                queryset = queryset.filter(Q(manager=request.user) | Q(proj__in=request.user.usertake_projs.all()) | Q(proj__in=request.user.usermake_projs.all()))
+                queryset = queryset.filter(Q(manager=request.user) | Q(createuser=request.user) | Q(proj__in=request.user.usertake_projs.all()) | Q(proj__in=request.user.usermake_projs.all()))
             else:
                 raise InvestError(2009)
             countres = queryset.values_list('manager').annotate(Count('manager'))
@@ -663,7 +663,7 @@ class MeetingBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageMeetBD'):
                 pass
             elif request.user.has_perm('BD.user_getMeetBD'):
-                queryset = queryset.filter(Q(manager=request.user) | Q(proj__in=request.user.usertake_projs.all()) | Q(proj__in=request.user.usermake_projs.all()))
+                queryset = queryset.filter(Q(manager=request.user) | Q(createuser=request.user) | Q(proj__in=request.user.usertake_projs.all()) | Q(proj__in=request.user.usermake_projs.all()))
             else:
                 raise InvestError(2009)
             sortfield = request.GET.get('sort', 'createdtime')
