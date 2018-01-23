@@ -50,6 +50,12 @@ meetbd_detail = views.MeetingBDView.as_view({
         'delete': 'destroy'
 })
 
+deleteAttachment = views.MeetingBDView.as_view({
+        'post': 'deleteAttachment',
+
+})
+
+
 urlpatterns = [
         url(r'^projbd/$', projbd_list, name='projbd_list'),
         url(r'^projbd/(?P<pk>\d+)/$', projbd_detail, name='projbd_detail'),
@@ -61,5 +67,5 @@ urlpatterns = [
         url(r'^orgbd/comment/(?P<pk>\d+)/$', orgbdcomment_detail, name='orgbdcomment_detail'),
         url(r'^meetbd/$', meetbd_list, name='meetbd_list'),
         url(r'^meetbd/(?P<pk>\d+)/$', meetbd_detail, name='meetbd_detail'),
-        url(r'^meetbd/delatt/(?P<pk>\d+)/$', views.MeetingBDView.deleteAttachment, name='deleteAttachment')
+        url(r'^meetbd/delatt/(?P<pk>\d+)/$', deleteAttachment, name='deleteAttachment')
 ]
