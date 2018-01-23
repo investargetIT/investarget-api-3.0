@@ -816,6 +816,9 @@ class MeetingBDView(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 instance = self.get_object()
+                bucket = instance.attachmentbucket
+                key = instance.attachment
+                deleteqiniufile(bucket, key)
                 instance.is_deleted = True
                 instance.deleteduser = request.user
                 instance.deletedtime = datetime.datetime.now()
