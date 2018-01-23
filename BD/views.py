@@ -617,6 +617,14 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+class MeetBDFilter(FilterSet):
+    username = RelationFilter(filterstr='username', lookup_method='icontains')
+    usermobile = RelationFilter(filterstr='usermobile', lookup_method='contains')
+    manager = RelationFilter(filterstr='manager',lookup_method='in')
+    class Meta:
+        model = MeetingBD
+        fields = ('username','usermobile','manager')
+
 
 class MeetingBDView(viewsets.ModelViewSet):
     """
@@ -628,7 +636,7 @@ class MeetingBDView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.DjangoFilterBackend,filters.SearchFilter)
     queryset = MeetingBD.objects.filter(is_deleted=False)
-    filter_fields = ('username','usermobile','manager')
+    filter_class = MeetBDFilter
     search_fields = ('proj__projtitleC', 'username','manager__usernameC')
     serializer_class = MeetingBDSerializer
 

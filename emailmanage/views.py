@@ -195,6 +195,7 @@ class EmailgroupsendlistView(viewsets.ModelViewSet):
             if not checkSubhookKey(token,signature):
                 raise InvestError(8888, msg='subhook验证未通过')
             send_id = data.get('send_id')
+            data['isSend'] = True
             try:
                 emailgroupsend = self.queryset.get(send_id=send_id)
             except emailgroupsendlist.DoesNotExist:
