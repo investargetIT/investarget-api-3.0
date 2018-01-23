@@ -5,6 +5,7 @@ from org.serializer import OrgCommonSerializer
 from proj.serializer import ProjSimpleSerializer
 from sourcetype.serializer import BDStatusSerializer, orgAreaSerializer
 from sourcetype.serializer import titleTypeSerializer
+from third.views.qiniufile import getUrlWithBucketAndKey
 from usersys.serializer import UserCommenSerializer
 
 
@@ -118,7 +119,14 @@ class MeetingBDSerializer(serializers.ModelSerializer):
     proj = ProjSimpleSerializer()
     usertitle = titleTypeSerializer()
     manager = UserCommenSerializer()
+    attachmenturl = serializers.SerializerMethodField()
 
     class Meta:
         model = MeetingBD
         exclude = ('deleteduser', 'deletedtime', 'datasource', 'is_deleted', 'createuser')
+
+    def get_attachmenturl(self, obj):
+        if obj.attachmentbucket and obj.attachment:
+            return getUrlWithBucketAndKey(obj.attachmentbucket, obj.attachment)
+        else:
+            return None
