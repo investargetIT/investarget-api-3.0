@@ -14,6 +14,7 @@ from BD.serializers import ProjectBDSerializer, ProjectBDCreateSerializer, Proje
     ProjectBDCommentsSerializer, OrgBDCommentsSerializer, OrgBDCommentsCreateSerializer, OrgBDCreateSerializer, \
     OrgBDSerializer, MeetingBDSerializer, MeetingBDCreateSerializer
 from proj.models import project
+from third.views.qiniufile import deleteqiniufile
 from utils.customClass import RelationFilter, InvestError, JSONResponse
 from utils.sendMessage import sendmessage_orgBDMessage
 from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
@@ -784,6 +785,31 @@ class MeetingBDView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+    @loginTokenIsAvailable()
+    def deleteAttachment(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            if request.user.has_perm('BD.manageMeetBD'):
+                pass
+            elif request.user.has_perm('BD.user_manageMeetBD', instance):
+                pass
+            else:
+                raise InvestError(2009)
+            with transaction.atomic():
+                bucket = instance.attachmentbucket
+                key = instance.attachment
+                deleteqiniufile(bucket, key)
+                instance.attachmentbucket = None
+                instance.attachment = None
+                instance.save()
+                return JSONResponse(
+                    SuccessResponse(returnDictChangeToLanguage(MeetingBDSerializer(instance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable(['BD.manageMeetBD',])
     def destroy(self, request, *args, **kwargs):

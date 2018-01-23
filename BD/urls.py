@@ -61,4 +61,5 @@ urlpatterns = [
         url(r'^orgbd/comment/(?P<pk>\d+)/$', orgbdcomment_detail, name='orgbdcomment_detail'),
         url(r'^meetbd/$', meetbd_list, name='meetbd_list'),
         url(r'^meetbd/(?P<pk>\d+)/$', meetbd_detail, name='meetbd_detail'),
+        url(r'^meetbd/delatt/(?P<pk>\d+)/$', views.MeetingBDView.deleteAttachment, name='deleteAttachment')
 ]
