@@ -7,6 +7,7 @@ import datetime
 import threading
 import traceback
 
+from django.contrib.auth.models import Group
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction
 from django.db.models import Q
@@ -67,7 +68,8 @@ def saveEmailGroupSendData(projs):
         tagsname = Tag.objects.filter(id__in=tags).values_list('nameC')
         industriesname = Industry.objects.filter(industry_projects__proj=proj, is_deleted=False, industry_projects__is_deleted=False).values_list('industryC')
         transactionTypeName = TransactionType.objects.filter(transactionType_projects__proj=proj, is_deleted=False, transactionType_projects__is_deleted=False).values_list('nameC')
-        user_qs = Usergroupsendlistserializer(MyUser.objects.filter(Q(is_deleted=False, user_usertags__tag__in=tags,user_usertags__is_deleted=False, datasource_id=proj.datasource_id) | Q(is_deleted=False, user_usertags__tag__isnull=True, user_usertags__is_deleted=False, datasource_id=proj.datasource_id)).distinct(), many=True).data
+        user_qs = Usergroupsendlistserializer(MyUser.objects.filter(Q(is_deleted=False, user_usertags__tag__in=tags,user_usertags__is_deleted=False, groups__in=Group.objects.filter(permissions__codename__in=['as_investor']), datasource_id=proj.datasource_id)
+                                                                    | Q(is_deleted=False, user_usertags__tag__isnull=True, user_usertags__is_deleted=False, groups__in=Group.objects.filter(permissions__codename__in=['as_investor']), datasource_id=proj.datasource_id)).distinct(), many=True).data
         datadic = {
             'projtitle': proj.projtitleC,
             'proj': {

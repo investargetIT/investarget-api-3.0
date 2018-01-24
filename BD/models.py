@@ -156,7 +156,7 @@ class MeetingBD(MyModel):
     comments = models.TextField(blank=True, default=False, help_text='会议纪要')
     meet_date = models.DateTimeField(blank=True, null=True, help_text='会议时间')
     title = models.TextField(blank=True, null=True, help_text='会议标题')
-    attachmentbucket = models.CharField(max_length=16, blank=True, default='image', help_text='附件存储空间')
+    attachmentbucket = models.CharField(max_length=16, blank=True, null=True, help_text='附件存储空间')
     attachment = models.CharField(max_length=64, blank=True, null=True, help_text='会议附件')
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_MeetBD')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_MeetBD')
