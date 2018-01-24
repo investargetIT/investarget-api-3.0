@@ -101,14 +101,14 @@ class TimelineView(viewsets.ModelViewSet):
                 if request.user.has_perm('timeline.admin_getline'):
                     actionlist['get'] = True
                     serializerclass = TimeLineListSerializer_admin
-                elif request.user.has_perm('timeline.user_getline', instance):
+                elif request.user.has_perm('timeline.user_getline', instance) or request.user in [instance.proj.takeUser, instance.proj.makeUser]:
                     actionlist['get'] = True
                     serializerclass = TimeLineListSerializer_user
                 else:
                     serializerclass = TimeLineListSerializer_anonymous
-                if request.user.has_perm('timeline.admin_changeline') or request.user.has_perm('timeline.user_changeline', instance):
+                if request.user.has_perm('timeline.admin_changeline') or request.user.has_perm('timeline.user_changeline', instance) or request.user in [instance.proj.takeUser, instance.proj.makeUser]:
                     actionlist['change'] = True
-                if request.user.has_perm('timeline.admin_deleteline') or request.user.has_perm('timeline.user_deleteline', instance):
+                if request.user.has_perm('timeline.admin_deleteline') or request.user.has_perm('timeline.user_deleteline', instance) or request.user in [instance.proj.takeUser, instance.proj.makeUser]:
                     actionlist['delete'] = True
                 instancedata = serializerclass(instance).data
                 instancedata['action'] = actionlist
@@ -181,7 +181,7 @@ class TimelineView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user.has_perm('timeline.admin_getline'):
                 serializerclass = TimeLineSerializer
-            elif request.user.has_perm('timeline.user_getline',instance):
+            elif request.user.has_perm('timeline.user_getline',instance) or request.user in [instance.proj.takeUser, instance.proj.makeUser]:
                 serializerclass = TimeLineSerializer
             else:
                 raise InvestError(code=2009)
@@ -197,7 +197,7 @@ class TimelineView(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         try:
             timeline = self.get_object()
-            if request.user.has_perm('timeline.admin_changeline') or request.user.has_perm('timeline.user_changeline',timeline):
+            if request.user.has_perm('timeline.admin_changeline') or request.user.has_perm('timeline.user_changeline',timeline) or request.user in [timeline.proj.takeUser, timeline.proj.makeUser]:
                 pass
             else:
                 raise InvestError(2009,msg='没有相应权限')
@@ -269,7 +269,7 @@ class TimelineView(viewsets.ModelViewSet):
                 for timelineid in timelineidlist:
                     instance = self.get_object(timelineid)
                     if not (request.user.has_perm('timeline.admin_deleteline') or request.user.has_perm(
-                            'timeline.user_deleteline', instance)):
+                            'timeline.user_deleteline', instance)  or request.user in [instance.proj.takeUser, instance.proj.makeUser]):
                         raise InvestError(2009, msg='没有相应权限')
                     for link in ['timeline_transationStatus','timeline_remarks']:
                         if link in []:
@@ -381,7 +381,13 @@ class TimeLineRemarkView(viewsets.ModelViewSet):
             if request.user.has_perm('timeline.admin_getlineremark'):
                 queryset = queryset
             else:
-                queryset = queryset.filter(createuser_id=request.user.id)
+                timelineid = request.GET.get('timeline', None)
+                if timelineid:
+                    timelineobj = self.get_timeline(timelineid)
+                    if request.user in [timelineobj.proj.takeUser, timelineobj.proj.makeUser]:
+                        queryset = queryset
+                else:
+                    queryset = queryset.filter(createuser_id=request.user.id)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -414,7 +420,7 @@ class TimeLineRemarkView(viewsets.ModelViewSet):
             line = self.get_timeline(timelineid)
             if request.user.has_perm('timeline.admin_addlineremark'):
                 pass
-            elif request.user.has_perm('timeline.user_getline', line):
+            elif request.user.has_perm('timeline.user_getline', line) or request.user in [line.proj.takeUser, line.proj.makeUser]:
                 pass
             else:
                 raise InvestError(code=2009)
