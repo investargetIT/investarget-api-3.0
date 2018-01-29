@@ -27,6 +27,7 @@ from utils.util import InvestErrorResponse, ExceptionResponse, SuccessResponse, 
 @api_view(['POST'])
 def qiniu_coverupload(request):
     try:
+        isChangeToPdf = request.GET.get('topdf', True)
         bucket_name = request.GET.get('bucket')
         key = request.GET.get('key')
         if not bucket_name or not key or bucket_name not in qiniu_url.keys():
@@ -39,7 +40,7 @@ def qiniu_coverupload(request):
         q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
         filetype = str(uploaddata.name).split('.')[-1]
         realfilekey = datetime.datetime.now().strftime('%Y%m%d%H%M%s') + ''.join(random.sample(string.ascii_lowercase, 6)) + '.' + filetype
-        if filetype in ['xlsx', 'doc', 'docx', 'xls', 'ppt', 'pptx']:
+        if filetype in ['xlsx', 'doc', 'docx', 'xls', 'ppt', 'pptx'] and isChangeToPdf in ['true', True, '1', 1, u'true']:
             saveas_key = qiniu.urlsafe_base64_encode('file:%s' % (realfilekey.split('.')[0] + '.pdf'))
             persistentOps = fops + '|saveas/' + saveas_key
             policy = {
@@ -80,6 +81,7 @@ def bigfileupload(request):
     分片上传
     """
     try:
+        isChangeToPdf = request.GET.get('topdf', True)
         bucket_name = request.GET.get('bucket')
         if bucket_name not in qiniu_url.keys():
             raise InvestError(2020,msg='bucket error')
@@ -90,7 +92,7 @@ def bigfileupload(request):
         q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
         filetype = str(uploaddata.name).split('.')[-1]
         realfilekey = datetime.datetime.now().strftime('%Y%m%d%H%M%s') + ''.join(random.sample(string.ascii_lowercase,6)) + '.' + filetype
-        if filetype in ['xlsx','doc','docx','xls','ppt','pptx']:
+        if filetype in ['xlsx','doc','docx','xls','ppt','pptx'] and isChangeToPdf in ['true', True, '1', 1, u'true']:
             saveas_key = qiniu.urlsafe_base64_encode('file:%s' % (realfilekey.split('.')[0] + '.pdf'))
             persistentOps = fops + '|saveas/' + saveas_key
             policy = {
