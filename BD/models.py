@@ -24,6 +24,7 @@ class ProjectBD(MyModel):
     usertitle = MyForeignKey(TitleType,blank=True,null=True,help_text='职位')
     username = models.CharField(max_length=64,blank=True,null=True,help_text='姓名')
     usermobile = models.CharField(max_length=64,blank=True,null=True,help_text='电话')
+    useremail = models.CharField(max_length=64, blank=True, null=True, help_text='邮箱')
     bduser = MyForeignKey(MyUser, blank=True, null=True, help_text='bd对象id')
     source = models.TextField(blank=True,null=True,help_text='来源')
     source_type = models.IntegerField(blank=True,null=True,choices=bd_sourcetype)
@@ -54,6 +55,7 @@ class ProjectBD(MyModel):
             self.username = self.bduser.usernameC
             self.usermobile = self.bduser.mobile
             self.usertitle = self.bduser.title
+            self.useremail = self.bduser.email
         self.datasource = self.manager.datasource_id
         if not self.source:
             if self.source_type == 0:
