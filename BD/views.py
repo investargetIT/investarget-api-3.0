@@ -762,9 +762,12 @@ class MeetingBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageMeetBD'):
                 pass
             elif request.user.has_perm('BD.user_manageMeetBD', instance):
-                data = {'comments': data.get('comments', instance.comments),
-                        'attachment': data.get('attachment', instance.attachment),
-                        'attachmentbucket': data.get('attachmentbucket', instance.attachmentbucket),}
+                # data = {'comments': data.get('comments', instance.comments),
+                #         'attachment': data.get('attachment', instance.attachment),
+                #         'attachmentbucket': data.get('attachmentbucket', instance.attachmentbucket),}
+                pass
+            elif request.user in [instance.proj.takeUser, instance.proj.makeUser]:
+                pass
             else:
                 raise InvestError(2009)
             with transaction.atomic():
@@ -793,6 +796,8 @@ class MeetingBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageMeetBD'):
                 pass
             elif request.user.has_perm('BD.user_manageMeetBD', instance):
+                pass
+            elif request.user in [instance.proj.takeUser, instance.proj.makeUser]:
                 pass
             else:
                 raise InvestError(2009)
