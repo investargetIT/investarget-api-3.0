@@ -45,7 +45,8 @@ class organization(MyModel):
     transactionAmountT_USD = models.BigIntegerField(blank=True,null=True)
     partnerOrInvestmentCommiterMember = models.TextField(blank=True,null=True)
     mobile = models.CharField(max_length=100,blank=True,null=True)
-    mobileAreaCode = models.CharField(max_length=10, blank=True, null=True, default='86',help_text='电话区号')
+    mobileCode = models.CharField(max_length=8, blank=True, null=True, help_text='电话区号')
+    mobileAreaCode = models.CharField(max_length=10, blank=True, null=True, default='86',help_text='电话国家号')
     industry = MyForeignKey(Industry,help_text='机构行业',blank=True,null=True)
     webSite = models.CharField(max_length=128,blank=True,null=True)
     companyEmail = models.EmailField(blank=True,null=True,max_length=50)
@@ -90,6 +91,15 @@ class organization(MyModel):
         if self.industry:
             if self.industry.datasource != self.datasource_id:
                 raise InvestError(8888)
+        if self.mobile:
+            if not self.mobile.isdigit():
+                raise InvestError(2007, msg='联系电话 必须是纯数字')
+        if self.mobileCode:
+            if not self.mobileCode.isdigit():
+                raise InvestError(2007, msg='区号 必须是纯数字')
+        if self.mobileAreaCode:
+            if not self.mobileAreaCode.isdigit():
+                raise InvestError(2007, msg='国家号 必须是纯数字')
         if self.pk:
             oldorg = organization.objects.get(pk=self.pk)
             if self.orgnameC:

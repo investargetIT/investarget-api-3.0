@@ -153,7 +153,7 @@ def sendSmscode(request):
         mobilecode = MobileAuthCode(mobile=destination)
         mobilecode.save()
         varsdict = {'code': mobilecode.code, 'time': '30'}
-        if areacode in ['86', 86, None]:
+        if areacode in [u'86', '86', 86, None]:
             projectsign = SMSCODE_projectsign[str(source)]['in']
             if projectsign:
                 response = xsendSms(destination, projectsign, varsdict)
