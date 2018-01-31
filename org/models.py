@@ -91,9 +91,9 @@ class organization(MyModel):
         if self.industry:
             if self.industry.datasource != self.datasource_id:
                 raise InvestError(8888)
-        if self.mobile:
-            if not self.mobile.isdigit():
-                raise InvestError(2007, msg='联系电话 必须是纯数字')
+        # if self.mobile:  # 库里已有大量数据不符合条件，先不加
+        #     if not self.mobile.isdigit():
+        #         raise InvestError(2007, msg='联系电话 必须是纯数字')
         if self.mobileCode:
             if not self.mobileCode.isdigit():
                 raise InvestError(2007, msg='区号 必须是纯数字')
