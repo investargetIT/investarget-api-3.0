@@ -2,6 +2,7 @@ import datetime
 
 import operator
 from django.db import models
+from django.db.models import Q
 from django.http import HttpResponse
 from django.utils import six
 from qiniu.services.storage.upload_progress_recorder import UploadProgressRecorder
@@ -38,18 +39,40 @@ class RelationFilter(Filter):
         self.relationName = relationName
         super(RelationFilter,self).__init__(**kwargs)
     def filter(self, qs, value):
+        isNull = False
         if value in ([], (), {}, '', None):
             return qs
-        if value in (u'true','true'):
-            value = True
-        if value in (u'false','false'):
-            value = False
         if self.lookup_method == 'in':
             value = value.split(',')
-        if self.relationName is not None:
-            return qs.filter(**{'%s__%s' % (self.filterstr,self.lookup_method): value, self.relationName:False}).distinct()
+            newvalue = []
+            for i in range(0, len(value)):
+                if value[i] in (u'true', 'true'):
+                    newvalue.append(True)
+                elif value[i] in (u'false', 'false'):
+                    newvalue.append(False)
+                elif value[i] in (u'none', 'none'):
+                    isNull = True
+                else:
+                    newvalue.append(value[i])
+            value = newvalue
         else:
-            return qs.filter(**{'%s__%s' % (self.filterstr, self.lookup_method): value}).distinct()
+            if value in (u'true', 'true'):
+                value = True
+            if value in (u'false', 'false'):
+                value = False
+            if value in (u'none', 'none'):
+                value = None
+                isNull = True
+        if self.relationName is not None:
+            if isNull:
+                return qs.filter(Q(**{'%s__%s' % (self.filterstr, self.lookup_method): value, self.relationName: False}) | Q(**{'%s__isnull' % self.filterstr: isNull})).distinct()
+            else:
+                return qs.filter(**{'%s__%s' % (self.filterstr, self.lookup_method): value, self.relationName:False}).distinct()
+        else:
+            if isNull:
+                return qs.filter(Q(**{'%s__%s' % (self.filterstr, self.lookup_method): value}) | Q(**{'%s__isnull' % self.filterstr: isNull})).distinct()
+            else:
+                return qs.filter(**{'%s__%s' % (self.filterstr, self.lookup_method): value}).distinct()
 
 class MySearchFilter(SearchFilter):
     def filter_queryset(self, request, queryset, view):
