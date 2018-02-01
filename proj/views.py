@@ -419,9 +419,9 @@ class ProjectView(viewsets.ModelViewSet):
                     raise InvestError(code=4001,msg='data有误_%s' %  proj.errors)
                 if sendmsg and not pro.ismarketplace:
                     sendmessage_projectpublish(pro, pro.supportUser,['email', 'webmsg'],sender=request.user)
-                    if pro.takeUser.id != pro.supportUser.id:
+                    if pro.takeUser != pro.supportUser:
                         sendmessage_projectpublish(pro, pro.takeUser, ['email', 'webmsg'], sender=request.user)
-                    if pro.makeUser.id != pro.supportUser.id and pro.makeUser.id != pro.takeUser.id:
+                    if pro.makeUser != pro.supportUser and pro.makeUser != pro.takeUser:
                         sendmessage_projectpublish(pro, pro.makeUser, ['email', 'webmsg'], sender=request.user)
                     pulishProjectCreateDataroom(pro, request.user)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(ProjSerializer(pro).data,lang)))
