@@ -1286,7 +1286,7 @@ class UserFriendshipView(viewsets.ModelViewSet):
                         registHuanXinIMWithUser(friendship.friend)
                 if sendmessage:
                     sendmessage_usermakefriends(friendship, friendship.user, ['app', 'webmsg'], sender=request.user)
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(newfriendship.data, lang)))
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(UserFriendshipSerializer(friendship).data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
