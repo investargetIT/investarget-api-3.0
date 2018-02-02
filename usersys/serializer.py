@@ -93,7 +93,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MyUser
-        fields = ('usernameC', 'usernameE', 'org', 'department', 'mobile', 'email', 'wechat', 'title', 'id', 'tags', 'userstatus', 'photourl', 'orgarea', 'country', 'onjob')
+        fields = ('usernameC', 'usernameE', 'org', 'department', 'mobile', 'email', 'wechat', 'title', 'id', 'tags', 'userstatus', 'photourl', 'orgarea', 'country', 'onjob', 'hasIM')
         depth = 1
 
     def get_tags(self, obj):
@@ -223,7 +223,7 @@ class UserListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MyUser
-        fields = ('id','groups','tags','country','department','usernameC','usernameE','mobile','email','title','userstatus','org','trader_relation','photourl')
+        fields = ('id','groups','tags','country','department','usernameC','usernameE','mobile','email','title','userstatus','org','trader_relation','photourl','hasIM')
         depth = 1
 
     def get_tags(self, obj):
