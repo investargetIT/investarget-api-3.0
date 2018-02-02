@@ -59,8 +59,8 @@ class schedule(MyModel):
     def save(self, *args, **kwargs):
         if self.createuser is None:
             raise InvestError(2007,msg='createuser can`t be null')
-        if self.scheduledtime < datetime.datetime.now():
-            raise InvestError(2007,msg='日程时间不能是过去的时间')
+        if self.scheduledtime < datetime.datetime.today():
+            raise InvestError(2007,msg='日程时间不能是今天以前的时间')
         if self.proj:
             self.projtitle = self.proj.projtitleC
         self.datasource = self.createuser.datasource_id
