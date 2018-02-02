@@ -478,7 +478,8 @@ class UserView(viewsets.ModelViewSet):
                     instance.user_usertags.all().update(is_deleted=True)
                     cache_delete_key(self.redis_key + '_%s' % instance.id)
                     userlist.append({})
-                    deleteHuanXinIMWithUser(instance)
+                    if instance.hasIM:
+                        deleteHuanXinIMWithUser(instance)
                     instance.delete()
                 return JSONResponse(SuccessResponse(returnListChangeToLanguage(userlist,lang)))
         except InvestError as err:
