@@ -112,6 +112,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin,MyModel):
     registersource = models.SmallIntegerField(help_text='注册来源',choices=registersourcechoice,default=1)
     lastmodifyuser = MyForeignKey('self',help_text='修改者',blank=True,null=True,related_name='usermodify_users')
     is_staff = models.BooleanField(help_text='登录admin', default=False, blank=True,)
+    hasIM = models.BooleanField(help_text='是否已注册环信聊天账号', default=False, blank=True)
     is_active = models.BooleanField(help_text='是否活跃', default=True, blank=True,)
     deleteduser = MyForeignKey('self',blank=True,null=True,related_name='userdelete_users')
     createuser = MyForeignKey('self',blank=True,null=True,related_name='usercreate_users')

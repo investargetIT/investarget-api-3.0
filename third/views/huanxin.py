@@ -169,14 +169,27 @@ def makePaswd(password):
 #         print '\n\n\n'
 #     return JSONResponse({'res': ''})
 
+def deleteHuanXinIMWithUser(user):
+    username = user.id
+    success, result = delete_user(username)
+    # if not success:
+    #     raise InvestError(2023,msg=result)
+    if success:
+        user.hasIM = False
+        user.save()
+    return result
+
 
 def registHuanXinIMWithUser(user):
     username = user.id
     raw_password = makePaswd(str(user.id))
     nickname = user.usernameC
     success, result = register_new_user(username, raw_password, nickname)
-    if not success:
-        raise InvestError(2023,msg=result)
+    # if not success:
+    #     raise InvestError(2023,msg=result)
+    if success:
+        user.hasIM = True
+        user.save()
     return result
 
 def downloadChatMessages():
