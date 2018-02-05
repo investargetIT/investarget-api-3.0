@@ -137,20 +137,16 @@ def delete_user(username):
     return delete(url, auth)  # bool:success,result:result
 
 
-@api_view(['POST' , 'DELETE'])
-def IMUser(request):
-    if request.method == 'POST':
-        data_dict = request.data
-        # data_str = request.body
-        # data_dict = json.loads(data_str)
-        username = data_dict['username']
-        success,result = register_new_user(username,password)
-        return JSONResponse({'res':str(result)})
-    else:
-        data_dict = request.query_params
-        username = data_dict['username']
-        success,result = delete_user(username)
-        return JSONResponse({'res':str(result)})
+
+def delete_users(limit):
+    """批量删除IM用户
+        DELETE /{org}/{app}/users?limit=5
+        """
+    auth = AppClientAuth(org, app, client_id, client_secret)
+
+    url = EASEMOB_HOST + ("/%s/%s/users?limit=%s" % (org, app, limit))
+    return delete(url, auth)  # bool:success,result:result
+
 
 def makePaswd(password):
     m = hashlib.md5()

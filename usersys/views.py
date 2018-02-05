@@ -14,7 +14,6 @@ from rest_framework import viewsets
 from rest_framework.decorators import api_view, detail_route, list_route
 
 from APIlog.views import logininlog, apilog
-from dataroom.models import dataroom
 from org.models import organization
 from sourcetype.views import getmenulist
 from third.models import MobileAuthCode
@@ -47,6 +46,7 @@ class UserFilter(FilterSet):
     currency = RelationFilter(filterstr='org__currency', lookup_method='in')
     orgtransactionphases = RelationFilter(filterstr='org__orgtransactionphase', lookup_method='in',relationName='org__org_orgTransactionPhases__is_deleted')
     trader = RelationFilter(filterstr='investor_relations__traderuser', lookup_method='in')
+    investor = RelationFilter(filterstr='trader_relations__investoruser', lookup_method='in')
     class Meta:
         model = MyUser
         fields = ('groups','org','tags','userstatus','currency','orgtransactionphases','orgarea','usercode','title','trader')
@@ -903,7 +903,7 @@ class UserRelationFilter(FilterSet):
     investoruser = RelationFilter(filterstr='investoruser', lookup_method='in')
     traderuser = RelationFilter(filterstr='traderuser',lookup_method='in')
     relationtype = RelationFilter(filterstr='relationtype', lookup_method='in')
-    orgs = RelationFilter(filterstr='investoruser__org',lookup_method='in',relationName='investoruser__org__is_deleted')
+    orgs = RelationFilter(filterstr='investoruser__org',lookup_method='in', relationName='investoruser__org__is_deleted')
     class Meta:
         model = UserRelation
         fields = ('investoruser', 'traderuser', 'relationtype','orgs')
