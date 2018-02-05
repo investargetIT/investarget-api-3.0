@@ -49,7 +49,7 @@ class UserFilter(FilterSet):
     investor = RelationFilter(filterstr='trader_relations__investoruser', lookup_method='in')
     class Meta:
         model = MyUser
-        fields = ('groups','org','tags','userstatus','currency','orgtransactionphases','orgarea','usercode','title','trader')
+        fields = ('groups','org','tags','userstatus','currency','orgtransactionphases','orgarea','usercode','title','trader','investor')
 
 
 class UserView(viewsets.ModelViewSet):
