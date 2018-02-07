@@ -900,8 +900,8 @@ class UserRemarkView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 class UserRelationFilter(FilterSet):
-    investoruser = RelationFilter(filterstr='investoruser', lookup_method='in')
-    traderuser = RelationFilter(filterstr='traderuser',lookup_method='in')
+    investoruser = RelationFilter(filterstr='investoruser', lookup_method='in', relationName='investoruser__is_deleted')
+    traderuser = RelationFilter(filterstr='traderuser',lookup_method='in', relationName='traderuser__is_deleted')
     relationtype = RelationFilter(filterstr='relationtype', lookup_method='in')
     orgs = RelationFilter(filterstr='investoruser__org',lookup_method='in', relationName='investoruser__org__is_deleted')
     class Meta:
