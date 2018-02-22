@@ -5,6 +5,7 @@ import json
 import os
 import random
 import string
+import threading
 import traceback
 
 import qiniu
@@ -20,7 +21,7 @@ from third.thirdconfig import qiniu_url, ACCESS_KEY, SECRET_KEY, fops, pipeline
 from utils.customClass import JSONResponse, InvestError, MyUploadProgressRecorder
 from utils.somedef import addWaterMark, file_iterator
 from utils.util import InvestErrorResponse, ExceptionResponse, SuccessResponse, loginTokenIsAvailable, checkrequesttoken, \
-    catchexcption, checkRequestToken
+    catchexcption, checkRequestToken, logexcption
 
 
 #覆盖上传
@@ -39,23 +40,28 @@ def qiniu_coverupload(request):
             uploaddata = data_dict[key]
         q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
         filetype = str(uploaddata.name).split('.')[-1]
-        realfilekey = datetime.datetime.now().strftime('%Y%m%d%H%M%s') + ''.join(random.sample(string.ascii_lowercase, 6)) + '.' + filetype
+        randomPrefix = datetime.datetime.now().strftime('%Y%m%d%H%M%s') + ''.join(random.sample(string.ascii_lowercase, 6))
+        inputFileKey = randomPrefix + '.' + filetype
+        outputFileKey = randomPrefix + '.' + 'pdf'
         if filetype in ['xlsx', 'doc', 'docx', 'xls', 'ppt', 'pptx'] and isChangeToPdf in ['true', True, '1', 1, u'true']:
-            saveas_key = qiniu.urlsafe_base64_encode('file:%s' % (realfilekey.split('.')[0] + '.pdf'))
-            persistentOps = fops + '|saveas/' + saveas_key
-            policy = {
-                'persistentOps': persistentOps,
-                # 'persistentPipeline': pipeline,
-                # 'deleteAfterDays': 1,
-            }
+            isChange = True
+            dirpath = APILOG_PATH['uploadFilePath']
+            if not os.path.exists(dirpath):
+                os.makedirs(dirpath)
+            inputFilePath = os.path.join(dirpath, inputFileKey)
+            outputFilePath = os.path.join(dirpath, outputFileKey)
+            with open(inputFilePath, 'wb+') as destination:
+                for chunk in uploaddata.chunks():
+                    destination.write(chunk)
+            convertAndUploadOffice(inputFilePath, outputFilePath, bucket_name, outputFileKey)
         else:
-            policy = None
+            isChange = False
         params = {'x:a': 'a'}
         mime_type = uploaddata.content_type
-        token = q.upload_token(bucket_name, realfilekey, 3600, policy=policy)
+        token = q.upload_token(bucket_name, inputFileKey, 3600)
         progress_handler = lambda progress, total: progress / total
-        uploader = _Resume(token, realfilekey, uploaddata, uploaddata.size, params, mime_type, progress_handler,
-                           upload_progress_recorder=MyUploadProgressRecorder(), modify_time=None, file_name=key)
+        uploader = _Resume(token, inputFileKey, uploaddata, uploaddata.size, params, mime_type, progress_handler,
+                           upload_progress_recorder=MyUploadProgressRecorder(), modify_time=None, file_name=uploaddata.name)
         ret, info = uploader.upload()
         if info is not None:
             if info.status_code == 200:
@@ -64,11 +70,11 @@ def qiniu_coverupload(request):
                 raise InvestError(2020, msg=str(info))
         else:
             raise InvestError(2020, msg=str(ret))
-        if policy:
-            key = realfilekey.split('.')[0] + '.pdf'
+        if isChange:
+            key = outputFileKey
         else:
-            key = realfilekey
-        return JSONResponse(SuccessResponse({'key': key, 'url': return_url, 'realfilekey': realfilekey}))
+            key = inputFileKey
+        return JSONResponse(SuccessResponse({'key': key, 'url': return_url, 'realfilekey': inputFileKey}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
     except Exception:
@@ -91,35 +97,43 @@ def bigfileupload(request):
             uploaddata = data_dict[key]
         q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
         filetype = str(uploaddata.name).split('.')[-1]
-        realfilekey = datetime.datetime.now().strftime('%Y%m%d%H%M%s') + ''.join(random.sample(string.ascii_lowercase,6)) + '.' + filetype
-        if filetype in ['xlsx','doc','docx','xls','ppt','pptx'] and isChangeToPdf in ['true', True, '1', 1, u'true']:
-            saveas_key = qiniu.urlsafe_base64_encode('file:%s' % (realfilekey.split('.')[0] + '.pdf'))
-            persistentOps = fops + '|saveas/' + saveas_key
-            policy = {
-                'persistentOps': persistentOps,
-                # 'persistentPipeline': pipeline,
-                # 'deleteAfterDays': 1,
-            }
+        randomPrefix = datetime.datetime.now().strftime('%Y%m%d%H%M%s') + ''.join(
+            random.sample(string.ascii_lowercase, 6))
+        inputFileKey = randomPrefix + '.' + filetype
+        outputFileKey = randomPrefix + '.' + 'pdf'
+        if filetype in ['xlsx', 'doc', 'docx', 'xls', 'ppt', 'pptx'] and isChangeToPdf in ['true', True, '1', 1,
+                                                                                           u'true']:
+            isChange = True
+            dirpath = APILOG_PATH['uploadFilePath']
+            if not os.path.exists(dirpath):
+                os.makedirs(dirpath)
+            inputFilePath = os.path.join(dirpath, inputFileKey)
+            outputFilePath = os.path.join(dirpath, outputFileKey)
+            with open(inputFilePath, 'wb+') as destination:
+                for chunk in uploaddata.chunks():
+                    destination.write(chunk)
+            convertAndUploadOffice(inputFilePath, outputFilePath, bucket_name, outputFileKey)
         else:
-            policy = None
-        params = {'x:a':'a'}
+            isChange = False
+        params = {'x:a': 'a'}
         mime_type = uploaddata.content_type
-        token = q.upload_token(bucket_name, realfilekey, 3600,policy=policy)
-        progress_handler = lambda progress,total:progress / total
-        uploader = _Resume(token,realfilekey,uploaddata,uploaddata.size,params,mime_type,progress_handler,upload_progress_recorder=MyUploadProgressRecorder(),modify_time=None,file_name=key)
-        ret,info = uploader.upload()
+        token = q.upload_token(bucket_name, inputFileKey, 3600)
+        progress_handler = lambda progress, total: progress / total
+        uploader = _Resume(token, inputFileKey, uploaddata, uploaddata.size, params, mime_type, progress_handler,
+                           upload_progress_recorder=MyUploadProgressRecorder(), modify_time=None, file_name=uploaddata.name)
+        ret, info = uploader.upload()
         if info is not None:
             if info.status_code == 200:
-                return_url = getUrlWithBucketAndKey(bucket_name,ret['key'])
+                return_url = getUrlWithBucketAndKey(bucket_name, ret['key'])
             else:
-                raise InvestError(2020,msg=str(info))
+                raise InvestError(2020, msg=str(info))
         else:
-            raise InvestError(2020,msg=str(ret))
-        if policy:
-            key = realfilekey.split('.')[0] + '.pdf'
+            raise InvestError(2020, msg=str(ret))
+        if isChange:
+            key = outputFileKey
         else:
-            key = realfilekey
-        return JSONResponse(SuccessResponse({'key':key,'url':return_url,'realfilekey':realfilekey}))
+            key = inputFileKey
+        return JSONResponse(SuccessResponse({'key':key,'url':return_url,'realfilekey':inputFileKey}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
     except Exception:
@@ -195,16 +209,13 @@ def getUrlWithBucketAndKey(bucket,key):
     return return_url
 
 #上传本地文件
-def qiniuuploadfile(filepath, bucket_name):
+def qiniuuploadfile(filepath, bucket_name, bucket_key):
     q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
-    filetype = filepath.split('.')[-1]
-    key = "%s.%s" % (datetime.datetime.now().strftime('%Y%m%d%H%M%s')+''.join(random.sample(string.ascii_lowercase,5)), filetype)   # key 文件名
-    print key
-    token = q.upload_token(bucket_name, key, 3600, policy={}, strict_policy=True)
-    ret, info = put_file(token, key, filepath)
+    token = q.upload_token(bucket_name, bucket_key, 3600, policy={}, strict_policy=True)
+    ret, info = put_file(token, bucket_key, filepath)
     if info is not None:
         if info.status_code == 200:
-            return True, "http://%s/%s" % (qiniu_url['file'], ret["key"]),key
+            return True, getUrlWithBucketAndKey(bucket_name, ret["key"]),bucket_key
         else:
             return False, str(info),None
     else:
@@ -256,3 +267,30 @@ def downloadFileToPath(key,bucket,path):
 #     except Exception:
 #         catchexcption(request)
 #         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+
+def convertAndUploadOffice(inputpath, outputpath, bucket_name, bucket_key):
+    """
+    :param inputpath: 源文件路径
+    :param outputpath: 转化后文件路径
+    :return:
+    """
+    class convertAndUploadOfficeThread(threading.Thread):
+        def run(self):
+            try:
+                import sys
+                sys.path.append(APILOG_PATH['openofficePath'])
+                from officeConvert import DocumentConverter
+                converter = DocumentConverter()
+                converter.convert(inputpath, outputpath)
+            except ImportError:
+                pass
+            except Exception:
+                logexcption(msg='文件转换失败')
+            success, url, key = qiniuuploadfile(outputpath, bucket_name, bucket_key)
+            if os.path.exists(inputpath):
+                os.remove(inputpath)
+            if os.path.exists(outputpath):
+                os.remove(outputpath)
+    convertAndUploadOfficeThread().start()
