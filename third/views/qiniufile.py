@@ -285,10 +285,11 @@ def convertAndUploadOffice(inputpath, outputpath, bucket_name, bucket_key):
                 converter = DocumentConverter()
                 converter.convert(inputpath, outputpath)
             except ImportError:
-                pass
+                logexcption(msg='引入模块失败')
             except Exception:
                 logexcption(msg='文件转换失败')
-            success, url, key = qiniuuploadfile(outputpath, bucket_name, bucket_key)
+            if os.path.exists(outputpath):
+                success, url, key = qiniuuploadfile(outputpath, bucket_name, bucket_key)
             if os.path.exists(inputpath):
                 os.remove(inputpath)
             if os.path.exists(outputpath):
