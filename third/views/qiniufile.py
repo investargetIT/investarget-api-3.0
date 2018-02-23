@@ -248,17 +248,18 @@ def convertAndUploadOffice(inputpath, outputpath, bucket_name, bucket_key):
             try:
                 import sys
                 commandstr = 'python /opt/openoffice4/program/officeConvert.py %s %s &' % (inputpath, outputpath)
-                import subprocess
-                returnCode = subprocess.call(commandstr,shell=True) #阻塞运行
-                print returnCode
+                import commands
+                returnCode, resstr = commands.getstatusoutput(commandstr) #阻塞运行
+                if returnCode == 0:
+                    if os.path.exists(outputpath):
+                        success, url, key = qiniuuploadfile(outputpath, bucket_name, bucket_key)
+                if os.path.exists(inputpath):
+                    os.remove(inputpath)
+                if os.path.exists(outputpath):
+                    os.remove(outputpath)
             except ImportError:
                 logexcption(msg='引入模块失败')
             except Exception:
                 logexcption(msg='文件转换失败')
-            if os.path.exists(outputpath):
-                success, url, key = qiniuuploadfile(outputpath, bucket_name, bucket_key)
-            if os.path.exists(inputpath):
-                os.remove(inputpath)
-            if os.path.exists(outputpath):
-                os.remove(outputpath)
+
     convertAndUploadOfficeThread().start()
