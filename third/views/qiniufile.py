@@ -5,7 +5,6 @@ import json
 import os
 import random
 import string
-import subprocess
 import threading
 import traceback
 
@@ -44,19 +43,6 @@ def qiniu_coverupload(request):
         randomPrefix = datetime.datetime.now().strftime('%Y%m%d%H%M%s') + ''.join(random.sample(string.ascii_lowercase, 6))
         inputFileKey = randomPrefix + '.' + filetype
         outputFileKey = randomPrefix + '.' + 'pdf'
-        if filetype in ['xlsx', 'doc', 'docx', 'xls', 'ppt', 'pptx'] and isChangeToPdf in ['true', True, '1', 1, u'true']:
-            isChange = True
-            dirpath = APILOG_PATH['uploadFilePath']
-            if not os.path.exists(dirpath):
-                os.makedirs(dirpath)
-            inputFilePath = os.path.join(dirpath, inputFileKey)
-            outputFilePath = os.path.join(dirpath, outputFileKey)
-            with open(inputFilePath, 'wb+') as destination:
-                for chunk in uploaddata.chunks():
-                    destination.write(chunk)
-            convertAndUploadOffice(inputFilePath, outputFilePath, bucket_name, outputFileKey)
-        else:
-            isChange = False
         params = {'x:a': 'a'}
         mime_type = uploaddata.content_type
         token = q.upload_token(bucket_name, inputFileKey, 3600)
@@ -71,8 +57,17 @@ def qiniu_coverupload(request):
                 raise InvestError(2020, msg=str(info))
         else:
             raise InvestError(2020, msg=str(ret))
-        if isChange:
+        if filetype in ['xlsx', 'doc', 'docx', 'xls', 'ppt', 'pptx'] and isChangeToPdf in ['true', True, '1', 1, u'true']:
             key = outputFileKey
+            dirpath = APILOG_PATH['uploadFilePath']
+            if not os.path.exists(dirpath):
+                os.makedirs(dirpath)
+            inputFilePath = os.path.join(dirpath, inputFileKey)
+            outputFilePath = os.path.join(dirpath, outputFileKey)
+            with open(inputFilePath, 'wb+') as destination:
+                for chunk in uploaddata.chunks():
+                    destination.write(chunk)
+            convertAndUploadOffice(inputFilePath, outputFilePath, bucket_name, outputFileKey)
         else:
             key = inputFileKey
         return JSONResponse(SuccessResponse({'key': key, 'url': return_url, 'realfilekey': inputFileKey}))
@@ -102,20 +97,6 @@ def bigfileupload(request):
             random.sample(string.ascii_lowercase, 6))
         inputFileKey = randomPrefix + '.' + filetype
         outputFileKey = randomPrefix + '.' + 'pdf'
-        if filetype in ['xlsx', 'doc', 'docx', 'xls', 'ppt', 'pptx'] and isChangeToPdf in ['true', True, '1', 1,
-                                                                                           u'true']:
-            isChange = True
-            dirpath = APILOG_PATH['uploadFilePath']
-            if not os.path.exists(dirpath):
-                os.makedirs(dirpath)
-            inputFilePath = os.path.join(dirpath, inputFileKey)
-            outputFilePath = os.path.join(dirpath, outputFileKey)
-            with open(inputFilePath, 'wb+') as destination:
-                for chunk in uploaddata.chunks():
-                    destination.write(chunk)
-            convertAndUploadOffice(inputFilePath, outputFilePath, bucket_name, outputFileKey)
-        else:
-            isChange = False
         params = {'x:a': 'a'}
         mime_type = uploaddata.content_type
         token = q.upload_token(bucket_name, inputFileKey, 3600)
@@ -130,8 +111,17 @@ def bigfileupload(request):
                 raise InvestError(2020, msg=str(info))
         else:
             raise InvestError(2020, msg=str(ret))
-        if isChange:
+        if filetype in ['xlsx', 'doc', 'docx', 'xls', 'ppt', 'pptx'] and isChangeToPdf in ['true', True, '1', 1, u'true']:
             key = outputFileKey
+            dirpath = APILOG_PATH['uploadFilePath']
+            if not os.path.exists(dirpath):
+                os.makedirs(dirpath)
+            inputFilePath = os.path.join(dirpath, inputFileKey)
+            outputFilePath = os.path.join(dirpath, outputFileKey)
+            with open(inputFilePath, 'wb+') as destination:
+                for chunk in uploaddata.chunks():
+                    destination.write(chunk)
+            convertAndUploadOffice(inputFilePath, outputFilePath, bucket_name, outputFileKey)
         else:
             key = inputFileKey
         return JSONResponse(SuccessResponse({'key':key,'url':return_url,'realfilekey':inputFileKey}))
@@ -210,8 +200,11 @@ def getUrlWithBucketAndKey(bucket,key):
     return return_url
 
 #上传本地文件
-def qiniuuploadfile(filepath, bucket_name, bucket_key):
+def qiniuuploadfile(filepath, bucket_name, bucket_key=None):
     q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
+    if not bucket_key:
+        filetype = filepath.split('.')[-1]
+        bucket_key = datetime.datetime.now().strftime('%Y%m%d%H%M%s') + ''.join(random.sample(string.ascii_lowercase, 6)) + filetype
     token = q.upload_token(bucket_name, bucket_key, 3600, policy={}, strict_policy=True)
     ret, info = put_file(token, bucket_key, filepath)
     if info is not None:
@@ -263,19 +256,20 @@ def convertAndUploadOffice(inputpath, outputpath, bucket_name, bucket_key):
     class convertAndUploadOfficeThread(threading.Thread):
         def run(self):
             try:
-                import sys
-                commandstr = 'python /opt/openoffice4/program/officeConvert.py %s %s &' % (inputpath, outputpath)
-                import subprocess
-                returnCode = subprocess.call(commandstr,shell=True) #阻塞运行
-                print returnCode
+                import time
+                time.sleep(10)
+                commandstr = 'python /opt/openoffice4/program/officeConvert.py %s %s' % (inputpath, outputpath)
+                import commands
+                commands.getstatusoutput(commandstr)  #执行完毕程序才会往下进行
             except ImportError:
                 logexcption(msg='引入模块失败')
             except Exception:
                 logexcption(msg='文件转换失败')
             if os.path.exists(outputpath):
                 success, url, key = qiniuuploadfile(outputpath, bucket_name, bucket_key)
-            # if os.path.exists(inputpath):
-            #     os.remove(inputpath)
-            # if os.path.exists(outputpath):
-            #     os.remove(outputpath)
+                print success,url,key
+                os.remove(outputpath)
+            if os.path.exists(inputpath):
+                os.remove(inputpath)
+
     convertAndUploadOfficeThread().start()
