@@ -5,20 +5,24 @@ import json
 import os
 import random
 import string
+import subprocess
 import threading
 import traceback
 
 import qiniu
 import requests
+from django.http import StreamingHttpResponse
 
 from qiniu import BucketManager
 from qiniu.services.storage.uploader import _Resume, put_file
 from rest_framework.decorators import api_view
 
 from invest.settings import APILOG_PATH
-from third.thirdconfig import qiniu_url, ACCESS_KEY, SECRET_KEY
+from third.thirdconfig import qiniu_url, ACCESS_KEY, SECRET_KEY, fops, pipeline
 from utils.customClass import JSONResponse, InvestError, MyUploadProgressRecorder
-from utils.util import InvestErrorResponse, ExceptionResponse, SuccessResponse, logexcption
+from utils.somedef import addWaterMark, file_iterator
+from utils.util import InvestErrorResponse, ExceptionResponse, SuccessResponse, loginTokenIsAvailable, checkrequesttoken, \
+    catchexcption, checkRequestToken, logexcption
 
 
 #覆盖上传
@@ -235,6 +239,19 @@ def downloadFileToPath(key,bucket,path):
         return path
 
 
+@api_view(['GET'])
+def testconvert(request):
+    try:
+        convertAndUploadOffice('aaa','aaa','aaa','aaaa')
+        import time
+        time.sleep(5)
+        return JSONResponse(SuccessResponse({}))
+    except InvestError as err:
+        return JSONResponse(InvestErrorResponse(err))
+    except Exception:
+        catchexcption(request)
+        return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
 
 
 def convertAndUploadOffice(inputpath, outputpath, bucket_name, bucket_key):
@@ -248,18 +265,17 @@ def convertAndUploadOffice(inputpath, outputpath, bucket_name, bucket_key):
             try:
                 import sys
                 commandstr = 'python /opt/openoffice4/program/officeConvert.py %s %s &' % (inputpath, outputpath)
-                import commands
-                returnCode, resstr = commands.getstatusoutput(commandstr) #阻塞运行
-                if returnCode == 0:
-                    if os.path.exists(outputpath):
-                        success, url, key = qiniuuploadfile(outputpath, bucket_name, bucket_key)
-                if os.path.exists(inputpath):
-                    os.remove(inputpath)
-                if os.path.exists(outputpath):
-                    os.remove(outputpath)
+                import subprocess
+                returnCode = subprocess.call(commandstr,shell=True) #阻塞运行
+                print returnCode
             except ImportError:
                 logexcption(msg='引入模块失败')
             except Exception:
                 logexcption(msg='文件转换失败')
-
+            if os.path.exists(outputpath):
+                success, url, key = qiniuuploadfile(outputpath, bucket_name, bucket_key)
+            # if os.path.exists(inputpath):
+            #     os.remove(inputpath)
+            # if os.path.exists(outputpath):
+            #     os.remove(outputpath)
     convertAndUploadOfficeThread().start()
