@@ -10,18 +10,15 @@ import traceback
 
 import qiniu
 import requests
-from django.http import StreamingHttpResponse
 
 from qiniu import BucketManager
 from qiniu.services.storage.uploader import _Resume, put_file
 from rest_framework.decorators import api_view
 
 from invest.settings import APILOG_PATH
-from third.thirdconfig import qiniu_url, ACCESS_KEY, SECRET_KEY, fops, pipeline
+from third.thirdconfig import qiniu_url, ACCESS_KEY, SECRET_KEY
 from utils.customClass import JSONResponse, InvestError, MyUploadProgressRecorder
-from utils.somedef import addWaterMark, file_iterator
-from utils.util import InvestErrorResponse, ExceptionResponse, SuccessResponse, loginTokenIsAvailable, checkrequesttoken, \
-    catchexcption, checkRequestToken, logexcption
+from utils.util import InvestErrorResponse, ExceptionResponse, SuccessResponse, logexcption
 
 
 #覆盖上传
@@ -238,36 +235,6 @@ def downloadFileToPath(key,bucket,path):
         return path
 
 
-# @api_view(['GET'])
-# @checkRequestToken()
-# def downloadPdfFileAndAddWatermark(request):
-#     try:
-#         bucket = request.GET.get('bucket','file')
-#         key = request.GET.get('key','file')
-#         filename = request.GET.get('filename', key)
-#         watermarkcontent = request.user.email
-#         if '.pdf' not in key:
-#             pass
-#         download_url = getUrlWithBucketAndKey(bucket, key)
-#         r = requests.get(download_url)
-#         if r.status_code != 200:
-#             raise InvestError(8002,msg=repr(r.content))
-#         savepath = APILOG_PATH['pdfpath_base'] + 'PDF' + datetime.datetime.now().strftime('%y%m%d%H%M%S') + key
-#         with open(savepath, "wb") as code:
-#             code.write(r.content)
-#         out_path = addWaterMark(savepath, watermarkcontent)
-#         fn = open(out_path, 'rb')
-#         response = StreamingHttpResponse(file_iterator(fn))
-#         response['Content-Type'] = 'application/octet-stream'
-#         response["content-disposition"] = 'attachment;filename=%s' % filename
-#         os.remove(out_path)
-#         return response
-#     except InvestError as err:
-#         return JSONResponse(InvestErrorResponse(err))
-#     except Exception:
-#         catchexcption(request)
-#         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
 
 
 def convertAndUploadOffice(inputpath, outputpath, bucket_name, bucket_key):
@@ -280,10 +247,10 @@ def convertAndUploadOffice(inputpath, outputpath, bucket_name, bucket_key):
         def run(self):
             try:
                 import sys
-                sys.path.append(APILOG_PATH['openofficePath'])
-                from officeConvert import DocumentConverter
-                converter = DocumentConverter()
-                converter.convert(inputpath, outputpath)
+                commandstr = 'python /opt/openoffice4/program/officeConvert.py %s %s &' % (inputpath, outputpath)
+                import subprocess
+                returnCode = subprocess.call(commandstr,shell=True) #阻塞运行
+                print returnCode
             except ImportError:
                 logexcption(msg='引入模块失败')
             except Exception:
