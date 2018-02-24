@@ -166,6 +166,7 @@ class attachment(MyModel):
     filetype = models.CharField(max_length=32,blank=True,null=True)
     bucket = models.CharField(max_length=32,blank=True,default='file')
     key = models.CharField(max_length=128,blank=True,null=True)
+    realfilekey = models.CharField(max_length=128, blank=True, null=True)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='userdelete_projattachments')
     createuser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL, related_name='usercreate_projattachments')
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, on_delete=models.SET_NULL,related_name='usermodify_projattachments')

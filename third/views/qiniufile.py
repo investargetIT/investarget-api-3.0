@@ -182,9 +182,9 @@ def qiniu_deletefile(request):
         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 def deleteqiniufile(bucket,key):
-    q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
-    bucketManager = BucketManager(q)
     if bucket and key:
+        q = qiniu.Auth(ACCESS_KEY, SECRET_KEY)
+        bucketManager = BucketManager(q)
         ret, info = bucketManager.delete(bucket, key)
         return ret, info
 

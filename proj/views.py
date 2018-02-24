@@ -741,7 +741,8 @@ class ProjAttachmentView(viewsets.ModelViewSet):
                     projattachment.deleteduser = request.user
                     projattachment.deletedtime = datetime.datetime.now()
                     projattachment.save()
-                    deleteqiniufile(projattachment.bucket,projattachment.key)
+                    deleteqiniufile(projattachment.bucket, projattachment.key)
+                    deleteqiniufile(projattachment.bucket, projattachment.realfilekey)
                     returnlist.append(ProjAttachmentSerializer(projattachment).data)
                 return JSONResponse(SuccessResponse(returnListChangeToLanguage(returnlist,lang)))
         except InvestError as err:
