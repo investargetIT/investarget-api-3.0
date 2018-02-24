@@ -67,7 +67,7 @@ def checkIPAddressCanPass(ip):
         times = times + 1
     else:
         times = 1
-    cache.set(key, times, 60 * 60 * 1)
+    cache.set(key, times, 60 * 10 * 1)
     return True
 
 #检查view内 request的token
