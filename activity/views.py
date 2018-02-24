@@ -23,6 +23,11 @@ class ActivityView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
+            sort = request.GET.get('sort', None)
+            if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
+                queryset = queryset.order_by('index', )
+            else:
+                queryset = queryset.order_by('-index', )
             count = queryset.count()
             try:
                 queryset = Paginator(queryset, page_size)
