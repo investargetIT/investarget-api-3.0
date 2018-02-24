@@ -105,7 +105,7 @@ def getQRCode(request):
 def recordUpload(request):
     try:
         record = datetime.datetime.now().strftime('%y%m%d%H%M%S')+''.join(random.sample(string.ascii_lowercase,6))
-        write_to_cache(record, {'bucket':None,'key':None,'filename':None,'is_active':True})
+        write_to_cache(record, {'bucket':None,'key':None,'realfilekey':None,'filename':None,'is_active':True})
         return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
@@ -120,10 +120,11 @@ def updateUpload(request):
         record = data.get('record')
         bucket = data.get('bucket')
         key = data.get('key')
+        realfilekey = data.get('realfilekey')
         filename = data.get('filename','mobilefile')
         if read_from_cache(record) is None:
             raise InvestError(8003,msg='没有这条记录')
-        write_to_cache(record, {'bucket':bucket,'key':key,'filename':filename,'is_active':True}, 3600)
+        write_to_cache(record, {'bucket':bucket,'key':key,'filename':filename,'realfilekey':realfilekey,'is_active':True}, 3600)
         return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
@@ -169,8 +170,8 @@ def deleteUpload(request):
         recordDic = read_from_cache(record)
         if recordDic is None:
             raise InvestError(8003, msg='没有这条记录')
-        if recordDic['key'] and recordDic['bucket']:
-            deleteqiniufile(key=recordDic['key'],bucket=recordDic['bucket'])
+        deleteqiniufile(key=recordDic['key'],bucket=recordDic['bucket'])
+        deleteqiniufile(key=recordDic['realfilekey'], bucket=recordDic['bucket'])
         cache_delete_key(record)
         return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
     except InvestError as err:
