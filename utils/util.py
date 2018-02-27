@@ -178,6 +178,8 @@ def setUserObjectPermission(user,obj,permissions,touser=None):
 
 
 def returnDictChangeToLanguage(dictdata,lang=None):
+    if not dictdata:
+        return dictdata
     newdict = {'timezone':'+08:00'}
     if lang == 'en':
         for key,value in dictdata.items():
