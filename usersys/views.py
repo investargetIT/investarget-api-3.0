@@ -983,10 +983,16 @@ class UserRelationView(viewsets.ModelViewSet):
                 traderuser = MyUser.objects.get(id=data.get('traderuser', None))
             except MyUser.DoesNotExist:
                 raise InvestError(2007, msg='交易师不存在')
+            try:
+                investoruser = MyUser.objects.get(id=data.get('investoruser', None))
+            except MyUser.DoesNotExist:
+                raise InvestError(2007, msg='投资人不存在')
+            if (datetime.datetime.now() - investoruser.createdtime) < datetime.timedelta(days=30) and self.queryset.filter(investoruser=investoruser, relationtype=True).exists():
+                raise InvestError(2025, msg='账号尚在保护期内，无法再次增加交易师，请在保护期结束后（%s天）添加'%(datetime.timedelta(days=30) - (datetime.datetime.now() - investoruser.createdtime)).day)
             if request.user.has_perm('usersys.admin_adduserrelation'):
                 pass
             else:
-                if traderuser.id != request.user.id and data.get('investoruser',None) != request.user.id:
+                if traderuser.id != request.user.id and investoruser.id != request.user.id:
                     projid = data.get('proj', None)
                     if projid:
                         if traderuser.usermake_projs.all().filter(id=projid).exists():
