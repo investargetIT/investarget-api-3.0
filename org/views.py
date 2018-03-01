@@ -7,9 +7,11 @@ from django.db.models import Q, FieldDoesNotExist
 from django.db.models import QuerySet
 from rest_framework import filters , viewsets
 
-from org.models import organization, orgTransactionPhase, orgRemarks
-from org.serializer import OrgCommonSerializer, OrgDetailSerializer, \
-     OrgRemarkDetailSerializer, OrgCreateSerializer, OrgUpdateSerializer
+from org.models import organization, orgTransactionPhase, orgRemarks, orgContact, orgBuyout, orgManageFund, orgInvestEvent, orgCooperativeRelationship
+from org.serializer import OrgCommonSerializer, OrgDetailSerializer, OrgRemarkDetailSerializer, OrgCreateSerializer,\
+    OrgUpdateSerializer, OrgBuyoutCreateSerializer, OrgContactCreateSerializer, OrgInvestEventCreateSerializer,\
+    OrgManageFundCreateSerializer, OrgCooperativeRelationshipCreateSerializer, OrgBuyoutSerializer, OrgContactSerializer, \
+    OrgInvestEventSerializer, OrgManageFundSerializer, OrgCooperativeRelationshipSerializer
 from sourcetype.models import TransactionPhases, DataSource
 from utils.customClass import InvestError, JSONResponse, RelationFilter, MySearchFilter
 from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, returnListChangeToLanguage, \
@@ -494,6 +496,785 @@ class OrgRemarkView(viewsets.ModelViewSet):
                 instance.deletedtime = datetime.datetime.now()
                 instance.save()
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgRemarkDetailSerializer(instance).data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+class OrgContactView(viewsets.ModelViewSet):
+    """
+    list:获取机构联系方式
+    create:新增机构联系方式
+    retrieve:查看机构某条联系方式详情（id）
+    update:修改机构联系方式（id）
+    destroy:删除机构联系方式（id）
+    """
+    filter_backends = (filters.DjangoFilterBackend,)
+    queryset = orgContact.objects.filter(is_deleted=False)
+    filter_fields = ('id','org','createuser')
+    serializer_class = OrgContactSerializer
+    models = orgContact
+
+    def get_object(self, pk=None):
+        if pk:
+            try:
+                obj = self.queryset.get(id=pk)
+            except self.models.DoesNotExist:
+                raise InvestError(code=5002)
+        else:
+            try:
+                obj = self.queryset.get(id=self.kwargs['pk'])
+            except self.models.DoesNotExist:
+                raise InvestError(code=5002)
+        return obj
+
+    def get_org(self,orgid):
+        if self.request.user.is_anonymous:
+            raise InvestError(code=8889)
+        try:
+            org = organization.objects.get(id=orgid,is_deleted=False,datasource=self.request.user.datasource)
+        except organization.DoesNotExist:
+            raise InvestError(code=5002)
+        else:
+            return org
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            lang = request.GET.get('lang')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = self.serializer_class(queryset, many=True)
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        lang = request.GET.get('lang')
+        orgid = data.get('org',None)
+        if orgid:
+            org = self.get_org(orgid=orgid)
+            if request.user.has_perm('org.admin_changeorg'):
+                pass
+            elif request.user.has_perm('org.user_changeorg', org):
+                pass
+            else:
+                raise InvestError(code=2009)
+        else:
+            raise InvestError(code=20072)
+        data['createuser'] = request.user.id
+        data['datasource'] = request.user.datasource.id
+        try:
+            with transaction.atomic():
+                instanceserializer = OrgContactCreateSerializer(data=data)
+                if instanceserializer.is_valid():
+                    instance = instanceserializer.save()
+                else:
+                    raise InvestError(code=20071,msg='data有误_%s' % instanceserializer.error_messages)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            serializer = self.serializer_class(instance)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            lang = request.GET.get('lang')
+            if request.user.has_perm('org.admin_changeorg'):
+                pass
+            elif request.user.has_perm('org.user_changeorg', instance):
+                pass
+            else:
+                raise InvestError(code=2009)
+            data = request.data
+            data['lastmodifytime'] = datetime.datetime.now()
+            data['datasource'] = request.user.datasource.id
+            with transaction.atomic():
+                instanceserializer = OrgContactCreateSerializer(instance, data=data)
+                if instanceserializer.is_valid():
+                    newinstance = instanceserializer.save()
+                else:
+                    raise InvestError(code=20071,  msg='data有误_%s' % instanceserializer.errors)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(newinstance).data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            if request.user.has_perm('org.admin_changeorg'):
+                pass
+            elif request.user.has_perm('org.user_changeorg', instance):
+                pass
+            else:
+                raise InvestError(code=2009, msg='没有权限')
+            with transaction.atomic():
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+class OrgManageFundView(viewsets.ModelViewSet):
+    """
+    list:获取机构管理基金
+    create:新增机构管理基金
+    retrieve:查看机构某条管理基金详情（id）
+    update:修改机构管理基金（id）
+    destroy:删除机构管理基金id）
+    """
+    filter_backends = (filters.DjangoFilterBackend,)
+    queryset = orgManageFund.objects.filter(is_deleted=False)
+    filter_fields = ('id','org','createuser')
+    serializer_class = OrgManageFundSerializer
+    models = orgManageFund
+
+    def get_object(self, pk=None):
+        if pk:
+            try:
+                obj = self.queryset.get(id=pk)
+            except self.models.DoesNotExist:
+                raise InvestError(code=5002)
+        else:
+            try:
+                obj = self.queryset.get(id=self.kwargs['pk'])
+            except self.models.DoesNotExist:
+                raise InvestError(code=5002)
+        return obj
+
+    def get_org(self,orgid):
+        if self.request.user.is_anonymous:
+            raise InvestError(code=8889)
+        try:
+            org = organization.objects.get(id=orgid,is_deleted=False,datasource=self.request.user.datasource)
+        except organization.DoesNotExist:
+            raise InvestError(code=5002)
+        else:
+            return org
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            lang = request.GET.get('lang')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = self.serializer_class(queryset, many=True)
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        lang = request.GET.get('lang')
+        orgid = data.get('org',None)
+        if orgid:
+            org = self.get_org(orgid=orgid)
+            if request.user.has_perm('org.admin_changeorg'):
+                pass
+            elif request.user.has_perm('org.user_changeorg', org):
+                pass
+            else:
+                raise InvestError(code=2009)
+        else:
+            raise InvestError(code=20072)
+        data['createuser'] = request.user.id
+        data['datasource'] = request.user.datasource.id
+        try:
+            with transaction.atomic():
+                instanceserializer = OrgManageFundCreateSerializer(data=data)
+                if instanceserializer.is_valid():
+                    instance = instanceserializer.save()
+                else:
+                    raise InvestError(code=20071,msg='data有误_%s' % instanceserializer.error_messages)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            serializer = self.serializer_class(instance)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            lang = request.GET.get('lang')
+            if request.user.has_perm('org.admin_changeorg'):
+                pass
+            elif request.user.has_perm('org.user_changeorg', instance):
+                pass
+            else:
+                raise InvestError(code=2009)
+            data = request.data
+            data['lastmodifytime'] = datetime.datetime.now()
+            data['datasource'] = request.user.datasource.id
+            with transaction.atomic():
+                instanceserializer = OrgManageFundCreateSerializer(instance, data=data)
+                if instanceserializer.is_valid():
+                    newinstance = instanceserializer.save()
+                else:
+                    raise InvestError(code=20071,  msg='data有误_%s' % instanceserializer.errors)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(newinstance).data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            if request.user.has_perm('org.admin_changeorg'):
+                pass
+            elif request.user.has_perm('org.user_changeorg', instance):
+                pass
+            else:
+                raise InvestError(code=2009, msg='没有权限')
+            with transaction.atomic():
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+class OrgInvestEventView(viewsets.ModelViewSet):
+    """
+    list:获取机构投资事件
+    create:新增机构投资事件
+    retrieve:查看机构某条投资事件详情（id）
+    update:修改机构投资事件（id）
+    destroy:删除机构投资事件id）
+    """
+    filter_backends = (filters.DjangoFilterBackend,)
+    queryset = orgInvestEvent.objects.filter(is_deleted=False)
+    filter_fields = ('id','org','createuser')
+    serializer_class = OrgInvestEventSerializer
+    models = orgInvestEvent
+
+    def get_object(self, pk=None):
+        if pk:
+            try:
+                obj = self.queryset.get(id=pk)
+            except self.models.DoesNotExist:
+                raise InvestError(code=5002)
+        else:
+            try:
+                obj = self.queryset.get(id=self.kwargs['pk'])
+            except self.models.DoesNotExist:
+                raise InvestError(code=5002)
+        return obj
+
+    def get_org(self,orgid):
+        if self.request.user.is_anonymous:
+            raise InvestError(code=8889)
+        try:
+            org = organization.objects.get(id=orgid,is_deleted=False,datasource=self.request.user.datasource)
+        except organization.DoesNotExist:
+            raise InvestError(code=5002)
+        else:
+            return org
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            lang = request.GET.get('lang')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = self.serializer_class(queryset, many=True)
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        lang = request.GET.get('lang')
+        orgid = data.get('org',None)
+        if orgid:
+            org = self.get_org(orgid=orgid)
+            if request.user.has_perm('org.admin_changeorg'):
+                pass
+            elif request.user.has_perm('org.user_changeorg', org):
+                pass
+            else:
+                raise InvestError(code=2009)
+        else:
+            raise InvestError(code=20072)
+        data['createuser'] = request.user.id
+        data['datasource'] = request.user.datasource.id
+        try:
+            with transaction.atomic():
+                instanceserializer = OrgInvestEventCreateSerializer(data=data)
+                if instanceserializer.is_valid():
+                    instance = instanceserializer.save()
+                else:
+                    raise InvestError(code=20071,msg='data有误_%s' % instanceserializer.error_messages)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            serializer = self.serializer_class(instance)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            lang = request.GET.get('lang')
+            if request.user.has_perm('org.admin_changeorg'):
+                pass
+            elif request.user.has_perm('org.user_changeorg', instance):
+                pass
+            else:
+                raise InvestError(code=2009)
+            data = request.data
+            data['lastmodifytime'] = datetime.datetime.now()
+            data['datasource'] = request.user.datasource.id
+            with transaction.atomic():
+                instanceserializer = OrgInvestEventCreateSerializer(instance, data=data)
+                if instanceserializer.is_valid():
+                    newinstance = instanceserializer.save()
+                else:
+                    raise InvestError(code=20071,  msg='data有误_%s' % instanceserializer.errors)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(newinstance).data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            if request.user.has_perm('org.admin_changeorg'):
+                pass
+            elif request.user.has_perm('org.user_changeorg', instance):
+                pass
+            else:
+                raise InvestError(code=2009, msg='没有权限')
+            with transaction.atomic():
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+class OrgCooperativeRelationshipView(viewsets.ModelViewSet):
+    """
+    list:获取机构合作关系
+    create:新增机构合作关系
+    retrieve:查看机构某条合作关系详情（id）
+    update:修改机构合作关系（id）
+    destroy:删除机构合作关系id）
+    """
+    filter_backends = (filters.DjangoFilterBackend,)
+    queryset = orgCooperativeRelationship.objects.filter(is_deleted=False)
+    filter_fields = ('id','org','createuser')
+    serializer_class = OrgCooperativeRelationshipSerializer
+    models = orgCooperativeRelationship
+
+    def get_object(self, pk=None):
+        if pk:
+            try:
+                obj = self.queryset.get(id=pk)
+            except self.models.DoesNotExist:
+                raise InvestError(code=5002)
+        else:
+            try:
+                obj = self.queryset.get(id=self.kwargs['pk'])
+            except self.models.DoesNotExist:
+                raise InvestError(code=5002)
+        return obj
+
+    def get_org(self,orgid):
+        if self.request.user.is_anonymous:
+            raise InvestError(code=8889)
+        try:
+            org = organization.objects.get(id=orgid,is_deleted=False,datasource=self.request.user.datasource)
+        except organization.DoesNotExist:
+            raise InvestError(code=5002)
+        else:
+            return org
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            lang = request.GET.get('lang')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = self.serializer_class(queryset, many=True)
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        lang = request.GET.get('lang')
+        orgid = data.get('org',None)
+        if orgid:
+            org = self.get_org(orgid=orgid)
+            if request.user.has_perm('org.admin_changeorg'):
+                pass
+            elif request.user.has_perm('org.user_changeorg', org):
+                pass
+            else:
+                raise InvestError(code=2009)
+        else:
+            raise InvestError(code=20072)
+        data['createuser'] = request.user.id
+        data['datasource'] = request.user.datasource.id
+        try:
+            with transaction.atomic():
+                instanceserializer = OrgCooperativeRelationshipCreateSerializer(data=data)
+                if instanceserializer.is_valid():
+                    instance = instanceserializer.save()
+                else:
+                    raise InvestError(code=20071,msg='data有误_%s' % instanceserializer.error_messages)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            serializer = self.serializer_class(instance)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            lang = request.GET.get('lang')
+            if request.user.has_perm('org.admin_changeorg'):
+                pass
+            elif request.user.has_perm('org.user_changeorg', instance):
+                pass
+            else:
+                raise InvestError(code=2009)
+            data = request.data
+            data['lastmodifytime'] = datetime.datetime.now()
+            data['datasource'] = request.user.datasource.id
+            with transaction.atomic():
+                instanceserializer = OrgCooperativeRelationshipCreateSerializer(instance, data=data)
+                if instanceserializer.is_valid():
+                    newinstance = instanceserializer.save()
+                else:
+                    raise InvestError(code=20071,  msg='data有误_%s' % instanceserializer.errors)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(newinstance).data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            if request.user.has_perm('org.admin_changeorg'):
+                pass
+            elif request.user.has_perm('org.user_changeorg', instance):
+                pass
+            else:
+                raise InvestError(code=2009, msg='没有权限')
+            with transaction.atomic():
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+class OrgBuyoutView(viewsets.ModelViewSet):
+    """
+    list:获取机构退出分析
+    create:新增机构退出分析
+    retrieve:查看机构某条退出分析详情（id）
+    update:修改机构退出分析（id）
+    destroy:删除机构退出分析（id）
+    """
+    filter_backends = (filters.DjangoFilterBackend,)
+    queryset = orgBuyout.objects.filter(is_deleted=False)
+    filter_fields = ('id','org','createuser')
+    serializer_class = OrgBuyoutSerializer
+    models = orgBuyout
+
+    def get_object(self, pk=None):
+        if pk:
+            try:
+                obj = self.queryset.get(id=pk)
+            except self.models.DoesNotExist:
+                raise InvestError(code=5002)
+        else:
+            try:
+                obj = self.queryset.get(id=self.kwargs['pk'])
+            except self.models.DoesNotExist:
+                raise InvestError(code=5002)
+        return obj
+
+    def get_org(self,orgid):
+        if self.request.user.is_anonymous:
+            raise InvestError(code=8889)
+        try:
+            org = organization.objects.get(id=orgid,is_deleted=False,datasource=self.request.user.datasource)
+        except organization.DoesNotExist:
+            raise InvestError(code=5002)
+        else:
+            return org
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            lang = request.GET.get('lang')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = self.serializer_class(queryset, many=True)
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        lang = request.GET.get('lang')
+        orgid = data.get('org',None)
+        if orgid:
+            org = self.get_org(orgid=orgid)
+            if request.user.has_perm('org.admin_changeorg'):
+                pass
+            elif request.user.has_perm('org.user_changeorg', org):
+                pass
+            else:
+                raise InvestError(code=2009)
+        else:
+            raise InvestError(code=20072)
+        data['createuser'] = request.user.id
+        data['datasource'] = request.user.datasource.id
+        try:
+            with transaction.atomic():
+                instanceserializer = OrgBuyoutCreateSerializer(data=data)
+                if instanceserializer.is_valid():
+                    instance = instanceserializer.save()
+                else:
+                    raise InvestError(code=20071,msg='data有误_%s' % instanceserializer.error_messages)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            serializer = self.serializer_class(instance)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            lang = request.GET.get('lang')
+            if request.user.has_perm('org.admin_changeorg'):
+                pass
+            elif request.user.has_perm('org.user_changeorg', instance):
+                pass
+            else:
+                raise InvestError(code=2009)
+            data = request.data
+            data['lastmodifytime'] = datetime.datetime.now()
+            data['datasource'] = request.user.datasource.id
+            with transaction.atomic():
+                instanceserializer = OrgBuyoutCreateSerializer(instance, data=data)
+                if instanceserializer.is_valid():
+                    newinstance = instanceserializer.save()
+                else:
+                    raise InvestError(code=20071,  msg='data有误_%s' % instanceserializer.errors)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(newinstance).data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            if request.user.has_perm('org.admin_changeorg'):
+                pass
+            elif request.user.has_perm('org.user_changeorg', instance):
+                pass
+            else:
+                raise InvestError(code=2009, msg='没有权限')
+            with transaction.atomic():
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:

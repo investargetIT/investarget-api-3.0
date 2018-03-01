@@ -586,10 +586,10 @@ class UserView(viewsets.ModelViewSet):
             if account:
                 if self.queryset.filter(mobile=account, datasource_id=source).exists():
                     result = True
-                    user = UserSerializer(self.queryset.filter(mobile=account, datasource_id=source).first()).data
+                    user = UserCommenSerializer(self.queryset.filter(mobile=account, datasource_id=source).first()).data
                 elif self.queryset.filter(email=account, datasource_id=source).exists():
                     result = True
-                    user = UserSerializer(self.queryset.filter(email=account, datasource_id=source).first()).data
+                    user = UserCommenSerializer(self.queryset.filter(email=account, datasource_id=source).first()).data
                 else:
                     result = False
                     user = None

@@ -1,7 +1,8 @@
 
 from rest_framework import serializers
-from org.models import organization, orgRemarks, orgTransactionPhase
-from sourcetype.serializer import transactionPhasesSerializer
+from org.models import organization, orgRemarks, orgTransactionPhase, orgBuyout, orgContact, orgInvestEvent, \
+    orgCooperativeRelationship, orgManageFund
+from sourcetype.serializer import transactionPhasesSerializer, orgAreaSerializer
 
 
 class OrgCommonSerializer(serializers.ModelSerializer):
@@ -51,3 +52,73 @@ class OrgRemarkDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = orgRemarks
         fields = '__all__'
+
+
+class OrgBuyoutCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = orgBuyout
+        fields = '__all__'
+
+
+class OrgBuyoutSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = orgBuyout
+        exclude = ('createuser', 'deleteduser', 'createdtime', 'is_deleted', 'deletedtime', 'lastmodifytime')
+
+
+class OrgContactCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = orgContact
+        fields = '__all__'
+
+
+class OrgContactSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = orgContact
+        exclude = ('createuser', 'deleteduser', 'createdtime', 'is_deleted', 'deletedtime', 'lastmodifytime')
+
+
+class OrgInvestEventCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = orgInvestEvent
+        fields = '__all__'
+
+
+class OrgInvestEventSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = orgInvestEvent
+        exclude = ('createuser', 'deleteduser', 'createdtime', 'is_deleted', 'deletedtime', 'lastmodifytime')
+
+
+class OrgCooperativeRelationshipCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = orgCooperativeRelationship
+        fields = '__all__'
+
+
+class OrgCooperativeRelationshipSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = orgCooperativeRelationship
+        exclude = ('createuser', 'deleteduser', 'createdtime', 'is_deleted', 'deletedtime', 'lastmodifytime')
+
+
+class OrgManageFundCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = orgManageFund
+        fields = '__all__'
+
+
+class OrgManageFundSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = orgManageFund
+        exclude = ('createuser', 'deleteduser', 'createdtime', 'is_deleted', 'deletedtime', 'lastmodifytime')

@@ -4,7 +4,8 @@ from __future__ import unicode_literals
 from django.db import models
 import sys
 from guardian.shortcuts import assign_perm, remove_perm
-from sourcetype.models import AuditStatus, OrgType , TransactionPhases,CurrencyType, Industry, DataSource, OrgAttribute
+from sourcetype.models import AuditStatus, OrgType , TransactionPhases,CurrencyType, Industry, DataSource, OrgAttribute, \
+    OrgArea
 from usersys.models import MyUser
 from utils.customClass import InvestError, MyForeignKey, MyModel
 
@@ -21,8 +22,9 @@ class organization(MyModel):
     currency = MyForeignKey(CurrencyType,blank=True,default=1)
     decisionCycle = models.SmallIntegerField(blank=True,null=True)
     decisionMakingProcess = models.TextField(blank=True,null=True)
-    orgnameC = models.CharField(max_length=128,blank=True,null=True)
-    orgnameE = models.CharField(max_length=128,blank=True,null=True)
+    establishedDate = models.DateTimeField(blank=True, null=True, help_text='成立时间')
+    orgnameC = models.CharField(max_length=128,blank=True,null=True, help_text='机构全称')
+    orgnameE = models.CharField(max_length=128,blank=True,null=True, help_text='机构全称')
     stockcode = models.CharField(max_length=128,blank=True,null=True,help_text='证券代码')
     stockshortname = models.CharField(max_length=128,blank=True,null=True,help_text='证券简称')
     managerName = models.CharField(max_length=128,blank=True,null=True,help_text='基金管理人名称')
@@ -123,6 +125,76 @@ class orgTransactionPhase(MyModel):
 
     class Meta:
         db_table = "org_TransactionPhase"
+
+class orgContact(MyModel):
+    org = MyForeignKey(organization,null=True,blank=True, db_index=True, related_name='org_orgcontact')
+    address = models.TextField(null=True,blank=True,help_text='联系地址')
+    postcode = models.CharField(max_length=10,null=True,blank=True,help_text='邮政编码')
+    countrycode = models.CharField(max_length=10,blank=True,null=True,default='86',help_text='国家号')
+    areacode = models.CharField(max_length=10,blank=True,null=True,default='86',help_text='地区号')
+    numbercode = models.CharField(max_length=32,db_index=True,blank=True,null=True,help_text='电话')
+    faxcode = models.CharField(max_length=32, blank=True,null=True,help_text='传真')
+    email = models.EmailField(max_length=128, blank=True,null=True,help_text='邮箱')
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True,related_name='userdelete_orgcontact')
+    createuser = MyForeignKey(MyUser, blank=True, null=True,related_name='usercreate_orgcontact')
+
+    class Meta:
+        db_table = "org_contact"
+
+
+class orgManageFund(MyModel):
+    org = MyForeignKey(organization,null=True,blank=True,db_index=True,related_name='org_orgManageFund')
+    fund = MyForeignKey(organization,null=True,blank=True,related_name='fund_fundManager')
+    type = models.CharField(max_length=32,null=True,blank=True,help_text='基金类型')
+    fundsource = models.CharField(max_length=32, null=True, blank=True, help_text='资本来源')
+    fundraisedate = models.DateTimeField(null=True, blank=True, help_text='募集完成时间')
+    fundsize = models.CharField(max_length=32, null=True, blank=True, help_text='募集完成规模')
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True,related_name='userdelete_orgmanagefund')
+    createuser = MyForeignKey(MyUser, blank=True, null=True,related_name='usercreate_orgmanagefund')
+
+    class Meta:
+        db_table = "org_managefund"
+
+
+class orgInvestEvent(MyModel):
+    org = MyForeignKey(organization,null=True, blank=True, db_index=True, related_name='org_orgInvestEvent')
+    comshortname = models.CharField(max_length=32, null=True, blank=True, help_text='企业简称')
+    industrytype = models.CharField(max_length=32, null=True, blank=True, help_text='行业分类')
+    area = MyForeignKey(OrgArea,blank=True, null=True, help_text='地区')
+    investor =  models.CharField(max_length=32, null=True, blank=True, help_text='投资人')
+    investDate = models.DateTimeField(blank=True, null=True)
+    investType = models.CharField(max_length=32, blank=True,null=True,help_text='投资性质（轮次）')
+    investSize = models.CharField(max_length=32, blank=True, null=True, help_text='投资金额')
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_orginvestevent')
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_orginvestevent')
+
+    class Meta:
+        db_table = "org_investevent"
+
+
+class orgCooperativeRelationship(MyModel):
+    org = MyForeignKey(organization,null=True, blank=True, db_index=True, related_name='org_cooperativeRelationship')
+    cooperativeOrg = MyForeignKey(organization,null=True, blank=True, db_index=True, help_text='合作投资机构', related_name='cooperativeorg_Relationship')
+    comshortname = models.CharField(max_length=32, null=True, blank=True, help_text='企业简称')
+    investDate = models.DateTimeField(blank=True, null=True)
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_orgcooprelation')
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_orgcooprelation')
+
+    class Meta:
+        db_table = "org_cooperativerelationship"
+
+
+class orgBuyout(MyModel):
+    org = MyForeignKey(organization, null=True, blank=True, db_index=True,help_text='退出基金', related_name='org_buyout')
+    comshortname = models.CharField(max_length=32, null=True, blank=True, help_text='企业简称')
+    buyoutType = models.CharField(max_length=32, null=True, blank=True, help_text='退出方式')
+    buyoutDate = models.DateTimeField(blank=True, null=True)
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_orgbuyout')
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_orgbuyout')
+
+    class Meta:
+        db_table = "org_buyout"
+
 
 class orgRemarks(MyModel):
     id = models.AutoField(primary_key=True)

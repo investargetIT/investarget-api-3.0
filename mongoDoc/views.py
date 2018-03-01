@@ -289,6 +289,7 @@ class ProjectDataView(viewsets.ModelViewSet):
             data = request.data
             com_qs = ProjectData.objects.filter(com_id=data['com_id'])
             if com_qs.count() > 0:
+                data.pop('com_name', None)
                 serializer = self.serializer_class(com_qs.first(),data=data)
             else:
                 serializer = self.serializer_class(data=data)
