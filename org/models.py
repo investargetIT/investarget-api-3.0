@@ -23,8 +23,9 @@ class organization(MyModel):
     decisionCycle = models.SmallIntegerField(blank=True,null=True)
     decisionMakingProcess = models.TextField(blank=True,null=True)
     establishedDate = models.DateTimeField(blank=True, null=True, help_text='成立时间')
-    orgnameC = models.CharField(max_length=128,blank=True,null=True, help_text='机构全称')
-    orgnameE = models.CharField(max_length=128,blank=True,null=True, help_text='机构全称')
+    orgfullname = models.CharField(max_length=128,blank=True,null=True, help_text='全称')
+    orgnameC = models.CharField(max_length=128,blank=True,null=True, help_text='中文简称')
+    orgnameE = models.CharField(max_length=128,blank=True,null=True, help_text='英文简称')
     stockcode = models.CharField(max_length=128,blank=True,null=True,help_text='证券代码')
     stockshortname = models.CharField(max_length=128,blank=True,null=True,help_text='证券简称')
     managerName = models.CharField(max_length=128,blank=True,null=True,help_text='基金管理人名称')
@@ -174,7 +175,7 @@ class orgInvestEvent(MyModel):
 
 class orgCooperativeRelationship(MyModel):
     org = MyForeignKey(organization,null=True, blank=True, db_index=True, related_name='org_cooperativeRelationship')
-    cooperativeOrg = MyForeignKey(organization,null=True, blank=True, db_index=True, help_text='合作投资机构', related_name='cooperativeorg_Relationship')
+    cooperativeOrg = MyForeignKey(organization,null=True, blank=True, db_index=True, help_text='合作机构', related_name='cooperativeorg_Relationship')
     comshortname = models.CharField(max_length=32, null=True, blank=True, help_text='企业简称')
     investDate = models.DateTimeField(blank=True, null=True)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_orgcooprelation')
@@ -185,7 +186,8 @@ class orgCooperativeRelationship(MyModel):
 
 
 class orgBuyout(MyModel):
-    org = MyForeignKey(organization, null=True, blank=True, db_index=True,help_text='退出基金', related_name='org_buyout')
+    org = MyForeignKey(organization, null=True, blank=True, db_index=True, related_name='org_buyout')
+    buyoutorg = MyForeignKey(organization, null=True, blank=True, db_index=True, help_text='退出基金', related_name='buyoutorg_buyoutorg')
     comshortname = models.CharField(max_length=32, null=True, blank=True, help_text='企业简称')
     buyoutType = models.CharField(max_length=32, null=True, blank=True, help_text='退出方式')
     buyoutDate = models.DateTimeField(blank=True, null=True)
