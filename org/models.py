@@ -37,6 +37,7 @@ class organization(MyModel):
     mainproducttype = models.TextField(blank=True,null=True,help_text='主营产品类别')
     totalemployees = models.IntegerField(blank=True,null=True,help_text='员工总数')
     address = models.TextField(blank=True, null=True)
+    investmentStrategy = models.TextField(blank=True, null=True, help_text='投资策略')
     orgtype = MyForeignKey(OrgType,blank=True,null=True,help_text='机构类型（基金、证券、上市公司）')
     transactionAmountF = models.BigIntegerField(blank=True,null=True)
     transactionAmountT = models.BigIntegerField(blank=True,null=True)
