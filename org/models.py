@@ -133,9 +133,9 @@ class orgTransactionPhase(MyModel):
 class orgContact(MyModel):
     org = MyForeignKey(organization,null=True,blank=True, db_index=True, related_name='org_orgcontact')
     address = models.TextField(null=True,blank=True,help_text='联系地址')
-    postcode = models.CharField(max_length=10,null=True,blank=True,help_text='邮政编码')
-    countrycode = models.CharField(max_length=10,blank=True,null=True,default='86',help_text='国家号')
-    areacode = models.CharField(max_length=10,blank=True,null=True,default='86',help_text='地区号')
+    postcode = models.CharField(max_length=48,null=True,blank=True,help_text='邮政编码')
+    countrycode = models.CharField(max_length=16,blank=True,null=True,default='86',help_text='国家号')
+    areacode = models.CharField(max_length=16,blank=True,null=True,default='86',help_text='地区号')
     numbercode = models.CharField(max_length=32,db_index=True,blank=True,null=True,help_text='电话')
     faxcode = models.CharField(max_length=32, blank=True,null=True,help_text='传真')
     email = models.EmailField(max_length=128, blank=True,null=True,help_text='邮箱')

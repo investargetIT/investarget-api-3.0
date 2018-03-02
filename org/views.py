@@ -22,6 +22,7 @@ from django_filters import FilterSet
 
 
 class OrganizationFilter(FilterSet):
+    orgfullname = RelationFilter(filterstr='orgfullname')
     stockcode = RelationFilter(filterstr='stockcode',lookup_method='in')
     stockshortname = RelationFilter(filterstr='stockshortname',lookup_method='in')
     industrys = RelationFilter(filterstr='industry',lookup_method='in')
@@ -528,6 +529,8 @@ class OrgContactView(viewsets.ModelViewSet):
                 obj = self.queryset.get(id=self.kwargs['pk'])
             except self.models.DoesNotExist:
                 raise InvestError(code=5002)
+        if obj.org.datasource != self.request.user.datasource:
+            raise InvestError(code=5002)
         return obj
 
     def get_org(self,orgid):
@@ -550,6 +553,11 @@ class OrgContactView(viewsets.ModelViewSet):
                 page_size = 10
             if not page_index:
                 page_index = 1
+            orgid = request.GET.get('org', None)
+            if not orgid:
+                raise InvestError(2007, msg='机构不能为空')
+            else:
+                orginstace = self.get_org(orgid)
             queryset = self.filter_queryset(self.get_queryset())
             try:
                 count = queryset.count()
@@ -580,7 +588,6 @@ class OrgContactView(viewsets.ModelViewSet):
         else:
             raise InvestError(code=20072)
         data['createuser'] = request.user.id
-        data['datasource'] = request.user.datasource.id
         try:
             with transaction.atomic():
                 instanceserializer = OrgContactCreateSerializer(data=data)
@@ -621,7 +628,6 @@ class OrgContactView(viewsets.ModelViewSet):
                 raise InvestError(code=2009)
             data = request.data
             data['lastmodifytime'] = datetime.datetime.now()
-            data['datasource'] = request.user.datasource.id
             with transaction.atomic():
                 instanceserializer = OrgContactCreateSerializer(instance, data=data)
                 if instanceserializer.is_valid():
@@ -684,6 +690,8 @@ class OrgManageFundView(viewsets.ModelViewSet):
                 obj = self.queryset.get(id=self.kwargs['pk'])
             except self.models.DoesNotExist:
                 raise InvestError(code=5002)
+        if obj.org.datasource != self.request.user.datasource:
+            raise InvestError(code=5002)
         return obj
 
     def get_org(self,orgid):
@@ -706,6 +714,11 @@ class OrgManageFundView(viewsets.ModelViewSet):
                 page_size = 10
             if not page_index:
                 page_index = 1
+            orgid = request.GET.get('org', None)
+            if not orgid:
+                raise InvestError(2007, msg='机构不能为空')
+            else:
+                orginstace = self.get_org(orgid)
             queryset = self.filter_queryset(self.get_queryset())
             try:
                 count = queryset.count()
@@ -736,7 +749,6 @@ class OrgManageFundView(viewsets.ModelViewSet):
         else:
             raise InvestError(code=20072)
         data['createuser'] = request.user.id
-        data['datasource'] = request.user.datasource.id
         try:
             with transaction.atomic():
                 instanceserializer = OrgManageFundCreateSerializer(data=data)
@@ -777,7 +789,6 @@ class OrgManageFundView(viewsets.ModelViewSet):
                 raise InvestError(code=2009)
             data = request.data
             data['lastmodifytime'] = datetime.datetime.now()
-            data['datasource'] = request.user.datasource.id
             with transaction.atomic():
                 instanceserializer = OrgManageFundCreateSerializer(instance, data=data)
                 if instanceserializer.is_valid():
@@ -840,6 +851,8 @@ class OrgInvestEventView(viewsets.ModelViewSet):
                 obj = self.queryset.get(id=self.kwargs['pk'])
             except self.models.DoesNotExist:
                 raise InvestError(code=5002)
+        if obj.org.datasource != self.request.user.datasource:
+            raise InvestError(code=5002)
         return obj
 
     def get_org(self,orgid):
@@ -862,6 +875,11 @@ class OrgInvestEventView(viewsets.ModelViewSet):
                 page_size = 10
             if not page_index:
                 page_index = 1
+            orgid = request.GET.get('org', None)
+            if not orgid:
+                raise InvestError(2007, msg='机构不能为空')
+            else:
+                orginstace = self.get_org(orgid)
             queryset = self.filter_queryset(self.get_queryset())
             try:
                 count = queryset.count()
@@ -892,7 +910,6 @@ class OrgInvestEventView(viewsets.ModelViewSet):
         else:
             raise InvestError(code=20072)
         data['createuser'] = request.user.id
-        data['datasource'] = request.user.datasource.id
         try:
             with transaction.atomic():
                 instanceserializer = OrgInvestEventCreateSerializer(data=data)
@@ -933,7 +950,6 @@ class OrgInvestEventView(viewsets.ModelViewSet):
                 raise InvestError(code=2009)
             data = request.data
             data['lastmodifytime'] = datetime.datetime.now()
-            data['datasource'] = request.user.datasource.id
             with transaction.atomic():
                 instanceserializer = OrgInvestEventCreateSerializer(instance, data=data)
                 if instanceserializer.is_valid():
@@ -996,6 +1012,8 @@ class OrgCooperativeRelationshipView(viewsets.ModelViewSet):
                 obj = self.queryset.get(id=self.kwargs['pk'])
             except self.models.DoesNotExist:
                 raise InvestError(code=5002)
+        if obj.org.datasource != self.request.user.datasource:
+            raise InvestError(code=5002)
         return obj
 
     def get_org(self,orgid):
@@ -1018,6 +1036,11 @@ class OrgCooperativeRelationshipView(viewsets.ModelViewSet):
                 page_size = 10
             if not page_index:
                 page_index = 1
+            orgid = request.GET.get('org', None)
+            if not orgid:
+                raise InvestError(2007, msg='机构不能为空')
+            else:
+                orginstace = self.get_org(orgid)
             queryset = self.filter_queryset(self.get_queryset())
             try:
                 count = queryset.count()
@@ -1048,7 +1071,6 @@ class OrgCooperativeRelationshipView(viewsets.ModelViewSet):
         else:
             raise InvestError(code=20072)
         data['createuser'] = request.user.id
-        data['datasource'] = request.user.datasource.id
         try:
             with transaction.atomic():
                 instanceserializer = OrgCooperativeRelationshipCreateSerializer(data=data)
@@ -1089,7 +1111,6 @@ class OrgCooperativeRelationshipView(viewsets.ModelViewSet):
                 raise InvestError(code=2009)
             data = request.data
             data['lastmodifytime'] = datetime.datetime.now()
-            data['datasource'] = request.user.datasource.id
             with transaction.atomic():
                 instanceserializer = OrgCooperativeRelationshipCreateSerializer(instance, data=data)
                 if instanceserializer.is_valid():
@@ -1151,6 +1172,8 @@ class OrgBuyoutView(viewsets.ModelViewSet):
                 obj = self.queryset.get(id=self.kwargs['pk'])
             except self.models.DoesNotExist:
                 raise InvestError(code=5002)
+        if obj.org.datasource != self.request.user.datasource:
+            raise InvestError(code=5002)
         return obj
 
     def get_org(self,orgid):
@@ -1173,6 +1196,11 @@ class OrgBuyoutView(viewsets.ModelViewSet):
                 page_size = 10
             if not page_index:
                 page_index = 1
+            orgid = request.GET.get('org', None)
+            if not orgid:
+                raise InvestError(2007, msg='机构不能为空')
+            else:
+                orginstace = self.get_org(orgid)
             queryset = self.filter_queryset(self.get_queryset())
             try:
                 count = queryset.count()
@@ -1203,7 +1231,6 @@ class OrgBuyoutView(viewsets.ModelViewSet):
         else:
             raise InvestError(code=20072)
         data['createuser'] = request.user.id
-        data['datasource'] = request.user.datasource.id
         try:
             with transaction.atomic():
                 instanceserializer = OrgBuyoutCreateSerializer(data=data)
@@ -1244,7 +1271,6 @@ class OrgBuyoutView(viewsets.ModelViewSet):
                 raise InvestError(code=2009)
             data = request.data
             data['lastmodifytime'] = datetime.datetime.now()
-            data['datasource'] = request.user.datasource.id
             with transaction.atomic():
                 instanceserializer = OrgBuyoutCreateSerializer(instance, data=data)
                 if instanceserializer.is_valid():
