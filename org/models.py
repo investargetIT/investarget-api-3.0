@@ -92,6 +92,8 @@ class organization(MyModel):
             self.orgnameE = self.orgnameC
         if self.orgnameE and not self.orgnameC:
             self.orgnameC = self.orgnameE
+        if not self.orgfullname:
+            self.orgfullname = self.orgnameC
         if self.industry:
             if self.industry.datasource != self.datasource_id:
                 raise InvestError(8888)
@@ -106,16 +108,16 @@ class organization(MyModel):
                 raise InvestError(2007, msg='国家号 必须是纯数字')
         if self.pk:
             oldorg = organization.objects.get(pk=self.pk)
-            if self.orgnameC:
-                if organization.objects.exclude(pk=self.pk).filter(is_deleted=False,orgnameC=self.orgnameC,datasource=self.datasource).exists():
+            if self.orgfullname:
+                if organization.objects.exclude(pk=self.pk).filter(is_deleted=False,orgfullname=self.orgfullname,datasource=self.datasource).exists():
                     raise InvestError(code=5001,msg='同名机构已存在,无法修改')
             if self.is_deleted and oldorg.createuser:
                 remove_perm('org.user_getorg', oldorg.createuser, self)
                 remove_perm('org.user_changeorg', oldorg.createuser, self)
                 remove_perm('org.user_deleteorg', oldorg.createuser, self)
         else:
-            if self.orgnameC:
-                if organization.objects.filter(is_deleted=False,orgnameC=self.orgnameC,datasource=self.datasource).exists():
+            if self.orgfullname:
+                if organization.objects.filter(is_deleted=False,orgfullname=self.orgfullname,datasource=self.datasource).exists():
                     raise InvestError(code=5001,msg='同名机构已存在，无法新增')
         super(organization,self).save(force_insert,force_update,using,update_fields)
 
