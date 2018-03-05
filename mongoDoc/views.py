@@ -290,7 +290,7 @@ class ProjectDataView(viewsets.ModelViewSet):
             com_qs = ProjectData.objects.filter(com_id=data['com_id'])
             if com_qs.count() > 0:
                 com_name = data.get('com_name', None)
-                if com_name and (u'...' in com_name or '...' in com_name):
+                if com_name and (u'...' in com_name or u'403' in com_name or u'www.itjuzi.com' in com_name):
                     data.pop('com_name', None)
                 serializer = self.serializer_class(com_qs.first(),data=data)
             else:
