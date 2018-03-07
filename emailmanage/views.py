@@ -173,6 +173,18 @@ class EmailgroupsendlistView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.queryset).filter(datasource=request.user.datasource_id)
+            email = request.GET.get('email', None)
+            mobile = request.GET.get('mobile', None)
+            if email or mobile:
+                try:
+                    if email:
+                        user = MyUser.objects.get(email=email, is_deleted=False, datasource=request.user.datasource)
+                    else:
+                        user = MyUser.objects.get(mobile=mobile, is_deleted=False, datasource=request.user.datasource)
+                except MyUser.DoesNotExist:
+                    pass
+                else:
+                    queryset = queryset.filter(user=user.id)
             sortfield = request.GET.get('sort', 'createdtime')
             desc = request.GET.get('desc', 1)
             queryset = mySortQuery(queryset, sortfield, desc)
