@@ -205,8 +205,8 @@ class orgCooperativeRelationship(MyModel):
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
-        if not self.org or not self.cooperativeOrg or not self.comshortname:
-            raise InvestError(code=2007, msg='机构/合作机构/企业不能为空')
+        if not self.org :
+            raise InvestError(code=2007, msg='机构不能为空')
         super(orgCooperativeRelationship,self).save(force_insert,force_update,using,update_fields)
 
 
