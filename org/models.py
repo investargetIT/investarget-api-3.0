@@ -4,8 +4,7 @@ from __future__ import unicode_literals
 from django.db import models
 import sys
 from guardian.shortcuts import assign_perm, remove_perm
-from sourcetype.models import AuditStatus, OrgType , TransactionPhases,CurrencyType, Industry, DataSource, OrgAttribute, \
-    OrgArea
+from sourcetype.models import AuditStatus, OrgType , TransactionPhases,CurrencyType, Industry, DataSource, OrgAttribute, Country
 from usersys.models import MyUser
 from utils.customClass import InvestError, MyForeignKey, MyModel
 
@@ -97,9 +96,6 @@ class organization(MyModel):
         if self.industry:
             if self.industry.datasource != self.datasource_id:
                 raise InvestError(8888)
-        # if self.mobile:  # 机构表有大量数据都不是纯数字，先不加
-        #     if not self.mobile.isdigit():
-        #         raise InvestError(2007, msg='联系电话 必须是纯数字')
         if self.mobileCode:
             if not self.mobileCode.isdigit():
                 raise InvestError(2007, msg='区号 必须是纯数字')
@@ -164,7 +160,7 @@ class orgInvestEvent(MyModel):
     org = MyForeignKey(organization,null=True, blank=True, db_index=True, related_name='org_orgInvestEvent')
     comshortname = models.CharField(max_length=32, null=True, blank=True, help_text='企业简称')
     industrytype = models.CharField(max_length=32, null=True, blank=True, help_text='行业分类')
-    area = MyForeignKey(OrgArea,blank=True, null=True, help_text='地区')
+    area = MyForeignKey(Country,blank=True, null=True, help_text='地区')
     investor =  models.CharField(max_length=32, null=True, blank=True, help_text='投资人')
     investDate = models.DateTimeField(blank=True, null=True)
     investType = models.CharField(max_length=32, blank=True,null=True,help_text='投资性质（轮次）')
