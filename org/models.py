@@ -117,6 +117,7 @@ class organization(MyModel):
                     raise InvestError(code=5001,msg='同名机构已存在，无法新增')
         super(organization,self).save(force_insert,force_update,using,update_fields)
 
+
 class orgTransactionPhase(MyModel):
     org = MyForeignKey(organization,null=True,blank=True,related_name='org_orgTransactionPhases')
     transactionPhase = MyForeignKey(TransactionPhases,null=True,blank=True,related_name='transactionPhase_orgs',on_delete=models.SET_NULL)
@@ -125,6 +126,7 @@ class orgTransactionPhase(MyModel):
 
     class Meta:
         db_table = "org_TransactionPhase"
+
 
 class orgContact(MyModel):
     org = MyForeignKey(organization,null=True,blank=True, db_index=True, related_name='org_orgcontact')
@@ -141,6 +143,12 @@ class orgContact(MyModel):
     class Meta:
         db_table = "org_contact"
 
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if not self.org:
+            raise InvestError(code=2007,msg='机构不能为空')
+        super(orgContact,self).save(force_insert,force_update,using,update_fields)
+
 
 class orgManageFund(MyModel):
     org = MyForeignKey(organization,null=True,blank=True,db_index=True,related_name='org_orgManageFund')
@@ -154,6 +162,12 @@ class orgManageFund(MyModel):
 
     class Meta:
         db_table = "org_managefund"
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if not self.org or not self.fund:
+            raise InvestError(code=2007,msg='机构/基金不能为空')
+        super(orgManageFund,self).save(force_insert,force_update,using,update_fields)
 
 
 class orgInvestEvent(MyModel):
@@ -171,6 +185,12 @@ class orgInvestEvent(MyModel):
     class Meta:
         db_table = "org_investevent"
 
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if not self.org or not self.comshortname:
+            raise InvestError(code=2007,msg='机构/企业不能为空')
+        super(orgInvestEvent,self).save(force_insert,force_update,using,update_fields)
+
 
 class orgCooperativeRelationship(MyModel):
     org = MyForeignKey(organization,null=True, blank=True, db_index=True, related_name='org_cooperativeRelationship')
@@ -182,6 +202,12 @@ class orgCooperativeRelationship(MyModel):
 
     class Meta:
         db_table = "org_cooperativerelationship"
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if not self.org or not self.cooperativeOrg or not self.comshortname:
+            raise InvestError(code=2007, msg='机构/合作机构/企业不能为空')
+        super(orgCooperativeRelationship,self).save(force_insert,force_update,using,update_fields)
 
 
 class orgBuyout(MyModel):
@@ -195,7 +221,11 @@ class orgBuyout(MyModel):
 
     class Meta:
         db_table = "org_buyout"
-
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if not self.org or not self.buyoutorg or not self.comshortname:
+            raise InvestError(code=2007, msg='机构/退出基金/企业不能为空')
+        super(orgBuyout,self).save(force_insert,force_update,using,update_fields)
 
 class orgRemarks(MyModel):
     id = models.AutoField(primary_key=True)
