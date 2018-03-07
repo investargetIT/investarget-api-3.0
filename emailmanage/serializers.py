@@ -8,10 +8,10 @@ from usersys.models import MyUser
 class Usergroupsendlistserializer(serializers.ModelSerializer):
     class Meta:
         model = MyUser
-        fields = ('id', 'usernameC', 'email')
+        fields = ('id', 'usernameC', 'email', 'mobile')
 
 
 class Emailgroupsendlistserializer(serializers.ModelSerializer):
     class Meta:
         model = emailgroupsendlist
-        exclude = ('is_deleted', 'email', 'userEmail')
+        exclude = ('is_deleted',)
