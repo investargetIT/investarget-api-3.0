@@ -655,7 +655,8 @@ def saveSendEmailDataToMongo(data):
 
 def readSendEmailDataFromMongo():
     start = datetime.datetime.now() - datetime.timedelta(hours=23, minutes=59, seconds=59)
-    qs = GroupEmailData.objects.filter(savetime__gt=start)
+    queryset = GroupEmailData.objects.all()
+    qs = queryset.filter(savetime__gt=start)
     return GroupEmailDataSerializer(qs,many=True).data
 
 

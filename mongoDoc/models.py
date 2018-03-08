@@ -151,7 +151,7 @@ class GroupEmailData(Document):
     users = ListField(DictField())
     projtitle = StringField()
     proj = DictField()
-    savetime = DateTimeField(default=datetime.datetime.now())
+    savetime = DateTimeField()
     datasource = IntField()
     meta = {"collection": groupemailMongoTableName}
 

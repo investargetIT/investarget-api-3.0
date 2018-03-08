@@ -19,7 +19,7 @@ from utils.customClass import MyModel
 class emailgroupsendlist(MyModel):
     proj = models.IntegerField(blank=True, null=True, help_text='项目')
     projtitle = models.TextField(blank=True, null=True)
-    send_id = models.CharField(max_length=20, blank=True, null=True, help_text='由submail返回')
+    send_id = models.CharField(max_length=200, blank=True, null=True, help_text='由submail返回')
     user = models.IntegerField(blank=True, null=True, help_text='用户')
     username = models.CharField(max_length=64, blank=True, null=True)
     userMobile = models.CharField(max_length=64, blank=True, null=True)
