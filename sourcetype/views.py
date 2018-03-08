@@ -201,6 +201,8 @@ class TitleView(viewsets.ModelViewSet):
         update:修改职位
         destroy:删除职位
     """
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('nameC', 'nameE')
     queryset = TitleType.objects.all().filter(is_deleted=False)
     serializer_class = titleTypeSerializer
     def list(self, request, *args, **kwargs):
