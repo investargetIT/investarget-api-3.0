@@ -422,6 +422,20 @@ class UserView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+    @loginTokenIsAvailable()
+    def changeuser(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            user = self.get_object()
+            serializer = UpdateUserSerializer(user)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
     #delete
     @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):

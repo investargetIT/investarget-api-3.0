@@ -10,6 +10,10 @@ user_list = views.UserView.as_view({
         'delete': 'destroy', #删除（批量）
 })
 
+change_user = views.UserView.as_view({
+        'post':'changeuser',   #注册
+})
+
 regist_user = views.UserView.as_view({
         'post':'create',   #注册
 })
@@ -105,6 +109,7 @@ checkUserAccountExist = views.UserView.as_view({
 
 urlpatterns = [
     url(r'^$', user_list,name='user-list',),
+    url(r'^chnageuser/(?P<pk>\d+)$', change_user, name='change-list', ),
     url(r'^count$', getUserCount, name='getUserCount', ),
     url(r'^checkexists/$', checkUserAccountExist,name='user-checkUserAccountExist',),
     url(r'^(?P<pk>\d+)/$', user_detail,name='user-one'),
