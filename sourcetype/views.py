@@ -120,7 +120,8 @@ class CountryView(viewsets.ModelViewSet):
         destroy:删除国家
     """
     filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
-    filter_fields = ('level', 'parent',)
+    filter_fields = ('level', 'parent', 'countryC')
+    search_fields = ('countryC', 'countryE', 'areaCode')
     queryset = Country.objects.all().filter(is_deleted=False)
     serializer_class = countrySerializer
 
