@@ -172,7 +172,7 @@ class orgManageFund(MyModel):
 
 class orgInvestEvent(MyModel):
     org = MyForeignKey(organization,null=True, blank=True, db_index=True, related_name='org_orgInvestEvent')
-    comshortname = models.CharField(max_length=32, null=True, blank=True, help_text='企业简称')
+    comshortname = models.CharField(max_length=128, null=True, blank=True, help_text='企业简称')
     industrytype = models.CharField(max_length=32, null=True, blank=True, help_text='行业分类')
     area = MyForeignKey(Country,blank=True, null=True, help_text='地区')
     investor =  models.CharField(max_length=32, null=True, blank=True, help_text='投资人')
@@ -195,7 +195,7 @@ class orgInvestEvent(MyModel):
 class orgCooperativeRelationship(MyModel):
     org = MyForeignKey(organization,null=True, blank=True, db_index=True, related_name='org_cooperativeRelationship')
     cooperativeOrg = MyForeignKey(organization,null=True, blank=True, db_index=True, help_text='合作机构', related_name='cooperativeorg_Relationship')
-    comshortname = models.CharField(max_length=32, null=True, blank=True, help_text='企业简称')
+    comshortname = models.CharField(max_length=128, null=True, blank=True, help_text='企业简称')
     investDate = models.DateTimeField(blank=True, null=True)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_orgcooprelation')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_orgcooprelation')
@@ -213,7 +213,7 @@ class orgCooperativeRelationship(MyModel):
 class orgBuyout(MyModel):
     org = MyForeignKey(organization, null=True, blank=True, db_index=True, related_name='org_buyout')
     buyoutorg = MyForeignKey(organization, null=True, blank=True, db_index=True, help_text='退出基金', related_name='buyoutorg_buyoutorg')
-    comshortname = models.CharField(max_length=32, null=True, blank=True, help_text='企业简称')
+    comshortname = models.CharField(max_length=128, null=True, blank=True, help_text='企业简称')
     buyoutType = models.CharField(max_length=32, null=True, blank=True, help_text='退出方式')
     buyoutDate = models.DateTimeField(blank=True, null=True)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_orgbuyout')
