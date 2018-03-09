@@ -422,24 +422,6 @@ class UserView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
-    def changeuser(self, request, *args, **kwargs):
-        try:
-            lang = request.GET.get('lang')
-            user = self.get_object()
-            data = request.data
-            serializer = UpdateUserSerializer(user, data=data)
-            if serializer.is_valid():
-                serializer.save()
-            else:
-                raise InvestError(code=200726, msg='userdata有误_%s\n%s' % (serializer.error_messages, serializer.errors))
-            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))
-        except InvestError as err:
-            return JSONResponse(InvestErrorResponse(err))
-        except Exception:
-            catchexcption(request)
-            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
 
     #delete
     @loginTokenIsAvailable()
