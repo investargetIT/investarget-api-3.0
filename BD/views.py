@@ -105,6 +105,27 @@ class ProjectBDView(viewsets.ModelViewSet):
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+    @loginTokenIsAvailable()
+    def countBd(self, request, *args, **kwargs):
+        try:
+            queryset = self.filter_queryset(self.get_queryset())
+            if request.user.has_perm('BD.manageProjectBD'):
+                pass
+            elif request.user.has_perm('BD.user_getProjectBD'):
+                queryset = queryset.filter(manager=request.user)
+            else:
+                raise InvestError(2009)
+            countres = queryset.values_list('manager').annotate(Count('manager'))
+            countlist = []
+            for manager_count in countres:
+                countlist.append({'manager': manager_count[0], 'count': manager_count[1]})
+            count = queryset.count()
+            return JSONResponse(SuccessResponse({'count': count, 'manager_count': countlist}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
 
     @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
@@ -394,6 +415,26 @@ class OrgBDView(viewsets.ModelViewSet):
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+    @loginTokenIsAvailable()
+    def countBd(self, request, *args, **kwargs):
+        try:
+            queryset = self.filter_queryset(self.get_queryset())
+            if request.user.has_perm('BD.manageOrgBD'):
+                pass
+            elif request.user.has_perm('BD.user_getOrgBD'):
+                queryset = queryset.filter(Q(manager=request.user) | Q(createuser=request.user) | Q(proj__in=request.user.usertake_projs.all()) | Q(proj__in=request.user.usermake_projs.all()))
+            else:
+                raise InvestError(2009)
+            countres = queryset.values_list('manager').annotate(Count('manager'))
+            countlist = []
+            for manager_count in countres:
+                countlist.append({'manager': manager_count[0], 'count': manager_count[1]})
+            count = queryset.count()
+            return JSONResponse(SuccessResponse({'count': count, 'manager_count': countlist}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):

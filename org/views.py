@@ -53,22 +53,6 @@ class OrganizationView(viewsets.ModelViewSet):
     serializer_class = OrgDetailSerializer
     redis_key = 'organization'
 
-    def get_queryset(self):
-        assert self.queryset is not None, (
-            "'%s' should either include a `queryset` attribute, "
-            "or override the `get_queryset()` method."
-            % self.__class__.__name__
-        )
-        queryset = self.queryset
-        if isinstance(queryset, QuerySet):
-            if self.request.user.is_authenticated:
-                queryset = queryset.filter(datasource=self.request.user.datasource)
-            else:
-                queryset = queryset.all()
-        else:
-            raise InvestError(code=8890)
-        return queryset
-
     def get_object(self, pk=None):
         if pk:
             obj = read_from_cache(self.redis_key + '_%s' % pk)
@@ -89,8 +73,6 @@ class OrganizationView(viewsets.ModelViewSet):
                     raise InvestError(code=5002)
                 else:
                     write_to_cache(self.redis_key + '_%s' % self.kwargs[lookup_url_kwarg], obj)
-        if obj.datasource != self.request.user.datasource:
-            raise InvestError(code=8888)
         return obj
 
 
@@ -99,21 +81,11 @@ class OrganizationView(viewsets.ModelViewSet):
             page_size = request.GET.get('page_size')
             page_index = request.GET.get('page_index')  # 从第一页开始
             lang = request.GET.get('lang')
-            source = request.META.get('HTTP_SOURCE')
-            if source:
-                datasource = DataSource.objects.filter(id=source, is_deleted=False)
-                if datasource.exists():
-                    userdatasource = datasource.first()
-                    queryset = self.get_queryset().filter(datasource=userdatasource)
-                else:
-                    raise InvestError(code=8888)
-            else:
-                raise InvestError(code=8888, msg='unavailable source')
             if not page_size:
                 page_size = 10
             if not page_index:
                 page_index = 1
-            queryset = self.filter_queryset(queryset)
+            queryset = self.filter_queryset(self.get_queryset())
             sortfield = request.GET.get('sort', 'createdtime')
             desc = request.GET.get('desc', 1)
             queryset = mySortQuery(queryset, sortfield, desc)
@@ -326,21 +298,6 @@ class OrgRemarkView(viewsets.ModelViewSet):
     filter_fields = ('id','org','createuser')
     serializer_class = OrgRemarkDetailSerializer
 
-    def get_queryset(self):
-        assert self.queryset is not None, (
-            "'%s' should either include a `queryset` attribute, "
-            "or override the `get_queryset()` method."
-            % self.__class__.__name__
-        )
-        queryset = self.queryset
-        if isinstance(queryset, QuerySet):
-            if self.request.user.is_authenticated:
-                queryset = queryset.filter(datasource=self.request.user.datasource)
-            else:
-                queryset = queryset.all()
-        else:
-            raise InvestError(code=8890)
-        return queryset
 
     def get_object(self, pk=None):
         if pk:
@@ -361,7 +318,7 @@ class OrgRemarkView(viewsets.ModelViewSet):
         if self.request.user.is_anonymous:
             raise InvestError(code=8889)
         try:
-            org = organization.objects.get(id=orgid,is_deleted=False,datasource=self.request.user.datasource)
+            org = organization.objects.get(id=orgid,is_deleted=False)
         except organization.DoesNotExist:
             raise InvestError(code=5002)
         else:
@@ -464,7 +421,7 @@ class OrgRemarkView(viewsets.ModelViewSet):
             data = request.data
             data['lastmodifyuser'] = request.user.id
             data['lastmodifytime'] = datetime.datetime.now()
-            data['datasource'] = request.user.datasource.id
+            data.pop('datasource', None)
             with transaction.atomic():
                 orgserializer = OrgRemarkDetailSerializer(orgremark, data=data)
                 if orgserializer.is_valid():
@@ -529,15 +486,13 @@ class OrgContactView(viewsets.ModelViewSet):
                 obj = self.queryset.get(id=self.kwargs['pk'])
             except self.models.DoesNotExist:
                 raise InvestError(code=5002)
-        if obj.org.datasource != self.request.user.datasource:
-            raise InvestError(code=5002)
         return obj
 
     def get_org(self,orgid):
         if self.request.user.is_anonymous:
             raise InvestError(code=8889)
         try:
-            org = organization.objects.get(id=orgid,is_deleted=False,datasource=self.request.user.datasource)
+            org = organization.objects.get(id=orgid,is_deleted=False)
         except organization.DoesNotExist:
             raise InvestError(code=5002)
         else:
@@ -690,15 +645,13 @@ class OrgManageFundView(viewsets.ModelViewSet):
                 obj = self.queryset.get(id=self.kwargs['pk'])
             except self.models.DoesNotExist:
                 raise InvestError(code=5002)
-        if obj.org.datasource != self.request.user.datasource:
-            raise InvestError(code=5002)
         return obj
 
     def get_org(self,orgid):
         if self.request.user.is_anonymous:
             raise InvestError(code=8889)
         try:
-            org = organization.objects.get(id=orgid,is_deleted=False,datasource=self.request.user.datasource)
+            org = organization.objects.get(id=orgid,is_deleted=False)
         except organization.DoesNotExist:
             raise InvestError(code=5002)
         else:
@@ -851,15 +804,13 @@ class OrgInvestEventView(viewsets.ModelViewSet):
                 obj = self.queryset.get(id=self.kwargs['pk'])
             except self.models.DoesNotExist:
                 raise InvestError(code=5002)
-        if obj.org.datasource != self.request.user.datasource:
-            raise InvestError(code=5002)
         return obj
 
     def get_org(self,orgid):
         if self.request.user.is_anonymous:
             raise InvestError(code=8889)
         try:
-            org = organization.objects.get(id=orgid,is_deleted=False,datasource=self.request.user.datasource)
+            org = organization.objects.get(id=orgid,is_deleted=False)
         except organization.DoesNotExist:
             raise InvestError(code=5002)
         else:
@@ -1012,15 +963,13 @@ class OrgCooperativeRelationshipView(viewsets.ModelViewSet):
                 obj = self.queryset.get(id=self.kwargs['pk'])
             except self.models.DoesNotExist:
                 raise InvestError(code=5002)
-        if obj.org.datasource != self.request.user.datasource:
-            raise InvestError(code=5002)
         return obj
 
     def get_org(self,orgid):
         if self.request.user.is_anonymous:
             raise InvestError(code=8889)
         try:
-            org = organization.objects.get(id=orgid,is_deleted=False,datasource=self.request.user.datasource)
+            org = organization.objects.get(id=orgid,is_deleted=False)
         except organization.DoesNotExist:
             raise InvestError(code=5002)
         else:
@@ -1172,15 +1121,13 @@ class OrgBuyoutView(viewsets.ModelViewSet):
                 obj = self.queryset.get(id=self.kwargs['pk'])
             except self.models.DoesNotExist:
                 raise InvestError(code=5002)
-        if obj.org.datasource != self.request.user.datasource:
-            raise InvestError(code=5002)
         return obj
 
     def get_org(self,orgid):
         if self.request.user.is_anonymous:
             raise InvestError(code=8889)
         try:
-            org = organization.objects.get(id=orgid,is_deleted=False,datasource=self.request.user.datasource)
+            org = organization.objects.get(id=orgid,is_deleted=False)
         except organization.DoesNotExist:
             raise InvestError(code=5002)
         else:

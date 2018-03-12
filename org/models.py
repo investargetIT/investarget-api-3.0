@@ -83,8 +83,6 @@ class organization(MyModel):
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
-        if not self.datasource:
-            raise InvestError(code=8888,msg='机构datasource不能空')
         if not self.orgnameC and not self.orgnameE:
             raise InvestError(2007,msg='机构名称不能为空')
         if self.orgnameC and not self.orgnameE:
@@ -93,9 +91,6 @@ class organization(MyModel):
             self.orgnameC = self.orgnameE
         if not self.orgfullname:
             self.orgfullname = self.orgnameC
-        if self.industry:
-            if self.industry.datasource != self.datasource_id:
-                raise InvestError(8888)
         if self.mobileCode:
             if not self.mobileCode.isdigit():
                 raise InvestError(2007, msg='区号 必须是纯数字')
@@ -105,7 +100,7 @@ class organization(MyModel):
         if self.pk:
             oldorg = organization.objects.get(pk=self.pk)
             if self.orgfullname:
-                if organization.objects.exclude(pk=self.pk).filter(is_deleted=False,orgfullname=self.orgfullname,datasource=self.datasource).exists():
+                if organization.objects.exclude(pk=self.pk).filter(is_deleted=False,orgfullname=self.orgfullname).exists():
                     raise InvestError(code=5001,msg='同名机构已存在,无法修改')
             if self.is_deleted and oldorg.createuser:
                 remove_perm('org.user_getorg', oldorg.createuser, self)
@@ -113,7 +108,7 @@ class organization(MyModel):
                 remove_perm('org.user_deleteorg', oldorg.createuser, self)
         else:
             if self.orgfullname:
-                if organization.objects.filter(is_deleted=False,orgfullname=self.orgfullname,datasource=self.datasource).exists():
+                if organization.objects.filter(is_deleted=False,orgfullname=self.orgfullname).exists():
                     raise InvestError(code=5001,msg='同名机构已存在，无法新增')
         super(organization,self).save(force_insert,force_update,using,update_fields)
 
@@ -250,6 +245,6 @@ class orgRemarks(MyModel):
         )
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
-        if not self.datasource or self.datasource != self.org.datasource:
-            raise InvestError(code=8888,msg='机构备注没有datasource')
+        # if not self.datasource or self.datasource != self.org.datasource:
+        #     raise InvestError(code=8888,msg='机构备注没有datasource')
         super(orgRemarks,self).save(force_insert,force_update,using,update_fields)
