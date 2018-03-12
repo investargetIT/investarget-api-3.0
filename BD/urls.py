@@ -63,12 +63,12 @@ deleteAttachment = views.MeetingBDView.as_view({
 
 urlpatterns = [
         url(r'^projbd/$', projbd_list, name='projbd_list'),
-        url(r'^projbd/projbd_count/$', projbd_count, name='projbd_count'),
+        url(r'^projbd/count/$', projbd_count, name='projbd_count'),
         url(r'^projbd/(?P<pk>\d+)/$', projbd_detail, name='projbd_detail'),
         url(r'^projbd/comment/$', projdbcomment_list, name='projdbcomment_list'),
         url(r'^projbd/comment/(?P<pk>\d+)/$', projbdcomment_detail, name='projbdcomment_detail'),
         url(r'^orgbd/$', orgbd_list, name='orgbd_list'),
-        url(r'^orgbd/orgbd_count/$', orgbd_count, name='orgbd_count'),
+        url(r'^orgbd/count/$', orgbd_count, name='orgbd_count'),
         url(r'^orgbd/(?P<pk>\d+)/$', orgbd_detail, name='orgbd_detail'),
         url(r'^orgbd/comment/$', orgbdcomment_list, name='orgbdcomment_list'),
         url(r'^orgbd/comment/(?P<pk>\d+)/$', orgbdcomment_detail, name='orgbdcomment_detail'),
