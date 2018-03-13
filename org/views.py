@@ -26,6 +26,7 @@ class OrganizationFilter(FilterSet):
     stockcode = RelationFilter(filterstr='stockcode',lookup_method='in')
     stockshortname = RelationFilter(filterstr='stockshortname',lookup_method='in')
     issub = RelationFilter(filterstr='issub', lookup_method='exact')
+    investoverseasproject = RelationFilter(filterstr='investoverseasproject', lookup_method='exact')
     industrys = RelationFilter(filterstr='industry',lookup_method='in')
     currencys = RelationFilter(filterstr='currency',lookup_method='in')
     orgname = RelationFilter(filterstr='orgnameC')
@@ -37,7 +38,7 @@ class OrganizationFilter(FilterSet):
     trader = RelationFilter(filterstr='org_users__investor_relations__traderuser',lookup_method='in',relationName='org_users__investor_relations__is_deleted')
     class Meta:
         model = organization
-        fields = ['orgname','orgstatus','currencys','industrys','orgtransactionphases','orgtypes','tags','area','trader','stockcode','stockshortname','issub']
+        fields = ['orgname','orgstatus','currencys','industrys','orgtransactionphases','orgtypes','tags','area','trader','stockcode','stockshortname','issub','investoverseasproject']
 
 class OrganizationView(viewsets.ModelViewSet):
     """
