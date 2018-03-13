@@ -42,6 +42,7 @@ class organization(MyModel):
     transactionAmountT = models.BigIntegerField(blank=True,null=True)
     weChat = models.CharField(max_length=32,blank=True,null=True)
     fundSize = models.BigIntegerField(blank=True,null=True)
+    issub = models.BooleanField(blank=True, default=False, help_text='是否是子基金')
     typicalCase = models.TextField(blank=True,null=True)
     fundSize_USD = models.BigIntegerField(blank=True,null=True)
     transactionAmountF_USD = models.BigIntegerField(blank=True,null=True)
