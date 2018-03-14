@@ -51,7 +51,7 @@ class OrganizationView(viewsets.ModelViewSet):
     filter_backends = (MySearchFilter,filters.DjangoFilterBackend,)
     queryset = organization.objects.filter(is_deleted=False)
     filter_class = OrganizationFilter
-    search_fields = ('orgnameC','orgnameE','stockcode')
+    search_fields = ('orgnameC','orgnameE','stockcode', 'orgfullname')
     serializer_class = OrgDetailSerializer
     redis_key = 'organization'
 
@@ -172,6 +172,8 @@ class OrganizationView(viewsets.ModelViewSet):
             if request.user.has_perm('org.admin_getorg'):
                 orgserializer = OrgDetailSerializer
             elif request.user.has_perm('org.user_getorg', org):
+                orgserializer = OrgDetailSerializer
+            elif request.user.org == org:
                 orgserializer = OrgDetailSerializer
             elif request.user.trader_relations.all().filter(is_deleted=False, investoruser__in=orgusers).exists():
                 orgserializer = OrgDetailSerializer
