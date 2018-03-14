@@ -8,7 +8,7 @@ from sourcetype.serializer import transactionPhasesSerializer, orgAreaSerializer
 class OrgCommonSerializer(serializers.ModelSerializer):
     class Meta:
         model = organization
-        fields = ('id', 'orgnameC', 'orgnameE', 'description')
+        fields = ('id', 'orgfullname', 'orgnameC', 'orgnameE', 'description')
 
 
 class OrgCreateSerializer(serializers.ModelSerializer):
