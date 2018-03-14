@@ -474,7 +474,7 @@ class OrgContactView(viewsets.ModelViewSet):
     destroy:删除机构联系方式（id）
     """
     filter_backends = (filters.DjangoFilterBackend,)
-    queryset = orgContact.objects.filter(is_deleted=False)
+    queryset = orgContact.objects.filter(is_deleted=False).filter(org__is_deleted=False)
     filter_fields = ('id','org','createuser')
     serializer_class = OrgContactSerializer
     models = orgContact
@@ -633,7 +633,7 @@ class OrgManageFundView(viewsets.ModelViewSet):
     destroy:删除机构管理基金id）
     """
     filter_backends = (filters.DjangoFilterBackend,)
-    queryset = orgManageFund.objects.filter(is_deleted=False)
+    queryset = orgManageFund.objects.filter(is_deleted=False).filter(org__is_deleted=False, fund__is_deleted=False)
     filter_fields = ('id','org','createuser')
     serializer_class = OrgManageFundSerializer
     models = orgManageFund
@@ -792,7 +792,7 @@ class OrgInvestEventView(viewsets.ModelViewSet):
     destroy:删除机构投资事件id）
     """
     filter_backends = (filters.DjangoFilterBackend,)
-    queryset = orgInvestEvent.objects.filter(is_deleted=False)
+    queryset = orgInvestEvent.objects.filter(is_deleted=False).filter(org__is_deleted=False)
     filter_fields = ('id','org','createuser')
     serializer_class = OrgInvestEventSerializer
     models = orgInvestEvent
@@ -951,7 +951,7 @@ class OrgCooperativeRelationshipView(viewsets.ModelViewSet):
     destroy:删除机构合作关系id）
     """
     filter_backends = (filters.DjangoFilterBackend,)
-    queryset = orgCooperativeRelationship.objects.filter(is_deleted=False)
+    queryset = orgCooperativeRelationship.objects.filter(is_deleted=False).filter(org__is_deleted=False, cooperativeOrg__is_deleted=False)
     filter_fields = ('id','org','createuser')
     serializer_class = OrgCooperativeRelationshipSerializer
     models = orgCooperativeRelationship
@@ -1109,7 +1109,7 @@ class OrgBuyoutView(viewsets.ModelViewSet):
     destroy:删除机构退出分析（id）
     """
     filter_backends = (filters.DjangoFilterBackend,)
-    queryset = orgBuyout.objects.filter(is_deleted=False)
+    queryset = orgBuyout.objects.filter(is_deleted=False).filter(org__is_deleted=False, buyoutorg__is_deleted=False)
     filter_fields = ('id','org','createuser')
     serializer_class = OrgBuyoutSerializer
     models = orgBuyout
