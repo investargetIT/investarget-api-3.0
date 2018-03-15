@@ -75,6 +75,14 @@ class RelationFilter(Filter):
                 return qs.filter(**{'%s__%s' % (self.filterstr, self.lookup_method): value}).distinct()
 
 class MySearchFilter(SearchFilter):
+    def get_search_terms(self, request):
+        """
+        Search terms are set by a ?search=... query parameter,
+        and may be comma and/or whitespace delimited.
+        """
+        params = request.query_params.get(self.search_param, '')
+        return params.split(',')
+
     def filter_queryset(self, request, queryset, view):
         search_fields = getattr(view, 'search_fields', None)
         search_terms = self.get_search_terms(request)
