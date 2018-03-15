@@ -1,3 +1,4 @@
+#coding=utf-8
 import datetime
 
 import operator
@@ -81,7 +82,7 @@ class MySearchFilter(SearchFilter):
         and may be comma and/or whitespace delimited.
         """
         params = request.query_params.get(self.search_param, '')
-        return params.split(',')
+        return params.replace('，', ',').split(',')
 
     def filter_queryset(self, request, queryset, view):
         search_fields = getattr(view, 'search_fields', None)
