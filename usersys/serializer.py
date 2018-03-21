@@ -36,7 +36,7 @@ class UserCommenSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MyUser
-        fields = ('id', 'usernameC', 'usernameE', 'tags', 'userstatus', 'photourl', 'title', 'onjob', 'mobile', 'email', 'org')
+        fields = ('id', 'usernameC', 'usernameE', 'tags', 'userstatus', 'photourl', 'title', 'onjob', 'mobile', 'email', 'is_active', 'org')
         depth = 1
 
     def get_tags(self, obj):
@@ -94,7 +94,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MyUser
-        fields = ('usernameC', 'usernameE', 'org', 'department', 'mobile', 'email', 'wechat', 'title', 'id', 'tags', 'userstatus', 'photourl', 'orgarea', 'country', 'onjob', 'hasIM')
+        fields = ('usernameC', 'usernameE', 'org', 'department', 'mobile', 'email', 'wechat', 'title', 'id', 'tags', 'userstatus', 'photourl', 'is_active', 'orgarea', 'country', 'onjob', 'hasIM')
         depth = 1
 
     def get_tags(self, obj):
@@ -182,7 +182,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MyUser
-        exclude = ('usercode', 'is_staff', 'is_superuser', 'createuser', 'createdtime', 'deletedtime', 'deleteduser', 'is_deleted', 'is_active', 'lastmodifyuser', 'lastmodifytime', 'registersource', 'datasource')
+        exclude = ('usercode', 'is_staff', 'is_superuser', 'createuser', 'createdtime', 'deletedtime', 'deleteduser', 'is_deleted', 'lastmodifyuser', 'lastmodifytime', 'registersource', 'datasource')
         depth = 1
 
     def get_tags(self, obj):
@@ -224,7 +224,7 @@ class UserListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MyUser
-        fields = ('id','groups','tags','country','department','usernameC','usernameE','mobile','email','title','userstatus','org','trader_relation','photourl','hasIM')
+        fields = ('id','groups','tags','country','department','usernameC','usernameE','mobile','email','title','userstatus','org','trader_relation','photourl','is_active', 'hasIM')
         depth = 1
 
     def get_tags(self, obj):
