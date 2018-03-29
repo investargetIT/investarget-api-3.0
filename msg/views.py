@@ -211,7 +211,6 @@ class ScheduleView(viewsets.ModelViewSet):
             data = request.data
             data['lastmodifyuser'] = request.user.id
             data['lastmodifytime'] = datetime.datetime.now()
-            data.pop('scheduledtime') #客户端不能修改日程时间
             with transaction.atomic():
                 serializer = ScheduleCreateSerializer(instance, data=data)
                 if serializer.is_valid():
