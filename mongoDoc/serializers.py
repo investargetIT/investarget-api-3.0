@@ -39,6 +39,12 @@ class ProjRemarkSerializer(DocumentSerializer):
         fields = '__all__'
 
 
+class GroupEmailListSerializer(DocumentSerializer):
+    class Meta:
+        model = GroupEmailData
+        fields = ('proj', 'projtitle', 'savetime')
+
+
 class GroupEmailDataSerializer(DocumentSerializer):
     class Meta:
         model = GroupEmailData
