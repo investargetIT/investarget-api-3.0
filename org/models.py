@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 
 from django.db import models
 import sys
+
+from django.db.models import Q
 from guardian.shortcuts import assign_perm, remove_perm
 from sourcetype.models import AuditStatus, OrgType , TransactionPhases,CurrencyType, Industry, DataSource, OrgAttribute, Country
 from usersys.models import MyUser
@@ -169,6 +171,7 @@ class orgManageFund(MyModel):
 class orgInvestEvent(MyModel):
     org = MyForeignKey(organization,null=True, blank=True, db_index=True, related_name='org_orgInvestEvent')
     comshortname = models.CharField(max_length=128, null=True, blank=True, help_text='企业简称')
+    com_id = models.IntegerField(null=True, blank=True, help_text='全库ID')
     industrytype = models.CharField(max_length=32, null=True, blank=True, help_text='行业分类')
     area = MyForeignKey(Country,blank=True, null=True, help_text='地区')
     investor =  models.CharField(max_length=128, null=True, blank=True, help_text='投资人')
@@ -203,6 +206,12 @@ class orgCooperativeRelationship(MyModel):
              update_fields=None):
         if not self.org or not self.cooperativeOrg or not self.comshortname:
             raise InvestError(code=2007, msg='机构/合作机构/企业不能为空')
+        # if self.pk:
+        #     if orgCooperativeRelationship.objects.exclude(pk=self.pk).filter(Q(is_deleted=False,comshortname=self.comshortname,investDate=self.investDate), Q(org=self.org,cooperativeOrg=self.cooperativeOrg)| Q(org=self.cooperativeOrg,cooperativeOrg=self.org)).exists():
+        #         raise InvestError(code=5001,msg='相同合作关系已存在,无法修改')
+        # else:
+        #     if orgCooperativeRelationship.objects.filter(Q(is_deleted=False,comshortname=self.comshortname,investDate=self.investDate), Q(org=self.org,cooperativeOrg=self.cooperativeOrg)| Q(org=self.cooperativeOrg,cooperativeOrg=self.org)).exists():
+        #         raise InvestError(code=5001,msg='相同合作关系已存在，无法新增')
         super(orgCooperativeRelationship,self).save(force_insert,force_update,using,update_fields)
 
 
