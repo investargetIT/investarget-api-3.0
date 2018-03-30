@@ -68,6 +68,10 @@ org_investeventdetail = views.OrgInvestEventView.as_view({
         'delete': 'destroy'
 })
 
+org_investeventdelete = views.OrgInvestEventView.as_view({
+        'get': 'deleteInvest',
+})
+
 
 org_cooprelationlist = views.OrgCooperativeRelationshipView.as_view({
         'get': 'list',
@@ -110,4 +114,5 @@ urlpatterns = [
         url(r'^cooprelation/(?P<pk>\d+)/$', org_cooprelationdetail,name='org_cooprelation-detail'),
         url(r'^buyout/$', org_buyoutlist,name='org_buyout-list'),
         url(r'^buyout/(?P<pk>\d+)/$', org_buyoutdetail,name='org_buyout-detail'),
+        url(r'^investevent/del/$', org_investeventdelete,name='org_buyout-detail'),
 ]

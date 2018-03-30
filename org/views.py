@@ -244,7 +244,9 @@ class OrganizationView(viewsets.ModelViewSet):
             else:
                 raise InvestError(code=2009)
             with transaction.atomic():
-                for link in ['org_users','org_orgTransactionPhases','org_remarks','org_unreachuser','org_orgBDs']:
+                for link in ['org_users','org_orgTransactionPhases','org_remarks','org_unreachuser','org_orgBDs','org_orgInvestEvent'
+                             'org_orgManageFund','fund_fundManager','org_orgcontact','org_cooperativeRelationship','cooperativeorg_Relationship'
+                             'org_buyout','buyoutorg_buyoutorg']:
                     if link in ['org_users', 'org_orgBDs']:
                         manager = getattr(instance, link, None)
                         if not manager:
@@ -941,6 +943,20 @@ class OrgInvestEventView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+    @loginTokenIsAvailable()
+    def deleteInvest(self, request, *args, **kwargs):
+        try:
+            if request.user.is_superuser:
+                orgid = request.GET.get('org')
+                orginstance = organization.objects.get(id=orgid)
+                self.queryset.filter(org=orginstance, is_deleted=False, createdtime__lt=(datetime.datetime.now() - datetime.timedelta(days=10))).update(**{'is_deleted': True,'deletedtime':datetime.datetime.now()})
+            return JSONResponse(SuccessResponse({'a':'b'}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
 
 class OrgCooperativeRelationshipView(viewsets.ModelViewSet):
     """
@@ -952,7 +968,7 @@ class OrgCooperativeRelationshipView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = orgCooperativeRelationship.objects.filter(is_deleted=False).filter(org__is_deleted=False, cooperativeOrg__is_deleted=False)
-    filter_fields = ('id','org','createuser')
+    filter_fields = ('id','createuser',)
     serializer_class = OrgCooperativeRelationshipSerializer
     models = orgCooperativeRelationship
 
@@ -994,7 +1010,8 @@ class OrgCooperativeRelationshipView(viewsets.ModelViewSet):
                 raise InvestError(2007, msg='机构不能为空')
             else:
                 orginstace = self.get_org(orgid)
-            queryset = self.filter_queryset(self.get_queryset())
+            queryset = self.filter_queryset(self.get_queryset()).filter(Q(org=orginstace))
+            # queryset = self.filter_queryset(self.get_queryset()).filter(Q(org=orginstace)|Q(cooperativeOrg=orginstace))
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
