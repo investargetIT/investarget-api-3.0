@@ -309,9 +309,7 @@ def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcon
                     filetype = path.split('.')[-1]
                     if filetype in ['pdf', u'pdf']:
                         filepaths.append(path)
-                        thrd = threading.Thread(target=addWaterMark,args=(path, watermarkcontent))
-                        thrd.start()
-            # addWaterMarkToPdfFiles(filepaths, watermarkcontent)
+            addWaterMarkToPdfFiles(filepaths, watermarkcontent)
             import zipfile
             zipf = zipfile.ZipFile(self.path+'.zip', 'w')
             pre_len = len(os.path.dirname(self.path))
