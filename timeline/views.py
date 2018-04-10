@@ -89,7 +89,7 @@ class TimelineView(viewsets.ModelViewSet):
             if request.user.has_perm('timeline.admin_getline'):
                 pass
             else:
-                queryset = queryset.filter(Q(proj__takeUser=request.user) | Q(proj__makeUser=request.user) | Q(investor=request.user) | Q(trader=request.user))
+                queryset = queryset.filter(Q(proj__takeUser=request.user,proj__takeUser__isnull=False) | Q(proj__makeUser=request.user,proj__makeUser__isnull=False) | Q(investor=request.user) | Q(trader=request.user))
             sortfield = request.GET.get('sort', 'createdtime')
             desc = request.GET.get('desc', 1)
             queryset = mySortQuery(queryset, sortfield, desc)
