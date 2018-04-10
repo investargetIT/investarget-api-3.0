@@ -18,7 +18,7 @@ from proj.models import project
 from third.views.qiniufile import deleteqiniufile, downloadFileToPath
 from utils.customClass import InvestError, JSONResponse, RelationFilter
 from utils.sendMessage import sendmessage_dataroomfileupdate
-from utils.somedef import file_iterator,  addWaterMarkToPdfFiles
+from utils.somedef import file_iterator,  addWaterMarkToPdfFiles, addWaterMark
 from utils.util import returnListChangeToLanguage, loginTokenIsAvailable, \
     returnDictChangeToLanguage, catchexcption, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
     logexcption, checkrequesttoken
@@ -221,7 +221,7 @@ class DataroomView(viewsets.ModelViewSet):
     def makeDataroomAllFilesZip(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
-            userid = request.GET.get('user',None)
+            userid = request.GET.get('user', request.user.id)
             watermarkcontent = request.GET.get('water',None)
             watermarkcontent = str(watermarkcontent).split(',')
             qs = instance.dataroom_directories.all().filter(is_deleted=False)
@@ -299,7 +299,6 @@ def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcon
                     userfile_qs = dataroom_User_file.objects.get(dataroom=dataroominstance,user_id=userid).files.all()
                 except dataroom_User_file.DoesNotExist:
                     raise InvestError(2007,msg='未找到符合条件的dataroom')
-                # file_qs = file_qs.filter(id__in=userfile_qs)
             else:
                 userfile_qs = self.qs.filter(isFile=True)
             filepaths = []
@@ -310,7 +309,9 @@ def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcon
                     filetype = path.split('.')[-1]
                     if filetype in ['pdf', u'pdf']:
                         filepaths.append(path)
-            addWaterMarkToPdfFiles(filepaths, watermarkcontent)
+                        thrd = threading.Thread(target=addWaterMark,args=(path, watermarkcontent))
+                        thrd.start()
+            # addWaterMarkToPdfFiles(filepaths, watermarkcontent)
             import zipfile
             zipf = zipfile.ZipFile(self.path+'.zip', 'w')
             pre_len = len(os.path.dirname(self.path))
