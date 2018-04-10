@@ -948,8 +948,11 @@ class OrgInvestEventView(viewsets.ModelViewSet):
         try:
             if request.user.is_superuser:
                 orgid = request.GET.get('org')
+                day = request.GET.get('day', 10)
+                if isinstance(day, (unicode, str)):
+                    day = int(day)
                 orginstance = organization.objects.get(id=orgid)
-                self.queryset.filter(org=orginstance, is_deleted=False, createdtime__lt=(datetime.datetime.now() - datetime.timedelta(days=10))).update(**{'is_deleted': True,'deletedtime':datetime.datetime.now()})
+                self.queryset.filter(org=orginstance, is_deleted=False, createdtime__lt=(datetime.datetime.now() - datetime.timedelta(days=day))).update(**{'is_deleted': True,'deletedtime':datetime.datetime.now()})
             return JSONResponse(SuccessResponse({'a':'b'}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
