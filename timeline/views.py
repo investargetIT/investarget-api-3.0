@@ -11,7 +11,7 @@ from rest_framework import filters, viewsets
 from timeline.models import timeline, timelineTransationStatu, timelineremark
 from timeline.serializer import TimeLineSerializer, TimeLineStatuSerializer, TimeLineCreateSerializer, \
     TimeLineStatuCreateSerializer, TimeLineRemarkSerializer, TimeLineListSerializer_admin, TimeLineUpdateSerializer, \
-    TimeLineListSerializer_user, TimeLineListSerializer_anonymous
+    TimeLineListSerializer_anonymous
 from utils.customClass import InvestError, JSONResponse
 from utils.sendMessage import sendmessage_timelineauditstatuchange
 from utils.util import read_from_cache, write_to_cache, returnListChangeToLanguage, loginTokenIsAvailable, \
@@ -86,6 +86,7 @@ class TimelineView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset()).filter(datasource=request.user.datasource)
+            queryset = queryset.filter(Q(proj__takeUser=request.user) | Q(proj__makeUser=request.user) | Q(investor=request.user) | Q(trader=request.user))
             sortfield = request.GET.get('sort', 'createdtime')
             desc = request.GET.get('desc', 1)
             queryset = mySortQuery(queryset, sortfield, desc)
@@ -97,23 +98,42 @@ class TimelineView(viewsets.ModelViewSet):
                 return JSONResponse(SuccessResponse({'count': 0, 'data':[]}))
             responselist = []
             for instance in queryset:
-                actionlist = {'get': False, 'change': False, 'delete': False}
-                if request.user.has_perm('timeline.admin_getline'):
-                    actionlist['get'] = True
-                    serializerclass = TimeLineListSerializer_admin
-                elif request.user.has_perm('timeline.user_getline', instance) or request.user in [instance.proj.takeUser, instance.proj.makeUser]:
-                    actionlist['get'] = True
-                    serializerclass = TimeLineListSerializer_user
-                else:
-                    serializerclass = TimeLineListSerializer_anonymous
-                if request.user.has_perm('timeline.admin_changeline') or request.user.has_perm('timeline.user_changeline', instance) or request.user in [instance.proj.takeUser, instance.proj.makeUser]:
+                actionlist = {'get': True, 'change': False, 'delete': False}
+                if request.user.has_perm('timeline.admin_changeline') or request.user.has_perm('timeline.user_changeline', instance) or request.user in [instance.proj.takeUser, instance.proj.makeUser, instance.trader]:
                     actionlist['change'] = True
-                if request.user.has_perm('timeline.admin_deleteline') or request.user.has_perm('timeline.user_deleteline', instance) or request.user in [instance.proj.takeUser, instance.proj.makeUser]:
+                if request.user.has_perm('timeline.admin_deleteline') or request.user.has_perm('timeline.user_deleteline', instance) or request.user in [instance.proj.takeUser, instance.proj.makeUser, instance.trader]:
                     actionlist['delete'] = True
-                instancedata = serializerclass(instance).data
+                instancedata = TimeLineListSerializer_admin(instance).data
                 instancedata['action'] = actionlist
                 responselist.append(instancedata)
             return JSONResponse(SuccessResponse({'count': count, 'data': returnListChangeToLanguage(responselist, lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def basiclist(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            lang = request.GET.get('lang')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset()).filter(datasource=request.user.datasource)
+            sortfield = request.GET.get('sort', 'createdtime')
+            desc = request.GET.get('desc', 1)
+            queryset = mySortQuery(queryset, sortfield, desc)
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            return JSONResponse(
+                SuccessResponse({'count': count, 'data': returnListChangeToLanguage(TimeLineListSerializer_anonymous(queryset, many=True).data, lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:

@@ -14,7 +14,7 @@ from mongoDoc.models import GroupEmailData, IMChatMessages, ProjectData, MergeFi
     WXChatdata, ProjectNews, ProjIndustryInfo
 from mongoDoc.serializers import GroupEmailDataSerializer, IMChatMessagesSerializer, ProjectDataSerializer, \
     MergeFinanceDataSerializer, CompanyCatDataSerializer, ProjRemarkSerializer, WXChatdataSerializer, \
-    ProjectNewsSerializer, ProjIndustryInfoSerializer
+    ProjectNewsSerializer, ProjIndustryInfoSerializer, GroupEmailListSerializer
 from utils.customClass import JSONResponse, InvestError, AppEventRateThrottle
 from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, catchexcption, logexcption, \
     loginTokenIsAvailable
@@ -161,6 +161,12 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
             instance.update(com_cat_name=proj.com_cat_name)
             instance.update(com_sub_cat_name=proj.com_sub_cat_name)
             instance.update(com_addr=proj.com_addr)
+            data = request.data
+            serializer = self.serializer_class(instance, data=data)
+            if serializer.is_valid():
+                serializer.save()
+            else:
+                raise InvestError(2007, msg='参数错误-%s'%serializer.error_messages)
             return JSONResponse(SuccessResponse(True))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -547,7 +553,7 @@ class ProjectRemarkView(viewsets.ModelViewSet):
 
 class GroupEmailDataView(viewsets.ModelViewSet):
     queryset = GroupEmailData.objects.all()
-    serializer_class = GroupEmailDataSerializer
+    serializer_class = GroupEmailListSerializer
 
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):

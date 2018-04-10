@@ -11,6 +11,9 @@ timeline_detail = views.TimelineView.as_view({
         'get':'retrieve',
         'put': 'update',
 })
+timelinesbasic = views.TimelineView.as_view({
+        'get': 'basiclist',
+})
 
 timelineremark = views.TimeLineRemarkView.as_view({
         'get': 'list',
@@ -29,6 +32,7 @@ timelineremark_detail = views.TimeLineRemarkView.as_view({
 
 urlpatterns = [
     url(r'^$', timelines,name='timeline-list',),
+    url(r'^basic/$', timelinesbasic, name='timeline-basiclist', ),
     url(r'^(?P<pk>\d+)/$', timeline_detail,name='timeline-detail'),
     url(r'^remark/$', timelineremark, name='timelineremark-list'),
     url(r'^remark/(?P<pk>\d+)/$', timelineremark_detail, name='timelineremark-detail'),
