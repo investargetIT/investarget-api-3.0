@@ -236,7 +236,7 @@ class UserListSerializer(serializers.ModelSerializer):
     def get_trader_relation(self, obj):
         usertrader = obj.investor_relations.filter(relationtype=True, is_deleted=False)
         if usertrader.exists():
-            return UserRelationSerializer(usertrader.first()).data
+            return UserTraderSimpleSerializer(usertrader.first()).data
         return None
 
     def get_photourl(self, obj):
@@ -244,3 +244,17 @@ class UserListSerializer(serializers.ModelSerializer):
             return getUrlWithBucketAndKey('image',obj.photoKey)
         else:
             return None
+
+class UserSimpleSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = MyUser
+        fields = ('id', 'usernameC', 'usernameE',)
+
+
+class UserTraderSimpleSerializer(serializers.ModelSerializer):
+    traderuser = UserSimpleSerializer()
+
+    class Meta:
+        model = UserRelation
+        fields = ('id', 'investoruser', 'traderuser')
