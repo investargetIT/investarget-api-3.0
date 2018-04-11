@@ -78,7 +78,10 @@ class UserView(viewsets.ModelViewSet):
             "or override the `get_queryset()` method."
             % self.__class__.__name__
         )
-        queryset = self.queryset
+        queryset = read_from_cache(self.redis_key)
+        if not queryset:
+            queryset = self.queryset
+            write_to_cache(self.redis_key, queryset)
         if isinstance(queryset, QuerySet):
             if self.request.user.is_authenticated:
                 queryset = queryset.filter(datasource=self.request.user.datasource)
@@ -244,6 +247,7 @@ class UserView(viewsets.ModelViewSet):
                 returndic = CreatUserSerializer(user).data
                 sendmessage_userregister(user,user,['email','webmsg','app'])
                 apilog(request, 'MyUser', None, None, datasource=source)
+                cache_delete_key(self.redis_key)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(returndic,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -308,6 +312,7 @@ class UserView(viewsets.ModelViewSet):
                     add_perm('usersys.user_changeuser', user.createuser, user)
                     add_perm('usersys.user_deleteuser', user.createuser, user)
                 apilog(request, 'MyUser', None, None, datasource=request.user.datasource_id)
+                cache_delete_key(self.redis_key)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(UserSerializer(user).data,lang=lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -415,6 +420,7 @@ class UserView(viewsets.ModelViewSet):
                     for user,sendmsg in messagelist:
                         if sendmsg:
                             sendmessage_userauditstatuchange(user,user,['app','email', 'sms','webmsg'],sender=request.user)
+                cache_delete_key(self.redis_key)
                 return JSONResponse(SuccessResponse(returnListChangeToLanguage(userlist,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -482,6 +488,7 @@ class UserView(viewsets.ModelViewSet):
                     if instance.hasIM:
                         deleteHuanXinIMWithUser(instance)
                     instance.delete()
+                cache_delete_key(self.redis_key)
                 return JSONResponse(SuccessResponse(returnListChangeToLanguage(userlist,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -523,6 +530,7 @@ class UserView(viewsets.ModelViewSet):
                 user.user_token.all().update(is_deleted=True)
                 # .filter(created__gte=datetime.datetime.now() - datetime.timedelta(hours=24 * 1))
                 cache_delete_key(self.redis_key + '_%s' % user.id)
+                cache_delete_key(self.redis_key)
                 return JSONResponse(SuccessResponse(password))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -554,6 +562,7 @@ class UserView(viewsets.ModelViewSet):
                 user.save(update_fields=['password'])
                 user.user_token.all().update(is_deleted=True)
                 cache_delete_key(self.redis_key + '_%s' % user.id)
+                cache_delete_key(self.redis_key)
                 return JSONResponse(SuccessResponse(password))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -571,6 +580,7 @@ class UserView(viewsets.ModelViewSet):
                 user.save(update_fields=['password'])
                 user.user_token.all().update(is_deleted=True)
                 cache_delete_key(self.redis_key + '_%s' % user.id)
+                cache_delete_key(self.redis_key)
                 return JSONResponse(SuccessResponse('Aa123456'))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
