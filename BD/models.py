@@ -119,9 +119,11 @@ class OrgBD(MyModel):
             raise InvestError(2024)
         if self.bduser and not self.is_deleted:
             if self.pk:
-                bds = OrgBD.objects.exclude(pk=self.pk).filter(is_deleted=False, datasource=self.datasource, bduser=self.bduser, manager=self.manager)
+                bds = OrgBD.objects.exclude(pk=self.pk).filter(is_deleted=False, proj=self.proj,
+                                                               datasource=self.datasource, bduser=self.bduser, manager=self.manager)
             else:
-                bds = OrgBD.objects.filter(is_deleted=False, datasource=self.datasource, bduser=self.bduser, manager=self.manager)
+                bds = OrgBD.objects.filter(is_deleted=False, proj=self.proj,
+                                           datasource=self.datasource, bduser=self.bduser, manager=self.manager)
             if bds.exists():
                 raise InvestError(5006, msg='该用户已存在一条BD记录了')
         if self.is_deleted is False:
