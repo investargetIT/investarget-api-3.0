@@ -27,9 +27,9 @@ class PermissionSerializer(serializers.ModelSerializer):
 
 # 用户基本信息
 class UserCommenSerializer(serializers.ModelSerializer):
-    tags = serializers.SerializerMethodField()
+    # tags = serializers.SerializerMethodField()
     photourl = serializers.SerializerMethodField()
-    title = titleTypeSerializer()
+    # title = titleTypeSerializer()
     mobile = serializers.SerializerMethodField()
     email = serializers.SerializerMethodField()
     org = OrgCommonSerializer()
@@ -37,13 +37,13 @@ class UserCommenSerializer(serializers.ModelSerializer):
     class Meta:
         model = MyUser
         fields = ('id', 'usernameC', 'usernameE', 'tags', 'userstatus', 'photourl', 'title', 'onjob', 'mobile', 'email', 'is_active', 'org')
-        depth = 1
+        # depth = 1
 
-    def get_tags(self, obj):
-        qs = obj.tags.filter(tag_usertags__is_deleted=False)
-        if qs.exists():
-            return tagSerializer(qs, many=True).data
-        return None
+    # def get_tags(self, obj):
+    #     qs = obj.tags.filter(tag_usertags__is_deleted=False)
+    #     if qs.exists():
+    #         return tagSerializer(qs, many=True).data
+    #     return None
 
     def get_photourl(self, obj):
         if obj.photoKey:
@@ -215,23 +215,23 @@ class UpdateUserSerializer(serializers.ModelSerializer):
 
 # 用户列表显示信息
 class UserListSerializer(serializers.ModelSerializer):
-    groups = GroupSerializer(MyUser.groups,many=True)
+    # groups = GroupSerializer(MyUser.groups,many=True)
     org = OrgCommonSerializer()
-    tags = serializers.SerializerMethodField()
+    # tags = serializers.SerializerMethodField()
     trader_relation = serializers.SerializerMethodField()
-    country = countrySerializer()
+    # country = countrySerializer()
     photourl = serializers.SerializerMethodField()
 
     class Meta:
         model = MyUser
         fields = ('id','groups','tags','country','department','usernameC','usernameE','mobile','email','title','userstatus','org','trader_relation','photourl','is_active', 'hasIM', 'wechat')
-        depth = 1
+        # depth = 1
 
-    def get_tags(self, obj):
-        qs = obj.tags.filter(tag_usertags__is_deleted=False)
-        if qs.exists():
-            return tagSerializer(qs,many=True).data
-        return None
+    # def get_tags(self, obj):
+    #     qs = obj.tags.filter(tag_usertags__is_deleted=False)
+    #     if qs.exists():
+    #         return tagSerializer(qs,many=True).data
+    #     return None
 
     def get_trader_relation(self, obj):
         usertrader = obj.investor_relations.filter(relationtype=True, is_deleted=False)
