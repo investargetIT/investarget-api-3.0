@@ -18,7 +18,8 @@ from third.views.qiniufile import deleteqiniufile
 from utils.customClass import RelationFilter, InvestError, JSONResponse
 from utils.sendMessage import sendmessage_orgBDMessage
 from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
-    returnListChangeToLanguage, catchexcption, returnDictChangeToLanguage, mySortQuery, add_perm, rem_perm
+    returnListChangeToLanguage, catchexcption, returnDictChangeToLanguage, mySortQuery, add_perm, rem_perm, \
+    read_from_cache, write_to_cache, cache_delete_key
 
 
 class ProjectBDFilter(FilterSet):
@@ -357,6 +358,7 @@ class OrgBDView(viewsets.ModelViewSet):
     filter_class = OrgBDFilter
     search_fields = ('proj__projtitleC', 'username','manager__usernameC',)
     serializer_class = OrgBDSerializer
+    redis_key = 'org_bd'
 
     def get_queryset(self):
         assert self.queryset is not None, (
@@ -364,7 +366,10 @@ class OrgBDView(viewsets.ModelViewSet):
             "or override the `get_queryset()` method."
             % self.__class__.__name__
         )
-        queryset = self.queryset
+        queryset = read_from_cache(self.redis_key)
+        if not queryset:
+            queryset = self.queryset
+            write_to_cache(self.redis_key, queryset)
         if isinstance(queryset, QuerySet):
             if self.request.user.is_authenticated:
                 queryset = queryset.filter(datasource=self.request.user.datasource_id)
@@ -473,6 +478,7 @@ class OrgBDView(viewsets.ModelViewSet):
                         commentinstance.save()
                 if request.user != neworgBD.manager:
                     sendmessage_orgBDMessage(neworgBD, receiver=neworgBD.manager, types=['app', 'webmsg', 'sms'], sender=request.user)
+                cache_delete_key(self.redis_key)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgBDSerializer(neworgBD).data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -526,6 +532,7 @@ class OrgBDView(viewsets.ModelViewSet):
                             sendmessage_orgBDMessage(neworgBD, receiver=neworgBD.manager, types=['app', 'wenmsg', 'sms'], sender=request.user)
                 else:
                     raise InvestError(5004, msg='机构BD修改失败——%s' % orgBD.error_messages)
+                cache_delete_key(self.redis_key)
                 return JSONResponse(
                     SuccessResponse(returnDictChangeToLanguage(OrgBDSerializer(neworgBD).data, lang)))
         except InvestError as err:
@@ -546,6 +553,7 @@ class OrgBDView(viewsets.ModelViewSet):
                 instance.save()
                 instance.OrgBD_comments.filter(is_deleted=False).update(is_deleted=True, deleteduser=request.user,
                                                                         deletedtime=datetime.datetime.now())
+            cache_delete_key(self.redis_key)
             return JSONResponse(SuccessResponse({'isDeleted': True,}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
