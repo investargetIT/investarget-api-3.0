@@ -27,9 +27,9 @@ class PermissionSerializer(serializers.ModelSerializer):
 
 # 用户基本信息
 class UserCommenSerializer(serializers.ModelSerializer):
-    # tags = serializers.SerializerMethodField()
+    tags = serializers.SerializerMethodField()
     photourl = serializers.SerializerMethodField()
-    # title = titleTypeSerializer()
+    title = titleTypeSerializer()
     mobile = serializers.SerializerMethodField()
     email = serializers.SerializerMethodField()
     org = OrgCommonSerializer()
@@ -37,13 +37,13 @@ class UserCommenSerializer(serializers.ModelSerializer):
     class Meta:
         model = MyUser
         fields = ('id', 'usernameC', 'usernameE', 'tags', 'userstatus', 'photourl', 'title', 'onjob', 'mobile', 'email', 'is_active', 'org')
-        # depth = 1
+        depth = 1
 
-    # def get_tags(self, obj):
-    #     qs = obj.tags.filter(tag_usertags__is_deleted=False)
-    #     if qs.exists():
-    #         return tagSerializer(qs, many=True).data
-    #     return None
+    def get_tags(self, obj):
+        qs = obj.tags.filter(tag_usertags__is_deleted=False)
+        if qs.exists():
+            return tagSerializer(qs, many=True).data
+        return None
 
     def get_photourl(self, obj):
         if obj.photoKey:
@@ -236,7 +236,7 @@ class UserListSerializer(serializers.ModelSerializer):
     def get_trader_relation(self, obj):
         usertrader = obj.investor_relations.filter(relationtype=True, is_deleted=False)
         if usertrader.exists():
-            return UserTraderSimpleSerializer(usertrader.first()).data
+            return UserRelationSerializer(usertrader.first()).data
         return None
 
     def get_photourl(self, obj):
@@ -245,16 +245,56 @@ class UserListSerializer(serializers.ModelSerializer):
         else:
             return None
 
-class UserSimpleSerializer(serializers.ModelSerializer):
+# class UserSimpleSerializer(serializers.ModelSerializer):
+#
+#     class Meta:
+#         model = MyUser
+#         fields = ('id', 'usernameC', 'usernameE',)
+#
+#
+# class UserTraderSimpleSerializer(serializers.ModelSerializer):
+#     traderuser = UserSimpleSerializer()
+#
+#     class Meta:
+#         model = UserRelation
+#         fields = ('id', 'investoruser', 'traderuser')
+
+# 用户基本信息
+class UserListCommenSerializer(serializers.ModelSerializer):
+    photourl = serializers.SerializerMethodField()
+    mobile = serializers.SerializerMethodField()
+    email = serializers.SerializerMethodField()
+    org = OrgCommonSerializer()
 
     class Meta:
         model = MyUser
-        fields = ('id', 'usernameC', 'usernameE',)
+        fields = ('id', 'usernameC', 'usernameE', 'tags', 'userstatus', 'photourl', 'title', 'onjob', 'mobile', 'email', 'is_active', 'org')
 
 
-class UserTraderSimpleSerializer(serializers.ModelSerializer):
-    traderuser = UserSimpleSerializer()
+    def get_photourl(self, obj):
+        if obj.photoKey:
+            return getUrlWithBucketAndKey('image', obj.photoKey)
+        else:
+            return None
 
-    class Meta:
-        model = UserRelation
-        fields = ('id', 'investoruser', 'traderuser')
+    def get_mobile(self, obj):
+        if obj.mobile and obj.mobile not in ['', u'']:
+            length = len(obj.mobile)
+            if length > 4:
+                center = str(obj.mobile)[0: (length - 4) // 2] + '****' + str(obj.mobile)[(length - 4) // 2 + 4:]
+            else:
+                center = '****'
+            return center
+        else:
+            return None
+
+    def get_email(self, obj):
+        if obj.email and obj.email not in ['', u'']:
+            index = str(obj.email).find('@')
+            if index >= 0:
+                center = '****' + str(obj.email)[index:]
+            else:
+                center = '****'
+            return center
+        else:
+            return None

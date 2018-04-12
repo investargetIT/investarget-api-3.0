@@ -23,7 +23,8 @@ from usersys.models import MyUser, UserRelation, userTags, UserFriendship, MyTok
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
     CreatUserSerializer , UserCommenSerializer , UserRelationCreateSerializer, UserFriendshipSerializer, \
     UserFriendshipDetailSerializer, UserFriendshipUpdateSerializer, GroupSerializer, GroupDetailSerializer, GroupCreateSerializer, PermissionSerializer, \
-    UpdateUserSerializer, UnreachUserSerializer, UserRemarkSerializer, UserRemarkCreateSerializer
+    UpdateUserSerializer, UnreachUserSerializer, UserRemarkSerializer, UserRemarkCreateSerializer, \
+    UserListCommenSerializer
 from sourcetype.models import Tag, DataSource
 from utils import perimissionfields
 from utils.customClass import JSONResponse, InvestError, RelationFilter
@@ -129,7 +130,7 @@ class UserView(viewsets.ModelViewSet):
             if request.user.has_perm('usersys.admin_getuser'):
                 serializerclass = UserListSerializer
             else:
-                serializerclass = UserCommenSerializer
+                serializerclass = UserListCommenSerializer
             sortfield = request.GET.get('sort', 'createdtime')
             desc = request.GET.get('desc', 1)
             queryset = mySortQuery(queryset, sortfield, desc)
