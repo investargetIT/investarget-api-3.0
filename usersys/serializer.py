@@ -249,7 +249,7 @@ class UserTraderSimpleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserRelation
-        fields = ('traderuser',)
+        fields = ('id', 'traderuser',)
 
 # 用户基本信息
 class UserListCommenSerializer(serializers.ModelSerializer):
