@@ -108,8 +108,7 @@ class timelineTransationStatu(MyModel):
         # if self.timeline.isClose:
         #     raise InvestError(6004)
         if self.alertCycle:
-            if not self.inDate:
-                self.inDate = datetime.datetime.now() + datetime.timedelta(hours=self.alertCycle * 24)
+            self.inDate = datetime.datetime.now() + datetime.timedelta(hours=self.alertCycle * 24)
         if not UserRelation.objects.filter(investoruser=self.timeline.investor,traderuser=self.timeline.trader,is_deleted=False,score__gt=self.transationStatus.id).exists():
             UserRelation.objects.filter(investoruser=self.timeline.investor, traderuser=self.timeline.trader, is_deleted=False).update(score=self.transationStatus.id)
         super(timelineTransationStatu, self).save(force_insert, force_update, using, update_fields)
