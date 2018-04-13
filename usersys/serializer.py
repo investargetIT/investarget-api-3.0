@@ -227,7 +227,7 @@ class UserListSerializer(serializers.ModelSerializer):
     def get_trader_relation(self, obj):
         usertrader = obj.investor_relations.filter(relationtype=True, is_deleted=False)
         if usertrader.exists():
-            return UserRelationSerializer(usertrader.first()).data
+            return UserTraderSimpleSerializer(usertrader.first()).data
         return None
 
     def get_photourl(self, obj):
