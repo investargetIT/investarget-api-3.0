@@ -407,7 +407,7 @@ class UserView(viewsets.ModelViewSet):
                                 taglist = Tag.objects.in_bulk(tags)
                                 addlist = [item for item in taglist if item not in user.tags.all()]
                                 removelist = [item for item in user.tags.all() if item not in taglist]
-                                user.user_usertags.filter(tag__in=removelist,is_deleted=False).update(is_deleted=True,deletedtime=datetime.datetime.now(),deleteduser=request.user)
+                                user.user_usertags.filter(tag__in=removelist,is_deleted=False).delete()
                                 usertaglist = []
                                 for tag in addlist:
                                     usertaglist.append(userTags(user=user, tag_id=tag, createuser=request.user,createdtime=datetime.datetime.now()))
