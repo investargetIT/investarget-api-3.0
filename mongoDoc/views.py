@@ -292,10 +292,10 @@ class ProjectDataView(viewsets.ModelViewSet):
 
     def excellist(self, request, *args, **kwargs):
         try:
-            idstr = request.GET.get('com_ids', None)
-            if idstr in (None, '', u''):
-                raise InvestError(2007, msg='com_id 不能为空')
-            idlist = idstr.split(',')
+            data = request.data
+            idlist = data.get('com_ids')
+            if idlist in (None, '', u'', []) or not isinstance(idlist, list):
+                raise InvestError(2007, msg='参数错误')
             queryset = self.queryset.filter(com_id__in=idlist)
             projserializer = self.serializer_class(queryset,many=True)
             eventserializer = MergeFinanceDataSerializer(MergeFinanceData.objects.all().filter(com_id__in=idlist), many=True)

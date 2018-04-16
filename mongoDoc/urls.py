@@ -22,7 +22,7 @@ ProjectDataList = views.ProjectDataView.as_view({
 
 
 ProjectExcelDataList = views.ProjectDataView.as_view({
-        'get': 'excellist',
+        'post': 'excellist',
 })
 
 
