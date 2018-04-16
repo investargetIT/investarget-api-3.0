@@ -289,6 +289,24 @@ class ProjectDataView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+
+    def excellist(self, request, *args, **kwargs):
+        try:
+            idstr = request.GET.get('com_ids', None)
+            if idstr in (None, '', u''):
+                raise InvestError(2007, msg='com_id 不能为空')
+            idlist = idstr.split(',')
+            queryset = self.queryset.filter(com_id__in=idlist)
+            projserializer = self.serializer_class(queryset,many=True)
+            eventserializer = MergeFinanceDataSerializer(MergeFinanceData.objects.all().filter(com_id__in=idlist), many=True)
+            return JSONResponse(SuccessResponse({'event':eventserializer.data,'proj':projserializer.data}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
     @loginTokenIsAvailable(['usersys.as_admin'])
     def create(self, request, *args, **kwargs):
         try:
