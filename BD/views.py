@@ -356,7 +356,7 @@ class OrgBDView(viewsets.ModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,filters.SearchFilter)
     queryset = OrgBD.objects.filter(is_deleted=False)
     filter_class = OrgBDFilter
-    search_fields = ('proj__projtitleC', 'username','manager__usernameC',)
+    search_fields = ('proj__projtitleC', 'username', 'manager__usernameC', 'org__orgnameC', 'org__orgnameE')
     serializer_class = OrgBDSerializer
     redis_key = 'org_bd'
 
