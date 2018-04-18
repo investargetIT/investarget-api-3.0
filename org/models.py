@@ -188,6 +188,12 @@ class orgInvestEvent(MyModel):
              update_fields=None):
         if not self.org or not self.comshortname:
             raise InvestError(code=2007,msg='机构/企业不能为空')
+        if self.pk:
+            if orgInvestEvent.objects.exclude(pk=self.pk).filter(is_deleted=False,comshortname=self.comshortname,investDate=self.investDate, org=self.org).exists():
+                raise InvestError(code=5007,msg='相同投资事件已存在，无法修改')
+        else:
+            if orgInvestEvent.objects.filter(is_deleted=False,comshortname=self.comshortname,investDate=self.investDate, org=self.org).exists():
+                raise InvestError(code=5007,msg='相同投资事件已存在，无法新增')
         super(orgInvestEvent,self).save(force_insert,force_update,using,update_fields)
 
 
@@ -208,10 +214,10 @@ class orgCooperativeRelationship(MyModel):
             raise InvestError(code=2007, msg='机构/合作机构/企业不能为空')
         # if self.pk:
         #     if orgCooperativeRelationship.objects.exclude(pk=self.pk).filter(Q(is_deleted=False,comshortname=self.comshortname,investDate=self.investDate), Q(org=self.org,cooperativeOrg=self.cooperativeOrg)| Q(org=self.cooperativeOrg,cooperativeOrg=self.org)).exists():
-        #         raise InvestError(code=5001,msg='相同合作关系已存在,无法修改')
+        #         raise InvestError(code=5007,msg='相同合作关系已存在,无法修改')
         # else:
         #     if orgCooperativeRelationship.objects.filter(Q(is_deleted=False,comshortname=self.comshortname,investDate=self.investDate), Q(org=self.org,cooperativeOrg=self.cooperativeOrg)| Q(org=self.cooperativeOrg,cooperativeOrg=self.org)).exists():
-        #         raise InvestError(code=5001,msg='相同合作关系已存在，无法新增')
+        #         raise InvestError(code=5007,msg='相同合作关系已存在，无法新增')
         super(orgCooperativeRelationship,self).save(force_insert,force_update,using,update_fields)
 
 

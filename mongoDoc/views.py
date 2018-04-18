@@ -145,7 +145,7 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
                     event.update(com_addr=proj.com_addr)
             else:
                 raise InvestError(2001, msg=serializer.error_messages)
-            return JSONResponse(SuccessResponse(serializer.data))
+            return JSONResponse(SuccessResponse(self.serializer_class(event).data))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
