@@ -246,7 +246,7 @@ class TimelineView(viewsets.ModelViewSet):
                         else:
                             activetimelinestatu = None
                             sendmessage = True
-                        timeline.timeline_transationStatus.all().update(isActive=False)
+                        timeline.timeline_transationStatus.all().delete()
                         timelinestatu = TimeLineStatuCreateSerializer(activetimelinestatu,data=statudata)
                         if timelinestatu.is_valid():
                             newactivetimelinestatu = timelinestatu.save()
