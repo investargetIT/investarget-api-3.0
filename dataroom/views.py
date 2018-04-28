@@ -127,46 +127,6 @@ class DataroomView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
-    def addDataroom(self, request, *args, **kwargs):
-        # 导数据专用   1 public
-        try:
-            data = request.data
-            lang = request.GET.get('lang')
-            projid = data.get('proj', None)
-            if data.get('createuser', None) is None:
-                createuser = request.user.id
-            else:
-                createuser = data.get('createuser')
-            createdtime = data.pop('createdtime', None)
-            if createdtime not in ['None', None, u'None', 'none']:
-                createdtime = datetime.datetime.strptime(createdtime.encode('utf-8')[0:19], "%Y-%m-%d %H:%M:%S")
-            else:
-                createdtime = datetime.datetime.now()
-            try:
-                proj = project.objects.get(id=projid, datasource=request.user.datasource, is_deleted=False)
-            except project.DoesNotExist:
-                raise InvestError(code=4002)
-            with transaction.atomic():
-                dataroomdata = {'proj': projid, 'datasource': request.user.datasource.id, 'createuser': createuser,
-                                'createdtime': createdtime}
-                publicdataroom = self.get_queryset().filter(proj=proj)
-                if publicdataroom.exists():
-                    responsedic = DataroomCreateSerializer(publicdataroom.first()).data
-                else:
-                    publicdataroomserializer = DataroomCreateSerializer(data=dataroomdata)
-                    if publicdataroomserializer.is_valid():
-                        publicdataroomserializer.save()
-                        responsedic = publicdataroomserializer.data
-                    else:
-                        raise InvestError(code=20071, msg=publicdataroomserializer.errors)
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(responsedic, lang)))
-        except InvestError as err:
-            return JSONResponse(InvestErrorResponse(err))
-        except Exception:
-            catchexcption(request)
-            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
 
     @loginTokenIsAvailable()
     def retrieve(self, request, *args, **kwargs):

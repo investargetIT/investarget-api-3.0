@@ -34,9 +34,6 @@ user_dataroomone =  views.User_DataroomfileView.as_view({
 })
 
 
-dataroomadddata = views.DataroomView.as_view({
-    'post':'addDataroom'
-})
 makeZip = views.DataroomView.as_view({
     'get':'makeDataroomAllFilesZip'
 })
@@ -54,7 +51,6 @@ urlpatterns = [
     url(r'^file/$', dataroomfile,name='dataroom-fileordirectory'),
     url(r'^user/$', user_dataroom,name='user_dataroom-list',),
     url(r'^user/(?P<pk>\d+)/$', user_dataroomone,name='user_dataroom-detail'),
-    url(r'^add/$', dataroomadddata, name='dataroom-add-dataroom'),
     url(r'^makezip/(?P<pk>\d+)/$', makeZip,name='dataroom-makeZip'),
     url(r'^checkzip/$', checkZip,name='dataroom-checkZip'),
     url(r'^downzip/$', downZip,name='dataroom-downZip'),
