@@ -78,12 +78,12 @@ def addWaterMark(pdfpath, watermarkcontent=None):
     return out_path
 
 
-def create_watermark(waterpath, content):
+def create_watermark(waterpath, watermarkcontent):
     """创建PDF水印模板
     """
     # 使用reportlab来创建一个PDF文件来作为一个水印文件
     pdfmetrics.registerFont(TTFont('song', APILOG_PATH['pdfwaterfontPath']))
-    if not isinstance(content, list):
+    if not isinstance(watermarkcontent, list):
         watermarkcontent = []
     while len(watermarkcontent) < 3:
         watermarkcontent.append(u'多维海拓')
@@ -92,19 +92,19 @@ def create_watermark(waterpath, content):
     fontsize = 20
     c.setFont("song", fontsize)
     c.translate(0, -A1[1] * 0.5)
-    width0 = c.stringWidth(text=content[0], fontName='song', fontSize=fontsize)
-    width1 = c.stringWidth(text=content[1], fontName='song', fontSize=fontsize)
-    width2 = c.stringWidth(text=content[2], fontName='song', fontSize=fontsize)
+    width0 = c.stringWidth(text=watermarkcontent[0], fontName='song', fontSize=fontsize)
+    width1 = c.stringWidth(text=watermarkcontent[1], fontName='song', fontSize=fontsize)
+    width2 = c.stringWidth(text=watermarkcontent[2], fontName='song', fontSize=fontsize)
     y = 0
     while y < A1[1]:
         x = 100
         while x < A1[0]:
             c.setFillAlpha(0.05)
-            c.drawCentredString(x, y, content[0])
+            c.drawCentredString(x, y, watermarkcontent[0])
             x = x + width0 * 2
-            c.drawCentredString(x, y, content[1])
+            c.drawCentredString(x, y, watermarkcontent[1])
             x = x + width1 * 2
-            c.drawCentredString(x, y, content[2])
+            c.drawCentredString(x, y, watermarkcontent[2])
             x = x + width2 * 2
         y += 60
     c.save()
