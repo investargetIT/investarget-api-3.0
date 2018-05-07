@@ -66,7 +66,6 @@ def addWaterMark(pdfpath, watermarkcontent=None):
         PdfWriter(out_path, trailer=input_file).write()
         os.remove(pdfpath)
         os.rename(out_path, pdfpath)
-        os.remove(pdfpath)
         os.remove(watermarkpath)
         print '覆盖水印pdf--%s--源文件%s' % (now, out_path)
     except Exception:
