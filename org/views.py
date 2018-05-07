@@ -2,7 +2,7 @@
 import traceback
 import datetime
 from django.core.paginator import Paginator, EmptyPage
-from django.db.models import Q, FieldDoesNotExist
+from django.db.models import Q, FieldDoesNotExist, Max
 # Create your views here.
 from django.db.models import QuerySet
 from rest_framework import filters , viewsets
@@ -88,9 +88,12 @@ class OrganizationView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
-            sortfield = request.GET.get('sort', 'createdtime')
-            desc = request.GET.get('desc', 1)
-            queryset = mySortQuery(queryset, sortfield, desc)
+            sortfield = request.GET.get('sort', None)
+            if sortfield:
+                desc = request.GET.get('desc', 1)
+                queryset = mySortQuery(queryset, sortfield, desc)
+            else:
+                queryset = queryset.annotate(latest_order=Max('org_orgInvestEvent__investDate')).order_by('-latest_order')
             setrequestuser(request)
             if request.user.is_anonymous:
                 serializerclass = OrgCommonSerializer
