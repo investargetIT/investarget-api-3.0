@@ -71,6 +71,14 @@ class countrySerializer(serializers.ModelSerializer):
             return None
         return 'https://o79atf82v.qnssl.com/' + obj.key
 
+class countryWithContinentSerializer(serializers.ModelSerializer):
+
+    parent = countrySerializer()
+
+    class Meta:
+        model = Country
+        exclude = ('is_deleted','datasource')
+
 
 class orgAttributeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -95,6 +103,14 @@ class industrySerializer(serializers.ModelSerializer):
         if not obj.key:
             return 'https://o79atf82v.qnssl.com/' + '040.jpg'
         return 'https://o79atf82v.qnssl.com/' + obj.key
+
+
+class industryWithPIndustrySerializer(serializers.ModelSerializer):
+    Pindustry = industrySerializer()
+
+    class Meta:
+        model = Industry
+        exclude = ('is_deleted','datasource')
 
 
 class tagSerializer(serializers.ModelSerializer):

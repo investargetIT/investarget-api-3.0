@@ -1,7 +1,8 @@
 from rest_framework import serializers
 
 from proj.models import project, finance, favoriteProject, attachment, projServices, projectIndustries
-from sourcetype.serializer import tagSerializer, transactionTypeSerializer, serviceSerializer, countrySerializer
+from sourcetype.serializer import tagSerializer, transactionTypeSerializer, serviceSerializer, countrySerializer, \
+    industryWithPIndustrySerializer, countryWithContinentSerializer
 from third.views.qiniufile import getUrlWithBucketAndKey
 from usersys.serializer import UserCommenSerializer
 
@@ -15,6 +16,7 @@ class ProjIndustrySerializer(serializers.ModelSerializer):
     nameC = serializers.SerializerMethodField()
     nameE = serializers.SerializerMethodField()
     url = serializers.SerializerMethodField()
+    industry  = industryWithPIndustrySerializer()
 
     class Meta:
         model = projectIndustries
@@ -391,7 +393,7 @@ class ProjDetailSerializer_user_withoutsecretinfo(serializers.ModelSerializer):
     transactionType = serializers.SerializerMethodField()
     finance = serializers.SerializerMethodField()
     attachment = serializers.SerializerMethodField()
-    country = countrySerializer()
+    country = countryWithContinentSerializer()
     linkpdfurl = serializers.SerializerMethodField()
 
     class Meta:

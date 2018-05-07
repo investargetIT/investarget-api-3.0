@@ -4,18 +4,16 @@ import os
 import datetime
 import traceback
 
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageDraw, ImageFont
 import random
 
-from PyPDF2 import PdfFileReader
-from PyPDF2 import PdfFileWriter
 from reportlab.lib.pagesizes import A1
+from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfgen import canvas
 
 from invest.settings import APILOG_PATH
-from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.lib.units import cm
+from pdfrw import PdfReader, PdfWriter, PageMerge
 
 # 随机颜色1:
 def rndColor():
@@ -53,49 +51,21 @@ def makeAvatar(name):
         return None
 
 #水印增加（单文件）
-def addWaterMark(pdfpath='water.pdf',watermarkcontent=None):
+def addWaterMark(pdfpath, watermarkcontent=None):
     try:
         now = datetime.datetime.now()
-        if not isinstance(watermarkcontent, list):
-            watermarkcontent = []
-        while len(watermarkcontent) < 3:
-            watermarkcontent.append(u'多维海拓')
-        pdfmetrics.registerFont(TTFont('song', APILOG_PATH['pdfwaterfontPath']))
+
         watermarkpath = pdfpath.split('.')[0] + '-water' + '.pdf'
         out_path = pdfpath.split('.')[0] + '-out' + '.pdf'
-        c = canvas.Canvas(watermarkpath, A1)
-        c.rotate(45)
-        fontsize = 20
-        c.setFont("song", fontsize)
-        c.translate(0, -A1[1] * 0.5)
-        width0 = c.stringWidth(text=watermarkcontent[0], fontName='song', fontSize=fontsize)
-        width1 = c.stringWidth(text=watermarkcontent[1], fontName='song', fontSize=fontsize)
-        width2 = c.stringWidth(text=watermarkcontent[2], fontName='song', fontSize=fontsize)
-        y = 0
-        while y < A1[1]:
-            x = 100
-            while x < A1[0]:
-                c.setFillAlpha(0.05)
-                c.drawCentredString(x, y, watermarkcontent[0])
-                x = x + width0 * 2
-                c.drawCentredString(x, y, watermarkcontent[1])
-                x = x + width1 * 2
-                c.drawCentredString(x, y, watermarkcontent[2])
-                x = x + width2 * 2
-            y += 60
-        c.save()
-        watermark = PdfFileReader(open(watermarkpath, "rb"))
+        watermark = create_watermark(watermarkpath, watermarkcontent)
 
         # Get our files ready
-        output_file = PdfFileWriter()
-        input_file = PdfFileReader(open(pdfpath, "rb"))
-        page_count = input_file.getNumPages()
-        for page_number in range(page_count):
-            input_page = input_file.getPage(page_number)
-            input_page.mergePage(watermark.getPage(0))
-            output_file.addPage(input_page)
-        with open(out_path, "wb") as outputStream:
-            output_file.write(outputStream)
+        input_file = PdfReader(pdfpath)
+        for page in input_file.pages:
+            PageMerge(page).add(watermark, prepend=False).render()
+        PdfWriter(out_path, trailer=input_file).write()
+        os.remove(pdfpath)
+        os.rename(out_path, pdfpath)
         os.remove(pdfpath)
         os.remove(watermarkpath)
         print '覆盖水印pdf--%s--源文件%s' % (now, out_path)
@@ -107,39 +77,48 @@ def addWaterMark(pdfpath='water.pdf',watermarkcontent=None):
         f.close()
     return out_path
 
+
+def create_watermark(waterpath, content):
+    """创建PDF水印模板
+    """
+    # 使用reportlab来创建一个PDF文件来作为一个水印文件
+    pdfmetrics.registerFont(TTFont('song', APILOG_PATH['pdfwaterfontPath']))
+    if not isinstance(content, list):
+        watermarkcontent = []
+    while len(watermarkcontent) < 3:
+        watermarkcontent.append(u'多维海拓')
+    c = canvas.Canvas(waterpath, A1)
+    c.rotate(45)
+    fontsize = 20
+    c.setFont("song", fontsize)
+    c.translate(0, -A1[1] * 0.5)
+    width0 = c.stringWidth(text=content[0], fontName='song', fontSize=fontsize)
+    width1 = c.stringWidth(text=content[1], fontName='song', fontSize=fontsize)
+    width2 = c.stringWidth(text=content[2], fontName='song', fontSize=fontsize)
+    y = 0
+    while y < A1[1]:
+        x = 100
+        while x < A1[0]:
+            c.setFillAlpha(0.05)
+            c.drawCentredString(x, y, content[0])
+            x = x + width0 * 2
+            c.drawCentredString(x, y, content[1])
+            x = x + width1 * 2
+            c.drawCentredString(x, y, content[2])
+            x = x + width2 * 2
+        y += 60
+    c.save()
+    pdf_watermark = PageMerge().add(PdfReader(waterpath).pages[0])[0]
+    return pdf_watermark
+
+
 #水印增加（多文件）
 def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
     try:
         if len(pdfpaths) == 0:
             return 20071
-        if not isinstance(watermarkcontent, list):
-            watermarkcontent = []
-        while len(watermarkcontent) < 3:
-            watermarkcontent.append(u'多维海拓')
-        pdfmetrics.registerFont(TTFont('song', APILOG_PATH['pdfwaterfontPath']))
         watermarkpath = pdfpaths[0].split('.')[0] + '-water' + '.pdf'
-        c = canvas.Canvas(watermarkpath, A1)
-        c.rotate(45)
-        fontsize = 20
-        c.setFont("song", fontsize)
-        c.translate(0, -A1[1] * 0.5)
-        width0 = c.stringWidth(text=watermarkcontent[0], fontName='song', fontSize=fontsize)
-        width1 = c.stringWidth(text=watermarkcontent[1], fontName='song', fontSize=fontsize)
-        width2 = c.stringWidth(text=watermarkcontent[2], fontName='song', fontSize=fontsize)
-        y = 0
-        while y < A1[1]:
-            x = 100
-            while x < A1[0]:
-                c.setFillAlpha(0.05)
-                c.drawCentredString(x, y, watermarkcontent[0])
-                x = x + width0 * 2
-                c.drawCentredString(x, y, watermarkcontent[1])
-                x = x + width1 * 2
-                c.drawCentredString(x, y, watermarkcontent[2])
-                x = x + width2 * 2
-            y += 60
-        c.save()
-        watermark = PdfFileReader(open(watermarkpath, "rb"))
+        watermark = create_watermark(watermarkpath, watermarkcontent)
     except Exception:
         now = datetime.datetime.now()
         print '制作水印pdf--%s'%now
@@ -154,16 +133,11 @@ def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
             now = datetime.datetime.now()
             print '覆盖水印pdf--%s--源文件%s' % (now, path)
             out_path = path.split('.')[0] + '-out' + '.pdf'
-            output_file = PdfFileWriter()
-            input_file = PdfFileReader(open(path, "rb"))
-            page_count = input_file.getNumPages()
-            for page_number in range(page_count):
-                input_page = input_file.getPage(page_number)
-                input_page.mergePage(watermark.getPage(0))
-                output_file.addPage(input_page)
-            with open(out_path, "wb") as outputStream:
-                output_file.write(outputStream)
 
+            input_file = PdfReader(path)
+            for page in input_file.pages:
+                PageMerge(page).add(watermark, prepend=False).render()
+            PdfWriter(out_path, trailer=input_file).write()
             os.remove(path)
             os.rename(out_path, path)
         except Exception:
