@@ -523,10 +523,10 @@ class ProjectView(viewsets.ModelViewSet):
             options = {
                 'dpi': 1400,
                 'page-size': 'A4',
-                'margin-top': '0.75in',
-                'margin-right': '0.75in',
-                'margin-bottom': '0.75in',
-                'margin-left': '0.75in',
+                'margin-top': '0in',
+                'margin-right': '0in',
+                'margin-bottom': '0in',
+                'margin-left': '0in',
                 'encoding': "UTF-8",
                 'no-outline': None,
             }
