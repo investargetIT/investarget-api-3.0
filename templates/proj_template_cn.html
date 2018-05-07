@@ -135,7 +135,7 @@
             
                 <div style="position: relative;float: right">
                     <img src="{{ project.industries.0.url }}" style="width: 320px; height: 180px;">
-                    <div style="position: absolute;top: 4px;left: 10px">
+                    <div style="position: absolute;top: 0px;left: 10px">
                         {% for tag in project.tags %}
                         <div data-show="true" class="ant-tag ant-tag">
                             <span class="ant-tag-text" style="font-weight: 100">{{ tag.nameC }}</span>
@@ -151,7 +151,7 @@
                 <p class="detail-content">{{ project.p_introducteC|safe }}</p>
             </div>
 
-            {% if project.targetMarketC != None %}
+            {% if project.targetMarketC != None and project.targetMarketC != "暂无" %}
             <div id="target-market" class="detail-container">
                 <h3 class="detail-label">目标市场</h3>
                 <p id="targetMarket" class="detail-content">
@@ -160,60 +160,60 @@
             </div>
             {%  endif %}
 
-            {% if project.productTechnologyC != None %}
+            {% if project.productTechnologyC != None and project.productTechnologyC != "暂无" %}
             <div id="core-product" class="detail-container">
                 <h3 class="detail-label">核心产品</h3>
                 <p id="productTechnology" class="detail-content">{{ project.productTechnologyC }}</p>
             </div>
             {% endif %}
 
-            {% if project.businessModelC != None %}
+            {% if project.businessModelC != None and project.businessModelC != "暂无" %}
             <div id="business-mode" class="detail-container">
                 <h3 class="detail-label">商业模式</h3>
                 <p id="businessModel" class="detail-content">{{ project.businessModelC }}</p>
             </div>
             {% endif %}
 
-            {% if project.brandChannelC != None %}
-            <!-- <div class="detail-container">
+            {% if project.brandChannelC != None and project.brandChannelC != "暂无" %}
+            <div id="brand-channel" class="detail-container">
                 <h3 class="detail-label">品牌渠道</h3>
-                <p class="detail-content">{{ project.brandChannelC }}</p>
-            </div> -->
+                <p id="brand-channel-content" class="detail-content">{{ project.brandChannelC }}</p>
+            </div>
             {%  endif %}
 
-            {% if project.managementTeamC != None %}
-            <!-- <div>
-                <h3>管理团队</h3>
-                <p>{{ project.managementTeamC }}</p>
-            </div> -->
+            {% if project.managementTeamC != None and project.managementTeamC != '暂无'  %}
+            <div id="management-team" class="detail-container">
+                <h3 class="detail-label">管理团队</h3>
+                <p id="management-team-content" class="detail-content">{{ project.managementTeamC }}</p>
+            </div>
             {%  endif %}
 
-            {% if project.BusinesspartnersC != None %}
-            <!-- <div>
-                <h3>商业伙伴</h3>
-                <p>{{ project.BusinesspartnersC }}</p>
-            </div> -->
+            {% if project.BusinesspartnersC != None and project.BusinesspartnersC != "暂无" %}
+            <div id="business-partner" class="detail-container">
+                <h3 class="detail-label">商业伙伴</h3>
+                <p id="business-partner-content" class="detail-content">{{ project.BusinesspartnersC }}</p>
+            </div>
             {%  endif %}
 
-            {% if project.useOfProceedC != None %}
-            <!-- <div>
-                <h3>资金用途</h3>
-                <p>{{ project.useOfProceedC }}</p>
-            </div> -->
+            {% if project.useOfProceedC != None and project.useOfProceedC != "暂无" %}
+            <div id="money-usage" class="detail-container">
+                <h3 class="detail-label">资金用途</h3>
+                <p id="money-usage-content" class="detail-content">{{ project.useOfProceedC }}</p>
+            </div>
             {%  endif %}
 
-            {% if project.financingHistoryC != None %}
-            <!-- <div>
-                <h3>融资历史</h3>
-                <p>{{ project.financingHistoryC }}</p>
-            </div> -->
+            {% if project.financingHistoryC != None and project.financingHistoryC != "暂无" %}
+            <div id="finance-history" class="detail-container">
+                <h3 class="detail-label">融资历史</h3>
+                <p id="finance-history-content" class="detail-content">{{project.financingHistoryC }}</p>
+            </div>
             {%  endif %}
             
-            {% if project.operationalDataC != None %}
-            <!-- <div>
-                <h3>经营数据</h3>
-                <p>{{ project.operationalDataC }}</p>
-            </div> -->
+            {% if project.operationalDataC != None and project.operationalDataC != "暂无" %}
+            <div id="operate-data">
+                <h3 class="detail-label">经营数据</h3>
+                <p id="operate-data-content" class="detail-content">{{ project.operationalDataC }}</p>
+            </div>
             {%  endif %}
 
 
@@ -397,7 +397,7 @@
     
                 <div style="position: relative;float: right">
                     <img src="{{ project.industries.0.url }}" style="width: 320px; height: 180px;">
-                    <div style="position: absolute;top: 4px;left: 10px">
+                    <div style="position: absolute;top: 0px;left: 10px">
                         {% for tag in project.tags %}
                         <div data-show="true" class="ant-tag ant-tag">
                             <span class="ant-tag-text" style="font-weight: 100">{{ tag.nameC }}</span>
@@ -491,7 +491,7 @@
     
                 <div style="position: relative;float: right">
                     <img src="{{ project.industries.0.url }}" style="width: 320px; height: 180px;">
-                    <div style="position: absolute;top: 4px;left: 10px">
+                    <div style="position: absolute;top: 0px;left: 10px">
                         {% for tag in project.tags %}
                         <div data-show="true" class="ant-tag ant-tag">
                             <span class="ant-tag-text" style="font-weight: 100">{{ tag.nameC }}</span>
@@ -585,7 +585,7 @@
     
                 <div style="position: relative;float: right">
                     <img src="{{ project.industries.0.url }}" style="width: 320px; height: 180px;">
-                    <div style="position: absolute;top: 4px;left: 10px">
+                    <div style="position: absolute;top: 0px;left: 10px">
                         {% for tag in project.tags %}
                         <div data-show="true" class="ant-tag ant-tag">
                             <span class="ant-tag-text" style="font-weight: 100">{{ tag.nameC }}</span>
@@ -607,18 +607,37 @@
 
     </div>
 
-    <script type="text/javascript"> 
-        var targetMarket = "{{ project.targetMarketC|escapejs }}";
-        targetMarket = targetMarket.replace(/\n/g, '<br/>')
-        document.getElementById('targetMarket').innerHTML = targetMarket;
+    <script type="text/javascript">
 
-        var productTechnology = "{{ project.productTechnologyC|escapejs }}";
-        productTechnology = productTechnology.replace(/\n/g, '<br/>')
-        document.getElementById('productTechnology').innerHTML = productTechnology;
-
-        var businessModel = "{{ project.businessModelC|escapejs }}";
-        businessModel = businessModel.replace(/\n/g, '<br/>')
-        document.getElementById('businessModel').innerHTML = businessModel;
+        var allDetailContentRaw = [
+          "{{ project.targetMarketC|escapejs }}",
+          "{{ project.productTechnologyC|escapejs }}",
+          "{{ project.businessModelC|escapejs }}",
+          "{{ project.brandChannelC|escapejs }}",
+          "{{ project.managementTeamC|escapejs }}",
+          "{{ project.BusinesspartnersC|escapejs }}",
+          "{{ project.useOfProceedC|escapejs }}",
+          "{{project.financingHistoryC|escapejs }}",
+          "{{ project.operationalDataC|escapejs }}",
+        ];
+        var allDetailContentIDs = [
+          'targetMarket',
+          'productTechnology',
+          'businessModel',
+          'brand-channel-content',
+          'management-team-content',
+          'business-partner-content',
+          'money-usage-content',
+          'finance-history-content',
+          'operate-data-content',
+        ];
+        for(var n = 0; n < allDetailContentRaw.length; n++) {
+            var detailValue = allDetailContentRaw[n];
+            detailValue = detailValue.replace(/\n/g, '<br/>');
+            var detailValueHtml = document.getElementById(allDetailContentIDs[n]);
+            if (detailValueHtml === null) continue;
+            detailValueHtml.innerHTML = detailValue;
+        }
 
         // 将所有美元金额格式化显示
         var allMoney = document.getElementsByClassName('money');
@@ -658,7 +677,8 @@
         // 如果所有都为空隐藏整个板块
         var financeDataContent = document.getElementById('finance-data-content');
         if (financeDataContent.children.length === 0) {
-            document.getElementById('finance-data').remove();
+            var wholeFinanceData = document.getElementById('finance-data');
+            wholeFinanceData.parentNode.removeChild(wholeFinanceData);
         } else {
             for (var m = 0; m < financeDataContent.children.length; m++) {
                 if ((m + 1) % 2 === 0) {
@@ -668,15 +688,17 @@
         }
 
 
-        var sections = ['project-intro', 'target-market', 'core-product', 'business-mode', 'finance-data'];
+        var sections = ['project-intro', 'target-market', 'core-product', 'business-mode', 'brand-channel', 'management-team', 'business-partner', 'money-usage', 'finance-history', 'operate-data', 'finance-data'];
         var page = 0;
         for (var a = 0; a < sections.length; a++) {
             var element = document.getElementById(sections[a]);
+            if (element === null) continue;
             if (element.offsetTop + element.offsetHeight > 1096 - 40 - 20) {
                 page++;
                 document.getElementById('page-container-' + page).style.display = 'block';
                 for (var b = a; b < sections.length; b++) {
                     var old = document.getElementById(sections[b]);
+                    if (old === null) continue;
                     document.getElementById('page-' + page).appendChild(old);
                 }
             }
