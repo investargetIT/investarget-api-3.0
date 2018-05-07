@@ -74,7 +74,7 @@ def addWaterMark(pdfpath, watermarkcontent=None):
         f = open(filepath, 'a')
         f.writelines(now.strftime('%H:%M:%S') + '\n' + traceback.format_exc() + '\n\n')
         f.close()
-    return out_path
+    return pdfpath
 
 
 def create_watermark(waterpath, watermarkcontent):
