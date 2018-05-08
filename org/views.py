@@ -837,7 +837,7 @@ class OrgInvestEventView(viewsets.ModelViewSet):
                 raise InvestError(2007, msg='机构不能为空')
             else:
                 orginstace = self.get_org(orgid)
-            queryset = self.filter_queryset(self.get_queryset()).order_by('investDate')
+            queryset = self.filter_queryset(self.get_queryset()).order_by('-investDate')
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -1013,8 +1013,8 @@ class OrgCooperativeRelationshipView(viewsets.ModelViewSet):
                 raise InvestError(2007, msg='机构不能为空')
             else:
                 orginstace = self.get_org(orgid)
-            queryset = self.filter_queryset(self.get_queryset()).filter(Q(org=orginstace)).order_by('investDate')
-            # queryset = self.filter_queryset(self.get_queryset()).filter(Q(org=orginstace)|Q(cooperativeOrg=orginstace)).order_by('investDate')
+            queryset = self.filter_queryset(self.get_queryset()).filter(Q(org=orginstace)).order_by('-investDate')
+            # queryset = self.filter_queryset(self.get_queryset()).filter(Q(org=orginstace)|Q(cooperativeOrg=orginstace)).order_by('-investDate')
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -1172,7 +1172,7 @@ class OrgBuyoutView(viewsets.ModelViewSet):
                 raise InvestError(2007, msg='机构不能为空')
             else:
                 orginstace = self.get_org(orgid)
-            queryset = self.filter_queryset(self.get_queryset()).order_by('buyoutDate')
+            queryset = self.filter_queryset(self.get_queryset()).order_by('-buyoutDate')
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
