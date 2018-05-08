@@ -418,6 +418,8 @@ class ProjectView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(code=4001,msg='data有误_%s' %  proj.errors)
                 if sendmsg and not pro.ismarketplace:
+                    if projdata.get('isSendEmail') in ['true', True, 1, '1', u'true', u'1', u'True']:
+                        self.makePdf(pro)
                     sendmessage_projectpublish(pro, pro.supportUser,['email', 'webmsg'],sender=request.user)
                     if pro.takeUser != pro.supportUser:
                         sendmessage_projectpublish(pro, pro.takeUser, ['email', 'webmsg'], sender=request.user)
@@ -548,6 +550,30 @@ class ProjectView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    def makePdf(self, proj):
+        try:
+            options = {
+                'dpi': 1400,
+                'page-size': 'A4',
+                'margin-top': '0in',
+                'margin-right': '0in',
+                'margin-bottom': '0in',
+                'margin-left': '0in',
+                'encoding': "UTF-8",
+                'no-outline': None,
+            }
+            pdfpath = APILOG_PATH['pdfpath_base'] + proj.projtitleC + '.pdf'
+            config = pdfkit.configuration(wkhtmltopdf=APILOG_PATH['wkhtmltopdf'])
+            aaa = pdfkit.from_url(PROJECTPDF_URLPATH + str(proj.id) + '&lang=cn', pdfpath, configuration=config,
+                                  options=options)
+            if aaa:
+                return pdfpath
+            else:
+                return None
+        except Exception:
+            return None
+
 
 class ProjAttachmentView(viewsets.ModelViewSet):
     """

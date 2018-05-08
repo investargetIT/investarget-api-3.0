@@ -129,6 +129,7 @@ class Country(models.Model):
     bucket = models.CharField(max_length=20, blank=True, default='image')
     key = models.CharField(max_length=64, blank=True, null=True)
     level = models.PositiveSmallIntegerField(blank=True,default=1)
+    sortweight = models.PositiveSmallIntegerField(blank=True,default=1)
     is_deleted = models.BooleanField(blank=True, default=False)
     datasource = models.PositiveSmallIntegerField(blank=True,default=1)
 
