@@ -34,7 +34,7 @@ from utils.somedef import addWaterMark, file_iterator
 from utils.sendMessage import sendmessage_favoriteproject, sendmessage_projectpublish
 from utils.util import catchexcption, read_from_cache, write_to_cache, loginTokenIsAvailable, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser, \
-    setUserObjectPermission, cache_delete_key, checkrequesttoken, rem_perm
+    setUserObjectPermission, cache_delete_key, checkrequesttoken, rem_perm, logexcption
 from utils.customClass import JSONResponse, InvestError, RelationFilter
 from django_filters import FilterSet
 
@@ -572,6 +572,7 @@ class ProjectView(viewsets.ModelViewSet):
             else:
                 return None
         except Exception:
+            logexcption()
             return None
 
 
