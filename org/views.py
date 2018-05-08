@@ -88,12 +88,9 @@ class OrganizationView(viewsets.ModelViewSet):
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
-            sortfield = request.GET.get('sort', None)
-            if sortfield:
-                desc = request.GET.get('desc', 1)
-                queryset = mySortQuery(queryset, sortfield, desc)
-            else:
-                queryset = queryset.annotate(latest_order=Max('org_orgInvestEvent__investDate')).order_by('-latest_order')
+            sortfield = request.GET.get('sort', 'createdtime')
+            desc = request.GET.get('desc', 1)
+            queryset = mySortQuery(queryset, sortfield, desc)
             setrequestuser(request)
             if request.user.is_anonymous:
                 serializerclass = OrgCommonSerializer
@@ -840,7 +837,7 @@ class OrgInvestEventView(viewsets.ModelViewSet):
                 raise InvestError(2007, msg='机构不能为空')
             else:
                 orginstace = self.get_org(orgid)
-            queryset = self.filter_queryset(self.get_queryset())
+            queryset = self.filter_queryset(self.get_queryset()).order_by('investDate')
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -1016,8 +1013,8 @@ class OrgCooperativeRelationshipView(viewsets.ModelViewSet):
                 raise InvestError(2007, msg='机构不能为空')
             else:
                 orginstace = self.get_org(orgid)
-            queryset = self.filter_queryset(self.get_queryset()).filter(Q(org=orginstace))
-            # queryset = self.filter_queryset(self.get_queryset()).filter(Q(org=orginstace)|Q(cooperativeOrg=orginstace))
+            queryset = self.filter_queryset(self.get_queryset()).filter(Q(org=orginstace)).order_by('investDate')
+            # queryset = self.filter_queryset(self.get_queryset()).filter(Q(org=orginstace)|Q(cooperativeOrg=orginstace)).order_by('investDate')
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -1175,7 +1172,7 @@ class OrgBuyoutView(viewsets.ModelViewSet):
                 raise InvestError(2007, msg='机构不能为空')
             else:
                 orginstace = self.get_org(orgid)
-            queryset = self.filter_queryset(self.get_queryset())
+            queryset = self.filter_queryset(self.get_queryset()).order_by('buyoutDate')
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
