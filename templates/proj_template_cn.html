@@ -146,12 +146,14 @@
             
             </div>
 
+            {% if project.p_introducteC != None and project.p_introducteC != "" and project.p_introducteC != "暂无" %}
             <div id="project-intro" class="detail-container">
                 <h3 class="detail-label">项目简介</h2>
                 <p class="detail-content">{{ project.p_introducteC|safe }}</p>
             </div>
+            {% endif %}
 
-            {% if project.targetMarketC != None and project.targetMarketC != "暂无" %}
+            {% if project.targetMarketC != None and project.targetMarketC != "" and project.targetMarketC != "暂无" %}
             <div id="target-market" class="detail-container">
                 <h3 class="detail-label">目标市场</h3>
                 <p id="targetMarket" class="detail-content">
@@ -160,56 +162,56 @@
             </div>
             {%  endif %}
 
-            {% if project.productTechnologyC != None and project.productTechnologyC != "暂无" %}
+            {% if project.productTechnologyC != None and  project.productTechnologyC != "" and project.productTechnologyC != "暂无" %}
             <div id="core-product" class="detail-container">
                 <h3 class="detail-label">核心产品</h3>
                 <p id="productTechnology" class="detail-content">{{ project.productTechnologyC }}</p>
             </div>
             {% endif %}
 
-            {% if project.businessModelC != None and project.businessModelC != "暂无" %}
+            {% if project.businessModelC != None and project.businessModelC != "" and project.businessModelC != "暂无" %}
             <div id="business-mode" class="detail-container">
                 <h3 class="detail-label">商业模式</h3>
                 <p id="businessModel" class="detail-content">{{ project.businessModelC }}</p>
             </div>
             {% endif %}
 
-            {% if project.brandChannelC != None and project.brandChannelC != "暂无" %}
+            {% if project.brandChannelC != None and project.brandChannelC != "" and project.brandChannelC != "暂无" %}
             <div id="brand-channel" class="detail-container">
                 <h3 class="detail-label">品牌渠道</h3>
                 <p id="brand-channel-content" class="detail-content">{{ project.brandChannelC }}</p>
             </div>
             {%  endif %}
 
-            {% if project.managementTeamC != None and project.managementTeamC != '暂无'  %}
+            {% if project.managementTeamC != None and project.managementTeamC != "" and project.managementTeamC != '暂无'  %}
             <div id="management-team" class="detail-container">
                 <h3 class="detail-label">管理团队</h3>
                 <p id="management-team-content" class="detail-content">{{ project.managementTeamC }}</p>
             </div>
             {%  endif %}
 
-            {% if project.BusinesspartnersC != None and project.BusinesspartnersC != "暂无" %}
+            {% if project.BusinesspartnersC != None and project.BusinesspartnersC != "" and project.BusinesspartnersC != "暂无" %}
             <div id="business-partner" class="detail-container">
                 <h3 class="detail-label">商业伙伴</h3>
                 <p id="business-partner-content" class="detail-content">{{ project.BusinesspartnersC }}</p>
             </div>
             {%  endif %}
 
-            {% if project.useOfProceedC != None and project.useOfProceedC != "暂无" %}
+            {% if project.useOfProceedC != None and project.useOfProceedC != "" and project.useOfProceedC != "暂无" %}
             <div id="money-usage" class="detail-container">
                 <h3 class="detail-label">资金用途</h3>
                 <p id="money-usage-content" class="detail-content">{{ project.useOfProceedC }}</p>
             </div>
             {%  endif %}
 
-            {% if project.financingHistoryC != None and project.financingHistoryC != "暂无" %}
+            {% if project.financingHistoryC != None and project.financingHistoryC != "" and project.financingHistoryC != "暂无" %}
             <div id="finance-history" class="detail-container">
                 <h3 class="detail-label">融资历史</h3>
                 <p id="finance-history-content" class="detail-content">{{project.financingHistoryC }}</p>
             </div>
             {%  endif %}
             
-            {% if project.operationalDataC != None and project.operationalDataC != "暂无" %}
+            {% if project.operationalDataC != None and project.operationalDataC != "" and project.operationalDataC != "暂无" %}
             <div id="operate-data">
                 <h3 class="detail-label">经营数据</h3>
                 <p id="operate-data-content" class="detail-content">{{ project.operationalDataC }}</p>
