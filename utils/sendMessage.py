@@ -5,6 +5,7 @@ from dataroom.models import dataroom_User_file
 from msg.models import schedule
 from proj.models import project, favoriteProject
 from sourcetype.models import DataSource
+from third.thirdconfig import sendSms, sendWebmsg, sendAppmsg, sendEmail
 from timeline.models import timelineTransationStatu
 from usersys.models import MyUser, UserRelation, UserFriendship
 from msg.views import saveMessage
@@ -12,12 +13,6 @@ from third.views.jpush import pushnotification
 from third.views.submail import xsendSms, xsendEmail
 from utils.messagejson import MESSAGE_DICT
 from utils.util import logexcption, checkEmailTrue
-
-sendEmail = True
-sendSms = True
-sendWebmsg = True
-sendAppmsg = True
-
 
 
 
