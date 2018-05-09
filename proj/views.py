@@ -66,6 +66,7 @@ class ProjectView(viewsets.ModelViewSet):
     destroy:删除项目
     getshareprojtoken:获取分享项目token
     getshareproj:获取分享的项目详情
+    sendWXGroupPdf:发送群pdf
     """
     filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
     queryset = project.objects.all().filter(is_deleted=False)
@@ -418,8 +419,6 @@ class ProjectView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(code=4001,msg='data有误_%s' %  proj.errors)
                 if sendmsg and not pro.ismarketplace:
-                    if projdata.get('isSendEmail') in ['true', True, 1, '1', u'true', u'1', u'True']:
-                        self.makePdf(pro)
                     sendmessage_projectpublish(pro, pro.supportUser,['email', 'webmsg'],sender=request.user)
                     if pro.takeUser != pro.supportUser:
                         sendmessage_projectpublish(pro, pro.takeUser, ['email', 'webmsg'], sender=request.user)
@@ -427,6 +426,25 @@ class ProjectView(viewsets.ModelViewSet):
                         sendmessage_projectpublish(pro, pro.makeUser, ['email', 'webmsg'], sender=request.user)
                     pulishProjectCreateDataroom(pro, request.user)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(ProjSerializer(pro).data,lang)))
+        except InvestError as err:
+                return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def sendWXGroupPdf(self, request, *args, **kwargs):
+        try:
+            pro = self.get_object()
+            if request.user.has_perm('proj.admin_changeproj'):
+                pass
+            elif request.user.has_perm('proj.user_changeproj',pro) or request.user in [pro.takeUser, pro.makeUser, pro.supportUser]:
+                pass
+            else:
+                raise InvestError(code=2009,msg='非承揽承做或上传方无法修改项目')
+            if pro.projstatus_id == 4:
+                self.makePdf(pro)
+            return JSONResponse(SuccessResponse({""}))
         except InvestError as err:
                 return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -567,13 +585,10 @@ class ProjectView(viewsets.ModelViewSet):
             config = pdfkit.configuration(wkhtmltopdf=APILOG_PATH['wkhtmltopdf'])
             aaa = pdfkit.from_url(PROJECTPDF_URLPATH + str(proj.id) + '&lang=cn', pdfpath, configuration=config,
                                   options=options)
-            if aaa:
-                return pdfpath
-            else:
-                return None
+            if not aaa:
+                raise InvestError(2007,msg='生成项目pdf失败')
         except Exception:
             logexcption()
-            return None
 
 
 class ProjAttachmentView(viewsets.ModelViewSet):
