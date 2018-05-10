@@ -337,11 +337,11 @@ def deleteExpireDir(rootpath):
         files = os.listdir(rootpath)
         for file in files:
             m = os.path.join(rootpath, file)
-            if (os.path.isdir(m)) and checkDirCtimeExpire(m,0):
+            if (os.path.isdir(m)) and checkDirCtimeExpire(m):
                 #过期的文件夹
                 if os.path.exists(m):
                     shutil.rmtree(m)
-            if (os.path.isfile(m)) and checkDirCtimeExpire(m,0):
+            if (os.path.isfile(m)) and checkDirCtimeExpire(m):
                 #过期的文件
                 if os.path.exists(m):
                     os.remove(m)
