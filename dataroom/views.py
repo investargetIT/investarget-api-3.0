@@ -235,9 +235,10 @@ class DataroomView(viewsets.ModelViewSet):
 
     def downloadDataroomZip(self, request, *args, **kwargs):
         try:
-            dataroominstance = self.get_object()
             userid = request.GET.get('user')
             user = checkrequesttoken(request.GET.get('token',None))
+            request.user = user
+            dataroominstance = self.get_object()
             if not user.has_perm('dataroom.downloadDataroom'):
                 raise InvestError(2009)
             if userid != user.id:
