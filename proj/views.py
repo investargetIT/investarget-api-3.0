@@ -585,7 +585,7 @@ class ProjectView(viewsets.ModelViewSet):
                 'encoding': "UTF-8",
                 'no-outline': None,
             }
-            pdfpath = APILOG_PATH['wxgroupsendpdf'] + proj.projtitleC + '.pdf'
+            pdfpath = APILOG_PATH['wxgroupsendpdf'] + proj.projtitleC.replace('/','-') + '.pdf'
             config = pdfkit.configuration(wkhtmltopdf=APILOG_PATH['wkhtmltopdf'])
             aaa = pdfkit.from_url(PROJECTPDF_URLPATH + str(proj.id) + '&lang=cn', pdfpath, configuration=config,
                                   options=options)
