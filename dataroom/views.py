@@ -208,7 +208,7 @@ class DataroomView(viewsets.ModelViewSet):
                     pass
                 else:
                     raise InvestError(2009, msg='非管理员权限')
-            path = 'dataroom_%s%s' % (dataroominstance.id, ('_%s' % userid) if userid else '')
+            path = 'dataroom_%s%s' % (dataroominstance.id, ('_%s' % userid) if userid else '') + '.zip'
             rootpath = APILOG_PATH['dataroomFilePath'] + '/' + path
             direcpath = APILOG_PATH['dataroomFilePath'] + '/' + path
             direcpath = direcpath.replace('.zip', '')
@@ -248,7 +248,7 @@ class DataroomView(viewsets.ModelViewSet):
                     pass
                 else:
                     raise InvestError(2009, msg='非管理员权限')
-            path = 'dataroom_%s%s' % (dataroominstance.id, ('_%s' % userid) if userid else '')
+            path = 'dataroom_%s%s' % (dataroominstance.id, ('_%s' % userid) if userid else '') + '.zip'
             rootpath = APILOG_PATH['dataroomFilePath'] + '/' + path
             direcpath = APILOG_PATH['dataroomFilePath'] + '/' + path
             direcpath = direcpath.replace('.zip','')
