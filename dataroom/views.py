@@ -307,6 +307,8 @@ def startMakeDataroomZip(file_qs,path, dataroominstance,userid=None,watermarkcon
                     arcname = pathfile[pre_len:].strip(os.path.sep)  # 相对路径
                     zipf.write(pathfile, arcname)
             zipf.close()
+            if os.path.exists(self.path):
+                shutil.rmtree(self.path)
     d = downloadAllDataroomFile(file_qs, path)
     d.start()
     # d.join()
