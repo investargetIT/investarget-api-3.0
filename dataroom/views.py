@@ -177,27 +177,38 @@ class DataroomView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['dataroom.downloadDataroom'])
-    def makeDataroomAllFilesZip(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            userid = request.GET.get('user', request.user.id)
-            watermarkcontent = request.GET.get('water',None)
-            watermarkcontent = str(watermarkcontent).split(',')
-            qs = instance.dataroom_directories.all().filter(is_deleted=False)
-            rootpath = APILOG_PATH['dataroomFilePath'] + '/' + 'dataroom_%s%s'%(str(instance.id), '_%s'%userid if userid else '')
-            startMakeDataroomZip(qs, rootpath , instance,userid,watermarkcontent)
-            return JSONResponse(SuccessResponse('dataroom_%s%s.zip'%(str(instance.id), '_%s'%userid if userid else '')))
-        except InvestError as err:
-            return JSONResponse(InvestErrorResponse(err))
-        except Exception:
-            catchexcption(request)
-            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+    # @loginTokenIsAvailable(['dataroom.downloadDataroom'])
+    # def makeDataroomAllFilesZip(self, request, *args, **kwargs):
+    #     try:
+    #         instance = self.get_object()
+    #         userid = request.GET.get('user', request.user.id)
+    #         watermarkcontent = request.GET.get('water',None)
+    #         watermarkcontent = str(watermarkcontent).split(',')
+    #         qs = instance.dataroom_directories.all().filter(is_deleted=False)
+    #         rootpath = APILOG_PATH['dataroomFilePath'] + '/' + 'dataroom_%s%s'%(str(instance.id), '_%s'%userid if userid else '')
+    #         startMakeDataroomZip(qs, rootpath , instance,userid,watermarkcontent)
+    #         return JSONResponse(SuccessResponse('dataroom_%s%s.zip'%(str(instance.id), '_%s'%userid if userid else '')))
+    #     except InvestError as err:
+    #         return JSONResponse(InvestErrorResponse(err))
+    #     except Exception:
+    #         catchexcption(request)
+    #         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable(['dataroom.downloadDataroom'])
     def checkZipStatus(self, request, *args, **kwargs):
         try:
-            path = request.GET.get('path', None)
+
+            deleteExpireDir(APILOG_PATH['dataroomFilePath'])
+            dataroominstance = self.get_object()
+            userid = request.GET.get('user', request.user.id)
+            if userid != request.user.id:
+                if request.user.has_perm('dataroom.admin_changedataroom') or request.user.has_perm('dataroom.admin_adddataroom'):
+                    pass
+                elif request.user_id in [dataroominstance.proj.takeUser_id,dataroominstance.proj.makeUser_id]:
+                    pass
+                else:
+                    raise InvestError(2009, msg='非管理员权限')
+            path = 'dataroom_%s%s' % (dataroominstance.id, ('_%s' % userid) if userid else '')
             rootpath = APILOG_PATH['dataroomFilePath'] + '/' + path
             direcpath = APILOG_PATH['dataroomFilePath'] + '/' + path
             direcpath = direcpath.replace('.zip', '')
@@ -207,6 +218,13 @@ class DataroomView(viewsets.ModelViewSet):
                 if os.path.exists(direcpath):
                     response = JSONResponse(SuccessResponse({'code': 8004, 'msg': '压缩中'}))
                 else:
+                    instance = self.get_object()
+                    watermarkcontent = request.GET.get('water', None)
+                    watermarkcontent = str(watermarkcontent).split(',')
+                    qs = instance.dataroom_directories.all().filter(is_deleted=False)
+                    rootpath = APILOG_PATH['dataroomFilePath'] + '/' + 'dataroom_%s%s' % (
+                    str(instance.id), '_%s' % userid if userid else '')
+                    startMakeDataroomZip(qs, rootpath, instance, userid, watermarkcontent)
                     response = JSONResponse(SuccessResponse({'code': 8002, 'msg': '文件不存在'}))
             return response
         except InvestError as err:
@@ -217,10 +235,19 @@ class DataroomView(viewsets.ModelViewSet):
 
     def downloadDataroomZip(self, request, *args, **kwargs):
         try:
+            dataroominstance = self.get_object()
+            userid = request.GET.get('user')
             user = checkrequesttoken(request.GET.get('token',None))
             if not user.has_perm('dataroom.downloadDataroom'):
                 raise InvestError(2009)
-            path = request.GET.get('path',None)
+            if userid != user.id:
+                if user.has_perm('dataroom.admin_changedataroom') or user.has_perm('dataroom.admin_adddataroom'):
+                    pass
+                elif user.id in [dataroominstance.proj.takeUser_id,dataroominstance.proj.makeUser_id]:
+                    pass
+                else:
+                    raise InvestError(2009, msg='非管理员权限')
+            path = 'dataroom_%s%s' % (dataroominstance.id, ('_%s' % userid) if userid else '')
             rootpath = APILOG_PATH['dataroomFilePath'] + '/' + path
             direcpath = APILOG_PATH['dataroomFilePath'] + '/' + path
             direcpath = direcpath.replace('.zip','')
@@ -229,9 +256,9 @@ class DataroomView(viewsets.ModelViewSet):
                 response = StreamingHttpResponse(file_iterator(fn))
                 response['Content-Type'] = 'application/octet-stream'
                 response["content-disposition"] = 'attachment;filename=%s' % path
-                os.remove(rootpath)
-                if os.path.exists(direcpath):
-                    shutil.rmtree(direcpath)
+                # os.remove(rootpath)
+                # if os.path.exists(direcpath):
+                #     shutil.rmtree(direcpath)
             else:
                 if os.path.exists(direcpath):
                     response = JSONResponse(SuccessResponse({'code':8004, 'msg': '压缩中'}))
@@ -302,6 +329,32 @@ def getPathWithFile(file_obj,rootpath,currentpath=None):
     else:
         currentpath = file_obj.parent.filename + '/' + currentpath
         return getPathWithFile(file_obj.parent, rootpath, currentpath)
+
+
+def deleteExpireDir(rootpath):
+    #删除过期的文件夹/文件
+    if (os.path.exists(rootpath)):
+        files = os.listdir(rootpath)
+        for file in files:
+            m = os.path.join(rootpath, file)
+            if (os.path.isdir(m)) and checkDirCtimeExpire(m,0):
+                #过期的文件夹
+                if os.path.exists(m):
+                    shutil.rmtree(m)
+            if (os.path.isfile(m)) and checkDirCtimeExpire(m,0):
+                #过期的文件
+                if os.path.exists(m):
+                    os.remove(m)
+
+
+def checkDirCtimeExpire(path, expire=1):
+    filePath = unicode(path, 'utf8')
+    timeStamp = os.path.getctime(filePath)
+    datetimeStruct = datetime.datetime.fromtimestamp(timeStamp)
+    if datetimeStruct < (datetime.datetime.now() - datetime.timedelta(hours=24 * expire)):
+        return True
+    else:
+        return False
 
 
 class DataroomdirectoryorfileView(viewsets.ModelViewSet):
