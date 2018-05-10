@@ -442,11 +442,15 @@ class ProjectView(viewsets.ModelViewSet):
                 pass
             else:
                 raise InvestError(code=2009,msg='非承揽承做或上传方无法修改项目')
-            if pro.projstatus_id == 4:
-                self.makePdf(pro)
-            return JSONResponse(SuccessResponse({""}))
+            if pro.projstatus_id == 4 and not pro.is_deleted:
+                propath = APILOG_PATH['wxgroupsendpdf'] + pro.projtitleC + '.pdf'
+                if not os.path.exists(propath):
+                    self.makePdf(pro)
+            else:
+                raise InvestError(2007,msg='不满足发送条件')
+            return JSONResponse(SuccessResponse({"status":'发送中，请稍后'}))
         except InvestError as err:
-                return JSONResponse(InvestErrorResponse(err))
+            return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
