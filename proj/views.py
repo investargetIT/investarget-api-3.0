@@ -1,4 +1,5 @@
 #coding=utf-8
+import json
 import os
 import traceback
 
@@ -591,6 +592,12 @@ class ProjectView(viewsets.ModelViewSet):
                                   options=options)
             if not aaa:
                 raise InvestError(2007,msg='生成项目pdf失败')
+            f = open(APILOG_PATH['wxgroupsendpdf'] + '/projdesc.txt', 'a')
+            content = {proj.projtitleC.split('：')[0]: '本周项目自动推送：%s%s' % (proj.projtitleC.split('：')[-1],
+                                       ('，拟交易规模：$%s USD' % proj.financeAmount_USD) if proj.financeAmount_USD else '')}
+            f.writelines(json.dumps(content, ensure_ascii=False))
+            f.writelines('\n')
+            f.close()
         except Exception:
             logexcption()
 
