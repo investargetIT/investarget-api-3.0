@@ -90,22 +90,46 @@
                     </div>
 
                     <div class="info-container">
-                        <div class="info-label">交易规模</div>
-                        {% if project.financeAmount_USD %}
-                        <div class="info-content money">USD {{ project.financeAmount_USD }}</div>
-                        {% else %}
-                        <div class="info-content">N/A</div>
-                        {% endif %}
-                    </div>
-
-                    <div class="info-container">
-                        <div class="info-label">公司估值</div>
-                        {% if project.companyValuation_USD %}
-                        <div class="info-content money">USD {{ project.companyValuation_USD }}</div>
-                        {% else %}
-                        <div class="info-content">N/A</div>
-                        {% endif %}
-                    </div>
+                            <div class="info-label">交易规模</div>
+                            {% if project.country.id == 42 and project.currency.id == 1 %}
+    
+                            {% if project.financeAmount %}
+                            <div class="info-content money">CNY {{ project.financeAmount }}</div>
+                            {% else %}
+                            <div class="info-content">N/A</div>
+                            {% endif %}
+    
+                            {% else %}
+    
+                            {% if project.financeAmount_USD %}
+                            <div class="info-content money">USD {{ project.financeAmount_USD }}</div>
+                            {% else %}
+                            <div class="info-content">N/A</div>
+                            {% endif %}
+    
+                            {% endif %}
+                        </div>
+        
+                        <div class="info-container">
+                            <div class="info-label">公司估值</div>
+                            {% if project.country.id == 42 and project.currency.id == 1 %}
+                           
+                            {% if project.companyValuation %}
+                            <div class="info-content money">CNY {{ project.companyValuation }}</div>
+                            {% else %}
+                            <div class="info-content">N/A</div>
+                            {% endif %}
+    
+                            {% else %}
+    
+                            {% if project.companyValuation_USD %}
+                            <div class="info-content money">USD {{ project.companyValuation_USD }}</div>
+                            {% else %}
+                            <div class="info-content">N/A</div>
+                            {% endif %}
+    
+                            {% endif %}
+                        </div>
                     
                     <!-- <div class="info-container">
                         <div class="info-label">项目负责人</div>
@@ -225,7 +249,13 @@
 
                         <thead>
                             <tr>
-                            <th style="width: 25%">USD</th>
+                            <th style="width: 25%">
+                            {% if project.country.id == 42 and project.currency.id == 1 %}
+                              CNY
+                            {% else %}
+                              USD
+                            {% endif %}
+                            </th>
                             {% for item in finance %}
                             <th>{{ item.fYear }}</th>
                             {% endfor %}
@@ -235,6 +265,19 @@
                         <tbody id="finance-data-content" style="border: 1px solid rgb(0, 95, 175);border-left: none;border-right: none">
                             <tr id="revenue-container">
                               <td class="finance-label">营业收入</td>
+
+                              {% if project.country.id == 42 and project.currency.id == 1 %}
+
+                              {% for item in finance %}
+                              {% if item.revenue %}
+                              <td class="finance-value money revenue">{{ item.revenue }}</td>
+                              {% else %}
+                              <td class="finance-value revenue">N/A</td>
+                              {% endif %}
+                              {% endfor %}
+
+                              {% else %}
+
                               {% for item in finance %}
                               {% if item.revenue_USD %}
                               <td class="finance-value money revenue">{{ item.revenue_USD }}</td>
@@ -242,6 +285,8 @@
                               <td class="finance-value revenue">N/A</td>
                               {% endif %}
                               {% endfor %}
+                              
+                              {% endif %}
                             </tr>
 
                             <tr id="gross-profit-container">
@@ -266,11 +311,23 @@
 
                         <tr id="netincome-container">
                             <td class="finance-label">净利润</td>
+                            {% if project.country.id == 42 and project.currency.id == 1 %}
+
+                            {% for item in finance %} {% if item.netIncome %}
+                            <td class="finance-value money netincome">{{ item.netIncome }}</td>
+                            {% else %}
+                            <td class="finance-value netincome">N/A</td>
+                            {% endif %} {% endfor %}
+
+                            {% else %}
+                           
                             {% for item in finance %} {% if item.netIncome_USD %}
                             <td class="finance-value money netincome">{{ item.netIncome_USD }}</td>
                             {% else %}
                             <td class="finance-value netincome">N/A</td>
                             {% endif %} {% endfor %}
+
+                            {% endif %}
                         </tr>
 
                         <tr id="total-asset-container">
@@ -355,19 +412,43 @@
     
                     <div class="info-container">
                         <div class="info-label">交易规模</div>
+                        {% if project.country.id == 42 and project.currency.id == 1 %}
+
+                        {% if project.financeAmount %}
+                        <div class="info-content money">CNY {{ project.financeAmount }}</div>
+                        {% else %}
+                        <div class="info-content">N/A</div>
+                        {% endif %}
+
+                        {% else %}
+
                         {% if project.financeAmount_USD %}
                         <div class="info-content money">USD {{ project.financeAmount_USD }}</div>
                         {% else %}
                         <div class="info-content">N/A</div>
                         {% endif %}
+
+                        {% endif %}
                     </div>
     
                     <div class="info-container">
                         <div class="info-label">公司估值</div>
+                        {% if project.country.id == 42 and project.currency.id == 1 %}
+                       
+                        {% if project.companyValuation %}
+                        <div class="info-content money">CNY {{ project.companyValuation }}</div>
+                        {% else %}
+                        <div class="info-content">N/A</div>
+                        {% endif %}
+
+                        {% else %}
+
                         {% if project.companyValuation_USD %}
                         <div class="info-content money">USD {{ project.companyValuation_USD }}</div>
                         {% else %}
                         <div class="info-content">N/A</div>
+                        {% endif %}
+
                         {% endif %}
                     </div>
     
@@ -448,22 +529,46 @@
                     </div>
     
                     <div class="info-container">
-                        <div class="info-label">交易规模</div>
-                        {% if project.financeAmount_USD %}
-                        <div class="info-content money">USD {{ project.financeAmount_USD }}</div>
-                        {% else %}
-                        <div class="info-content">N/A</div>
-                        {% endif %}
-                    </div>
+                            <div class="info-label">交易规模</div>
+                            {% if project.country.id == 42 and project.currency.id == 1 %}
     
-                    <div class="info-container">
-                        <div class="info-label">公司估值</div>
-                        {% if project.companyValuation_USD %}
-                        <div class="info-content money">USD {{ project.companyValuation_USD }}</div>
-                        {% else %}
-                        <div class="info-content">N/A</div>
-                        {% endif %}
-                    </div>
+                            {% if project.financeAmount %}
+                            <div class="info-content money">CNY {{ project.financeAmount }}</div>
+                            {% else %}
+                            <div class="info-content">N/A</div>
+                            {% endif %}
+    
+                            {% else %}
+    
+                            {% if project.financeAmount_USD %}
+                            <div class="info-content money">USD {{ project.financeAmount_USD }}</div>
+                            {% else %}
+                            <div class="info-content">N/A</div>
+                            {% endif %}
+    
+                            {% endif %}
+                        </div>
+        
+                        <div class="info-container">
+                            <div class="info-label">公司估值</div>
+                            {% if project.country.id == 42 and project.currency.id == 1 %}
+                           
+                            {% if project.companyValuation %}
+                            <div class="info-content money">CNY {{ project.companyValuation }}</div>
+                            {% else %}
+                            <div class="info-content">N/A</div>
+                            {% endif %}
+    
+                            {% else %}
+    
+                            {% if project.companyValuation_USD %}
+                            <div class="info-content money">USD {{ project.companyValuation_USD }}</div>
+                            {% else %}
+                            <div class="info-content">N/A</div>
+                            {% endif %}
+    
+                            {% endif %}
+                        </div>
     
                     <!-- <div class="info-container">
                         <div class="info-label">项目负责人</div>
@@ -542,22 +647,46 @@
                     </div>
     
                     <div class="info-container">
-                        <div class="info-label">交易规模</div>
-                        {% if project.financeAmount_USD %}
-                        <div class="info-content money">USD {{ project.financeAmount_USD }}</div>
-                        {% else %}
-                        <div class="info-content">N/A</div>
-                        {% endif %}
-                    </div>
+                            <div class="info-label">交易规模</div>
+                            {% if project.country.id == 42 and project.currency.id == 1 %}
     
-                    <div class="info-container">
-                        <div class="info-label">公司估值</div>
-                        {% if project.companyValuation_USD %}
-                        <div class="info-content money">USD {{ project.companyValuation_USD }}</div>
-                        {% else %}
-                        <div class="info-content">N/A</div>
-                        {% endif %}
-                    </div>
+                            {% if project.financeAmount %}
+                            <div class="info-content money">CNY {{ project.financeAmount }}</div>
+                            {% else %}
+                            <div class="info-content">N/A</div>
+                            {% endif %}
+    
+                            {% else %}
+    
+                            {% if project.financeAmount_USD %}
+                            <div class="info-content money">USD {{ project.financeAmount_USD }}</div>
+                            {% else %}
+                            <div class="info-content">N/A</div>
+                            {% endif %}
+    
+                            {% endif %}
+                        </div>
+        
+                        <div class="info-container">
+                            <div class="info-label">公司估值</div>
+                            {% if project.country.id == 42 and project.currency.id == 1 %}
+                           
+                            {% if project.companyValuation %}
+                            <div class="info-content money">CNY {{ project.companyValuation }}</div>
+                            {% else %}
+                            <div class="info-content">N/A</div>
+                            {% endif %}
+    
+                            {% else %}
+    
+                            {% if project.companyValuation_USD %}
+                            <div class="info-content money">USD {{ project.companyValuation_USD }}</div>
+                            {% else %}
+                            <div class="info-content">N/A</div>
+                            {% endif %}
+    
+                            {% endif %}
+                        </div>
     
                     <!-- <div class="info-container">
                         <div class="info-label">项目负责人</div>
