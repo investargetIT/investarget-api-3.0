@@ -543,8 +543,12 @@ class ProjectView(viewsets.ModelViewSet):
             lang = request.GET.get('lang','cn')
             proj = self.get_object()
             if proj.isHidden:
-                if request.user not in [proj.createuser,proj.takeUser,proj.makeUser,proj.supportUser]:
-                    raise InvestError(2009,msg='没有权限获取相关项目信息')
+                if request.user.has_perm('proj.admin_getproj'):
+                    pass
+                elif request.user in [proj.createuser,proj.takeUser,proj.makeUser,proj.supportUser]:
+                    pass
+                else:
+                    raise InvestError(2009,msg='隐藏项目，只有项目承揽承做及上传方可以获取相关项目信息')
             options = {
                 'dpi': 1400,
                 'page-size': 'A4',
@@ -592,10 +596,13 @@ class ProjectView(viewsets.ModelViewSet):
                                   options=options)
             if not aaa:
                 raise InvestError(2007,msg='生成项目pdf失败')
-            amount_field, currency, currencytype = 'financeAmount_USD', '$', 'USD' if proj.country_id == 42 and proj.currency_id == 1 else 'financeAmount', '￥', 'CNY'
+            if proj.country_id == 42 and proj.currency_id == 1:
+                amount_field, currency, currencytype = 'financeAmount_USD', '$', 'USD'
+            else:
+                amount_field, currency, currencytype = 'financeAmount', '￥', 'CNY'
             f = open(APILOG_PATH['wxgroupsendpdf'] + '/projdesc.txt', 'a')
             content = {proj.projtitleC.split('：')[0]: '本周项目自动推送：%s%s' % (proj.projtitleC.split('：')[-1],
-                                       ('，拟交易规模：%s%s %s' % (currency, proj.get(amount_field)) if proj.get(amount_field) else '', currencytype))}
+                                       ('，拟交易规模：%s%s %s' % (currency, proj.get(amount_field) if proj.get(amount_field) else '', currencytype)))}
             f.writelines(json.dumps(content, ensure_ascii=False))
             f.writelines('\n')
             f.close()
