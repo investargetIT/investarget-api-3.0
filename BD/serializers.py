@@ -36,7 +36,7 @@ class ProjectBDSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProjectBD
-        exclude = ('deleteduser', 'deletedtime', 'datasource', 'is_deleted','createuser')
+        exclude = ('deleteduser', 'deletedtime', 'datasource', 'is_deleted')
 
     def get_BDComments(self, obj):
         qs = obj.ProjectBD_comments.filter(is_deleted=False)
