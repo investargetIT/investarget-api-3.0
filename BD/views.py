@@ -542,11 +542,17 @@ class OrgBDView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
-    @loginTokenIsAvailable(['BD.manageOrgBD',])
+    @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
         try:
+            instance = self.get_object()
+            if request.user.has_perm('BD.manageOrgBD'):
+                pass
+            elif request.user_id == instance.createuser_id:
+                pass
+            else:
+                raise InvestError(2009)
             with transaction.atomic():
-                instance = self.get_object()
                 instance.is_deleted = True
                 instance.deleteduser = request.user
                 instance.deletedtime = datetime.datetime.now()
