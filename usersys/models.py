@@ -295,6 +295,21 @@ class userTags(MyModel):
         return super(userTags, self).save(*args, **kwargs)
 
 
+class userAttachments(MyModel):
+    user = MyForeignKey(MyUser,related_name='user_userAttachments', blank=True, on_delete=CASCADE)
+    bucket = models.CharField(max_length=64, blank=True, default='image')
+    key = models.CharField(max_length=128, blank=True, null=True)
+    filename = models.CharField(max_length=128, blank=True, null=True)
+    deleteduser = MyForeignKey(MyUser,blank=True, null=True,related_name='userdelete_userAttachments')
+    createuser = MyForeignKey(MyUser,blank=True, null=True,related_name='usercreate_userAttachments')
+
+    class Meta:
+        db_table = "user_attachments"
+
+    def save(self, *args, **kwargs):
+        return super(userAttachments, self).save(*args, **kwargs)
+
+
 class MyToken(models.Model):
     key = models.CharField('Key', max_length=48, primary_key=True)
     user = MyForeignKey(MyUser, related_name='user_token',verbose_name=("MyUser"),on_delete=CASCADE)

@@ -19,12 +19,13 @@ from sourcetype.views import getmenulist
 from third.models import MobileAuthCode
 from third.views.huanxin import registHuanXinIMWithUser, deleteHuanXinIMWithUser
 from timeline.models import timeline
-from usersys.models import MyUser, UserRelation, userTags, UserFriendship, MyToken, UnreachUser, UserRemarks
+from usersys.models import MyUser, UserRelation, userTags, UserFriendship, MyToken, UnreachUser, UserRemarks, \
+    userAttachments
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
     CreatUserSerializer , UserCommenSerializer , UserRelationCreateSerializer, UserFriendshipSerializer, \
     UserFriendshipDetailSerializer, UserFriendshipUpdateSerializer, GroupSerializer, GroupDetailSerializer, GroupCreateSerializer, PermissionSerializer, \
     UpdateUserSerializer, UnreachUserSerializer, UserRemarkSerializer, UserRemarkCreateSerializer, \
-    UserListCommenSerializer
+    UserListCommenSerializer, UserAttachmentSerializer
 from sourcetype.models import Tag, DataSource
 from utils import perimissionfields
 from utils.customClass import JSONResponse, InvestError, RelationFilter
@@ -39,6 +40,7 @@ from django_filters import FilterSet
 class UserFilter(FilterSet):
     groups = RelationFilter(filterstr='groups', lookup_method='in')
     org = RelationFilter(filterstr='org',lookup_method='in')
+    usernameC = RelationFilter(filterstr='usernameC')
     title = RelationFilter(filterstr='title', lookup_method='in')
     usercode = RelationFilter(filterstr='usercode', lookup_method='in')
     orgarea = RelationFilter(filterstr='orgarea', lookup_method='in')
@@ -50,7 +52,7 @@ class UserFilter(FilterSet):
     investor = RelationFilter(filterstr='trader_relations__investoruser', lookup_method='in')
     class Meta:
         model = MyUser
-        fields = ('groups','org','tags','userstatus','currency','orgtransactionphases','orgarea','usercode','title','trader','investor')
+        fields = ('groups','org','tags','userstatus','currency','orgtransactionphases','orgarea','usercode','title','trader','investor','usernameC')
 
 
 class UserView(viewsets.ModelViewSet):
@@ -754,6 +756,129 @@ class UnReachUserView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+class UserAttachmentView(viewsets.ModelViewSet):
+    """
+            list:用户附件列表
+            create:新建用户附件
+            update:修改附件信息
+            destroy:删除用户附件
+            """
+    filter_backends = (filters.DjangoFilterBackend,)
+    queryset = userAttachments.objects.all().filter(is_deleted=False)
+    filter_fields = ('user',)
+    serializer_class = UserAttachmentSerializer
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            lang = request.GET.get('lang')
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filter_queryset(self.get_queryset())
+            if request.user.is_superuser:
+                pass
+            else:
+                queryset = queryset.filter(createuser_id=request.user.id)
+            sort = request.GET.get('sort')
+            if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
+                queryset = queryset.order_by('-lastmodifytime', '-createdtime')
+            else:
+                queryset = queryset.order_by('lastmodifytime', 'createdtime')
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = UserAttachmentSerializer(queryset, many=True)
+            return JSONResponse(
+                SuccessResponse({'count': count, 'data': returnListChangeToLanguage(serializer.data, lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        lang = request.GET.get('lang')
+        data['createuser'] = request.user.id
+        data['datasource'] = request.user.datasource.id
+        if request.user.is_superuser:
+            pass
+        else:
+            raise InvestError(2009)
+        try:
+            with transaction.atomic():
+                attachmentserializer = UserAttachmentSerializer(data=data)
+                if attachmentserializer.is_valid():
+                    instance = attachmentserializer.save()
+                else:
+                    raise InvestError(code=20071, msg='data有误_%s\n%s' %  attachmentserializer.errors)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(attachmentserializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            remark = self.get_object()
+            lang = request.GET.get('lang')
+            if request.user.is_superuser:
+                pass
+            else:
+                raise InvestError(code=2009)
+            data = request.data
+            data.pop('createuser',None)
+            data.pop('createdtime',None)
+            data['lastmodifyuser'] = request.user.id
+            data['lastmodifytime'] = datetime.datetime.now()
+            with transaction.atomic():
+                serializer = UserAttachmentSerializer(remark, data=data)
+                if serializer.is_valid():
+                    newinstance = serializer.save()
+                else:
+                    raise InvestError(code=20071,
+                                      msg='data有误_%s\n%s' % (serializer.error_messages, serializer.errors))
+                return JSONResponse(
+                    SuccessResponse(returnDictChangeToLanguage(UserAttachmentSerializer(newinstance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            if request.user.is_superuser:
+                pass
+            else:
+                raise InvestError(code=2009)
+            with transaction.atomic():
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
+                return JSONResponse(
+                    SuccessResponse(returnDictChangeToLanguage(UserAttachmentSerializer(instance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
 
 class UserRemarkView(viewsets.ModelViewSet):
     """

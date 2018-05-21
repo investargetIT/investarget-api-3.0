@@ -52,6 +52,16 @@ getUserCount = views.UserView.as_view({
         'get': 'getCount',
 })
 
+user_attachments = views.UserAttachmentView.as_view({
+        'get': 'list',
+        'post': 'create',
+})
+
+user_attachments_detail = views.UserAttachmentView.as_view({
+        'put': 'update',
+        'delete': 'destroy',
+})
+
 user_friendship = views.UserFriendshipView.as_view({
         'get': 'list',
         'post': 'create',
@@ -110,6 +120,8 @@ urlpatterns = [
     url(r'^(?P<pk>\d+)/$', user_detail,name='user-one'),
     url(r'^password/$', find_password ,name='find-password'),
     url(r'^password/(?P<pk>\d+)/$', change_password ,name='change-password'),
+    url(r'^atta/$',user_attachments, name='user_attachments-list'),
+    url(r'^atta/(?P<pk>\d+)/$', user_attachments_detail, name='user_attachments-detail'),
     url(r'^relationship/$', user_relationshiplist, name='user-relationshiplist'),
     url(r'^checkrelation/$', checkrealtion, name='user-checkrealtion'),
     url(r'^checkfriendship/$', checkFriendship, name='user-checkfriendship'),
