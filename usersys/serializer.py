@@ -121,7 +121,6 @@ class UserEventSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-
 class UserRemarkCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserRemarks

@@ -679,18 +679,14 @@ class ProjAttachmentView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            lang = request.GET.get('lang')
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             projid = request.GET.get('proj')
             if projid:
                 proj = self.get_proj(projid)
             else:
                 raise InvestError(2007,msg='proj 不能为空')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
             if not request.user.has_perm('proj.admin_getproj'):
                 queryset = queryset
@@ -884,18 +880,14 @@ class ProjFinanceView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            lang = request.GET.get('lang')
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             projid = request.GET.get('proj')
             if projid and isinstance(projid,(str,int,unicode)):
                 proj = self.get_proj(projid)
             else:
                 raise InvestError(2007, msg='proj 不能为空')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
             if not proj.financeIsPublic:
                 if request.user in (proj.supportUser, proj.takeUser, proj.makeUser) or request.user.is_superuser:
@@ -1092,15 +1084,11 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            lang = request.GET.get('lang')
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             userid = request.GET.get('user')
             traderid = request.GET.get('trader')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
             sort = request.GET.get('sort')
             if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:

@@ -167,12 +167,8 @@ class EmailgroupsendlistView(viewsets.ModelViewSet):
     @loginTokenIsAvailable(['emailmanage.getemailmanage',])
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
             queryset = self.filter_queryset(self.queryset).filter(datasource=request.user.datasource_id)
             sortfield = request.GET.get('sort', 'createdtime')
             desc = request.GET.get('desc', 1)

@@ -451,7 +451,7 @@ class UserView(viewsets.ModelViewSet):
                     else:
                         raise InvestError(code=2009)
                     for link in ['investor_relations','trader_relations','investor_timelines','supportor_timelines','trader_timelines','usersupport_projs','usertake_projs',
-                                 'usermake_projs','user_usertags', 'user_remarks','userreceive_msgs','usersend_msgs','user_datarooms'
+                                 'usermake_projs','user_usertags', 'user_remarks','userreceive_msgs','usersend_msgs','user_datarooms', 'user_userAttachments', 'user_userEvents'
                                  'usercreate_ProjectBD','usercreate_ProjectBDComments','usercreate_schedule','user_beschedule', 'user_orgBDs']:
                         if link in ['investor_relations','trader_relations','investor_timelines','supportor_timelines','trader_timelines']:
                             manager = getattr(instance, link, None)
@@ -663,13 +663,9 @@ class UnReachUserView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            lang = request.GET.get('lang')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
             sort = request.GET.get('sort')
             if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
@@ -773,13 +769,9 @@ class UserAttachmentView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            lang = request.GET.get('lang')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
             if request.user.is_superuser:
                 pass
@@ -887,19 +879,15 @@ class UserEventView(viewsets.ModelViewSet):
             """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = userEvents.objects.all().filter(is_deleted=False)
-    filter_fields = ('user')
+    filter_fields = ('user',)
     serializer_class = UserEventSerializer
 
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            lang = request.GET.get('lang')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
             if request.user.is_superuser:
                 pass
@@ -929,7 +917,6 @@ class UserEventView(viewsets.ModelViewSet):
         data = request.data
         lang = request.GET.get('lang')
         data['createuser'] = request.user.id
-        data['datasource'] = request.user.datasource.id
         if request.user.is_superuser:
             pass
         else:
@@ -1030,13 +1017,9 @@ class UserRemarkView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            lang = request.GET.get('lang')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
             if request.user.has_perm('usersys.get_userremark'):
                 pass
@@ -1197,13 +1180,9 @@ class UserRelationView(viewsets.ModelViewSet):
     @loginTokenIsAvailable(['usersys.admin_getuserrelation','usersys.user_getuserrelationlist'])
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  #从第一页开始
-            lang = request.GET.get('lang')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
             sort = request.GET.get('sort')
             if sort not in ['True', 'true', True, 1 ,'Yes','yes','YES','TRUE']:
@@ -1448,13 +1427,9 @@ class UserFriendshipView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')
-            lang = request.GET.get('lang')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
             if request.user.has_perm('usersys.admin_getfriend'):
                 queryset = queryset
@@ -1641,12 +1616,8 @@ class GroupPermissionView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
             queryset = self.get_queryset().filter(is_deleted=False)
             grouptype = request.GET.get('type', None)
             if grouptype in [u'trader','trader']:

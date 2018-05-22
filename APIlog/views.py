@@ -58,12 +58,9 @@ class APILogView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset()).filter(datasource=request.user.datasource_id)
             count = queryset.count()
             try:
@@ -87,12 +84,8 @@ class LoginLogView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
             queryset = self.filter_queryset(self.get_queryset()).filter(datasource=request.user.datasource_id)
             count = queryset.count()
             try:
@@ -115,12 +108,8 @@ class ViewprojLogView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
             queryset = self.filter_queryset(self.get_queryset()).filter(datasource=request.user.datasource_id)
             count = queryset.count()
             try:
@@ -145,12 +134,8 @@ class UserInfoUpdateLogView(viewsets.ModelViewSet):
     @loginTokenIsAvailable(['APILog.manage_userinfolog'])
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
             queryset = self.filter_queryset(self.get_queryset()).filter(datasource=request.user.datasource_id).order_by('-updatetime')
             count = queryset.count()
             try:

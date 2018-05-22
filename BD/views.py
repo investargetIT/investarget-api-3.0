@@ -72,13 +72,9 @@ class ProjectBDView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            lang = request.GET.get('lang')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
             if request.user.has_perm('BD.manageProjectBD'):
                 pass
@@ -269,13 +265,9 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            lang = request.GET.get('lang')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
             if request.user.has_perm('BD.manageProjectBD'):
                 pass
@@ -396,13 +388,9 @@ class OrgBDView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            lang = request.GET.get('lang')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
@@ -612,13 +600,9 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            lang = request.GET.get('lang')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
@@ -734,13 +718,9 @@ class MeetingBDView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            lang = request.GET.get('lang')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
             if request.user.has_perm('BD.manageMeetBD'):
                 pass

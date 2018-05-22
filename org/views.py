@@ -80,13 +80,9 @@ class OrganizationView(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            lang = request.GET.get('lang')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
             sortfield = request.GET.get('sort', 'createdtime')
             desc = request.GET.get('desc', 1)
@@ -333,13 +329,9 @@ class OrgRemarkView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            lang = request.GET.get('lang')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
             if request.user.has_perm('org.admin_getorgremark'):
                 queryset = queryset.filter(datasource=request.user.datasource)
@@ -507,13 +499,9 @@ class OrgContactView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            lang = request.GET.get('lang')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             orgid = request.GET.get('org', None)
             if not orgid:
                 raise InvestError(2007, msg='机构不能为空')
@@ -666,13 +654,9 @@ class OrgManageFundView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            lang = request.GET.get('lang')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             orgid = request.GET.get('org', None)
             if not orgid:
                 raise InvestError(2007, msg='机构不能为空')
@@ -825,13 +809,9 @@ class OrgInvestEventView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            lang = request.GET.get('lang')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             orgid = request.GET.get('org', None)
             if not orgid:
                 raise InvestError(2007, msg='机构不能为空')
@@ -1001,13 +981,9 @@ class OrgCooperativeRelationshipView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            lang = request.GET.get('lang')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             orgid = request.GET.get('org', None)
             if not orgid:
                 raise InvestError(2007, msg='机构不能为空')
@@ -1160,13 +1136,9 @@ class OrgBuyoutView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            lang = request.GET.get('lang')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             orgid = request.GET.get('org', None)
             if not orgid:
                 raise InvestError(2007, msg='机构不能为空')

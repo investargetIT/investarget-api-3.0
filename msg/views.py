@@ -58,12 +58,9 @@ class WebMessageView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset()).filter(receiver=request.user.id).order_by('-createdtime',)
             try:
                 count = queryset.count()
@@ -119,15 +116,11 @@ class ScheduleView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            lang = request.GET.get('lang')
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             date = request.GET.get('date')
             time = request.GET.get('time')
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
             queryset = self.filter_queryset(self.queryset.filter(datasource=request.user.datasource_id))
             if date:
                 date = datetime.datetime.strptime(date.encode('utf-8'), "%Y-%m-%d")
