@@ -94,6 +94,7 @@ class OrgBD(MyModel):
     manager = MyForeignKey(MyUser,blank=True,null=True,help_text='负责人',related_name='user_orgBDs')
     isimportant = models.BooleanField(blank=True, default=False, help_text='是否重点BD')
     bd_status = MyForeignKey(BDStatus,blank=True,null=True,help_text='bd状态')
+    # expirationtime = models.DateTimeField(blank=True,null=True,help_text='BD过期时间')
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_OrgBD')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_OrgBD')
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_OrgBD')

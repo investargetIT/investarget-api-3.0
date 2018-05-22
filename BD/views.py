@@ -1,12 +1,14 @@
 #coding=utf8
 import traceback
-
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction
 from django.db.models import Q, Count
 from django.db.models import QuerySet
 from django_filters import FilterSet
 import datetime
+
+import json
+from django.core.serializers.json import DjangoJSONEncoder
 # Create your views here.
 from rest_framework import filters, viewsets
 from BD.models import ProjectBD, ProjectBDComments, OrgBDComments, OrgBD, MeetingBD
@@ -383,7 +385,39 @@ class OrgBDView(viewsets.ModelViewSet):
             raise InvestError(code=8890)
         return queryset
 
+    @loginTokenIsAvailable()
+    def testlist(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
+            queryset = self.filter_queryset(self.get_queryset())
+            if request.user.has_perm('BD.manageOrgBD'):
+                pass
+            elif request.user.has_perm('BD.user_getOrgBD'):
+                queryset = queryset.filter(Q(manager=request.user) | Q(createuser=request.user) | Q(
+                    proj__in=request.user.usertake_projs.all()) | Q(proj__in=request.user.usermake_projs.all()))
+            else:
+                raise InvestError(2009)
+            sortfield = request.GET.get('sort', 'createdtime')
+            desc = request.GET.get('desc', 1)
+            if desc in ('1', u'1', 1):
+                sortfield = '-' + sortfield
+            queryset = queryset.order_by('-isimportant', sortfield)
 
+            queryset = queryset.values('org','proj').annotate(orgcount=Count('org'),projcount=Count('proj'))
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = json.dumps(list(queryset), cls=DjangoJSONEncoder)
+            return JSONResponse(SuccessResponse({'count': count, 'data': json.loads(serializer)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
