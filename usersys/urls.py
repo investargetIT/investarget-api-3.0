@@ -62,6 +62,18 @@ user_attachments_detail = views.UserAttachmentView.as_view({
         'delete': 'destroy',
 })
 
+
+user_events = views.UserEventView.as_view({
+        'get': 'list',
+        'post': 'create',
+})
+
+user_events_detail = views.UserEventView.as_view({
+        'put': 'update',
+        'delete': 'destroy',
+})
+
+
 user_friendship = views.UserFriendshipView.as_view({
         'get': 'list',
         'post': 'create',
@@ -122,6 +134,8 @@ urlpatterns = [
     url(r'^password/(?P<pk>\d+)/$', change_password ,name='change-password'),
     url(r'^atta/$',user_attachments, name='user_attachments-list'),
     url(r'^atta/(?P<pk>\d+)/$', user_attachments_detail, name='user_attachments-detail'),
+    url(r'^eve/$',user_events, name='user_events-list'),
+    url(r'^eve/(?P<pk>\d+)/$', user_events_detail, name='user_events-detail'),
     url(r'^relationship/$', user_relationshiplist, name='user-relationshiplist'),
     url(r'^checkrelation/$', checkrealtion, name='user-checkrealtion'),
     url(r'^checkfriendship/$', checkFriendship, name='user-checkfriendship'),

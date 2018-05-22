@@ -5,7 +5,7 @@ from rest_framework import serializers
 from org.serializer import OrgCommonSerializer
 from sourcetype.serializer import tagSerializer, countrySerializer, titleTypeSerializer
 from third.views.qiniufile import getUrlWithBucketAndKey
-from .models import MyUser, UserRelation, UserFriendship, UnreachUser, UserRemarks, userAttachments
+from .models import MyUser, UserRelation, UserFriendship, UnreachUser, UserRemarks, userAttachments, userEvents
 
 
 class UnreachUserSerializer(serializers.ModelSerializer):
@@ -112,6 +112,12 @@ class UserInfoSerializer(serializers.ModelSerializer):
 class UserAttachmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = userAttachments
+        fields = '__all__'
+
+
+class UserEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = userEvents
         fields = '__all__'
 
 

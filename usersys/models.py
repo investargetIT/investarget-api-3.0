@@ -309,6 +309,18 @@ class userAttachments(MyModel):
     def save(self, *args, **kwargs):
         return super(userAttachments, self).save(*args, **kwargs)
 
+class userEvents(MyModel):
+    user = MyForeignKey(MyUser,related_name='user_userEvents', blank=True, on_delete=CASCADE)
+    com_id = models.IntegerField(blank=True, null=True, help_text='全库项目id')
+    deleteduser = MyForeignKey(MyUser,blank=True, null=True,related_name='userdelete_userEvents')
+    createuser = MyForeignKey(MyUser,blank=True, null=True,related_name='usercreate_userEvents')
+
+    class Meta:
+        db_table = "user_events"
+
+    def save(self, *args, **kwargs):
+        return super(userEvents, self).save(*args, **kwargs)
+
 
 class MyToken(models.Model):
     key = models.CharField('Key', max_length=48, primary_key=True)
