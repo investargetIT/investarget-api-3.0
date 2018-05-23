@@ -34,9 +34,11 @@ class ProjectBDFilter(FilterSet):
     manager = RelationFilter(filterstr='manager',lookup_method='in')
     bd_status = RelationFilter(filterstr='bd_status', lookup_method='in')
     source_type = RelationFilter(filterstr='source_type', lookup_method='in')
+    stime = RelationFilter(filterstr='createdtime', lookup_method='gt')
+    etime = RelationFilter(filterstr='createdtime', lookup_method='lt')
     class Meta:
         model = ProjectBD
-        fields = ('com_name','location','username','usermobile','source','manager','bd_status','source_type')
+        fields = ('com_name','location','username','usermobile','source','manager','bd_status','source_type', 'stime', 'etime')
 
 
 class ProjectBDView(viewsets.ModelViewSet):
@@ -346,9 +348,11 @@ class OrgBDFilter(FilterSet):
     org = RelationFilter(filterstr='org', lookup_method='in')
     proj = RelationFilter(filterstr='proj', lookup_method='in')
     bd_status = RelationFilter(filterstr='bd_status', lookup_method='in')
+    stime = RelationFilter(filterstr='createdtime', lookup_method='gt')
+    etime = RelationFilter(filterstr='createdtime', lookup_method='lt')
     class Meta:
         model = OrgBD
-        fields = ('manager','bd_status','org','proj')
+        fields = ('manager','bd_status','org','proj','stime','etime')
 
 
 class OrgBDView(viewsets.ModelViewSet):
