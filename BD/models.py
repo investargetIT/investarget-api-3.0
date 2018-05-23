@@ -94,7 +94,8 @@ class OrgBD(MyModel):
     manager = MyForeignKey(MyUser,blank=True,null=True,help_text='负责人',related_name='user_orgBDs')
     isimportant = models.BooleanField(blank=True, default=False, help_text='是否重点BD')
     bd_status = MyForeignKey(BDStatus,blank=True,null=True,help_text='bd状态')
-    # expirationtime = models.DateTimeField(blank=True,null=True,help_text='BD过期时间')
+    expirationtime = models.DateTimeField(blank=True,null=True,help_text='BD过期时间')
+    isSolved = models.BooleanField(blank=True, default=False, help_text='BD是否已处理')
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_OrgBD')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_OrgBD')
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_OrgBD')
@@ -154,6 +155,9 @@ class OrgBDComments(MyModel):
         self.datasource = self.orgBD.datasource
         if self.event_date is None:
             self.event_date = datetime.datetime.now()
+        if self.orgBD and not self.orgBD.isSolved:
+            self.orgBD.isSolved = True
+            self.orgBD.save(update_fields=['isSolved'])
         return super(OrgBDComments, self).save(*args, **kwargs)
 
 
