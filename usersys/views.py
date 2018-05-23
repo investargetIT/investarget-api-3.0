@@ -215,18 +215,13 @@ class UserView(viewsets.ModelViewSet):
                 data['groups'] = [group.id]
                 orgname = data.pop('orgname', None)
                 if orgname:
-                    if lang == 'en':
-                        field = 'orgnameE'
-                        filters = Q(orgnameE=orgname)
-                    else:
-                        field = 'orgnameC'
-                        filters = Q(orgnameC=orgname)
+                    filters = Q(orgfullname=orgname)
                     orgset = organization.objects.filter(filters,is_deleted=False,datasource=userdatasource)
                     if orgset.exists():
                         org = orgset.first()
                     else:
                         org = organization()
-                        setattr(org,field,orgname)
+                        org.orgfullname = orgname
                         org.datasource= userdatasource
                         org.orgstatus_id = 1
                         org.createdtime = datetime.datetime.now()
