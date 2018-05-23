@@ -264,3 +264,22 @@ class orgRemarks(MyModel):
         # if not self.datasource or self.datasource != self.org.datasource:
         #     raise InvestError(code=8888,msg='机构备注没有datasource')
         super(orgRemarks,self).save(force_insert,force_update,using,update_fields)
+
+
+orgtypetemplatechoice = (
+    (1,'工业'),
+    (2,'大健康'),
+    (3,'泛娱乐'),
+)
+
+class orgTypeTemplate(MyModel):
+    org = MyForeignKey(organization, blank=True, null=True)
+    type = models.PositiveSmallIntegerField(blank=True, choices=orgtypetemplatechoice, default=1)
+    sortweight = models.IntegerField(blank=True, default=1)
+
+    class Meta:
+        db_table = "org_typetemplate"
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        super(orgTypeTemplate, self).save(force_insert,force_update,using,update_fields)
