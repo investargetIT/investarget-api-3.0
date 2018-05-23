@@ -345,10 +345,12 @@ class OrgBDFilter(FilterSet):
     username = RelationFilter(filterstr='username', lookup_method='icontains')
     usermobile = RelationFilter(filterstr='usermobile', lookup_method='contains')
     manager = RelationFilter(filterstr='manager',lookup_method='in')
+    org = RelationFilter(filterstr='org', lookup_method='in')
+    proj = RelationFilter(filterstr='proj', lookup_method='in')
     bd_status = RelationFilter(filterstr='bd_status', lookup_method='in')
     class Meta:
         model = OrgBD
-        fields = ('username','usermobile','manager','bd_status')
+        fields = ('username','usermobile','manager','bd_status','org','proj')
 
 
 class OrgBDView(viewsets.ModelViewSet):
@@ -386,11 +388,10 @@ class OrgBDView(viewsets.ModelViewSet):
         return queryset
 
     @loginTokenIsAvailable()
-    def testlist(self, request, *args, **kwargs):
+    def baselist(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size', 10)
             page_index = request.GET.get('page_index', 1)
-            lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
             if request.user.has_perm('BD.manageOrgBD'):
                 pass

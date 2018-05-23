@@ -21,8 +21,8 @@ projdbcomment_list = views.ProjectBDCommentsView.as_view({
 projbdcomment_detail = views.ProjectBDCommentsView.as_view({
         'delete': 'destroy'
 })
-orgbd_testlist = views.OrgBDView.as_view({
-        'get': 'testlist',
+orgbd_baselist = views.OrgBDView.as_view({
+        'get': 'baselist',
 
 })
 
@@ -65,14 +65,13 @@ deleteAttachment = views.MeetingBDView.as_view({
 
 
 urlpatterns = [
-
-        url(r'^orgbdtest/$', orgbd_testlist, name='orgbd_list'),
         url(r'^projbd/$', projbd_list, name='projbd_list'),
         url(r'^projbd/count/$', projbd_count, name='projbd_count'),
         url(r'^projbd/(?P<pk>\d+)/$', projbd_detail, name='projbd_detail'),
         url(r'^projbd/comment/$', projdbcomment_list, name='projdbcomment_list'),
         url(r'^projbd/comment/(?P<pk>\d+)/$', projbdcomment_detail, name='projbdcomment_detail'),
         url(r'^orgbd/$', orgbd_list, name='orgbd_list'),
+        url(r'^orgbdbase/$', orgbd_baselist, name='orgbdbase_list'),
         url(r'^orgbd/count/$', orgbd_count, name='orgbd_count'),
         url(r'^orgbd/(?P<pk>\d+)/$', orgbd_detail, name='orgbd_detail'),
         url(r'^orgbd/comment/$', orgbdcomment_list, name='orgbdcomment_list'),
