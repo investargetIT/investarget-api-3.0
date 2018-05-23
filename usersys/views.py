@@ -774,7 +774,7 @@ class UserAttachmentView(viewsets.ModelViewSet):
             lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
             if request.user.is_superuser:
-                pass
+                queryset = queryset.filter(user__investor_relations__in=request.user.trader_relations.all())
             else:
                 queryset = queryset.filter(createuser_id=request.user.id)
             sort = request.GET.get('sort')
@@ -890,7 +890,7 @@ class UserEventView(viewsets.ModelViewSet):
             lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
             if request.user.is_superuser:
-                pass
+                queryset = queryset.filter(user__investor_relations__in=request.user.trader_relations.all())
             else:
                 queryset = queryset.filter(createuser_id=request.user.id)
             sort = request.GET.get('sort')
