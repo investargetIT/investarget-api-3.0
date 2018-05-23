@@ -41,6 +41,7 @@ from django_filters import FilterSet
 
 class ProjectFilter(FilterSet):
     supportUser = RelationFilter(filterstr='supportUser',lookup_method='in')
+    ids = RelationFilter(filterstr='id', lookup_method='in')
     createuser = RelationFilter(filterstr='createuser', lookup_method='in')
     ismarketplace = RelationFilter(filterstr='ismarketplace', lookup_method='exact')
     isoverseasproject = RelationFilter(filterstr='isoverseasproject', lookup_method='in')
@@ -55,7 +56,7 @@ class ProjectFilter(FilterSet):
     grossProfit_T = RelationFilter(filterstr='proj_finances__grossProfit', lookup_method='lte')
     class Meta:
         model = project
-        fields = ('createuser','service','supportUser','ismarketplace','isoverseasproject','industries','tags','projstatus','country','netIncome_USD_F','netIncome_USD_T','grossProfit_F','grossProfit_T')
+        fields = ('ids', 'createuser','service','supportUser','ismarketplace','isoverseasproject','industries','tags','projstatus','country','netIncome_USD_F','netIncome_USD_T','grossProfit_F','grossProfit_T')
 
 
 class ProjectView(viewsets.ModelViewSet):
