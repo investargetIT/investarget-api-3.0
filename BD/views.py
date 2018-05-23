@@ -342,15 +342,13 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
 
 
 class OrgBDFilter(FilterSet):
-    username = RelationFilter(filterstr='username', lookup_method='icontains')
-    usermobile = RelationFilter(filterstr='usermobile', lookup_method='contains')
     manager = RelationFilter(filterstr='manager',lookup_method='in')
     org = RelationFilter(filterstr='org', lookup_method='in')
     proj = RelationFilter(filterstr='proj', lookup_method='in')
     bd_status = RelationFilter(filterstr='bd_status', lookup_method='in')
     class Meta:
         model = OrgBD
-        fields = ('username','usermobile','manager','bd_status','org','proj')
+        fields = ('manager','bd_status','org','proj')
 
 
 class OrgBDView(viewsets.ModelViewSet):
@@ -364,7 +362,7 @@ class OrgBDView(viewsets.ModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,filters.SearchFilter)
     queryset = OrgBD.objects.filter(is_deleted=False)
     filter_class = OrgBDFilter
-    search_fields = ('proj__projtitleC', 'username', 'manager__usernameC', 'org__orgnameC', 'org__orgnameE')
+    search_fields = ('proj__projtitleC', 'username', 'usermobile', 'manager__usernameC', 'org__orgnameC', 'org__orgnameE')
     serializer_class = OrgBDSerializer
     redis_key = 'org_bd'
 
