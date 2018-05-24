@@ -3,6 +3,7 @@ import threading
 
 import datetime
 
+from BD.models import OrgBD
 from emailmanage.views import getAllProjectsNeedToSendMail, sendEmailToUser
 from msg.models import schedule
 from third.views.huanxin import downloadChatMessages
@@ -83,3 +84,14 @@ def sendExpiredTimelineMsg():
         for instance in timelineTransationStatu_qs:
             sendmessage_timelinealertcycleexpire(instance, receiver=instance.createuser,
                                     types=['app', 'wenmsg'])
+
+def sendExpiredOrgBDMsg():
+    OrgBD_qs = OrgBD.objects.all().filter(is_deleted=False,isSolved=True,
+                                                            expirationtime__year=datetime.datetime.now().year,
+                                                            expirationtime__month=datetime.datetime.now().month,
+                                                            expirationtime__day=datetime.datetime.now().day)
+    if OrgBD_qs.exists():
+        for instance in OrgBD_qs:
+            pass
+            # sendmessage_timelinealertcycleexpire(instance, receiver=instance.createuser,
+            #                         types=['app', 'wenmsg'])
