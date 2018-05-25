@@ -16,7 +16,7 @@ sys.setdefaultencoding('utf-8')
 
 class organization(MyModel):
     id = models.AutoField(primary_key=True)
-    orglevel = models.PositiveSmallIntegerField(blank=True, default=0, help_text='机构服务级别')
+    orglevel = models.PositiveSmallIntegerField(blank=True, default=1, help_text='机构服务级别')
     description = models.TextField(blank=True,null=True)
     investoverseasproject = models.BooleanField(blank=True, default=True, help_text='是否投海外项目')
     orgtransactionphase = models.ManyToManyField(TransactionPhases, through='orgTransactionPhase',through_fields=('org','transactionPhase'), blank=True)

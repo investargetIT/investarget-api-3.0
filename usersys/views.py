@@ -761,17 +761,13 @@ class UserAttachmentView(viewsets.ModelViewSet):
     filter_fields = ('user',)
     serializer_class = UserAttachmentSerializer
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['usersys.user_getuserbase',])
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size', 10)
             page_index = request.GET.get('page_index', 1)
             lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
-            if request.user.is_superuser:
-                pass
-            else:
-                queryset = queryset.filter(user__investor_relations__in=request.user.trader_relations.all())
             sort = request.GET.get('sort')
             if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
                 queryset = queryset.order_by('-lastmodifytime', '-createdtime')
@@ -877,17 +873,17 @@ class UserEventView(viewsets.ModelViewSet):
     filter_fields = ('user',)
     serializer_class = UserEventSerializer
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['usersys.user_getuserbase', ])
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size', 10)
             page_index = request.GET.get('page_index', 1)
             lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
-            if request.user.is_superuser:
-                pass
-            else:
-                queryset = queryset.filter(user__investor_relations__in=request.user.trader_relations.all())
+            # if request.user.is_superuser:
+            #     pass
+            # else:
+            #     queryset = queryset.filter(user__investor_relations__in=request.user.trader_relations.all())
             sort = request.GET.get('sort')
             if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
                 queryset = queryset.order_by('-lastmodifytime', '-createdtime')
