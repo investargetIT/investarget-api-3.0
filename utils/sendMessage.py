@@ -685,7 +685,7 @@ def sendmessage_schedulemsg(model,receiver,types,sender=None):
 
 def sendmessage_orgBDMessage(model,receiver,types,sender=None):
     """
-    :param model: UserFriendship type
+    :param model: orgBD type
     :param receiver: myuser type
     :param types: list
     :param sender: myuser type
@@ -736,6 +736,53 @@ def sendmessage_orgBDMessage(model,receiver,types,sender=None):
 
     if checkReceiverToSendMsg(receiver):
         sendmessage_orgBDMessageThread(model,receiver,types,sender).start()
+
+def sendmessage_orgBDExpireMessage(model, receiver, types, sender=None):
+        """
+        :param model: orgBD type
+        :param receiver: myuser type
+        :param types: list
+        :param sender: myuser type
+        :return: None
+        """
+
+        class sendmessage_orgBDExpireMessageThread(threading.Thread):
+            def __init__(self, model, receiver, types, sender=None):
+                self.model = model
+                self.receiver = receiver
+                self.types = types
+                self.sender = sender
+                threading.Thread.__init__(self)
+
+            def run(self):
+                types = self.types
+                receiver = self.receiver
+                model = self.model
+                sender = self.sender
+                lang = 'cn'
+                if self.receiver.country:
+                    if self.receiver.country.areaCode not in ['86', u'86', None, '', u'']:
+                        lang = 'en'
+                msgdic = MESSAGE_DICT['orgBdExpire']
+                title = msgdic['title_%s' % lang]
+                content = msgdic['content_%s' % lang]
+                messagetype = msgdic['messagetype']
+                if 'app' in types and sendAppmsg:
+                    try:
+                        receiver_alias = receiver.id
+                        bdage = 1
+                        n_extras = {}
+                        pushnotification(content, receiver_alias, bdage, n_extras)
+                    except Exception:
+                        logexcption()
+                if 'webmsg' in types and sendWebmsg:
+                    try:
+                        saveMessage(content, messagetype, title, receiver, sender, modeltype='OrgBDExpire', sourceid=model.id)
+                    except Exception:
+                        logexcption()
+
+        if checkReceiverToSendMsg(receiver):
+            sendmessage_orgBDExpireMessageThread(model, receiver, types, sender).start()
 
 
 # 判断是否发送消息
