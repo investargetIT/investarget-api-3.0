@@ -47,6 +47,7 @@ class organization(MyModel):
     fundSize = models.BigIntegerField(blank=True,null=True)
     issub = models.BooleanField(blank=True, default=False, help_text='是否是子基金')
     typicalCase = models.TextField(blank=True,null=True)
+    tags = models.ManyToManyField(Tag, through='orgTags', through_fields=('org', 'tag'), blank=True)
     fundSize_USD = models.BigIntegerField(blank=True,null=True)
     transactionAmountF_USD = models.BigIntegerField(blank=True,null=True)
     transactionAmountT_USD = models.BigIntegerField(blank=True,null=True)
@@ -117,12 +118,13 @@ class organization(MyModel):
         super(organization,self).save(force_insert,force_update,using,update_fields)
 
 class orgTags(MyModel):
-    org = MyForeignKey(organization,related_name='org_orgtags',null=True,blank=True)
-    tag = MyForeignKey(Tag, related_name='tag_orgtags',null=True, blank=True)
+    org = MyForeignKey(organization,related_name='org_orgtags')
+    tag = MyForeignKey(Tag, related_name='tag_orgtags')
 
 
     class Meta:
         db_table = "org_tags"
+        unique_together = ('org', 'tag')
 
     def save(self, *args, **kwargs):
         return super(orgTags, self).save(*args, **kwargs)

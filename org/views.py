@@ -25,6 +25,7 @@ from django_filters import FilterSet
 class OrganizationFilter(FilterSet):
     orgfullname = RelationFilter(filterstr='orgfullname')
     ids = RelationFilter(filterstr='id', lookup_method='in')
+    lv = RelationFilter(filterstr='orglevel', lookup_method='in')
     stockcode = RelationFilter(filterstr='stockcode',lookup_method='in')
     stockshortname = RelationFilter(filterstr='stockshortname',lookup_method='in')
     issub = RelationFilter(filterstr='issub', lookup_method='exact')
@@ -39,7 +40,7 @@ class OrganizationFilter(FilterSet):
     trader = RelationFilter(filterstr='org_users__investor_relations__traderuser',lookup_method='in',relationName='org_users__investor_relations__is_deleted')
     class Meta:
         model = organization
-        fields = ['orgname','orgstatus','currencys','industrys','orgtransactionphases','orgtypes','area','trader','stockcode','stockshortname','issub','investoverseasproject', 'ids']
+        fields = ['orgname','orgstatus','currencys','industrys','orgtransactionphases','orgtypes','area','trader','stockcode','stockshortname','issub','investoverseasproject', 'ids', 'lv']
 
 class OrganizationView(viewsets.ModelViewSet):
     """
