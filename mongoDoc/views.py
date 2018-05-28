@@ -272,15 +272,16 @@ class ProjectDataView(viewsets.ModelViewSet):
             else:
                 queryset = queryset.order_by('com_id',)
             count = queryset.count()
-            try:
-                queryset = Paginator(queryset, page_size)
-                queryset = queryset.page(page_index)
-            except EmptyPage:
-                if request.GET.get('com_name', None) and page_index in [1, '1', u'1']:
+            if count == 0:
+                if request.GET.get('com_name', None):
                     searchuser_id = None
                     if not request.user.is_anonymous:
                         searchuser_id = request.user.id
                     saveCompanySearchName(request.GET.get('com_name'), searchuser_id)
+            try:
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
                 return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             serializer = self.serializer_class(queryset,many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':serializer.data}))
