@@ -99,17 +99,6 @@ org_buyoutdetail = views.OrgBuyoutView.as_view({
 })
 
 
-org_typetemplatelist = views.OrgTypeTemplateView.as_view({
-        'get': 'list',
-        'post': 'create'
-})
-
-
-org_typetemplatedetail = views.OrgTypeTemplateView.as_view({
-        'delete': 'destroy'
-})
-
-
 
 urlpatterns = [
         url(r'^$', org_list,name='org-list'),
@@ -127,6 +116,4 @@ urlpatterns = [
         url(r'^buyout/$', org_buyoutlist,name='org_buyout-list'),
         url(r'^buyout/(?P<pk>\d+)/$', org_buyoutdetail,name='org_buyout-detail'),
         url(r'^investevent/del/$', org_investeventdelete,name='org_buyout-detail'),
-        url(r'^temp/$', org_typetemplatelist,name='org_typetemplate-list'),
-        url(r'^temp/(?P<pk>\d+)/$', org_typetemplatedetail,name='org_typetemplate-detail'),
 ]

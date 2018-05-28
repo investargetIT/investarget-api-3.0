@@ -7,14 +7,12 @@ from django.db.models import Q, FieldDoesNotExist, Max
 from django.db.models import QuerySet
 from rest_framework import filters , viewsets
 
-from org.models import organization, orgTransactionPhase, orgRemarks, orgContact, orgBuyout, orgManageFund, orgInvestEvent, orgCooperativeRelationship, \
-    orgTypeTemplate
+from org.models import organization, orgTransactionPhase, orgRemarks, orgContact, orgBuyout, orgManageFund, orgInvestEvent, orgCooperativeRelationship
 from org.serializer import OrgCommonSerializer, OrgDetailSerializer, OrgRemarkDetailSerializer, OrgCreateSerializer,\
     OrgUpdateSerializer, OrgBuyoutCreateSerializer, OrgContactCreateSerializer, OrgInvestEventCreateSerializer,\
     OrgManageFundCreateSerializer, OrgCooperativeRelationshipCreateSerializer, OrgBuyoutSerializer, OrgContactSerializer, \
-    OrgInvestEventSerializer, OrgManageFundSerializer, OrgCooperativeRelationshipSerializer, OrgTypeTemplateSerializer, \
-    OrgTypeTemplateCreateSerializer
-from sourcetype.models import TransactionPhases, DataSource
+    OrgInvestEventSerializer, OrgManageFundSerializer, OrgCooperativeRelationshipSerializer
+from sourcetype.models import TransactionPhases
 from utils.customClass import InvestError, JSONResponse, RelationFilter, MySearchFilter
 from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser, add_perm, \
@@ -1247,81 +1245,6 @@ class OrgBuyoutView(viewsets.ModelViewSet):
                 instance.deletedtime = datetime.datetime.now()
                 instance.save()
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data,lang)))
-        except InvestError as err:
-            return JSONResponse(InvestErrorResponse(err))
-        except Exception:
-            catchexcption(request)
-            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
-
-class OrgTypeTemplateView(viewsets.ModelViewSet):
-    """
-    list:获取机构分类模板
-    create:增加模板机构
-    destroy:删除模板机构
-    """
-    filter_backends = (filters.DjangoFilterBackend,)
-    queryset = orgTypeTemplate.objects.filter(is_deleted=False).filter(org__is_deleted=False)
-    filter_fields = ('type',)
-    serializer_class = OrgTypeTemplateSerializer
-    models = orgTypeTemplate
-
-    @loginTokenIsAvailable()
-    def list(self, request, *args, **kwargs):
-        try:
-            page_size = request.GET.get('page_size', 10)
-            page_index = request.GET.get('page_index', 1)
-            lang = request.GET.get('lang', 'cn')
-            queryset = self.filter_queryset(self.get_queryset()).order_by('-sortweight')
-            try:
-                count = queryset.count()
-                queryset = Paginator(queryset, page_size)
-                queryset = queryset.page(page_index)
-            except EmptyPage:
-                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
-            serializer = self.serializer_class(queryset, many=True)
-            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
-        except InvestError as err:
-            return JSONResponse(InvestErrorResponse(err))
-        except Exception:
-            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
-    @loginTokenIsAvailable()
-    def create(self, request, *args, **kwargs):
-        data = request.data
-        if request.user.has_perm('org.admin_changeorg'):
-            pass
-        else:
-            raise InvestError(code=2009)
-        try:
-            with transaction.atomic():
-                instanceserializer = OrgTypeTemplateCreateSerializer(data=data)
-                if instanceserializer.is_valid():
-                    instanceserializer.save()
-                else:
-                    raise InvestError(code=20071, msg='data有误_%s' % instanceserializer.error_messages)
-                return JSONResponse(SuccessResponse(instanceserializer.data))
-        except InvestError as err:
-            return JSONResponse(InvestErrorResponse(err))
-        except Exception:
-            catchexcption(request)
-            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
-
-    @loginTokenIsAvailable()
-    def destroy(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            if request.user.has_perm('org.admin_changeorg'):
-                pass
-            else:
-                raise InvestError(code=2009, msg='没有权限')
-            with transaction.atomic():
-                instance.is_deleted = True
-                instance.deleteduser = request.user
-                instance.deletedtime = datetime.datetime.now()
-                instance.save()
-                return JSONResponse(SuccessResponse(self.serializer_class(instance).data))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:

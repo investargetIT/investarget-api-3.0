@@ -1,8 +1,8 @@
 
 from rest_framework import serializers
 from org.models import organization, orgRemarks, orgTransactionPhase, orgBuyout, orgContact, orgInvestEvent, \
-    orgCooperativeRelationship, orgManageFund, orgTypeTemplate
-from sourcetype.serializer import transactionPhasesSerializer, orgAreaSerializer
+    orgCooperativeRelationship, orgManageFund
+from sourcetype.serializer import transactionPhasesSerializer
 
 
 class OrgCommonSerializer(serializers.ModelSerializer):
@@ -66,19 +66,6 @@ class OrgBuyoutSerializer(serializers.ModelSerializer):
     class Meta:
         model = orgBuyout
         exclude = ('createuser', 'deleteduser', 'createdtime', 'is_deleted', 'deletedtime', 'lastmodifytime')
-
-
-class OrgTypeTemplateCreateSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = orgTypeTemplate
-        fields = '__all__'
-
-class OrgTypeTemplateSerializer(serializers.ModelSerializer):
-    org = OrgCommonSerializer()
-    class Meta:
-        model = orgTypeTemplate
-        fields = ('org',)
 
 
 class OrgContactCreateSerializer(serializers.ModelSerializer):
