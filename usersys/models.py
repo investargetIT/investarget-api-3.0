@@ -314,6 +314,8 @@ class userAttachments(MyModel):
 class userEvents(MyModel):
     user = MyForeignKey(MyUser,related_name='user_userEvents', blank=True, on_delete=CASCADE)
     com_id = models.IntegerField(blank=True, null=True, help_text='全库项目id')
+    comshortname = models.CharField(max_length=64, blank=True, null=True)
+    investDate = models.DateTimeField(blank=True, null=True)
     deleteduser = MyForeignKey(MyUser,blank=True, null=True,related_name='userdelete_userEvents')
     createuser = MyForeignKey(MyUser,blank=True, null=True,related_name='usercreate_userEvents')
 
