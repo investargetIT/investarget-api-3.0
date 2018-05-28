@@ -199,5 +199,6 @@ class CompanySearchName(Document):
              _refs=None, save_condition=None, signal_kwargs=None, **kwargs):
         if self.createtime is None:
             self.createtime = datetime.datetime.now()
-        super(CompanySearchName, self).save(force_insert, validate, clean, write_concern, cascade, cascade_kwargs, _refs,
+        if len(CompanySearchName.objects.filter(com_name=self.com_name)) == 0:
+            super(CompanySearchName, self).save(force_insert, validate, clean, write_concern, cascade, cascade_kwargs, _refs,
                                       save_condition, signal_kwargs, **kwargs)
