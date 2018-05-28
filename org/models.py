@@ -6,7 +6,8 @@ import sys
 
 from django.db.models import Q
 from guardian.shortcuts import assign_perm, remove_perm
-from sourcetype.models import AuditStatus, OrgType , TransactionPhases,CurrencyType, Industry, DataSource, OrgAttribute, Country
+from sourcetype.models import AuditStatus, OrgType , TransactionPhases,CurrencyType, Industry, DataSource, OrgAttribute, Country, \
+    Tag
 from usersys.models import MyUser
 from utils.customClass import InvestError, MyForeignKey, MyModel
 
@@ -114,6 +115,17 @@ class organization(MyModel):
                 if organization.objects.filter(is_deleted=False,orgfullname=self.orgfullname).exists():
                     raise InvestError(code=5001,msg='同名机构已存在，无法新增')
         super(organization,self).save(force_insert,force_update,using,update_fields)
+
+class orgTags(MyModel):
+    org = MyForeignKey(organization,related_name='org_orgtags',null=True,blank=True)
+    tag = MyForeignKey(Tag, related_name='tag_orgtags',null=True, blank=True)
+
+
+    class Meta:
+        db_table = "org_tags"
+
+    def save(self, *args, **kwargs):
+        return super(orgTags, self).save(*args, **kwargs)
 
 
 class orgTransactionPhase(MyModel):

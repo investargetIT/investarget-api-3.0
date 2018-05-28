@@ -7,7 +7,8 @@ from django.db.models import Q, FieldDoesNotExist, Max
 from django.db.models import QuerySet
 from rest_framework import filters , viewsets
 
-from org.models import organization, orgTransactionPhase, orgRemarks, orgContact, orgBuyout, orgManageFund, orgInvestEvent, orgCooperativeRelationship
+from org.models import organization, orgTransactionPhase, orgRemarks, orgContact, orgBuyout, orgManageFund, orgInvestEvent, orgCooperativeRelationship, \
+    orgTags
 from org.serializer import OrgCommonSerializer, OrgDetailSerializer, OrgRemarkDetailSerializer, OrgCreateSerializer,\
     OrgUpdateSerializer, OrgBuyoutCreateSerializer, OrgContactCreateSerializer, OrgInvestEventCreateSerializer,\
     OrgManageFundCreateSerializer, OrgCooperativeRelationshipCreateSerializer, OrgBuyoutSerializer, OrgContactSerializer, \
@@ -34,12 +35,11 @@ class OrganizationFilter(FilterSet):
     orgtransactionphases = RelationFilter(filterstr='orgtransactionphase',lookup_method='in',relationName='org_orgTransactionPhases__is_deleted')
     orgtypes = RelationFilter(filterstr='orgtype',lookup_method='in')
     orgstatus = RelationFilter(filterstr='orgstatus',lookup_method='in')
-    tags =  RelationFilter(filterstr='org_users__tags',lookup_method='in',relationName='org_users__user_usertags__is_deleted')
     area = RelationFilter(filterstr='org_users__orgarea',lookup_method='in',relationName='org_users__is_deleted')
     trader = RelationFilter(filterstr='org_users__investor_relations__traderuser',lookup_method='in',relationName='org_users__investor_relations__is_deleted')
     class Meta:
         model = organization
-        fields = ['orgname','orgstatus','currencys','industrys','orgtransactionphases','orgtypes','tags','area','trader','stockcode','stockshortname','issub','investoverseasproject', 'ids']
+        fields = ['orgname','orgstatus','currencys','industrys','orgtransactionphases','orgtypes','area','trader','stockcode','stockshortname','issub','investoverseasproject', 'ids']
 
 class OrganizationView(viewsets.ModelViewSet):
     """
@@ -85,6 +85,10 @@ class OrganizationView(viewsets.ModelViewSet):
             page_index = request.GET.get('page_index', 1)
             lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
+            tags = request.GET.get('tags', None)
+            if tags:
+                tags = tags.split(',')
+                queryset = queryset.filter(Q(org_users__tags__in=tags) | Q(org_orgtags__tag__in=tags))
             sortfield = request.GET.get('sort', 'createdtime')
             desc = request.GET.get('desc', 1)
             queryset = mySortQuery(queryset, sortfield, desc)
@@ -147,6 +151,12 @@ class OrganizationView(viewsets.ModelViewSet):
                         for transactionPhase in orgTransactionPhases:
                             orgTransactionPhaselist.append(orgTransactionPhase(org=org, transactionPhase_id=transactionPhase,createuser=request.user,createdtime=datetime.datetime.now()))
                         org.org_orgTransactionPhases.bulk_create(orgTransactionPhaselist)
+                    tags = data.pop('tags', None)
+                    if tags:
+                        orgtaglist = []
+                        for tag in tags:
+                            orgtaglist.append(orgTags(org=org, tag_id=tag, createdtime=datetime.datetime.now()))
+                        org.org_orgtags.bulk_create(orgtaglist)
                 else:
                     raise InvestError(code=20071, msg='data有误_%s' % orgserializer.errors)
                 if org.createuser:
@@ -204,6 +214,7 @@ class OrganizationView(viewsets.ModelViewSet):
                 raise InvestError(code=2009)
             with transaction.atomic():
                 orgTransactionPhases = data.pop('orgtransactionphase', None)
+                tags = data.pop('tags', None)
                 orgupdateserializer = OrgUpdateSerializer(org, data=data)
                 if orgupdateserializer.is_valid():
                     org = orgupdateserializer.save()
@@ -218,6 +229,12 @@ class OrganizationView(viewsets.ModelViewSet):
                         for transactionPhase in addlist:
                             usertaglist.append(orgTransactionPhase(org=org, transactionPhase_id=transactionPhase, createuser=request.user,createdtime=datetime.datetime.now()))
                         org.org_orgTransactionPhases.bulk_create(usertaglist)
+                    if tags:
+                        org.org_orgtags.all().delete()
+                        orgtaglist = []
+                        for tag in tags:
+                            orgtaglist.append(orgTags(org=org, tag_id=tag, createdtime=datetime.datetime.now()))
+                        org.org_orgtags.bulk_create(orgtaglist)
                 else:
                     raise InvestError(code=20071,
                                       msg='data有误_%s\n%s' % (orgupdateserializer.error_messages, orgupdateserializer.errors))
