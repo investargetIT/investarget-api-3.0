@@ -5,7 +5,7 @@ import datetime
 from mongoengine import *
 from invest.settings import groupemailMongoTableName, chatMessagegMongoTableName, projectDataMongoTableName, \
     mergeandfinanceeventMongoTableName, com_catMongoTableName, projremarkMongoTableName, wxchatdataMongoTableName, \
-    projectNewsMongoTableName, projIndustryInfoMongoTableName
+    projectNewsMongoTableName, projIndustryInfoMongoTableName, companysearchMongoTableName
 from utils.customClass import InvestError
 
 
@@ -39,6 +39,7 @@ class ProjectData(Document):
     email = StringField(null=True)  # 公司邮箱
     detailaddress = StringField(null=True)  # 公司地址
     tags = ListField(null=True)   #公司标签
+    source = IntField(null=True)  #来源类型
     meta = {'collection': projectDataMongoTableName,
             'indexes': ['com_id', 'com_cat_name', 'com_sub_cat_name', 'invse_round_id', 'com_name']
         }
@@ -185,4 +186,18 @@ class WXChatdata(Document):
         if self.createtime is None:
             self.createtime = datetime.datetime.now()
         super(WXChatdata, self).save(force_insert, validate, clean, write_concern, cascade, cascade_kwargs, _refs,
+                                      save_condition, signal_kwargs, **kwargs)
+
+
+class CompanySearchName(Document):
+    com_name = StringField(null=True)
+    createtime = DateTimeField(null=True)
+    searchuser_id = IntField(null=True)
+    meta = {"collection": companysearchMongoTableName}
+    def save(self, force_insert=False, validate=True, clean=True,
+             write_concern=None, cascade=None, cascade_kwargs=None,
+             _refs=None, save_condition=None, signal_kwargs=None, **kwargs):
+        if self.createtime is None:
+            self.createtime = datetime.datetime.now()
+        super(CompanySearchName, self).save(force_insert, validate, clean, write_concern, cascade, cascade_kwargs, _refs,
                                       save_condition, signal_kwargs, **kwargs)

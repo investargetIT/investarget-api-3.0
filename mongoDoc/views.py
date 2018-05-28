@@ -11,10 +11,10 @@ from mongoengine import Q
 from rest_framework import viewsets
 from bson.objectid import ObjectId
 from mongoDoc.models import GroupEmailData, IMChatMessages, ProjectData, MergeFinanceData, CompanyCatData, ProjRemark, \
-    WXChatdata, ProjectNews, ProjIndustryInfo
+    WXChatdata, ProjectNews, ProjIndustryInfo, CompanySearchName
 from mongoDoc.serializers import GroupEmailDataSerializer, IMChatMessagesSerializer, ProjectDataSerializer, \
     MergeFinanceDataSerializer, CompanyCatDataSerializer, ProjRemarkSerializer, WXChatdataSerializer, \
-    ProjectNewsSerializer, ProjIndustryInfoSerializer, GroupEmailListSerializer
+    ProjectNewsSerializer, ProjIndustryInfoSerializer, GroupEmailListSerializer, CompanySearchNameSerializer
 from utils.customClass import JSONResponse, InvestError, AppEventRateThrottle
 from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, catchexcption, logexcption, \
     loginTokenIsAvailable
@@ -256,12 +256,8 @@ class ProjectDataView(viewsets.ModelViewSet):
     # @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
-            if not page_size:
-                page_size = 10
-            if not page_index:
-                page_index = 1
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)  # 从第一页开始
             queryset = self.filterqueryset(request, self.queryset)
             com_addr = request.GET.get('com_addr')
             if com_addr:
@@ -280,6 +276,11 @@ class ProjectDataView(viewsets.ModelViewSet):
                 queryset = Paginator(queryset, page_size)
                 queryset = queryset.page(page_index)
             except EmptyPage:
+                if request.GET.get('com_name', None) and page_index in [1, '1', u'1']:
+                    searchuser_id = None
+                    if not request.user.is_anonymous:
+                        searchuser_id = request.user.id
+                    saveCompanySearchName(request.GET.get('com_name'), searchuser_id)
                 return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             serializer = self.serializer_class(queryset,many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':serializer.data}))
@@ -432,6 +433,7 @@ class ProjectNewsView(viewsets.ModelViewSet):
                 queryset = Paginator(queryset, page_size)
                 queryset = queryset.page(page_index)
             except EmptyPage:
+
                 return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             serializer = self.serializer_class(queryset,many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':serializer.data}))
@@ -458,6 +460,66 @@ class ProjectNewsView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
+class ProjectSearchNameView(viewsets.ModelViewSet):
+
+    queryset = CompanySearchName.objects.all()
+    serializer_class = CompanySearchNameSerializer
+
+    filter_class = {'com_name': 'in',}
+
+    def filterqueryset(self, request, queryset):
+        for key, method in self.filter_class.items():
+            value = request.GET.get(key)
+            if value:
+                if method == 'in':
+                    value = value.split(',')
+                queryset = queryset.filter(**{'%s__%s' % (key, method): value})
+        return queryset
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size')
+            page_index = request.GET.get('page_index')  # 从第一页开始
+            if not page_size:
+                page_size = 10
+            if not page_index:
+                page_index = 1
+            queryset = self.filterqueryset(request,self.queryset)
+            if request.user.has_perm('usersys.admin_getmongoprojremark'):
+                queryset = queryset(datasource=request.user.datasource_id)
+            else:
+                queryset = queryset(createuser_id=request.user.id)
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = self.serializer_class(queryset,many=True)
+            return JSONResponse(SuccessResponse({'count':count,'data':serializer.data}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            data['searchuser_id'] = request.user.id
+            serializer = self.serializer_class(data=data)
+            if serializer.is_valid():
+                serializer.save()
+            else:
+                raise InvestError(2001, msg=serializer.error_messages)
+            return JSONResponse(SuccessResponse(serializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
 class ProjectRemarkView(viewsets.ModelViewSet):
@@ -732,3 +794,12 @@ def saveChatMessageDataToMongo(data):
                 raise InvestError(2001, msg=serializer.error_messages)
         except Exception:
             logexcption()
+
+def saveCompanySearchName(com_name, searchuser_id):
+    try:
+        data = {'com_name':com_name,'searchuser_id':searchuser_id}
+        serializer = CompanySearchNameSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+    except Exception:
+        logexcption()

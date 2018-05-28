@@ -1,7 +1,7 @@
 from rest_framework_mongoengine.serializers import DocumentSerializer
 
 from mongoDoc.models import GroupEmailData, IMChatMessages, ProjectData, MergeFinanceData, CompanyCatData, ProjRemark, \
-    WXChatdata, ProjectNews, ProjIndustryInfo
+    WXChatdata, ProjectNews, ProjIndustryInfo, CompanySearchName
 
 
 class CompanyCatDataSerializer(DocumentSerializer):
@@ -30,6 +30,11 @@ class ProjIndustryInfoSerializer(DocumentSerializer):
 class ProjectNewsSerializer(DocumentSerializer):
     class Meta:
         model = ProjectNews
+        fields = '__all__'
+
+class CompanySearchNameSerializer(DocumentSerializer):
+    class Meta:
+        model = CompanySearchName
         fields = '__all__'
 
 
