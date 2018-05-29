@@ -589,7 +589,7 @@ class UserView(viewsets.ModelViewSet):
     @list_route(methods=['get'])
     def checkUserAccountExist(self, request, *args, **kwargs):
         try:
-            source = request.META.get('HTTP_SOURCE')
+            source = request.META.get('HTTP_SOURCE', 1)
             account = request.GET.get('account', None)
             lang = request.GET.get('lang', 'cn')
             if account:

@@ -105,9 +105,7 @@ class timelineTransationStatu(MyModel):
         db_table = 'timelineTransationStatus'
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
-        # if self.timeline.isClose:
-        #     raise InvestError(6004)
-        if not self.is_deleted or self.isActive:
+        if not self.is_deleted and self.isActive:
             if self.alertCycle:
                 self.inDate = datetime.datetime.now() + datetime.timedelta(hours=self.alertCycle * 24)
         if not UserRelation.objects.filter(investoruser=self.timeline.investor,traderuser=self.timeline.trader,is_deleted=False,score__gt=self.transationStatus.id).exists():
@@ -143,4 +141,7 @@ class timelineremark(MyModel):
                 rem_perm('timeline.user_getlineremark', self.createuser, self)
                 rem_perm('timeline.user_changelineremark', self.createuser, self)
                 rem_perm('timeline.user_deletelineremark', self.createuser, self)
+        if not self.pk:
+            if self.timeline.timeline_transationStatus.all().filter(is_deleted=False, isActive=True).exists():
+                self.timeline.timeline_transationStatus.all().filter(is_deleted=False, isActive=True).first().save()
         super(timelineremark, self).save(force_insert, force_update, using, update_fields)
