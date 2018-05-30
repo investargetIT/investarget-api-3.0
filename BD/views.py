@@ -346,13 +346,14 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
 class OrgBDFilter(FilterSet):
     manager = RelationFilter(filterstr='manager',lookup_method='in')
     org = RelationFilter(filterstr='org', lookup_method='in')
+    response = RelationFilter(filterstr='response', lookup_method='in')
     proj = RelationFilter(filterstr='proj', lookup_method='in')
     bd_status = RelationFilter(filterstr='bd_status', lookup_method='in')
     stime = RelationFilter(filterstr='createdtime', lookup_method='gt')
     etime = RelationFilter(filterstr='createdtime', lookup_method='lt')
     class Meta:
         model = OrgBD
-        fields = ('manager','bd_status','org','proj','stime','etime')
+        fields = ('manager','bd_status','org','proj','stime','etime', 'response')
 
 
 class OrgBDView(viewsets.ModelViewSet):

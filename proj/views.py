@@ -71,7 +71,7 @@ class ProjectView(viewsets.ModelViewSet):
     sendWXGroupPdf:发送群pdf
     """
     filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
-    queryset = project.objects.all().filter(is_deleted=False)
+    queryset = project.objects.all().exclude(id=499).filter(is_deleted=False)
     filter_class = ProjectFilter
     search_fields = ('projtitleC', 'projtitleE',)
     serializer_class = ProjSerializer
