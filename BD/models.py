@@ -82,7 +82,11 @@ class ProjectBDComments(MyModel):
             self.event_date = datetime.datetime.now()
         return super(ProjectBDComments, self).save(*args, **kwargs)
 
-
+responseChoice = (
+    (1,'看'),
+    (2,'不看'),
+    (3,'不回'),
+)
 
 class OrgBD(MyModel):
     org = MyForeignKey(organization,blank=True,null=True,help_text='BD机构',related_name='org_orgBDs')
@@ -95,6 +99,7 @@ class OrgBD(MyModel):
     isimportant = models.BooleanField(blank=True, default=False, help_text='是否重点BD')
     bd_status = MyForeignKey(BDStatus,blank=True,null=True,help_text='bd状态')
     expirationtime = models.DateTimeField(blank=True,null=True,help_text='BD过期时间')
+    response = models.IntegerField(blank=True, choices=responseChoice, null=True)
     isSolved = models.BooleanField(blank=True, default=False, help_text='BD是否已处理')
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_OrgBD')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_OrgBD')

@@ -337,23 +337,23 @@ class ProjectDataView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    # @loginTokenIsAvailable(['usersys.as_admin'])
-    # def update(self, request, *args, **kwargs):
-    #     try:
-    #         data = request.data
-    #         com_id = data.get('com_id')
-    #         instance = self.queryset.get(com_id=com_id)
-    #         serializer = self.serializer_class(instance, data=data)
-    #         if serializer.is_valid():
-    #             serializer.save()
-    #         else:
-    #             raise InvestError(2001, msg=serializer.error_messages)
-    #         return JSONResponse(SuccessResponse(serializer.data))
-    #     except InvestError as err:
-    #         return JSONResponse(InvestErrorResponse(err))
-    #     except Exception:
-    #         catchexcption(request)
-    #         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+    @loginTokenIsAvailable(['usersys.as_admin'])
+    def destroy(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            com_id = data.get('com_id')
+            instance = self.queryset.get(com_id=com_id)
+            instance.delete()
+            MergeFinanceData.objects.all().filter(com_id=com_id).delete()
+            ProjIndustryInfo.objects.all().filter(com_id=com_id).delete()
+            ProjectNews.objects.all().filter(com_id=com_id).delete()
+            ProjRemark.objects.all().filter(com_id=com_id).delete()
+            return JSONResponse(SuccessResponse(True))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 class ProjectIndustryInfoView(viewsets.ModelViewSet):
     throttle_classes = (AppEventRateThrottle,)

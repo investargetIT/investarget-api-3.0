@@ -17,7 +17,7 @@ MergeFinanceDataList = views.MergeFinanceDataView.as_view({
 ProjectDataList = views.ProjectDataView.as_view({
         'get': 'list',
         'post':'create',
-        # 'put':'update',
+        'delete':'destroy',
 })
 
 
