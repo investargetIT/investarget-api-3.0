@@ -42,6 +42,8 @@ class dataroom(MyModel):
             ('downloadDataroom','打包下载dataroom'),
             ('user_adddataroomfile', '用户上传dataroom文件'),
             ('user_deletedataroomfile', '用户删除dataroom文件'),
+
+            ('get_companydataroom', '查看公司dataroom')
         )
 
     def save(self, force_insert=False, force_update=False, using=None,
