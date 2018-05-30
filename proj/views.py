@@ -71,7 +71,7 @@ class ProjectView(viewsets.ModelViewSet):
     sendWXGroupPdf:发送群pdf
     """
     filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
-    queryset = project.objects.all().exclude(id=499).filter(is_deleted=False)
+    queryset = project.objects.all().filter(is_deleted=False)
     filter_class = ProjectFilter
     search_fields = ('projtitleC', 'projtitleE',)
     serializer_class = ProjSerializer
@@ -134,7 +134,7 @@ class ProjectView(viewsets.ModelViewSet):
             if not skip_count or skip_count < 1:
                 skip_count = 0
             setrequestuser(request)
-            queryset = self.filter_queryset(queryset)
+            queryset = self.filter_queryset(queryset).exclude(id=499)
             if request.user.is_anonymous:
                 queryset = queryset.filter(isHidden=False,projstatus_id__in=[4,6,7,8])
                 serializerclass = ProjCommonSerializer
