@@ -424,6 +424,8 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
                 pass
             elif dataroom_User_file.objects.filter(trader=request.user,dataroom=dataroominstance,is_deleted=False).exists():
                 pass
+            elif dataroominstance.isCompanyFile and request.user.has_perm('dataroom.get_companydataroom'):
+                pass
             else:
                 raise InvestError(2009)
             queryset = self.filter_queryset(self.get_queryset()).filter(datasource=self.request.user.datasource)
