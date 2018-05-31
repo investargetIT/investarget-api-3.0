@@ -77,8 +77,7 @@ class UserCommenSerializer(serializers.ModelSerializer):
 class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
-        fields = ('id', 'name',)
-
+        fields = ('id', 'name', 'permissions')
 
 # 权限组基本信息
 class GroupCreateSerializer(serializers.ModelSerializer):

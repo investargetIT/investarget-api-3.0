@@ -39,9 +39,6 @@ user_dataroomone =  views.User_DataroomfileView.as_view({
 })
 
 
-# makeZip = views.DataroomView.as_view({
-#     'get':'makeDataroomAllFilesZip'
-# })
 checkZip = views.DataroomView.as_view({
     'get':'checkZipStatus'
 })

@@ -1679,15 +1679,9 @@ class GroupPermissionView(viewsets.ModelViewSet):
             with transaction.atomic():
                 group = self.get_object()
                 data = request.data
-                permissionsIdList = data.pop('permissions', None)
-                if not isinstance(permissionsIdList, list):
-                    raise InvestError(2007, msg='permissions must be an ID list')
                 serializer = GroupSerializer(group,data=data)
                 if serializer.is_valid():
-                    newgroup = serializer.save()
-                    permissions = Permission.objects.filter(id__in=permissionsIdList)
-                    newgroup.permissions.clear()
-                    map(newgroup.permissions.add,permissions)
+                    serializer.save()
                 else:
                     raise InvestError(2007,msg='%s'%serializer.errors)
                 return JSONResponse(SuccessResponse(serializer.data))
