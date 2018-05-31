@@ -97,12 +97,12 @@ class OrgBDSerializer(serializers.ModelSerializer):
 
     def get_userreamrk(self, obj):
         if obj.bduser:
-            return UserRemarkSimpleSerializer(obj.bduser.user_remarks.all(), many=True)
+            return UserRemarkSimpleSerializer(obj.bduser.user_remarks.all(), many=True).data
         return None
 
     def get_userattachment(self, obj):
         if obj.bduser:
-            return UserAttachmentSerializer(obj.bduser.user_userAttachments.all(), many=True)
+            return UserAttachmentSerializer(obj.bduser.user_userAttachments.all(), many=True).data
         return None
 
     def get_wechat(self, obj):
