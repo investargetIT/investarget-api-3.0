@@ -83,9 +83,11 @@ class ProjectBDComments(MyModel):
         return super(ProjectBDComments, self).save(*args, **kwargs)
 
 responseChoice = (
-    (1,'看'),
-    (2,'不看'),
-    (3,'不回'),
+    (1, '已见面，需要追踪反馈'),
+    (2, '已签NDA，准备约见面'),
+    (3, '已推荐，正在看前期资料'),
+    (4, '已推荐，暂未回复'),
+    (5, '不跟进'),
 )
 
 class OrgBD(MyModel):
