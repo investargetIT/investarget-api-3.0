@@ -69,7 +69,7 @@ class UserView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
     queryset = MyUser.objects.filter(is_deleted=False)
-    search_fields = ('mobile','email','usernameC','usernameE','org__orgnameC','orgarea__nameC','orgarea__nameE','investor_relations__traderuser__usernameC')
+    search_fields = ('mobile','email','usernameC','usernameE','org__orgnameC','orgarea__nameC','org__orgfullname','investor_relations__traderuser__usernameC')
     serializer_class = UserSerializer
     filter_class = UserFilter
     redis_key = 'user'
