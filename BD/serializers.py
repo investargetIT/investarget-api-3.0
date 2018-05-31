@@ -6,7 +6,7 @@ from proj.serializer import ProjSimpleSerializer
 from sourcetype.serializer import BDStatusSerializer, orgAreaSerializer
 from sourcetype.serializer import titleTypeSerializer
 from third.views.qiniufile import getUrlWithBucketAndKey
-from usersys.serializer import UserCommenSerializer
+from usersys.serializer import UserCommenSerializer, UserRemarkSimpleSerializer, UserAttachmentSerializer
 
 
 class ProjectBDCommentsCreateSerializer(serializers.ModelSerializer):
@@ -69,6 +69,9 @@ class OrgBDSerializer(serializers.ModelSerializer):
     BDComments = serializers.SerializerMethodField()
     usertitle = titleTypeSerializer()
     bd_status = BDStatusSerializer()
+    cardurl = serializers.SerializerMethodField()
+    userreamrk = serializers.SerializerMethodField()
+    userattachment = serializers.SerializerMethodField()
     manager = UserCommenSerializer()
     wechat = serializers.SerializerMethodField()
     email = serializers.SerializerMethodField()
@@ -84,6 +87,22 @@ class OrgBDSerializer(serializers.ModelSerializer):
         qs = obj.OrgBD_comments.filter(is_deleted=False)
         if qs.exists():
             return OrgBDCommentsSerializer(qs,many=True).data
+        return None
+
+    def get_cardurl(self, obj):
+        if obj.bduser:
+            if obj.bduser.cardkey:
+                return 'https://o79atf82v.qnssl.com/' + obj.bduser.wechat + '?imageslim'
+        return None
+
+    def get_userreamrk(self, obj):
+        if obj.bduser:
+            return UserRemarkSimpleSerializer(obj.bduser.user_remarks.all(), many=True)
+        return None
+
+    def get_userattachment(self, obj):
+        if obj.bduser:
+            return UserAttachmentSerializer(obj.bduser.user_userAttachments.all(), many=True)
         return None
 
     def get_wechat(self, obj):
