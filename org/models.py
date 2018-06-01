@@ -7,7 +7,7 @@ import sys
 from django.db.models import Q
 from guardian.shortcuts import assign_perm, remove_perm
 from sourcetype.models import AuditStatus, OrgType , TransactionPhases,CurrencyType, Industry, DataSource, OrgAttribute, Country, \
-    Tag
+    Tag, OrgLevelType
 from usersys.models import MyUser
 from utils.customClass import InvestError, MyForeignKey, MyModel
 
@@ -17,7 +17,7 @@ sys.setdefaultencoding('utf-8')
 
 class organization(MyModel):
     id = models.AutoField(primary_key=True)
-    orglevel = models.PositiveSmallIntegerField(blank=True, default=3, help_text='机构级别')
+    orglevel = MyForeignKey(OrgLevelType, blank=True, default=3, help_text='机构级别')
     description = models.TextField(blank=True,null=True)
     investoverseasproject = models.BooleanField(blank=True, default=True, help_text='是否投海外项目')
     orgtransactionphase = models.ManyToManyField(TransactionPhases, through='orgTransactionPhase',through_fields=('org','transactionPhase'), blank=True)
