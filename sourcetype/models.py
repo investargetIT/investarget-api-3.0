@@ -50,6 +50,18 @@ class OrgType(models.Model):
         return self.nameC
 
 
+class OrgBdResponse(models.Model):
+    '''
+    机构Bd反馈类型
+    '''
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=64,blank=True,null=True)
+    is_deleted = models.BooleanField(blank=True, default=False)
+
+    def __str__(self):
+        return self.nameC
+
+
 class FavoriteType(models.Model):
     '''
     收藏类型

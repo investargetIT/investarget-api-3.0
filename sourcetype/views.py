@@ -7,12 +7,12 @@ from rest_framework import viewsets
 
 from sourcetype.models import Tag, TitleType, DataSource,Country,Industry, TransactionType, \
     TransactionPhases, OrgArea, CurrencyType, OrgType, CharacterType, ProjectStatus, TransactionStatus, orgtitletable, \
-    webmenu, Service, OrgAttribute, BDStatus, AndroidAppVersion
+    webmenu, Service, OrgAttribute, BDStatus, AndroidAppVersion, OrgBdResponse
 from sourcetype.serializer import tagSerializer, countrySerializer, industrySerializer, \
     titleTypeSerializer, DataSourceSerializer, orgAreaSerializer, transactionTypeSerializer, transactionPhasesSerializer, \
     currencyTypeSerializer, orgTypeSerializer, characterTypeSerializer, ProjectStatusSerializer, \
     transactionStatuSerializer, OrgtitletableSerializer, WebMenuSerializer, serviceSerializer, orgAttributeSerializer, \
-    BDStatusSerializer, AndroidAppSerializer
+    BDStatusSerializer, AndroidAppSerializer, OrgBdResponseSerializer
 from utils.customClass import  JSONResponse, InvestError
 from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, returnListChangeToLanguage, \
     catchexcption, loginTokenIsAvailable
@@ -60,6 +60,32 @@ class TagView(viewsets.ModelViewSet):
     #     except Exception:
     #         catchexcption(request)
     #         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+
+class OrgBdResponseView(viewsets.ModelViewSet):
+    """
+        list:获取所有标签
+        create:新增标签
+        update:修改标签
+        destroy:删除标签
+    """
+
+    queryset = OrgBdResponse.objects.all().filter(is_deleted=False)
+    serializer_class = OrgBdResponseSerializer
+
+    def list(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = self.serializer_class(queryset, many=True)
+            return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
 class ProjectStatusView(viewsets.ModelViewSet):
     """
         list:获取所有标签

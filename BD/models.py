@@ -7,7 +7,7 @@ from django.db import models
 # Create your models here.
 from org.models import organization
 from proj.models import project
-from sourcetype.models import BDStatus, OrgArea, Country
+from sourcetype.models import BDStatus, OrgArea, Country, OrgBdResponse
 from sourcetype.models import TitleType
 from usersys.models import MyUser
 from usersys.views import makeUserRemark
@@ -82,13 +82,6 @@ class ProjectBDComments(MyModel):
             self.event_date = datetime.datetime.now()
         return super(ProjectBDComments, self).save(*args, **kwargs)
 
-responseChoice = (
-    (1, '已见面，需要追踪反馈'),
-    (2, '已签NDA，准备约见面'),
-    (3, '已推荐，正在看前期资料'),
-    (4, '已推荐，暂未回复'),
-    (5, '不跟进'),
-)
 
 class OrgBD(MyModel):
     org = MyForeignKey(organization,blank=True,null=True,help_text='BD机构',related_name='org_orgBDs')
@@ -101,7 +94,7 @@ class OrgBD(MyModel):
     isimportant = models.BooleanField(blank=True, default=False, help_text='是否重点BD')
     bd_status = MyForeignKey(BDStatus,blank=True,null=True,help_text='bd状态')
     expirationtime = models.DateTimeField(blank=True,null=True,help_text='BD过期时间')
-    response = models.IntegerField(blank=True, choices=responseChoice, null=True)
+    response = MyForeignKey(OrgBdResponse, blank=True, null=True, related_name='OrgBD_response')
     isSolved = models.BooleanField(blank=True, default=False, help_text='BD是否已处理')
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_OrgBD')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_OrgBD')
