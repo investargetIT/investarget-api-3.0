@@ -62,6 +62,20 @@ class OrgBdResponse(models.Model):
         return self.nameC
 
 
+
+class OrgLevelType(models.Model):
+    '''
+    机构级别类型
+    '''
+    id = models.AutoField(primary_key=True)
+    nameC = models.CharField(max_length=64, blank=True, null=True)
+    nameE = models.CharField(max_length=64, blank=True, null=True)
+    is_deleted = models.BooleanField(blank=True, default=False)
+
+    def __str__(self):
+        return self.nameC
+
+
 class FavoriteType(models.Model):
     '''
     收藏类型

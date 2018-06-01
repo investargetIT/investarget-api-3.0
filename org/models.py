@@ -17,7 +17,7 @@ sys.setdefaultencoding('utf-8')
 
 class organization(MyModel):
     id = models.AutoField(primary_key=True)
-    orglevel = models.PositiveSmallIntegerField(blank=True, default=1, help_text='机构服务级别')
+    orglevel = models.PositiveSmallIntegerField(blank=True, default=3, help_text='机构级别')
     description = models.TextField(blank=True,null=True)
     investoverseasproject = models.BooleanField(blank=True, default=True, help_text='是否投海外项目')
     orgtransactionphase = models.ManyToManyField(TransactionPhases, through='orgTransactionPhase',through_fields=('org','transactionPhase'), blank=True)
@@ -185,7 +185,7 @@ class orgManageFund(MyModel):
 class orgInvestEvent(MyModel):
     org = MyForeignKey(organization,null=True, blank=True, db_index=True, related_name='org_orgInvestEvent')
     comshortname = models.CharField(max_length=128, null=True, blank=True, help_text='企业简称')
-    com_id = models.IntegerField(null=True, blank=True, help_text='全库ID')
+    com_id = models.BigIntegerField(null=True, blank=True, help_text='全库ID')
     industrytype = models.CharField(max_length=32, null=True, blank=True, help_text='行业分类')
     area = MyForeignKey(Country,blank=True, null=True, help_text='地区')
     investor =  models.CharField(max_length=128, null=True, blank=True, help_text='投资人')

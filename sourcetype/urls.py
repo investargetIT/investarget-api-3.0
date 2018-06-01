@@ -21,6 +21,11 @@ orgbdresponse = views.OrgBdResponseView.as_view({
         'get': 'list',
 })
 
+orgleveltype = views.OrgLevelTypeView.as_view({
+        'get': 'list',
+})
+
+
 country = views.CountryView.as_view({
         'get': 'list',
         # 'post':'create',
@@ -122,6 +127,8 @@ urlpatterns = [
     url(r'^orgAttribute', orgAttribute,name='orgAttributesource',),
 
     url(r'^orgbdres', orgbdresponse, name='orgbdresponsesource', ),
+
+    url(r'^orglv', orgleveltype, name='orgleveltypesource', ),
 
     url(r'^projstatus$', projstatus, name='projstatus', ),
 
