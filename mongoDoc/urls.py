@@ -20,6 +20,9 @@ ProjectDataList = views.ProjectDataView.as_view({
         'delete':'destroy',
 })
 
+ProjectSimpleList = views.ProjectDataView.as_view({
+        'get': 'namelist',
+})
 
 ProjectExcelDataList = views.ProjectDataView.as_view({
         'post': 'excellist',
@@ -66,6 +69,7 @@ urlpatterns = [
     url(r'^cat', CompanyCatDataList, name='CompanyCatData-list', ),
     url(r'^event$', MergeFinanceDataList, name='MergeFinanceData-list', ),
     url(r'^proj$', ProjectDataList, name='ProjectData-list',),
+    url(r'^proj/simple$', ProjectSimpleList, name='ProjectSimple-list',),
     url(r'^projexc$', ProjectExcelDataList, name='ProjectData-list',),
     url(r'^projinfo$', ProjectIndustryInfoList, name='ProjectIndustryInfo-list',),
     url(r'^projnews$', ProjectNewsList, name='ProjectNews-list',),

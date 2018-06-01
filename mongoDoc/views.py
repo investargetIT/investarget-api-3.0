@@ -253,6 +253,32 @@ class ProjectDataView(viewsets.ModelViewSet):
                 queryset = queryset.filter(**{'%s__%s' % (key, method): value})
         return queryset
 
+    def namelist(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)  # 从第一页开始
+            queryset = self.filterqueryset(request, self.queryset)
+            com_addr = request.GET.get('com_addr')
+            if com_addr:
+                com_addr = com_addr.split(',')
+                if '其他' in com_addr:
+                    queryset = queryset.filter(Q(com_addr__nin=ChinaList) | Q(com_addr__in=com_addr))
+                else:
+                    queryset = queryset(Q(com_addr__in=com_addr))
+            count = queryset.count()
+            try:
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = self.serializer_class(queryset, many=True)
+            return JSONResponse(SuccessResponse({'count': count, 'data': serializer.data}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
     # @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
@@ -266,11 +292,6 @@ class ProjectDataView(viewsets.ModelViewSet):
                     queryset = queryset.filter(Q(com_addr__nin=ChinaList)|Q(com_addr__in=com_addr))
                 else:
                     queryset = queryset(Q(com_addr__in=com_addr))
-            sort = request.GET.get('sort')
-            if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
-                queryset = queryset.order_by('-com_id',)
-            else:
-                queryset = queryset.order_by('com_id',)
             count = queryset.count()
             if count == 0:
                 if request.GET.get('com_name', None):
