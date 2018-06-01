@@ -65,10 +65,7 @@ class TagView(viewsets.ModelViewSet):
 
 class OrgBdResponseView(viewsets.ModelViewSet):
     """
-        list:获取所有标签
-        create:新增标签
-        update:修改标签
-        destroy:删除标签
+        list:获取所有反馈结果类型
     """
 
     queryset = OrgBdResponse.objects.all().filter(is_deleted=False)

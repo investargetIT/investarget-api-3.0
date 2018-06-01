@@ -17,6 +17,10 @@ service = views.ServiceView.as_view({
 })
 
 
+orgbdresponse = views.OrgBdResponseView.as_view({
+        'get': 'list',
+})
+
 country = views.CountryView.as_view({
         'get': 'list',
         # 'post':'create',
@@ -116,6 +120,8 @@ urlpatterns = [
     url(r'^service', service,name='servicesource',),
 
     url(r'^orgAttribute', orgAttribute,name='orgAttributesource',),
+
+    url(r'^orgbdres', orgbdresponse, name='orgbdresponsesource', ),
 
     url(r'^projstatus$', projstatus, name='projstatus', ),
 
