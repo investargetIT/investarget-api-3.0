@@ -15,7 +15,8 @@ from django.db import models
 from django.db.models import Q
 
 from APIlog.models import userinfoupdatelog
-from sourcetype.models import AuditStatus, ClientType, TitleType,School,Specialty,Tag, DataSource, Country, OrgArea
+from sourcetype.models import AuditStatus, ClientType, TitleType,School,Specialty,Tag, DataSource, Country, OrgArea, \
+    FamiliarLevel
 from utils.customClass import InvestError, MyForeignKey, MyModel
 from utils.somedef import makeAvatar
 
@@ -352,8 +353,9 @@ class MyToken(models.Model):
 class UserRelation(MyModel):
     investoruser = MyForeignKey(MyUser,related_name='investor_relations',help_text=('作为投资人'))
     traderuser = MyForeignKey(MyUser,related_name='trader_relations',help_text=('作为交易师'))
-    relationtype = models.BooleanField(help_text=('强关系True，弱关系False'),default=False,blank=True)
-    score = models.SmallIntegerField(help_text=('交易师评分'), default=0, blank=True)
+    relationtype = models.BooleanField(help_text='强弱关系',default=False,blank=True)
+    score = models.SmallIntegerField(help_text='交易师评分', default=0, blank=True)
+    familiar = MyForeignKey(FamiliarLevel, help_text='交易师熟悉度登记', default=1, blank=True)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_relations')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_relations')
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_relations',)
