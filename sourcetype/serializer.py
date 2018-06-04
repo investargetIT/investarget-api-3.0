@@ -3,7 +3,7 @@ from rest_framework import serializers
 from sourcetype.models import TransactionType, TransactionPhases, Specialty, School, OrgArea, Tag, Industry, CurrencyType, \
     AuditStatus, ProjectStatus, OrgType, FavoriteType, MessageType, ClientType, TitleType, Country, \
     DataSource, TransactionStatus, webmenu, CharacterType, orgtitletable, Service, OrgAttribute, BDStatus, AndroidAppVersion, OrgBdResponse, \
-    OrgLevelType
+    OrgLevelType, FamiliarLevel
 
 
 class AuditStatusSerializer(serializers.ModelSerializer):
@@ -23,9 +23,16 @@ class OrgBdResponseSerializer(serializers.ModelSerializer):
         model = OrgBdResponse
         exclude = ('is_deleted',)
 
+
 class OrgLevelTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrgLevelType
+        exclude = ('is_deleted',)
+
+
+class FamiliarLevelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FamiliarLevel
         exclude = ('is_deleted',)
 
 
