@@ -787,16 +787,16 @@ class UserAttachmentView(viewsets.ModelViewSet):
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['usersys.user_getuserbase', ])
     def create(self, request, *args, **kwargs):
         data = request.data
         lang = request.GET.get('lang')
         data['createuser'] = request.user.id
         data['datasource'] = request.user.datasource.id
-        if request.user.is_superuser:
-            pass
-        else:
-            raise InvestError(2009)
+        # if request.user.is_superuser:
+        #     pass
+        # else:
+        #     raise InvestError(2009)
         try:
             with transaction.atomic():
                 attachmentserializer = UserAttachmentSerializer(data=data)
@@ -811,15 +811,15 @@ class UserAttachmentView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['usersys.user_getuserbase', ])
     def update(self, request, *args, **kwargs):
         try:
             remark = self.get_object()
             lang = request.GET.get('lang')
-            if request.user.is_superuser:
-                pass
-            else:
-                raise InvestError(code=2009)
+            # if request.user.is_superuser:
+            #     pass
+            # else:
+            #     raise InvestError(code=2009)
             data = request.data
             data.pop('createuser',None)
             data.pop('createdtime',None)
@@ -838,15 +838,15 @@ class UserAttachmentView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['usersys.user_getuserbase', ])
     def destroy(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
             instance = self.get_object()
-            if request.user.is_superuser:
-                pass
-            else:
-                raise InvestError(code=2009)
+            # if request.user.is_superuser:
+            #     pass
+            # else:
+            #     raise InvestError(code=2009)
             with transaction.atomic():
                 instance.is_deleted = True
                 instance.deleteduser = request.user
@@ -903,15 +903,15 @@ class UserEventView(viewsets.ModelViewSet):
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['usersys.user_getuserbase', ])
     def create(self, request, *args, **kwargs):
         data = request.data
         lang = request.GET.get('lang')
         data['createuser'] = request.user.id
-        if request.user.is_superuser:
-            pass
-        else:
-            raise InvestError(2009)
+        # if request.user.is_superuser:
+        #     pass
+        # else:
+        #     raise InvestError(2009)
         try:
             with transaction.atomic():
                 insserializer = UserEventSerializer(data=data)
@@ -926,15 +926,15 @@ class UserEventView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['usersys.user_getuserbase', ])
     def update(self, request, *args, **kwargs):
         try:
             remark = self.get_object()
             lang = request.GET.get('lang')
-            if request.user.is_superuser:
-                pass
-            else:
-                raise InvestError(code=2009)
+            # if request.user.is_superuser:
+            #     pass
+            # else:
+            #     raise InvestError(code=2009)
             data = request.data
             data.pop('createuser',None)
             data.pop('createdtime',None)
@@ -953,15 +953,15 @@ class UserEventView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['usersys.user_getuserbase', ])
     def destroy(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
             instance = self.get_object()
-            if request.user.is_superuser:
-                pass
-            else:
-                raise InvestError(code=2009)
+            # if request.user.is_superuser:
+            #     pass
+            # else:
+            #     raise InvestError(code=2009)
             with transaction.atomic():
                 instance.is_deleted = True
                 instance.deleteduser = request.user
