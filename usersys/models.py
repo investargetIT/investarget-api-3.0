@@ -325,10 +325,10 @@ class userEvents(MyModel):
 
     def save(self, *args, **kwargs):
         if self.pk:
-            if userEvents.objects.exclude(pk=self.pk).filter(is_deleted=False, com_id=self.com_id, investDate=self.investDate).exists():
+            if userEvents.objects.exclude(pk=self.pk).filter(is_deleted=False, user=self.user, com_id=self.com_id, investDate=self.investDate).exists():
                 raise InvestError(2007, msg='已存在相同事件')
         else:
-            if userEvents.objects.filter(is_deleted=False, com_id=self.com_id, investDate=self.investDate).exists():
+            if userEvents.objects.filter(is_deleted=False, user=self.user, com_id=self.com_id, investDate=self.investDate).exists():
                 raise InvestError(2007, msg='已存在相同事件')
         return super(userEvents, self).save(*args, **kwargs)
 
