@@ -317,6 +317,7 @@ class userEvents(MyModel):
     com_id = models.BigIntegerField(blank=True, null=True, help_text='全库项目id')
     comshortname = models.CharField(max_length=64, blank=True, null=True)
     investDate = models.DateTimeField(blank=True, null=True)
+    round = models.CharField(max_length=64, blank=True, null=True, help_text='轮次')
     deleteduser = MyForeignKey(MyUser,blank=True, null=True,related_name='userdelete_userEvents')
     createuser = MyForeignKey(MyUser,blank=True, null=True,related_name='usercreate_userEvents')
 
