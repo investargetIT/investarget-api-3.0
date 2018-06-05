@@ -324,6 +324,12 @@ class userEvents(MyModel):
         db_table = "user_events"
 
     def save(self, *args, **kwargs):
+        if self.pk:
+            if userEvents.objects.exclude(pk=self.pk).filter(is_deleted=False, com_id=self.com_id, investDate=self.investDate).exists():
+                raise InvestError(2007, msg='已存在相同事件')
+        else:
+            if userEvents.objects.filter(is_deleted=False, com_id=self.com_id, investDate=self.investDate).exists():
+                raise InvestError(2007, msg='已存在相同事件')
         return super(userEvents, self).save(*args, **kwargs)
 
 
@@ -355,7 +361,7 @@ class UserRelation(MyModel):
     traderuser = MyForeignKey(MyUser,related_name='trader_relations',help_text=('作为交易师'))
     relationtype = models.BooleanField(help_text='强弱关系',default=False,blank=True)
     score = models.SmallIntegerField(help_text='交易师评分', default=0, blank=True)
-    familiar = MyForeignKey(FamiliarLevel, help_text='交易师熟悉度登记', default=1, blank=True)
+    familiar = MyForeignKey(FamiliarLevel, help_text='交易师熟悉度等级', default=1, blank=True)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_relations')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_relations')
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_relations',)

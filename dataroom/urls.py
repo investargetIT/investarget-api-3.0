@@ -26,7 +26,6 @@ dataroomfile = views.DataroomdirectoryorfileView.as_view({
 })
 
 
-
 user_dataroom = views.User_DataroomfileView.as_view({
         'get': 'list',
         'post': 'create',
