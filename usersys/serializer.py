@@ -122,11 +122,13 @@ class UserEventSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_round(self, obj):
-        if not obj.round:
+        if obj.round:
+            return obj.round
+        else:
             if obj.com_id and obj.investDate:
                 if MergeFinanceData.objects.all().filter(com_id=obj.com_id, date=str(obj.investDate)[:10]).count() > 0:
                     return MergeFinanceData.objects.all().filter(com_id=obj.com_id, date=obj.investDate).first().round
-        return obj.round
+            return None
 
 class UserRemarkCreateSerializer(serializers.ModelSerializer):
     class Meta:
