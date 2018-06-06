@@ -483,7 +483,9 @@ class ProjectNewsView(viewsets.ModelViewSet):
 
 
 class ProjectSearchNameView(viewsets.ModelViewSet):
-
+    '''
+        list: 获取项目搜索列表
+    '''
     queryset = CompanySearchName.objects.all()
     serializer_class = CompanySearchNameSerializer
 

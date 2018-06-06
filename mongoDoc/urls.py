@@ -65,7 +65,13 @@ getCount = views.MergeFinanceDataView.as_view({
         'get':'getCount',
 })
 
+
+com_search = views.ProjectSearchNameView.as_view({
+        'get':'list',
+})
+
 urlpatterns = [
+    url(r'^proj/search', com_search, name='com_search-list', ),
     url(r'^cat', CompanyCatDataList, name='CompanyCatData-list', ),
     url(r'^event$', MergeFinanceDataList, name='MergeFinanceData-list', ),
     url(r'^proj$', ProjectDataList, name='ProjectData-list',),
