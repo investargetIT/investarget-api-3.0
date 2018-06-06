@@ -769,10 +769,9 @@ class UserAttachmentView(viewsets.ModelViewSet):
             lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
             sort = request.GET.get('sort')
-            if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
-                queryset = queryset.order_by('-lastmodifytime', '-createdtime')
-            else:
-                queryset = queryset.order_by('lastmodifytime', 'createdtime')
+            sortfield = request.GET.get('sort', 'createdtime')
+            desc = request.GET.get('desc', 1)
+            queryset = mySortQuery(queryset, sortfield, desc)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -884,11 +883,9 @@ class UserEventView(viewsets.ModelViewSet):
             #     pass
             # else:
             #     queryset = queryset.filter(user__investor_relations__in=request.user.trader_relations.all())
-            sort = request.GET.get('sort')
-            if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
-                queryset = queryset.order_by('-lastmodifytime', '-createdtime')
-            else:
-                queryset = queryset.order_by('lastmodifytime', 'createdtime')
+            sortfield = request.GET.get('sort', 'createdtime')
+            desc = request.GET.get('desc', 1)
+            queryset = mySortQuery(queryset, sortfield, desc)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
