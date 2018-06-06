@@ -80,14 +80,6 @@ class MergeFinanceData(Document):
     def save(self, force_insert=False, validate=True, clean=True,
              write_concern=None, cascade=None, cascade_kwargs=None,
              _refs=None, save_condition=None, signal_kwargs=None, **kwargs):
-        if self.investormerge == 1:
-            if len(MergeFinanceData.objects.filter(invse_id=self.invse_id)) > 0:
-                raise InvestError(8001)
-        elif self.investormerge == 2:
-            if len(MergeFinanceData.objects.filter(merger_id=self.merger_id)) > 0:
-                raise InvestError(8001)
-        else:
-            raise InvestError(8001,msg='未知的类型')
         super(MergeFinanceData,self).save(force_insert,validate,clean,write_concern,cascade,cascade_kwargs,_refs,save_condition,signal_kwargs,**kwargs)
 
 
