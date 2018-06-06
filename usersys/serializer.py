@@ -3,7 +3,6 @@ from django.contrib.auth.models import Group, Permission
 from rest_framework import serializers
 
 from mongoDoc.models import MergeFinanceData
-from mongoDoc.serializers import MergeFinanceDataSerializer
 from org.serializer import OrgCommonSerializer
 from sourcetype.serializer import tagSerializer, countrySerializer, titleTypeSerializer
 from third.views.qiniufile import getUrlWithBucketAndKey
@@ -117,16 +116,17 @@ class UserAttachmentSerializer(serializers.ModelSerializer):
 
 
 class UserEventSerializer(serializers.ModelSerializer):
-    mevent = serializers.SerializerMethodField()
+    round = serializers.SerializerMethodField()
     class Meta:
         model = userEvents
         fields = '__all__'
 
-    def get_mevent(self, obj):
-        if obj.com_id and obj.investDate:
-            if MergeFinanceData.objects.all().filter(com_id=obj.com_id, date=str(obj.investDate)[:10]).count() > 0:
-                return MergeFinanceDataSerializer(MergeFinanceData.objects.all().filter(com_id=obj.com_id, date=obj.investDate).first()).data
-        return None
+    def get_round(self, obj):
+        if not obj.round:
+            if obj.com_id and obj.investDate:
+                if MergeFinanceData.objects.all().filter(com_id=obj.com_id, date=str(obj.investDate)[:10]).count() > 0:
+                    return MergeFinanceData.objects.all().filter(com_id=obj.com_id, date=obj.investDate).first().round
+        return obj.round
 
 class UserRemarkCreateSerializer(serializers.ModelSerializer):
     class Meta:
