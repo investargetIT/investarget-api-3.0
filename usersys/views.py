@@ -448,7 +448,7 @@ class UserView(viewsets.ModelViewSet):
                     for link in ['investor_relations','trader_relations','investor_timelines','supportor_timelines','trader_timelines','usersupport_projs','usertake_projs',
                                  'usermake_projs','user_usertags', 'user_remarks','userreceive_msgs','usersend_msgs','user_datarooms', 'user_userAttachments', 'user_userEvents'
                                  'usercreate_ProjectBD','usercreate_ProjectBDComments','usercreate_schedule','user_beschedule', 'user_orgBDs']:
-                        if link in ['investor_relations','trader_relations','investor_timelines','supportor_timelines','trader_timelines']:
+                        if link in ['investor_relations','trader_relations','investor_timelines','supportor_timelines','trader_timelines','user_userEvents','user_userAttachments']:
                             manager = getattr(instance, link, None)
                             if not manager:
                                 continue
