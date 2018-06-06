@@ -513,7 +513,7 @@ class ProjectSearchNameView(viewsets.ModelViewSet):
             if request.user.has_perm('usersys.admin_getmongoprojremark'):
                 queryset = queryset(datasource=request.user.datasource_id)
             else:
-                queryset = queryset(createuser_id=request.user.id)
+                queryset = queryset(searchuser_id=request.user.id)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
