@@ -126,8 +126,10 @@ class UserEventSerializer(serializers.ModelSerializer):
             return obj.round
         else:
             if obj.com_id and obj.investDate:
-                if MergeFinanceData.objects.all().filter(com_id=obj.com_id, date=str(obj.investDate)[:10]).count() > 0:
-                    return MergeFinanceData.objects.all().filter(com_id=obj.com_id, date=obj.investDate).first().round
+                event_qs = MergeFinanceData.objects.all().filter(com_id=obj.com_id, date=str(obj.investDate)[:10])
+                if event_qs.count() > 0:
+                    event = event_qs.first()
+                    return event.round
             return None
 
 class UserRemarkCreateSerializer(serializers.ModelSerializer):
