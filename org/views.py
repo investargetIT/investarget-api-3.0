@@ -877,13 +877,13 @@ class OrgInvestEventView(viewsets.ModelViewSet):
                     if industrytype:
                         for tag_id in TagContrastTable.objects.filter(cat_name=industrytype).values_list('tag_id'):
                             useP = True
-                            if not orgTags.objects.filter(org_id=orgid, tag_id=tag_id).exists():
-                                orgTags(org_id=orgid, tag_id=tag_id).save()
+                            if not orgTags.objects.filter(org_id=orgid, tag_id=tag_id[0]).exists():
+                                orgTags(org_id=orgid, tag_id=tag_id[0]).save()
                     if not useP:
                         if Pindustrytype:
                             for tag_id in TagContrastTable.objects.filter(cat_name=Pindustrytype).values_list('tag_id'):
-                                if not orgTags.objects.filter(org_id=orgid, tag_id=tag_id).exists():
-                                    orgTags(org_id=orgid, tag_id=tag_id).save()
+                                if not orgTags.objects.filter(org_id=orgid, tag_id=tag_id[0]).exists():
+                                    orgTags(org_id=orgid, tag_id=tag_id[0]).save()
                 else:
                     raise InvestError(code=20071,msg='data有误_%s' % instanceserializer.error_messages)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data,lang)))
@@ -929,13 +929,13 @@ class OrgInvestEventView(viewsets.ModelViewSet):
                     if industrytype:
                         for tag_id in TagContrastTable.objects.filter(cat_name=industrytype).values_list('tag_id'):
                             useP = True
-                            if not orgTags.objects.filter(org_id=newinstance.org_id, tag_id=tag_id).exists():
-                                orgTags(org_id=newinstance.org_id, tag_id=tag_id).save()
+                            if not orgTags.objects.filter(org_id=newinstance.org_id, tag_id=tag_id[0]).exists():
+                                orgTags(org_id=newinstance.org_id, tag_id=tag_id[0]).save()
                     if not useP:
                         if Pindustrytype:
                             for tag_id in TagContrastTable.objects.filter(cat_name=Pindustrytype).values_list('tag_id'):
-                                if not orgTags.objects.filter(org_id=newinstance.org_id, tag_id=tag_id).exists():
-                                    orgTags(org_id=newinstance.org_id, tag_id=tag_id).save()
+                                if not orgTags.objects.filter(org_id=newinstance.org_id, tag_id=tag_id[0]).exists():
+                                    orgTags(org_id=newinstance.org_id, tag_id=tag_id[0]).save()
                 else:
                     raise InvestError(code=20071,  msg='data有误_%s' % instanceserializer.errors)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(newinstance).data,lang)))

@@ -917,14 +917,14 @@ class UserEventView(viewsets.ModelViewSet):
                     if industrytype:
                         for tag_id in TagContrastTable.objects.filter(cat_name=industrytype).values_list('tag_id'):
                             useP = True
-                            if not userTags.objects.filter(user_id=user_id, tag_id=tag_id, is_deleted=False).exists():
-                                userTags(user_id=user_id, tag_id=tag_id).save()
+                            if not userTags.objects.filter(user_id=user_id, tag_id=tag_id[0], is_deleted=False).exists():
+                                userTags(user_id=user_id, tag_id=tag_id[0]).save()
                     if not useP:
                         if Pindustrytype:
                             for tag_id in TagContrastTable.objects.filter(cat_name=Pindustrytype).values_list('tag_id'):
-                                if not userTags.objects.filter(user_id=user_id, tag_id=tag_id,
+                                if not userTags.objects.filter(user_id=user_id, tag_id=tag_id[0],
                                                                is_deleted=False).exists():
-                                    userTags(user_id=user_id, tag_id=tag_id).save()
+                                    userTags(user_id=user_id, tag_id=tag_id[0]).save()
                 else:
                     raise InvestError(code=20071, msg='data有误_%s\n%s' %  insserializer.errors)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(insserializer.data, lang)))
@@ -953,14 +953,14 @@ class UserEventView(viewsets.ModelViewSet):
                     if industrytype:
                         for tag_id in TagContrastTable.objects.filter(cat_name=industrytype).values_list('tag_id'):
                             useP = True
-                            if not userTags.objects.filter(user_id=user_id, tag_id=tag_id, is_deleted=False).exists():
-                                userTags(user_id=user_id, tag_id=tag_id).save()
+                            if not userTags.objects.filter(user_id=user_id, tag_id=tag_id[0], is_deleted=False).exists():
+                                userTags(user_id=user_id, tag_id=tag_id[0]).save()
                     if not useP:
                         if Pindustrytype:
                             for tag_id in TagContrastTable.objects.filter(cat_name=Pindustrytype).values_list('tag_id'):
-                                if not userTags.objects.filter(user_id=user_id, tag_id=tag_id,
+                                if not userTags.objects.filter(user_id=user_id, tag_id=tag_id[0],
                                                                is_deleted=False).exists():
-                                    userTags(user_id=user_id, tag_id=tag_id).save()
+                                    userTags(user_id=user_id, tag_id=tag_id[0]).save()
                 else:
                     raise InvestError(code=20071,
                                       msg='data有误_%s\n%s' % (serializer.error_messages, serializer.errors))
