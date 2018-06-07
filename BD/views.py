@@ -549,7 +549,7 @@ class OrgBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
             elif request.user.has_perm('BD.user_manageOrgBD', instance):
-                data = {'bd_status': data.get('bd_status', instance.bd_status_id), 'isimportant': bool(data.get('isimportant', instance.isimportant))}
+                data = {'bd_status': data.get('bd_status', instance.bd_status_id), 'response': data.get('response', instance.response_id), 'isimportant': bool(data.get('isimportant', instance.isimportant))}
             else:
                 raise InvestError(2009)
             with transaction.atomic():
