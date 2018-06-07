@@ -26,7 +26,7 @@ from usersys.serializer import UserSerializer, UserListSerializer, UserRelationS
     UserFriendshipDetailSerializer, UserFriendshipUpdateSerializer, GroupSerializer, GroupDetailSerializer, GroupCreateSerializer, PermissionSerializer, \
     UpdateUserSerializer, UnreachUserSerializer, UserRemarkSerializer, UserRemarkCreateSerializer, \
     UserListCommenSerializer, UserAttachmentSerializer, UserEventSerializer
-from sourcetype.models import Tag, DataSource
+from sourcetype.models import Tag, DataSource, TagContrastTable
 from utils import perimissionfields
 from utils.customClass import JSONResponse, InvestError, RelationFilter
 from utils.sendMessage import sendmessage_userauditstatuchange, sendmessage_userregister, sendmessage_traderadd, \
@@ -905,15 +905,26 @@ class UserEventView(viewsets.ModelViewSet):
         data = request.data
         lang = request.GET.get('lang')
         data['createuser'] = request.user.id
-        # if request.user.is_superuser:
-        #     pass
-        # else:
-        #     raise InvestError(2009)
+        industrytype = data.get('industrytype', None)
+        Pindustrytype = data.get('Pindustrytype', None)
+        user_id = data.get('user', None)
         try:
             with transaction.atomic():
                 insserializer = UserEventSerializer(data=data)
                 if insserializer.is_valid():
-                    instance = insserializer.save()
+                    insserializer.save()
+                    useP = False
+                    if industrytype:
+                        for tag_id in TagContrastTable.objects.filter(cat_name=industrytype).values_list('tag_id'):
+                            useP = True
+                            if not userTags.objects.filter(user_id=user_id, tag_id=tag_id, is_deleted=False).exists():
+                                userTags(user_id=user_id, tag_id=tag_id).save()
+                    if not useP:
+                        if Pindustrytype:
+                            for tag_id in TagContrastTable.objects.filter(cat_name=Pindustrytype).values_list('tag_id'):
+                                if not userTags.objects.filter(user_id=user_id, tag_id=tag_id,
+                                                               is_deleted=False).exists():
+                                    userTags(user_id=user_id, tag_id=tag_id).save()
                 else:
                     raise InvestError(code=20071, msg='data有误_%s\n%s' %  insserializer.errors)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(insserializer.data, lang)))
@@ -928,17 +939,28 @@ class UserEventView(viewsets.ModelViewSet):
         try:
             remark = self.get_object()
             lang = request.GET.get('lang')
-            # if request.user.is_superuser:
-            #     pass
-            # else:
-            #     raise InvestError(code=2009)
             data = request.data
             data.pop('createuser',None)
             data.pop('createdtime',None)
+            industrytype = data.get('industrytype', None)
+            Pindustrytype = data.get('Pindustrytype', None)
+            user_id = data.get('user', None)
             with transaction.atomic():
                 serializer = UserEventSerializer(remark, data=data)
                 if serializer.is_valid():
                     newinstance = serializer.save()
+                    useP = False
+                    if industrytype:
+                        for tag_id in TagContrastTable.objects.filter(cat_name=industrytype).values_list('tag_id'):
+                            useP = True
+                            if not userTags.objects.filter(user_id=user_id, tag_id=tag_id, is_deleted=False).exists():
+                                userTags(user_id=user_id, tag_id=tag_id).save()
+                    if not useP:
+                        if Pindustrytype:
+                            for tag_id in TagContrastTable.objects.filter(cat_name=Pindustrytype).values_list('tag_id'):
+                                if not userTags.objects.filter(user_id=user_id, tag_id=tag_id,
+                                                               is_deleted=False).exists():
+                                    userTags(user_id=user_id, tag_id=tag_id).save()
                 else:
                     raise InvestError(code=20071,
                                       msg='data有误_%s\n%s' % (serializer.error_messages, serializer.errors))

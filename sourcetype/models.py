@@ -377,6 +377,19 @@ class orgtitletable(models.Model):
     is_deleted = models.BooleanField(blank=True, default=False)
 
 
+class TagContrastTable(models.Model):
+    '''
+    标签对照表
+    '''
+    id = models.AutoField(primary_key=True)
+    tag = MyForeignKey(Tag, blank=True, null=True)
+    cat_name = models.CharField(max_length=32, blank=True, null=True)
+    is_deleted = models.BooleanField(blank=True, default=False)
+
+    def __str__(self):
+        return self.cat_name
+
+
 class templatesign(models.Model):
     """
     模板标识sign

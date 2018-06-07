@@ -13,7 +13,7 @@ from org.serializer import OrgCommonSerializer, OrgDetailSerializer, OrgRemarkDe
     OrgUpdateSerializer, OrgBuyoutCreateSerializer, OrgContactCreateSerializer, OrgInvestEventCreateSerializer,\
     OrgManageFundCreateSerializer, OrgCooperativeRelationshipCreateSerializer, OrgBuyoutSerializer, OrgContactSerializer, \
     OrgInvestEventSerializer, OrgManageFundSerializer, OrgCooperativeRelationshipSerializer
-from sourcetype.models import TransactionPhases
+from sourcetype.models import TransactionPhases, TagContrastTable
 from utils.customClass import InvestError, JSONResponse, RelationFilter, MySearchFilter
 from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser, add_perm, \
@@ -866,11 +866,24 @@ class OrgInvestEventView(viewsets.ModelViewSet):
         else:
             raise InvestError(code=20072)
         data['createuser'] = request.user.id
+        industrytype = data.get('industrytype', None)
+        Pindustrytype = data.get('Pindustrytype', None)
         try:
             with transaction.atomic():
                 instanceserializer = OrgInvestEventCreateSerializer(data=data)
                 if instanceserializer.is_valid():
                     instance = instanceserializer.save()
+                    useP = False
+                    if industrytype:
+                        for tag_id in TagContrastTable.objects.filter(cat_name=industrytype).values_list('tag_id'):
+                            useP = True
+                            if not orgTags.objects.filter(org_id=orgid, tag_id=tag_id).exists():
+                                orgTags(org_id=orgid, tag_id=tag_id).save()
+                    if not useP:
+                        if Pindustrytype:
+                            for tag_id in TagContrastTable.objects.filter(cat_name=Pindustrytype).values_list('tag_id'):
+                                if not orgTags.objects.filter(org_id=orgid, tag_id=tag_id).exists():
+                                    orgTags(org_id=orgid, tag_id=tag_id).save()
                 else:
                     raise InvestError(code=20071,msg='data有误_%s' % instanceserializer.error_messages)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data,lang)))
@@ -906,10 +919,23 @@ class OrgInvestEventView(viewsets.ModelViewSet):
                 raise InvestError(code=2009)
             data = request.data
             data['lastmodifytime'] = datetime.datetime.now()
+            industrytype = data.get('industrytype', None)
+            Pindustrytype = data.get('Pindustrytype', None)
             with transaction.atomic():
                 instanceserializer = OrgInvestEventCreateSerializer(instance, data=data)
                 if instanceserializer.is_valid():
                     newinstance = instanceserializer.save()
+                    useP = False
+                    if industrytype:
+                        for tag_id in TagContrastTable.objects.filter(cat_name=industrytype).values_list('tag_id'):
+                            useP = True
+                            if not orgTags.objects.filter(org_id=newinstance.org_id, tag_id=tag_id).exists():
+                                orgTags(org_id=newinstance.org_id, tag_id=tag_id).save()
+                    if not useP:
+                        if Pindustrytype:
+                            for tag_id in TagContrastTable.objects.filter(cat_name=Pindustrytype).values_list('tag_id'):
+                                if not orgTags.objects.filter(org_id=newinstance.org_id, tag_id=tag_id).exists():
+                                    orgTags(org_id=newinstance.org_id, tag_id=tag_id).save()
                 else:
                     raise InvestError(code=20071,  msg='data有误_%s' % instanceserializer.errors)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(newinstance).data,lang)))
