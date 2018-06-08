@@ -511,7 +511,7 @@ class ProjectSearchNameView(viewsets.ModelViewSet):
                 page_index = 1
             queryset = self.filterqueryset(request,self.queryset)
             if request.user.has_perm('usersys.admin_getmongoprojremark'):
-                queryset = queryset(datasource=request.user.datasource_id)
+                pass
             else:
                 queryset = queryset(searchuser_id=request.user.id)
             try:
