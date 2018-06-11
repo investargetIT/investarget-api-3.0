@@ -158,7 +158,7 @@ class UserRelationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserRelation
-        fields = ('id', 'investoruser', 'traderuser', 'relationtype', 'score')
+        fields = ('id', 'investoruser', 'traderuser', 'relationtype', 'score', 'familiar')
 
 
 # 用户关系全部信息
@@ -277,7 +277,7 @@ class UserTraderSimpleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserRelation
-        fields = ('id', 'traderuser',)
+        fields = ('id', 'traderuser', 'familiar')
 
 # 用户基本信息
 class UserListCommenSerializer(serializers.ModelSerializer):
