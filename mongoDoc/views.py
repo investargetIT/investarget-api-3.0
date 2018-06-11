@@ -242,6 +242,7 @@ class ProjectDataView(viewsets.ModelViewSet):
                     'com_fund_needs_name': 'in',
                     'invse_round_id': 'in',
                     'com_status': 'in',
+                    'source': 'in',
                     'com_born_date':'startswith',}
 
     def filterqueryset(self, request, queryset):
