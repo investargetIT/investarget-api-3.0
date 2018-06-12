@@ -490,7 +490,7 @@ class ProjectSearchNameView(viewsets.ModelViewSet):
     queryset = CompanySearchName.objects.all()
     serializer_class = CompanySearchNameSerializer
 
-    filter_class = {'com_name': 'in',}
+    filter_class = {'com_name': 'in', 'createtime': 'gt',}
 
     def filterqueryset(self, request, queryset):
         for key, method in self.filter_class.items():
