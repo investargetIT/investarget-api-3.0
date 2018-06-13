@@ -772,7 +772,6 @@ class UserAttachmentView(viewsets.ModelViewSet):
             page_index = request.GET.get('page_index', 1)
             lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
-            sort = request.GET.get('sort')
             sortfield = request.GET.get('sort', 'createdtime')
             desc = request.GET.get('desc', 1)
             queryset = mySortQuery(queryset, sortfield, desc)

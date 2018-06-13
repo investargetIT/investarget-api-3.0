@@ -86,7 +86,7 @@ def sendExpiredTimelineMsg():
                                     types=['app', 'wenmsg'])
 
 def sendExpiredOrgBDMsg():
-    OrgBD_qs = OrgBD.objects.all().filter(is_deleted=False,isSolved=True,
+    OrgBD_qs = OrgBD.objects.all().filter(is_deleted=False, isSolved=False,
                                                             expirationtime__year=datetime.datetime.now().year,
                                                             expirationtime__month=datetime.datetime.now().month,
                                                             expirationtime__day=datetime.datetime.now().day)

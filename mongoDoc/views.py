@@ -280,7 +280,7 @@ class ProjectDataView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    # @loginTokenIsAvailable()
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size', 10)
@@ -293,6 +293,9 @@ class ProjectDataView(viewsets.ModelViewSet):
                     queryset = queryset.filter(Q(com_addr__nin=ChinaList)|Q(com_addr__in=com_addr))
                 else:
                     queryset = queryset(Q(com_addr__in=com_addr))
+            sortfield = request.GET.get('sort')
+            if sortfield:
+                queryset = queryset.order_by(sortfield)
             count = queryset.count()
             if count == 0:
                 if request.GET.get('com_name', None):
@@ -515,6 +518,7 @@ class ProjectSearchNameView(viewsets.ModelViewSet):
                 pass
             else:
                 queryset = queryset(searchuser_id=request.user.id)
+            queryset = queryset.order_by('createtime')
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
