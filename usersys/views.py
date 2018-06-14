@@ -6,7 +6,7 @@ from django.contrib.auth.models import Group, Permission
 from django.core.exceptions import FieldDoesNotExist
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction,models
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.db.models import QuerySet
 from rest_framework import filters
 from rest_framework import viewsets
@@ -1202,15 +1202,19 @@ class UserRelationView(viewsets.ModelViewSet):
             page_index = request.GET.get('page_index', 1)
             lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
-            sort = request.GET.get('sort')
-            if sort not in ['True', 'true', True, 1 ,'Yes','yes','YES','TRUE']:
-                queryset = queryset.order_by('-lastmodifytime', '-createdtime')
-            else:
-                queryset = queryset.order_by('lastmodifytime', 'createdtime')
             if request.user.has_perm('usersys.admin_getuserrelation'):
                 pass
             else:
                 queryset = queryset.filter(Q(traderuser=request.user) | Q(investoruser=request.user))
+            countres = queryset.values_list('familiar').annotate(Count('familiar'))
+            countlist = []
+            for manager_count in countres:
+                countlist.append({'familiar': manager_count[0], 'count': manager_count[1]})
+            sort = request.GET.get('sort')
+            if sort not in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
+                queryset = queryset.order_by('-lastmodifytime', '-createdtime')
+            else:
+                queryset = queryset.order_by('lastmodifytime', 'createdtime')
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -1218,7 +1222,7 @@ class UserRelationView(viewsets.ModelViewSet):
             except EmptyPage:
                 return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             serializer = UserRelationSerializer(queryset, many=True)
-            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang),'familiar_count':countlist}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
