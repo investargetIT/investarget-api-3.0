@@ -223,9 +223,7 @@ class OrganizationView(viewsets.ModelViewSet):
                         transactionPhaselist = TransactionPhases.objects.filter(is_deleted=False).in_bulk(orgTransactionPhases)
                         addlist = [item for item in transactionPhaselist if item not in org.orgtransactionphase.all()]
                         removelist = [item for item in org.orgtransactionphase.all() if item not in transactionPhaselist]
-                        org.org_orgTransactionPhases.filter(transactionPhase__in=removelist, is_deleted=False).update(is_deleted=True,
-                                                                                           deletedtime=datetime.datetime.now(),
-                                                                                           deleteduser=request.user)
+                        org.org_orgTransactionPhases.filter(transactionPhase__in=removelist, is_deleted=False).delete()
                         usertaglist = []
                         for transactionPhase in addlist:
                             usertaglist.append(orgTransactionPhase(org=org, transactionPhase_id=transactionPhase, createuser=request.user,createdtime=datetime.datetime.now()))

@@ -603,7 +603,7 @@ class ProjectView(viewsets.ModelViewSet):
                 amount_field, currency, currencytype = 'financeAmount', '￥', 'CNY'
             f = open(APILOG_PATH['wxgroupsendpdf'] + '/projdesc.txt', 'a')
             content = {proj.projtitleC.split('：')[0]: '本周项目自动推送：%s%s' % (proj.projtitleC.split('：')[-1],
-                                       ('，拟交易规模：%s%s %s' % (currency, getattr(proj,amount_field) if getattr(proj,amount_field) else '', currencytype)))}
+                                       ('，拟交易规模：%s%s %s' % (currency, '{:,}'.format(getattr(proj,amount_field)) if getattr(proj,amount_field) else 'N/A', currencytype)))}
             f.writelines(json.dumps(content, ensure_ascii=False))
             f.writelines('\n')
             f.close()

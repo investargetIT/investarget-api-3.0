@@ -751,6 +751,12 @@ class UnReachUserView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+class UserAttachmentFilter(FilterSet):
+    user = RelationFilter(filterstr='user', lookup_method='in')
+
+    class Meta:
+        model = MyUser
+        fields = ('user',)
 
 class UserAttachmentView(viewsets.ModelViewSet):
     """
@@ -761,7 +767,7 @@ class UserAttachmentView(viewsets.ModelViewSet):
             """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = userAttachments.objects.all().filter(is_deleted=False)
-    filter_fields = ('user',)
+    filter_class = UserAttachmentFilter
     serializer_class = UserAttachmentSerializer
 
     @loginTokenIsAvailable(['usersys.user_getuserbase',])
