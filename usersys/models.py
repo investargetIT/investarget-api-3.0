@@ -358,15 +358,15 @@ class MyToken(models.Model):
         return self.key
 
 class UserRelation(MyModel):
-    investoruser = MyForeignKey(MyUser,related_name='investor_relations',help_text=('作为投资人'))
-    traderuser = MyForeignKey(MyUser,related_name='trader_relations',help_text=('作为交易师'))
-    relationtype = models.BooleanField(help_text='强弱关系',default=False,blank=True)
+    investoruser = MyForeignKey(MyUser, related_name='investor_relations', blank=True, help_text=('作为投资人'))
+    traderuser = MyForeignKey(MyUser, related_name='trader_relations', blank=True, help_text=('作为交易师'))
+    relationtype = models.BooleanField(help_text='强弱关系', default=False, blank=True)
     score = models.SmallIntegerField(help_text='交易师评分', default=0, blank=True)
     familiar = MyForeignKey(FamiliarLevel, help_text='交易师熟悉度等级', default=1, blank=True)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_relations')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_relations')
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_relations',)
-    datasource = MyForeignKey(DataSource, blank=True,default=1, help_text='数据源')
+    datasource = MyForeignKey(DataSource, blank=True, default=1, help_text='数据源')
     def save(self, *args, **kwargs):
         if not self.datasource:
             raise InvestError(code=8888,msg='datasource有误')
