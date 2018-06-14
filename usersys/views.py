@@ -484,7 +484,6 @@ class UserView(viewsets.ModelViewSet):
                                         manager.all().update(is_deleted=True)
                                 except FieldDoesNotExist:
                                     pass
-                    instance.user_usertags.all().update(is_deleted=True)
                     cache_delete_key(self.redis_key + '_%s' % instance.id)
                     userlist.append({})
                     if instance.hasIM:
@@ -1155,10 +1154,16 @@ class UserRelationFilter(FilterSet):
     investoruser = RelationFilter(filterstr='investoruser', lookup_method='in', relationName='investoruser__is_deleted')
     traderuser = RelationFilter(filterstr='traderuser',lookup_method='in', relationName='traderuser__is_deleted')
     relationtype = RelationFilter(filterstr='relationtype', lookup_method='in')
+    familiar = RelationFilter(filterstr='familiar', lookup_method='in')
+    tags = RelationFilter(filterstr='investoruser__tags', lookup_method='in')
+    userstatus = RelationFilter(filterstr='investoruser__userstatus', lookup_method='in')
+    currency = RelationFilter(filterstr='investoruser__org__currency', lookup_method='in')
+    orgtransactionphases = RelationFilter(filterstr='investoruser__org__orgtransactionphase', lookup_method='in',
+                                          relationName='investoruser__org__org_orgTransactionPhases__is_deleted')
     orgs = RelationFilter(filterstr='investoruser__org',lookup_method='in', relationName='investoruser__org__is_deleted')
     class Meta:
         model = UserRelation
-        fields = ('investoruser', 'traderuser', 'relationtype','orgs')
+        fields = ('investoruser', 'traderuser', 'relationtype','orgs','familiar', 'tags', 'userstatus', 'currency', 'orgtransactionphases')
 
 class UserRelationView(viewsets.ModelViewSet):
     """
