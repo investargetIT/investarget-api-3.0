@@ -34,7 +34,7 @@ class ProjectData(Document):
     com_fund_needs_name = StringField(null=True) #融资需求
     com_des = StringField(null=True)   #公司介绍
     invse_total_money = StringField(null=True)  #融资总额
-    com_addr = StringField(default='其他')   #公司所在地
+    com_addr = StringField(null=True, default='其他')   #公司所在地
     mobile = StringField(null=True)  # 公司联系方式
     email = StringField(null=True)  # 公司邮箱
     detailaddress = StringField(null=True)  # 公司地址
@@ -50,6 +50,8 @@ class ProjectData(Document):
         if self.pk is None:
             if len(ProjectData.objects.filter(com_id=self.com_id)) > 0:
                 raise InvestError(8001,msg='数据重复')
+        if not self.com_addr:
+            self.com_addr = '其他'
         super(ProjectData,self).save(force_insert,validate,clean,write_concern,cascade,cascade_kwargs,_refs,save_condition,signal_kwargs,**kwargs)
 
 class MergeFinanceData(Document):
@@ -60,13 +62,13 @@ class MergeFinanceData(Document):
     currency= StringField(null=True)    #货币类型
     com_cat_name = StringField(null=True) #行业
     com_sub_cat_name = StringField(null=True)  # 子行业
-    com_addr = StringField(default='其他')  # 公司所在地
+    com_addr = StringField(null=True, default='其他')  # 公司所在地
     money = StringField(null=True)  #金额
     date = StringField(null=True)  #日期
 
     invsest_with = ListField(null=True)  # 投资方
     invse_id = IntField(null=True)  # 投资事件id
-    round = StringField(default='不明确')   #公司融资轮次
+    round = StringField(null=True, default='不明确')   #公司融资轮次
 
     merger_equity_ratio = StringField(null=True)  #股权比例
     merger_with = StringField(null=True)   #并购方名称
@@ -80,6 +82,8 @@ class MergeFinanceData(Document):
     def save(self, force_insert=False, validate=True, clean=True,
              write_concern=None, cascade=None, cascade_kwargs=None,
              _refs=None, save_condition=None, signal_kwargs=None, **kwargs):
+        if not self.com_addr:
+            self.com_addr = '其他'
         super(MergeFinanceData,self).save(force_insert,validate,clean,write_concern,cascade,cascade_kwargs,_refs,save_condition,signal_kwargs,**kwargs)
 
 
