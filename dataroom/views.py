@@ -222,18 +222,23 @@ class DataroomView(viewsets.ModelViewSet):
             instance = self.get_object()
             deleteExpireDir(APILOG_PATH['dataroomFilePath'])
             dataroominstance = self.get_object()
-            userid = request.GET.get('user', request.user.id)
+            userid = int(request.GET.get('user', request.user.id))
             if userid != request.user.id:
-                if request.user.has_perm('dataroom.admin_changedataroom') or request.user.has_perm('dataroom.admin_adddataroom') or request.user_id in [dataroominstance.proj.takeUser_id, dataroominstance.proj.makeUser_id]:
+                if request.user.has_perm('dataroom.admin_getdataroom') or request.user.id in [dataroominstance.proj.takeUser_id, dataroominstance.proj.makeUser_id]:
                     file_qs = dataroom_User_file.objects.get(dataroom=dataroominstance, user_id=userid).files.all()
                 else:
                     raise InvestError(2009, msg='非管理员权限')
             else:
-                if request.user.has_perm('dataroom.admin_changedataroom') or request.user.has_perm('dataroom.admin_adddataroom') or request.user_id in [dataroominstance.proj.takeUser_id, dataroominstance.proj.makeUser_id]:
+                if request.user.has_perm('dataroom.admin_getdataroom') or request.user.id in [dataroominstance.proj.takeUser_id, dataroominstance.proj.makeUser_id]:
                     file_qs = instance.dataroom_directories.all().filter(is_deleted=False, isFile=True)
                 else:
-                    file_qs = dataroom_User_file.objects.get(dataroom=dataroominstance,user_id=userid).files.all()
-            if file_qs.count() == 0:
+                    if dataroom_User_file.objects.filter(dataroom=dataroominstance, trader_id=userid, is_deleted=False).exists():
+                        file_qs = instance.dataroom_directories.all().filter(is_deleted=False, isFile=True)
+                    elif dataroom_User_file.objects.filter(dataroom=dataroominstance, user_id=userid, is_deleted=False).exists():
+                        file_qs = dataroom_User_file.objects.get(dataroom=dataroominstance, user_id=userid, is_deleted=False).files.all()
+                    else:
+                        raise InvestError(2009, msg='没有权限查看该dataroom')
+            if not file_qs.exists():
                 raise InvestError(20071, msg='当前dataroom没有可见文件')
             path = 'dataroom_%s%s' % (dataroominstance.id, ('_%s' % userid) if userid else '') + '.zip'
             rootpath = APILOG_PATH['dataroomFilePath'] + '/' + path

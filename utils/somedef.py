@@ -115,7 +115,7 @@ def create_watermark(waterpath, watermarkcontent):
 def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
     try:
         if len(pdfpaths) == 0:
-            return 
+            return
         watermarkpath = pdfpaths[0].split('.')[0] + '-water' + '.pdf'
         watermark = create_watermark(watermarkpath, watermarkcontent)
     except Exception:
