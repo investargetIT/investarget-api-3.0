@@ -755,7 +755,7 @@ class UserAttachmentFilter(FilterSet):
     user = RelationFilter(filterstr='user', lookup_method='in')
 
     class Meta:
-        model = MyUser
+        model = userAttachments
         fields = ('user',)
 
 class UserAttachmentView(viewsets.ModelViewSet):
