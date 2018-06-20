@@ -73,15 +73,13 @@ class OrgBDSerializer(serializers.ModelSerializer):
     userreamrk = serializers.SerializerMethodField()
     userattachment = serializers.SerializerMethodField()
     manager = UserCommenSerializer()
-    wechat = serializers.SerializerMethodField()
-    email = serializers.SerializerMethodField()
     useinfo = serializers.SerializerMethodField()
     createuser = UserCommenSerializer()
     makeUser = serializers.SerializerMethodField()
 
     class Meta:
         model = OrgBD
-        exclude = ('deleteduser', 'deletedtime', 'datasource', 'is_deleted')
+        exclude = ('deleteduser', 'deletedtime', 'datasource', 'is_deleted', 'usermobile')
 
     def get_BDComments(self, obj):
         qs = obj.OrgBD_comments.filter(is_deleted=False)
@@ -117,8 +115,14 @@ class OrgBDSerializer(serializers.ModelSerializer):
 
     def get_useinfo(self, obj):
         if obj.bduser:
-            return UserCommenSerializer(obj.bduser).data
-        return None
+            if not obj.bduser.investor_relations.all().filter(familiar__score__gte=1).exists():
+                info = {
+                    'email': obj.bduser.email,
+                    'mobile': obj.bduser.mobile,
+                    'wechat': obj.bduser.wechat,
+                }
+                return info
+        return {'email': None, 'mobile': None, 'wechat': None,}
 
     def get_makeUser(self, obj):
         if obj.proj:

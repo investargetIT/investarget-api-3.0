@@ -396,11 +396,8 @@ class OrgBDView(viewsets.ModelViewSet):
             page_size = request.GET.get('page_size', 10)
             page_index = request.GET.get('page_index', 1)
             queryset = self.filter_queryset(self.get_queryset())
-            if request.user.has_perm('BD.manageOrgBD'):
+            if request.user.has_perm('BD.manageOrgBD') or request.user.has_perm('BD.user_getOrgBD'):
                 pass
-            elif request.user.has_perm('BD.user_getOrgBD'):
-                queryset = queryset.filter(Q(manager=request.user) | Q(createuser=request.user) | Q(
-                    proj__in=request.user.usertake_projs.all()) | Q(proj__in=request.user.usermake_projs.all()))
             else:
                 raise InvestError(2009)
             queryset = queryset.values('org','proj').annotate(orgcount=Count('org'),projcount=Count('proj')).order_by('org')
@@ -424,10 +421,8 @@ class OrgBDView(viewsets.ModelViewSet):
             page_index = request.GET.get('page_index', 1)
             lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
-            if request.user.has_perm('BD.manageOrgBD'):
+            if request.user.has_perm('BD.manageOrgBD') or request.user.has_perm('BD.user_getOrgBD'):
                 pass
-            elif request.user.has_perm('BD.user_getOrgBD'):
-                queryset = queryset.filter(Q(manager=request.user) | Q(createuser=request.user) | Q(proj__in=request.user.usertake_projs.all()) | Q(proj__in=request.user.usermake_projs.all()))
             else:
                 raise InvestError(2009)
             countres = queryset.values_list('manager').annotate(Count('manager'))
