@@ -8,7 +8,8 @@ from emailmanage.views import getAllProjectsNeedToSendMail, sendEmailToUser
 from msg.models import schedule
 from third.views.huanxin import downloadChatMessages
 from timeline.models import timelineTransationStatu
-from utils.sendMessage import sendmessage_schedulemsg, sendmessage_timelinealertcycleexpire
+from utils.sendMessage import sendmessage_schedulemsg, sendmessage_timelinealertcycleexpire, \
+    sendmessage_orgBDExpireMessage
 
 
 def task1_loadsendmailproj():
@@ -35,6 +36,7 @@ def task4_sendAllExpiredMsg():
         def run(self):
             sendExpiredScheduleMsg()
             sendExpiredTimelineMsg()
+            sendExpiredOrgBDMsg()
     task4_Thread().start()
 
 
@@ -92,6 +94,5 @@ def sendExpiredOrgBDMsg():
                                                             expirationtime__day=datetime.datetime.now().day)
     if OrgBD_qs.exists():
         for instance in OrgBD_qs:
-            pass
-            # sendmessage_timelinealertcycleexpire(instance, receiver=instance.createuser,
-            #                         types=['app', 'wenmsg'])
+            sendmessage_orgBDExpireMessage(instance, receiver=instance.createuser,
+                                    types=['app', 'wenmsg'])
