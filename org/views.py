@@ -137,7 +137,6 @@ class OrganizationView(viewsets.ModelViewSet):
     def checkOrgUserContactInfoTruth(self, org, datasource):
         user_qs = org.org_users.all().filter(is_deleted=False, datasource=datasource)
         count = user_qs.filter(Q(mobile__regex=r'^[1](3[0-9]|47|5[0-9]|8[0-9])[0-9]{8}$')).count()
-        print count
         return count
 
 

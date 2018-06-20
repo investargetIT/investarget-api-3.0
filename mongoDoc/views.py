@@ -266,6 +266,11 @@ class ProjectDataView(viewsets.ModelViewSet):
                     queryset = queryset.filter(Q(com_addr__nin=ChinaList) | Q(com_addr__in=com_addr))
                 else:
                     queryset = queryset(Q(com_addr__in=com_addr))
+            sortfield = request.GET.get('sort')
+            if sortfield:
+                queryset = queryset.order_by(sortfield)
+            else:
+                queryset = queryset.order_by('-id')
             count = queryset.count()
             try:
                 queryset = Paginator(queryset, page_size)
@@ -296,6 +301,8 @@ class ProjectDataView(viewsets.ModelViewSet):
             sortfield = request.GET.get('sort')
             if sortfield:
                 queryset = queryset.order_by(sortfield)
+            else:
+                queryset = queryset.order_by('-id')
             count = queryset.count()
             if count == 0:
                 if request.GET.get('com_name', None):
