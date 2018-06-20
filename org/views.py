@@ -110,9 +110,12 @@ class OrganizationView(viewsets.ModelViewSet):
             responselist = []
             for instance in queryset:
                 actionlist = {'get': False, 'change': False, 'delete': False}
+                user_count = 0
                 if request.user.is_anonymous:
                     pass
                 else:
+                    if instance.orglevel == 1:
+                        user_count = self.checkOrgUserContactInfoTruth(instance, request.user.datasource)
                     if request.user.has_perm('org.admin_getorg') or request.user.has_perm('org.user_getorg',instance):
                         actionlist['get'] = True
                     if request.user.has_perm('org.admin_changeorg') or request.user.has_perm('org.user_changeorg',instance):
@@ -121,6 +124,7 @@ class OrganizationView(viewsets.ModelViewSet):
                         actionlist['delete'] = True
                 instancedata = serializerclass(instance).data
                 instancedata['action'] = actionlist
+                instancedata['user_count'] = user_count
                 responselist.append(instancedata)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(responselist,lang)}))
         except InvestError as err:
@@ -128,6 +132,13 @@ class OrganizationView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    def checkOrgUserContactInfoTruth(self, org, datasource):
+        user_qs = org.org_users.all().filter(is_deleted=False, datasource=datasource)
+        count = user_qs.filter(Q(mobile__regex=r'^[1](3[0-9]|47|5[0-9]|8[0-9])[0-9]{8}$')).count()
+        return count
+
 
     @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
