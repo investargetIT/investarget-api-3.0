@@ -73,7 +73,7 @@ class OrgBDSerializer(serializers.ModelSerializer):
     userreamrk = serializers.SerializerMethodField()
     userattachment = serializers.SerializerMethodField()
     manager = UserCommenSerializer()
-    useinfo = serializers.SerializerMethodField()
+    userinfo = serializers.SerializerMethodField()
     createuser = UserCommenSerializer()
     makeUser = serializers.SerializerMethodField()
 
@@ -113,7 +113,7 @@ class OrgBDSerializer(serializers.ModelSerializer):
             return obj.bduser.email
         return None
 
-    def get_useinfo(self, obj):
+    def get_userinfo(self, obj):
         if obj.bduser:
             if not obj.bduser.investor_relations.all().filter(familiar__score__gte=1).exists():
                 info = {
