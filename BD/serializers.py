@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework import serializers
 
 from BD.models import ProjectBDComments, ProjectBD, OrgBDComments, OrgBD, MeetingBD
@@ -114,15 +115,20 @@ class OrgBDSerializer(serializers.ModelSerializer):
         return None
 
     def get_userinfo(self, obj):
+        user_id = self.context.get("user_id")
+        info = {'email': None, 'mobile': None, 'wechat': None}
         if obj.bduser:
-            if not obj.bduser.investor_relations.all().filter(familiar__score__gte=1).exists():
-                info = {
-                    'email': obj.bduser.email,
-                    'mobile': obj.bduser.mobile,
-                    'wechat': obj.bduser.wechat,
-                }
-                return info
-        return {'email': None, 'mobile': None, 'wechat': None,}
+            if user_id:
+                filterset = Q(familiar__score__gte=1) | Q(traderuser_id=user_id)
+            else:
+                filterset = Q(familiar__score__gte=1)
+            if not obj.bduser.investor_relations.all().filter(filterset).exists():
+                    info = {
+                        'email': obj.bduser.email,
+                        'mobile': obj.bduser.mobile,
+                        'wechat': obj.bduser.wechat,
+                    }
+        return info
 
     def get_makeUser(self, obj):
         if obj.proj:

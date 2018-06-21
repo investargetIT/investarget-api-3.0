@@ -440,7 +440,7 @@ class OrgBDView(viewsets.ModelViewSet):
                 queryset = queryset.page(page_index)
             except EmptyPage:
                 return JSONResponse(SuccessResponse({'count': 0, 'data': [], 'manager_count':countlist}))
-            serializer = OrgBDSerializer(queryset, many=True)
+            serializer = OrgBDSerializer(queryset, many=True, context={'user_id': request.user.id})
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang), 'manager_count':countlist}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -506,7 +506,7 @@ class OrgBDView(viewsets.ModelViewSet):
                 if request.user != neworgBD.manager:
                     sendmessage_orgBDMessage(neworgBD, receiver=neworgBD.manager, types=['app', 'webmsg', 'sms'], sender=request.user)
                 cache_delete_key(self.redis_key)
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgBDSerializer(neworgBD).data,lang)))
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgBDSerializer(neworgBD, context={'user_id': request.user.id}).data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -524,7 +524,7 @@ class OrgBDView(viewsets.ModelViewSet):
                 pass
             else:
                 raise InvestError(2009)
-            serializer = self.serializer_class(instance)
+            serializer = self.serializer_class(instance, context={'user_id': request.user.id})
             return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -561,7 +561,7 @@ class OrgBDView(viewsets.ModelViewSet):
                     raise InvestError(5004, msg='机构BD修改失败——%s' % orgBD.error_messages)
                 cache_delete_key(self.redis_key)
                 return JSONResponse(
-                    SuccessResponse(returnDictChangeToLanguage(OrgBDSerializer(neworgBD).data, lang)))
+                    SuccessResponse(returnDictChangeToLanguage(OrgBDSerializer(neworgBD, context={'user_id': request.user.id}).data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
