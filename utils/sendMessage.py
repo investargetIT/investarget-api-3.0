@@ -708,7 +708,7 @@ def sendmessage_orgBDMessage(model,receiver,types,sender=None):
             if self.receiver.country:
                 if self.receiver.country.areaCode not in ['86', u'86', None, '', u'']:
                     lang = 'en'
-            msgdic = MESSAGE_DICT['timelinealertcycleexpire']
+            msgdic = MESSAGE_DICT['orgBDMessage']
             title = msgdic['title_%s' % lang]
             content = msgdic['content_%s' % lang]
             messagetype = msgdic['messagetype']

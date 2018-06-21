@@ -126,7 +126,7 @@ MESSAGE_DICT = {
     'orgBDMessage':{
         'sms_sign': "M2d4Q3",
         'email_sign': None,
-        'title_cn': "机构BD",
+        'title_cn': "机构BD任务",
         'title_en': "Schedule due",
         'content_cn': "您有一个新的机构BD任务",
         'content_en': "You have a new BD due of organization today",
