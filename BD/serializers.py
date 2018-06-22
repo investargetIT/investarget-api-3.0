@@ -116,11 +116,14 @@ class OrgBDSerializer(serializers.ModelSerializer):
                 info['photourl'] = getUrlWithBucketAndKey('image', obj.bduser.photoKey)
             if obj.bduser.photoKey:
                 info['cardurl'] = getUrlWithBucketAndKey('image', obj.bduser.cardKey)
+            relation_qs = obj.bduser.investor_relations.all()
             if user_id:
-                filterset = Q(familiar__score__gte=1) | ~Q(traderuser_id=user_id)
+                if (not relation_qs.filter(familiar__score__gte=1).exists()) or relation_qs.filter(traderuser_id=user_id).exists():
+                    info['email'] = obj.bduser.email
+                    info['mobile'] = obj.bduser.mobile
+                    info['wechat'] = obj.bduser.wechat
             else:
-                filterset = Q(familiar__score__gte=1)
-            if not obj.bduser.investor_relations.all().filter(filterset).exists():
+                if (not relation_qs.filter(familiar__score__gte=1).exists()):
                     info['email'] = obj.bduser.email
                     info['mobile'] = obj.bduser.mobile
                     info['wechat'] = obj.bduser.wechat
