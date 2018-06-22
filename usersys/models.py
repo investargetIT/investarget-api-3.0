@@ -361,7 +361,6 @@ class UserRelation(MyModel):
     investoruser = MyForeignKey(MyUser, related_name='investor_relations', blank=True, help_text=('作为投资人'))
     traderuser = MyForeignKey(MyUser, related_name='trader_relations', blank=True, help_text=('作为交易师'))
     relationtype = models.BooleanField(help_text='强弱关系', default=False, blank=True)
-    score = models.SmallIntegerField(help_text='交易师评分', default=0, blank=True)
     familiar = MyForeignKey(FamiliarLevel, help_text='交易师熟悉度等级', default=99, blank=True)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_relations')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_relations')
