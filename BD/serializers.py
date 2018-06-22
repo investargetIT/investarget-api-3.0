@@ -115,7 +115,7 @@ class OrgBDSerializer(serializers.ModelSerializer):
             if obj.bduser.photoKey:
                 info['photourl'] = getUrlWithBucketAndKey('image', obj.bduser.photoKey)
             if obj.bduser.photoKey:
-                info['cardurl'] = getUrlWithBucketAndKey('image', obj.bduser.cardurl)
+                info['cardurl'] = getUrlWithBucketAndKey('image', obj.bduser.cardKey)
             if user_id:
                 filterset = Q(familiar__score__gte=1) | ~Q(traderuser_id=user_id)
             else:
