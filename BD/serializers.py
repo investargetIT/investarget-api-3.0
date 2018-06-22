@@ -7,7 +7,8 @@ from proj.serializer import ProjSimpleSerializer
 from sourcetype.serializer import BDStatusSerializer, orgAreaSerializer, tagSerializer
 from sourcetype.serializer import titleTypeSerializer
 from third.views.qiniufile import getUrlWithBucketAndKey
-from usersys.serializer import UserCommenSerializer, UserRemarkSimpleSerializer, UserAttachmentSerializer
+from usersys.serializer import UserCommenSerializer, UserRemarkSimpleSerializer, UserAttachmentSerializer, \
+    UserSimpleSerializer
 
 
 class ProjectBDCommentsCreateSerializer(serializers.ModelSerializer):
@@ -73,9 +74,9 @@ class OrgBDSerializer(serializers.ModelSerializer):
     cardurl = serializers.SerializerMethodField()
     userreamrk = serializers.SerializerMethodField()
     userattachment = serializers.SerializerMethodField()
-    manager = UserCommenSerializer()
+    manager = UserSimpleSerializer()
     userinfo = serializers.SerializerMethodField()
-    createuser = UserCommenSerializer()
+    createuser = UserSimpleSerializer()
     makeUser = serializers.SerializerMethodField()
 
     class Meta:
@@ -106,15 +107,17 @@ class OrgBDSerializer(serializers.ModelSerializer):
 
     def get_userinfo(self, obj):
         user_id = self.context.get("user_id")
-        info = {'email': None, 'mobile': None, 'wechat': None, 'tags':None, 'photourl': None}
+        info = {'email': None, 'mobile': None, 'wechat': None, 'tags':None, 'photourl': None, 'cardurl': None}
         if obj.bduser:
             tags = obj.bduser.tags.filter(tag_usertags__is_deleted=False)
             if tags.exists():
                 info['tags'] = tagSerializer(tags, many=True).data
             if obj.bduser.photoKey:
                 info['photourl'] = getUrlWithBucketAndKey('image', obj.bduser.photoKey)
+            if obj.bduser.photoKey:
+                info['cardurl'] = getUrlWithBucketAndKey('image', obj.bduser.cardurl)
             if user_id:
-                filterset = Q(familiar__score__gte=1) | Q(traderuser_id=user_id)
+                filterset = Q(familiar__score__gte=1) | ~Q(traderuser_id=user_id)
             else:
                 filterset = Q(familiar__score__gte=1)
             if not obj.bduser.investor_relations.all().filter(filterset).exists():
