@@ -122,7 +122,7 @@ class OrgBDSerializer(serializers.ModelSerializer):
             if tags.exists():
                 info['tags'] = tagSerializer(tags, many=True).data
             if obj.bduser.photoKey:
-                info['photourl'] = getUrlWithBucketAndKey('image', obj.photoKey)
+                info['photourl'] = getUrlWithBucketAndKey('image', obj.bduser.photoKey)
             if user_id:
                 filterset = Q(familiar__score__gte=1) | Q(traderuser_id=user_id)
             else:
