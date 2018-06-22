@@ -104,16 +104,6 @@ class OrgBDSerializer(serializers.ModelSerializer):
             return UserAttachmentSerializer(obj.bduser.user_userAttachments.all(), many=True).data
         return None
 
-    def get_wechat(self, obj):
-        if obj.bduser:
-            return obj.bduser.wechat
-        return None
-
-    def get_email(self, obj):
-        if obj.bduser:
-            return obj.bduser.email
-        return None
-
     def get_userinfo(self, obj):
         user_id = self.context.get("user_id")
         info = {'email': None, 'mobile': None, 'wechat': None, 'tags':None, 'photourl': None}
@@ -128,11 +118,9 @@ class OrgBDSerializer(serializers.ModelSerializer):
             else:
                 filterset = Q(familiar__score__gte=1)
             if not obj.bduser.investor_relations.all().filter(filterset).exists():
-                    info = {
-                        'email': obj.bduser.email,
-                        'mobile': obj.bduser.mobile,
-                        'wechat': obj.bduser.wechat,
-                    }
+                    info['email'] = obj.bduser.email
+                    info['mobile'] = obj.bduser.mobile
+                    info['wechat'] = obj.bduser.wechat
         return info
 
     def get_makeUser(self, obj):
