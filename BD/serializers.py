@@ -4,7 +4,7 @@ from rest_framework import serializers
 from BD.models import ProjectBDComments, ProjectBD, OrgBDComments, OrgBD, MeetingBD
 from org.serializer import OrgCommonSerializer
 from proj.serializer import ProjSimpleSerializer
-from sourcetype.serializer import BDStatusSerializer, orgAreaSerializer
+from sourcetype.serializer import BDStatusSerializer, orgAreaSerializer, tagSerializer
 from sourcetype.serializer import titleTypeSerializer
 from third.views.qiniufile import getUrlWithBucketAndKey
 from usersys.serializer import UserCommenSerializer, UserRemarkSimpleSerializer, UserAttachmentSerializer
@@ -116,8 +116,13 @@ class OrgBDSerializer(serializers.ModelSerializer):
 
     def get_userinfo(self, obj):
         user_id = self.context.get("user_id")
-        info = {'email': None, 'mobile': None, 'wechat': None}
+        info = {'email': None, 'mobile': None, 'wechat': None, 'tags':None, 'photourl': None}
         if obj.bduser:
+            tags = obj.bduser.tags.filter(tag_usertags__is_deleted=False)
+            if tags.exists():
+                info['tags'] = tagSerializer(tags, many=True).data
+            if obj.bduser.photoKey:
+                info['photourl'] = getUrlWithBucketAndKey('image', obj.photoKey)
             if user_id:
                 filterset = Q(familiar__score__gte=1) | Q(traderuser_id=user_id)
             else:
