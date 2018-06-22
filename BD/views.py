@@ -321,6 +321,34 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable(['BD.manageProjectBD'])
+    def update(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            if request.user.has_perm('BD.manageProjectBD'):
+                pass
+            elif request.user.id == instance.createuser_id:
+                pass
+            else:
+                raise InvestError(2009)
+            lang = request.GET.get('lang')
+            data = request.data
+            with transaction.atomic():
+                commentinstance = ProjectBDCommentsCreateSerializer(instance, data=data)
+                if commentinstance.is_valid():
+                    newcommentinstance = commentinstance.save()
+                else:
+                    raise InvestError(4009, msg='修改项目BDcomments失败--%s' % commentinstance.error_messages)
+                return JSONResponse(SuccessResponse(
+                    returnDictChangeToLanguage(ProjectBDCommentsSerializer(newcommentinstance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+
+    @loginTokenIsAvailable(['BD.manageProjectBD'])
     def destroy(self, request, *args, **kwargs):
         try:
             instance = self.get_object()

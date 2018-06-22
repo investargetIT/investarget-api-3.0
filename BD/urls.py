@@ -19,6 +19,7 @@ projdbcomment_list = views.ProjectBDCommentsView.as_view({
         'post': 'create'
 })
 projbdcomment_detail = views.ProjectBDCommentsView.as_view({
+        'put': 'update',
         'delete': 'destroy'
 })
 orgbd_baselist = views.OrgBDView.as_view({
