@@ -116,7 +116,7 @@ class OrgBDSerializer(serializers.ModelSerializer):
                 info['photourl'] = getUrlWithBucketAndKey('image', obj.bduser.photoKey)
             if obj.bduser.photoKey:
                 info['cardurl'] = getUrlWithBucketAndKey('image', obj.bduser.cardKey)
-            relation_qs = obj.bduser.investor_relations.all()
+            relation_qs = obj.bduser.investor_relations.all().filter(is_deleted=False)
             if user_id:
                 if (not relation_qs.filter(familiar__score__gte=1).exists()) or relation_qs.filter(traderuser_id=user_id).exists():
                     info['email'] = obj.bduser.email
