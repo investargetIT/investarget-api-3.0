@@ -598,9 +598,10 @@ class ProjectView(viewsets.ModelViewSet):
             if not aaa:
                 raise InvestError(2007,msg='生成项目pdf失败')
             if proj.country_id == 42 and proj.currency_id == 1:
-                amount_field, currency, currencytype = 'financeAmount_USD', '$', 'USD'
-            else:
                 amount_field, currency, currencytype = 'financeAmount', '￥', 'CNY'
+            else:
+                amount_field, currency, currencytype = 'financeAmount_USD', '$', 'USD'
+
             f = open(APILOG_PATH['wxgroupsendpdf'] + '/projdesc.txt', 'a')
             content = {proj.projtitleC.split('：')[0]: '本周项目自动推送：%s%s' % (proj.projtitleC.split('：')[-1],
                                        ('，拟交易规模：%s%s %s' % (currency, '{:,}'.format(getattr(proj,amount_field)) if getattr(proj,amount_field) else 'N/A', currencytype)))}
