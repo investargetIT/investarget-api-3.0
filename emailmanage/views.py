@@ -100,10 +100,13 @@ def sendEmailToUser():
             datasource = data['datasource']
             emailgroupsendlist_qs = emailgroupsendlist.objects.filter(proj=projdata['id'])
             for user in userlist:
-                if emailgroupsendlist_qs.filter(user=user['id']).exists():
-                    pass
-                else:
-                    sendProjEmailToUser(projdata, user, datasource)
+                try:
+                    if emailgroupsendlist_qs.filter(user=user['id']).exists():
+                        pass
+                    else:
+                        sendProjEmailToUser(projdata, user, datasource)
+                except Exception:
+                    logexcption()
         except Exception:
             logexcption()
 

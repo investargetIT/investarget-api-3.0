@@ -18,9 +18,10 @@ from org.models import organization
 from sourcetype.views import getmenulist
 from third.models import MobileAuthCode
 from third.views.huanxin import registHuanXinIMWithUser, deleteHuanXinIMWithUser
+from third.views.weixinlogin import get_openid
 from timeline.models import timeline
 from usersys.models import MyUser, UserRelation, userTags, UserFriendship, MyToken, UnreachUser, UserRemarks, \
-    userAttachments, userEvents
+    userAttachments, userEvents, UserContrastThirdAccount
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
     CreatUserSerializer , UserCommenSerializer , UserRelationCreateSerializer, UserFriendshipSerializer, \
     UserFriendshipDetailSerializer, UserFriendshipUpdateSerializer, GroupSerializer, GroupDetailSerializer, GroupCreateSerializer, PermissionSerializer, \
@@ -1779,6 +1780,7 @@ def login(request):
         clienttype = request.META.get('HTTP_CLIENTTYPE')
         username = receive['account']
         password = receive['password']
+        wxcode = receive.get('wxid', None)
         source = request.META.get('HTTP_SOURCE')
         if source:
             datasource = DataSource.objects.filter(id=source, is_deleted=False)
@@ -1788,14 +1790,33 @@ def login(request):
                 raise InvestError(code=8888)
         else:
             raise InvestError(code=8888, msg='unavailable source')
-        if not username or not password or not userdatasource:
-            raise InvestError(code=20071,msg='参数不全')
-        user = auth.authenticate(username=username, password=password, datasource=userdatasource)
-        if not user or not clienttype:
-            if not clienttype:
-                raise InvestError(code=2003,msg='登录类型不可用')
-            else:
-                raise InvestError(code=2001,msg='密码错误')
+        if username and password:
+            user = auth.authenticate(username=username, password=password, datasource=userdatasource)
+            if not user or not clienttype:
+                if not clienttype:
+                    raise InvestError(code=2003,msg='登录类型不可用')
+                else:
+                    raise InvestError(code=2001,msg='密码错误')
+            if wxcode:
+                openid = get_openid(wxcode)
+                if openid:
+                    try:
+                        UserContrastThirdAccount.objects.get(wexinsmallapp=openid, user=user)
+                    except UserContrastThirdAccount.DoesNotExist:
+                        UserContrastThirdAccount(wexinsmallapp=openid, user=user).save()
+        else:
+            user = None
+            if wxcode:
+                openid = get_openid(wxcode)
+                if openid:
+                    try:
+                        thirdaccount = UserContrastThirdAccount.objects.get(wexinsmallapp=openid)
+                    except UserContrastThirdAccount.DoesNotExist:
+                        raise InvestError(2009, msg='用户未绑定账号')
+                    else:
+                        user = thirdaccount.user
+            if not user:
+                raise InvestError(2009, msg='登录无效')
         user.last_login = datetime.datetime.now()
         if not user.is_active:
             user.is_active = True

@@ -168,6 +168,8 @@ class MyUser(AbstractBaseUser, PermissionsMixin,MyModel):
             if self.country.datasource != self.datasource_id:
                 raise InvestError(8888)
         try:
+            if not self.mobileAreaCode:
+                self.mobileAreaCode = '86'
             if not self.email and not self.mobile:
                 raise InvestError(code=2007)
             if not self.mobile.isdigit():
@@ -449,7 +451,12 @@ class UserRelation(MyModel):
 
         )
 
+class UserContrastThirdAccount(MyModel):
+    user = MyForeignKey(MyUser, blank=True, on_delete=CASCADE)
+    wexinsmallapp = models.CharField(max_length=64, blank=True, null=True, unique=True, help_text='用户openid')
 
+    class Meta:
+        db_table = "user_contrastaccount"
 
 class UserFriendship(MyModel):
     id = models.AutoField(primary_key=True)
