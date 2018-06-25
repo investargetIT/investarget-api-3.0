@@ -320,7 +320,7 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['BD.manageProjectBD'])
+    @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
@@ -348,7 +348,7 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
 
 
 
-    @loginTokenIsAvailable(['BD.manageProjectBD'])
+    @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
@@ -708,7 +708,7 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
-    @loginTokenIsAvailable(['BD.manageOrgBD'])
+    @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
