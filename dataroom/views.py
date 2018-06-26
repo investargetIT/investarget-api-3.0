@@ -272,7 +272,7 @@ class DataroomView(viewsets.ModelViewSet):
             dataroominstance = self.get_object()
             if not user.has_perm('dataroom.downloadDataroom'):
                 raise InvestError(2009)
-            if userid != user.id:
+            if int(userid) != user.id:
                 if user.has_perm('dataroom.admin_changedataroom') or user.has_perm('dataroom.admin_adddataroom'):
                     pass
                 elif user.id in [dataroominstance.proj.takeUser_id,dataroominstance.proj.makeUser_id]:
