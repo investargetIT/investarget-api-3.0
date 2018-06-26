@@ -117,7 +117,7 @@ class OrgBD(MyModel):
             self.usermobile = self.bduser.mobile
             self.usertitle = self.bduser.title
         self.datasource = self.manager.datasource_id
-        if not self.manager.onjob:
+        if not self.manager.onjob and not self.pk:
             raise InvestError(2024)
         if self.bduser and not self.is_deleted:
             if self.pk:

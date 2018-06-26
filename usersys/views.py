@@ -1801,9 +1801,12 @@ def login(request):
                 openid = get_openid(wxcode)
                 if openid:
                     try:
-                        UserContrastThirdAccount.objects.get(wexinsmallapp=openid, user=user)
+                        thirdaccount = UserContrastThirdAccount.objects.get(wexinsmallapp=openid)
                     except UserContrastThirdAccount.DoesNotExist:
                         UserContrastThirdAccount(wexinsmallapp=openid, user=user).save()
+                    else:
+                        if thirdaccount.user.id != user.id:
+                            raise InvestError(2048, msg='该微信号已绑定过其他账号')
         else:
             user = None
             if wxcode:

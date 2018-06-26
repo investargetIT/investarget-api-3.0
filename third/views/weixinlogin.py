@@ -17,8 +17,13 @@ def get_openid(code):
             openid = res.get('openid')
             if openid:
                 return openid
+            errcode = res.get('errcode')
+            if errcode == 40163:
+                raise InvestError(2050)
+    except InvestError:
+        raise InvestError(2050, msg='code失效')
     except Exception:
-        raise InvestError(2007, msg='获取openid失败')
+        raise InvestError(2049, msg='获取openid失败')
     else:
         return None
 
