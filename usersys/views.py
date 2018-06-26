@@ -1846,8 +1846,7 @@ def login(request):
 def maketoken(user,clienttype):
     tokens = MyToken.objects.filter(user=user, clienttype_id=clienttype, is_deleted=False)
     if tokens.exists():
-        if clienttype not in [5, u'5']:
-            tokens.update(is_deleted=True)
+        tokens.update(is_deleted=True)
     token = MyToken.objects.create(user=user, clienttype_id=clienttype)
     serializer = UserSerializer(user)
     response = serializer.data
