@@ -108,8 +108,6 @@ class timelineTransationStatu(MyModel):
         if not self.is_deleted and self.isActive:
             if self.alertCycle:
                 self.inDate = datetime.datetime.now() + datetime.timedelta(hours=self.alertCycle * 24)
-        if not UserRelation.objects.filter(investoruser=self.timeline.investor,traderuser=self.timeline.trader,is_deleted=False,score__gt=self.transationStatus.id).exists():
-            UserRelation.objects.filter(investoruser=self.timeline.investor, traderuser=self.timeline.trader, is_deleted=False).update(score=self.transationStatus.id)
         super(timelineTransationStatu, self).save(force_insert, force_update, using, update_fields)
 
 class timelineremark(MyModel):
