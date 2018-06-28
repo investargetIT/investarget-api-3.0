@@ -4,7 +4,7 @@ from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction
 from django.db.models import Q, Count
 from django.db.models import QuerySet
-from django.shortcuts import render
+from django.shortcuts import render, render_to_response
 from django_filters import FilterSet
 import datetime
 
@@ -953,7 +953,7 @@ def testBDEmail(request):
                                           expirationtime__month=(datetime.datetime.now() + datetime.timedelta(days=2)).month,
                                           expirationtime__day=(datetime.datetime.now() + datetime.timedelta(days=2)).day)
     if lang == 'cn':
-        res = render(request, 'OrgBDMail_template_cn.html', orgBD_qs)
+        res = render_to_response('OrgBDMail_template_cn.html', orgBD_qs)
     else:
-        res = render(request, 'OrgBDMail_template_en.html', orgBD_qs)
+        res = render_to_response('OrgBDMail_template_en.html', orgBD_qs)
     return res
