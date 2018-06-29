@@ -32,6 +32,21 @@ class OrgTransactionPhaseSerializer(serializers.ModelSerializer):
         fields = ('transactionPhase', 'is_deleted')
 
 
+class OrgListSerializer(serializers.ModelSerializer):
+    orgtransactionphase = serializers.SerializerMethodField()
+
+    class Meta:
+        model = organization
+        depth = 1
+        exclude = ('datasource', 'createuser', 'createdtime', 'is_deleted', 'deleteduser', 'deletedtime', 'lastmodifyuser', 'lastmodifytime',)
+
+    def get_orgtransactionphase(self, obj):
+        usertrader = obj.orgtransactionphase.filter(transactionPhase_orgs__is_deleted=False)
+        if usertrader.exists():
+            return transactionPhasesSerializer(usertrader, many=True).data
+        return None
+
+
 class OrgDetailSerializer(serializers.ModelSerializer):
     orgtransactionphase = serializers.SerializerMethodField()
     tags = serializers.SerializerMethodField()
@@ -47,7 +62,7 @@ class OrgDetailSerializer(serializers.ModelSerializer):
             for user in obj.org_users.all():
                 taglist.append(user.tags.all())
         taglist.append(obj.tags.all())
-        tags = reduce(lambda x,y:x|y,taglist).distinct()
+        tags = reduce(lambda x,y:x|y, taglist).distinct()
         return tagSerializer(tags, many=True).data
 
 
