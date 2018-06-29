@@ -2,7 +2,7 @@
 from rest_framework import serializers
 from org.models import organization, orgRemarks, orgTransactionPhase, orgBuyout, orgContact, orgInvestEvent, \
     orgCooperativeRelationship, orgManageFund
-from sourcetype.serializer import transactionPhasesSerializer
+from sourcetype.serializer import transactionPhasesSerializer, tagSerializer
 
 
 class OrgCommonSerializer(serializers.ModelSerializer):
@@ -34,11 +34,23 @@ class OrgTransactionPhaseSerializer(serializers.ModelSerializer):
 
 class OrgDetailSerializer(serializers.ModelSerializer):
     orgtransactionphase = serializers.SerializerMethodField()
+    tags = serializers.SerializerMethodField()
 
     class Meta:
         model = organization
         depth = 1
         exclude = ('datasource', 'createuser', 'createdtime', 'is_deleted', 'deleteduser', 'deletedtime', 'lastmodifyuser', 'lastmodifytime',)
+
+    def get_tags(self, obj):
+        taglist = []
+        if obj.org_users.all().exists():
+            for user in obj.org_users.all():
+                taglist.append(user.tags.all())
+        taglist.append(obj.tags.all())
+        tags = reduce(lambda x,y:x|y,taglist).distinct()
+        return tagSerializer(tags, many=True).data
+
+
 
     def get_orgtransactionphase(self, obj):
         usertrader = obj.orgtransactionphase.filter(transactionPhase_orgs__is_deleted=False)
