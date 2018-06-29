@@ -1,12 +1,16 @@
 #coding=utf-8
+import threading
 import traceback
 import datetime
+
+import xlwt
 from django.core.paginator import Paginator, EmptyPage
 from django.db.models import Q, FieldDoesNotExist, Max
 # Create your views here.
 from django.db.models import QuerySet
 from rest_framework import filters , viewsets
 
+from mongoDoc.models import ProjectData, MergeFinanceData
 from org.models import organization, orgTransactionPhase, orgRemarks, orgContact, orgBuyout, orgManageFund, orgInvestEvent, orgCooperativeRelationship, \
     orgTags
 from org.serializer import OrgCommonSerializer, OrgDetailSerializer, OrgRemarkDetailSerializer, OrgCreateSerializer,\
@@ -40,7 +44,7 @@ class OrganizationFilter(FilterSet):
     trader = RelationFilter(filterstr='org_users__investor_relations__traderuser',lookup_method='in',relationName='org_users__investor_relations__is_deleted')
     class Meta:
         model = organization
-        fields = ['orgname','orgstatus','currencys','industrys','orgtransactionphases','orgtypes','area','trader','stockcode','stockshortname','issub','investoverseasproject', 'ids', 'lv']
+        fields = ['orgname', 'orgfullname', 'orgstatus','currencys','industrys','orgtransactionphases','orgtypes','area','trader','stockcode','stockshortname','issub','investoverseasproject', 'ids', 'lv']
 
 class OrganizationView(viewsets.ModelViewSet):
     """
@@ -971,23 +975,6 @@ class OrgInvestEventView(viewsets.ModelViewSet):
                 instance.deletedtime = datetime.datetime.now()
                 instance.save()
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data,lang)))
-        except InvestError as err:
-            return JSONResponse(InvestErrorResponse(err))
-        except Exception:
-            catchexcption(request)
-            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
-    @loginTokenIsAvailable()
-    def deleteInvest(self, request, *args, **kwargs):
-        try:
-            if request.user.is_superuser:
-                orgid = request.GET.get('org')
-                day = request.GET.get('day', 10)
-                if isinstance(day, (unicode, str)):
-                    day = int(day)
-                orginstance = organization.objects.get(id=orgid)
-                self.queryset.filter(org=orginstance, is_deleted=False, createdtime__lt=(datetime.datetime.now() - datetime.timedelta(days=day))).update(**{'is_deleted': True,'deletedtime':datetime.datetime.now()})
-            return JSONResponse(SuccessResponse({'a':'b'}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
