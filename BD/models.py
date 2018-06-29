@@ -128,6 +128,8 @@ class OrgBD(MyModel):
                                            datasource=self.datasource, bduser=self.bduser, manager=self.manager)
             if bds.exists():
                 raise InvestError(5006, msg='该用户已存在一条BD记录了')
+        if self.response:
+            self.isSolved = True
         if self.is_deleted is False:
             if self.proj:
                 if self.proj.projstatus < 4:
