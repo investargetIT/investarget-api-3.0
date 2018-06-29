@@ -134,7 +134,7 @@ MESSAGE_DICT = {
     },
     'orgBdExpire':{
         'sms_sign': None,
-        'email_sign': None,
+        'email_sign': '8gPeo',
         'title_cn': "机构BD过期提醒",
         'title_en': "Schedule due",
         'content_cn': "您有一个机构BD任务即将过期",

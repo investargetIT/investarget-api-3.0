@@ -3,7 +3,10 @@ import threading
 
 import datetime
 
+from django.db.models import Count
+
 from BD.models import OrgBD
+from BD.views import sendExpiredOrgBDEmail
 from emailmanage.views import getAllProjectsNeedToSendMail, sendEmailToUser
 from msg.models import schedule
 from third.views.huanxin import downloadChatMessages
@@ -36,7 +39,7 @@ def task4_sendAllExpiredMsg():
         def run(self):
             sendExpiredScheduleMsg()
             sendExpiredTimelineMsg()
-            sendExpiredOrgBDMsg()
+            sendExpiredOrgBDEmail()
     task4_Thread().start()
 
 
@@ -85,14 +88,4 @@ def sendExpiredTimelineMsg():
     if timelineTransationStatu_qs.exists():
         for instance in timelineTransationStatu_qs:
             sendmessage_timelinealertcycleexpire(instance, receiver=instance.createuser,
-                                    types=['app', 'wenmsg'])
-
-def sendExpiredOrgBDMsg():
-    OrgBD_qs = OrgBD.objects.all().filter(is_deleted=False, isSolved=False,
-                                                            expirationtime__year=datetime.datetime.now().year,
-                                                            expirationtime__month=datetime.datetime.now().month,
-                                                            expirationtime__day=datetime.datetime.now().day)
-    if OrgBD_qs.exists():
-        for instance in OrgBD_qs:
-            sendmessage_orgBDExpireMessage(instance, receiver=instance.createuser,
                                     types=['app', 'wenmsg'])

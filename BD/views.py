@@ -1,10 +1,11 @@
 #coding=utf8
+import threading
 import traceback
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction
 from django.db.models import Q, Count
 from django.db.models import QuerySet
-from django.shortcuts import render, render_to_response
+from django.shortcuts import render_to_response
 from django_filters import FilterSet
 import datetime
 
@@ -16,10 +17,11 @@ from BD.models import ProjectBD, ProjectBDComments, OrgBDComments, OrgBD, Meetin
 from BD.serializers import ProjectBDSerializer, ProjectBDCreateSerializer, ProjectBDCommentsCreateSerializer, \
     ProjectBDCommentsSerializer, OrgBDCommentsSerializer, OrgBDCommentsCreateSerializer, OrgBDCreateSerializer, \
     OrgBDSerializer, MeetingBDSerializer, MeetingBDCreateSerializer
+from invest.settings import cli_domain
 from proj.models import project
 from third.views.qiniufile import deleteqiniufile
 from utils.customClass import RelationFilter, InvestError, JSONResponse
-from utils.sendMessage import sendmessage_orgBDMessage
+from utils.sendMessage import sendmessage_orgBDMessage, sendmessage_orgBDExpireMessage
 from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
     returnListChangeToLanguage, catchexcption, returnDictChangeToLanguage, mySortQuery, add_perm, rem_perm, \
     read_from_cache, write_to_cache, cache_delete_key
@@ -377,12 +379,14 @@ class OrgBDFilter(FilterSet):
     org = RelationFilter(filterstr='org', lookup_method='in')
     response = RelationFilter(filterstr='response', lookup_method='in')
     proj = RelationFilter(filterstr='proj', lookup_method='in')
+    isSolved = RelationFilter(filterstr='isSolved')
+    isimportant = RelationFilter(filterstr='isimportant')
     bd_status = RelationFilter(filterstr='bd_status', lookup_method='in')
     stime = RelationFilter(filterstr='createdtime', lookup_method='gt')
     etime = RelationFilter(filterstr='createdtime', lookup_method='lt')
     class Meta:
         model = OrgBD
-        fields = ('manager','bd_status','org','proj','stime','etime', 'response')
+        fields = ('manager', 'bd_status', 'org', 'proj', 'stime', 'etime', 'response', 'isimportant', 'isSolved')
 
 
 class OrgBDView(viewsets.ModelViewSet):
@@ -946,14 +950,30 @@ class MeetingBDView(viewsets.ModelViewSet):
 
 
 
-def testBDEmail(request):
-    lang = request.GET.get('lang', 'cn')
-    orgBD_qs = OrgBD.objects.all().filter(is_deleted=False, isSolved=False,
-                                          expirationtime__year=(datetime.datetime.now() + datetime.timedelta(days=2)).year,
-                                          expirationtime__month=(datetime.datetime.now() + datetime.timedelta(days=2)).month,
-                                          expirationtime__day=(datetime.datetime.now() + datetime.timedelta(days=2)).day)
-    if lang == 'cn':
-        res = render_to_response('OrgBDMail_template_cn.html', orgBD_qs)
-    else:
-        res = render_to_response('OrgBDMail_template_en.html', orgBD_qs)
-    return res
+def sendExpiredOrgBDEmail():
+    orgBD_qs = OrgBD.objects.all().filter(is_deleted=False, isSolved=False, expirationtime__gte=datetime.datetime.now(), expirationtime__lte=datetime.datetime.now() + datetime.timedelta(days=2))
+    managers = orgBD_qs.values_list('manager').annotate(Count('manager'))
+    for manager in managers:
+        manager_id = manager[0]
+        managerbd_qs = orgBD_qs.filter(manager_id=manager_id)
+        receiver = managerbd_qs.first().manager
+        projs = managerbd_qs.values_list('proj').annotate(Count('proj')).order_by('-proj')
+        projlist = []
+        for proj in projs:
+            projorglist = []
+            proj_id = proj[0]
+            managerprojbd_qs = managerbd_qs.filter(proj_id=proj_id)
+            orgs = managerprojbd_qs.values_list('org').annotate(Count('org'))
+            for org in orgs:
+                org_id = org[0]
+                managerprojorgbd_qs = managerprojbd_qs.filter(org_id=org_id)
+                projorgtask = OrgBDSerializer(managerprojorgbd_qs, many=True).data
+                if len(projorgtask) > 0:
+                    projorgtask[0]['orgspan'] = len(projorgtask)
+                projorglist.extend(projorgtask)
+            if len(projorglist) > 0:
+                projorglist[0]['projspan'] = len(projorglist)
+            projlist.extend(projorglist)
+        aaa = {'orgbd_qs': projlist, 'cli_domain' : cli_domain}
+        html = render_to_response('OrgBDMail_template_cn.html', aaa).content
+        sendmessage_orgBDExpireMessage(receiver, ['email'], html)
