@@ -79,6 +79,8 @@ class organization(MyModel):
             ('user_changeorg', '用户修改机构(obj级别)'),
             ('user_deleteorg', '用户删除机构(obj级别)'),
             ('user_getorg', '用户查看机构（obj级别）'),
+
+            ('export_org', '导出机构Excel'),
         )
 
     def activeTransactionPhase(self):
