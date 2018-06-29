@@ -49,21 +49,21 @@ class OrgListSerializer(serializers.ModelSerializer):
 
 class OrgDetailSerializer(serializers.ModelSerializer):
     orgtransactionphase = serializers.SerializerMethodField()
-    tags = serializers.SerializerMethodField()
+    # tags = serializers.SerializerMethodField()
 
     class Meta:
         model = organization
         depth = 1
         exclude = ('datasource', 'createuser', 'createdtime', 'is_deleted', 'deleteduser', 'deletedtime', 'lastmodifyuser', 'lastmodifytime',)
 
-    def get_tags(self, obj):
-        taglist = []
-        if obj.org_users.all().exists():
-            for user in obj.org_users.all():
-                taglist.append(user.tags.all())
-        taglist.append(obj.tags.all())
-        tags = reduce(lambda x,y:x|y, taglist).distinct()
-        return tagSerializer(tags, many=True).data
+    # def get_tags(self, obj):
+    #     taglist = []
+    #     if obj.org_users.all().exists():
+    #         for user in obj.org_users.all():
+    #             taglist.append(user.tags.all())
+    #     taglist.append(obj.tags.all())
+    #     tags = reduce(lambda x,y:x|y, taglist).distinct()
+    #     return tagSerializer(tags, many=True).data
 
 
 
