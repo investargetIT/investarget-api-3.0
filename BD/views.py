@@ -528,6 +528,12 @@ class OrgBDView(viewsets.ModelViewSet):
                 if orgBD.is_valid():
                     neworgBD = orgBD.save()
                     if neworgBD.manager:
+                        if request.user != neworgBD.manager:
+                            today = datetime.date.today()
+                            if len(self.queryset.filter(createdtime__year=today.year, createdtime__month=today.month,
+                                                        createdtime__day=today.day, manager_id=neworgBD.manager)) == 1:
+                                sendmessage_orgBDMessage(neworgBD, receiver=neworgBD.manager,
+                                                         types=['app', 'webmsg', 'sms'], sender=request.user)
                         add_perm('BD.user_manageOrgBD', neworgBD.manager, neworgBD)
                 else:
                     raise InvestError(5004,msg='机构BD创建失败——%s'%orgBD.error_messages)
@@ -536,8 +542,6 @@ class OrgBDView(viewsets.ModelViewSet):
                     commentinstance = OrgBDCommentsCreateSerializer(data=data)
                     if commentinstance.is_valid():
                         commentinstance.save()
-                if request.user != neworgBD.manager:
-                    sendmessage_orgBDMessage(neworgBD, receiver=neworgBD.manager, types=['app', 'webmsg', 'sms'], sender=request.user)
                 cache_delete_key(self.redis_key)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgBDSerializer(neworgBD, context={'user_id': request.user.id}).data,lang)))
         except InvestError as err:
@@ -586,10 +590,14 @@ class OrgBDView(viewsets.ModelViewSet):
                     neworgBD = orgBD.save()
                     oldmanager_id = data.get('manager', None)
                     if oldmanager_id and oldmanager_id != oldmanager.id:
+                        if request.user != neworgBD.manager:
+                            today = datetime.date.today()
+                            if len(self.queryset.filter(createdtime__year=today.year, createdtime__month=today.month,
+                                                        createdtime__day=today.day, manager_id=neworgBD.manager)) == 1:
+                                sendmessage_orgBDMessage(neworgBD, receiver=neworgBD.manager,
+                                                         types=['app', 'webmsg', 'sms'], sender=request.user)
                         add_perm('BD.user_manageOrgBD', neworgBD.manager, neworgBD)
                         rem_perm('BD.user_manageOrgBD', oldmanager, neworgBD)
-                        if request.user != neworgBD.manager:
-                            sendmessage_orgBDMessage(neworgBD, receiver=neworgBD.manager, types=['app', 'wenmsg', 'sms'], sender=request.user)
                 else:
                     raise InvestError(5004, msg='机构BD修改失败——%s' % orgBD.error_messages)
                 cache_delete_key(self.redis_key)
