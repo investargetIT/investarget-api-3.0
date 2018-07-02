@@ -951,7 +951,11 @@ class MeetingBDView(viewsets.ModelViewSet):
 
 
 def sendExpiredOrgBDEmail():
-    orgBD_qs = OrgBD.objects.all().filter(is_deleted=False, isSolved=False, expirationtime__gte=datetime.datetime.now(), expirationtime__lte=datetime.datetime.now() + datetime.timedelta(days=2))
+    expireday = datetime.datetime.now() + datetime.timedelta(days=2)
+    orgBD_qs = OrgBD.objects.all().filter(is_deleted=False, isSolved=False,
+                                          expirationtime__year=expireday.year,
+                                          expirationtime__month=expireday.month,
+                                          expirationtime__day=expireday.day)
     managers = orgBD_qs.values_list('manager').annotate(Count('manager'))
     for manager in managers:
         manager_id = manager[0]
