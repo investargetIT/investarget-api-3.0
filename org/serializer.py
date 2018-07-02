@@ -49,17 +49,11 @@ class OrgListSerializer(serializers.ModelSerializer):
 
 class OrgDetailSerializer(serializers.ModelSerializer):
     orgtransactionphase = serializers.SerializerMethodField()
-    tags = serializers.SerializerMethodField()
 
     class Meta:
         model = organization
         depth = 1
         exclude = ('datasource', 'createuser', 'createdtime', 'is_deleted', 'deleteduser', 'deletedtime', 'lastmodifyuser', 'lastmodifytime',)
-
-    def get_tags(self, obj):
-        return obj.alltags()
-
-
 
     def get_orgtransactionphase(self, obj):
         usertrader = obj.orgtransactionphase.filter(transactionPhase_orgs__is_deleted=False)
