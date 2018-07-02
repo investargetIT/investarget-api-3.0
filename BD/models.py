@@ -60,7 +60,7 @@ class ProjectBD(MyModel):
         if not self.source:
             if self.source_type == 0:
                 self.sourcee = '全库搜索'
-        if not self.manager.onjob:
+        if not self.manager.onjob and not self.is_deleted:
             raise InvestError(2024)
         return super(ProjectBD, self).save(*args, **kwargs)
 
@@ -117,7 +117,7 @@ class OrgBD(MyModel):
             self.usermobile = self.bduser.mobile
             self.usertitle = self.bduser.title
         self.datasource = self.manager.datasource_id
-        if not self.manager.onjob and not self.pk:
+        if not self.manager.onjob and not self.is_deleted:
             raise InvestError(2024)
         if self.bduser and not self.is_deleted:
             if self.pk:
@@ -192,7 +192,7 @@ class MeetingBD(MyModel):
     def save(self, *args, **kwargs):
         if self.manager is None:
             raise InvestError(2007, msg='manager can`t be null')
-        if not self.manager.onjob:
+        if not self.manager.onjob and not self.is_deleted:
             raise InvestError(2024)
         if self.bduser:
             self.username = self.bduser.usernameC
