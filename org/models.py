@@ -1,7 +1,7 @@
 #coding=utf-8
 from __future__ import unicode_literals
 
-from django.db import models
+from django.db import models, connection
 import sys
 
 from django.db.models import Q
@@ -83,10 +83,21 @@ class organization(MyModel):
             ('export_org', '导出机构Excel'),
         )
 
-    def activeTransactionPhase(self):
-        qs = self.orgtransactionphase.filter(transactionPhase_orgs__is_deleted=False)
-        qs = qs.filter(is_deleted=False)
-        return qs
+    def alltags(self):
+        cursor = connection.cursor()
+        sql = 'SELECT id, nameC, nameE, hotpoint FROM sourcetype_tag WHERE id IN ' \
+              '(SELECT user_tags.tag_id FROM org INNER JOIN user ON user.org_id = org.id INNER JOIN user_tags ON user.id = user_tags.user_id WHERE org.is_deleted = 0 AND user_tags.is_deleted = 0 AND user.is_deleted = 0 AND  org.id = %s) ' \
+              'OR id IN (SELECT tag_id FROM org_tags WHERE org_tags.is_deleted = 0 AND org_id = %s)' % (self.id, self.id)
+        cursor.execute(sql)
+        rawData = cursor.fetchall()
+        col_names = [desc[0] for desc in cursor.description]
+        result = []
+        for row in rawData:
+            objDict = {}
+            for index, value in enumerate(row):
+                objDict[col_names[index]] = value
+            result.append(objDict)
+        return result
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
