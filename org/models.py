@@ -165,8 +165,8 @@ class orgManageFund(MyModel):
     fund = MyForeignKey(organization,null=True,blank=True,related_name='fund_fundManager')
     type = models.CharField(max_length=64,null=True,blank=True,help_text='基金类型')
     fundsource = models.CharField(max_length=64, null=True, blank=True, help_text='资本来源')
-    fundraisedate = models.DateTimeField(null=True, blank=True, help_text='募集完成时间')
-    fundsize = models.CharField(max_length=32, null=True, blank=True, help_text='募集完成规模')
+    fundraisedate = models.DateTimeField(null=True, blank=True, help_text='募集时间')
+    fundsize = models.CharField(max_length=32, null=True, blank=True, help_text='募集规模')
     deleteduser = MyForeignKey(MyUser, blank=True, null=True,related_name='userdelete_orgmanagefund')
     createuser = MyForeignKey(MyUser, blank=True, null=True,related_name='usercreate_orgmanagefund')
 

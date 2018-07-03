@@ -556,6 +556,8 @@ class AndroidAppVersionView(viewsets.ModelViewSet):
 def getmenulist(user):
     qslist = []
     allmenuobj = webmenu.objects.all()
+    if user.has_perm('dataroom.onlydataroom') and not user.is_superuser:
+        return WebMenuSerializer(allmenuobj.filter(id__in=[6,30]),many=True).data
     if user.has_perm('usersys.admin_getuser'):
         qslist.append(allmenuobj.filter(id__in=[5]))
     if user.has_perm('usersys.as_investor') and not user.is_superuser:

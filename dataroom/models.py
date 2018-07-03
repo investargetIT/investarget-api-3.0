@@ -43,6 +43,7 @@ class dataroom(MyModel):
             ('user_adddataroomfile', '用户上传dataroom文件'),
             ('user_deletedataroomfile', '用户删除dataroom文件'),
 
+            ('onlydataroom', '单独查看dataroom权限'),
             ('get_companydataroom', '查看公司dataroom')
         )
 
