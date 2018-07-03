@@ -177,6 +177,12 @@ class orgManageFund(MyModel):
              update_fields=None):
         if not self.org or not self.fund:
             raise InvestError(code=2007,msg='机构/基金不能为空')
+        if self.pk:
+            if orgManageFund.objects.exclude(pk=self.pk).filter(is_deleted=False,fund=self.fund, org=self.org).exists():
+                raise InvestError(code=5007,msg='相同管理基金已存在，无法修改')
+        else:
+            if orgManageFund.objects.filter(is_deleted=False,fund=self.fund, org=self.org).exists():
+                raise InvestError(code=5007,msg='相同管理基金已存在，无法新增')
         super(orgManageFund,self).save(force_insert,force_update,using,update_fields)
 
 
