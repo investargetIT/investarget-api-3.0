@@ -1204,7 +1204,7 @@ class UserRelationView(viewsets.ModelViewSet):
             raise InvestError(code=8890)
         return queryset
 
-    @loginTokenIsAvailable(['usersys.admin_getuserrelation','usersys.user_getuserrelationlist'])
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size', 10)

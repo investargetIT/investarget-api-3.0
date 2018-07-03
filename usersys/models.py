@@ -447,7 +447,6 @@ class UserRelation(MyModel):
             ('user_changeuserrelation', u'用户改用户联系（obj级别）'),
             ('user_deleteuserrelation', u'用户删除用户联系（obj级别）'),
             ('user_getuserrelation', u'用户查看用户联系（obj级别）'),
-            ('user_getuserrelationlist', u'用户查看用户联系列表'),
 
         )
 
