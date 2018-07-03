@@ -202,15 +202,17 @@ class UserView(viewsets.ModelViewSet):
                     raise InvestError(code=20041)
                 if self.queryset.filter(email=email,datasource=userdatasource).exists():
                     raise InvestError(code=20042)
-                type = data.pop('type',None)
-                if type in ['trader', u'trader']:
-                    groupname = '初级交易师'
-                else:
-                    groupname = '初级投资人'
-                if not groupname:
-                    raise InvestError(code=2007,msg='type cannot be null')
                 try:
-                    group = Group.objects.get(name=groupname,datasource=userdatasource)
+                    groupname = None
+                    type = data.pop('type', None)
+                    if type in ['trader', u'trader']:
+                        groupname = '初级交易师'
+                    elif type in ['investor', u'investor']:
+                        groupname = '初级投资人'
+                    if groupname:
+                        group = Group.objects.get(name=groupname,datasource=userdatasource)
+                    else:
+                        group = Group.objects.get(id=type, datasource=userdatasource)
                 except Exception:
                     raise InvestError(code=2007,msg='type bust be an available name')
                 data['groups'] = [group.id]
