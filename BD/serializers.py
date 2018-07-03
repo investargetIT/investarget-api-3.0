@@ -118,12 +118,7 @@ class OrgBDSerializer(serializers.ModelSerializer):
                 info['cardurl'] = getUrlWithBucketAndKey('image', obj.bduser.cardKey)
             relation_qs = obj.bduser.investor_relations.all().filter(is_deleted=False)
             if user_id:
-                if (not relation_qs.filter(familiar__score__gte=1).exists()) or relation_qs.filter(traderuser_id=user_id).exists():
-                    info['email'] = obj.bduser.email
-                    info['mobile'] = obj.bduser.mobile
-                    info['wechat'] = obj.bduser.wechat
-            else:
-                if (not relation_qs.filter(familiar__score__gte=1).exists()):
+                if obj.manager.id == user_id or relation_qs.filter(traderuser_id=user_id).exists():
                     info['email'] = obj.bduser.email
                     info['mobile'] = obj.bduser.mobile
                     info['wechat'] = obj.bduser.wechat
