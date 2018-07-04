@@ -802,7 +802,7 @@ class OrgManageFundView(viewsets.ModelViewSet):
                 raise InvestError(2007, msg='机构不能为空')
             else:
                 orginstace = self.get_org(orgid)
-            queryset = self.filter_queryset(self.get_queryset())
+            queryset = self.filter_queryset(self.get_queryset()).order_by('-fundraisedate')
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
