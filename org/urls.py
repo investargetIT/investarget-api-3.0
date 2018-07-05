@@ -17,10 +17,10 @@ org_detail = views.OrganizationView.as_view({
 
 
 
-# org_excel = views.OrganizationView.as_view({
-#         'get': 'getExcel',
-#
-# })
+org_excel = views.OrganizationView.as_view({
+        'get': 'downExcel',
+        'post': 'makeExcel'
+})
 
 org_remarklist = views.OrgRemarkView.as_view({
         'get': 'list',
@@ -117,6 +117,6 @@ urlpatterns = [
         url(r'^cooprelation/(?P<pk>\d+)/$', org_cooprelationdetail,name='org_cooprelation-detail'),
         url(r'^buyout/$', org_buyoutlist,name='org_buyout-list'),
         url(r'^buyout/(?P<pk>\d+)/$', org_buyoutdetail,name='org_buyout-detail'),
-        # url(r'^excel/$', org_excel,name='org_excel-detail'),
+        url(r'^excel/$', org_excel,name='org_excel-detail'),
 
 ]

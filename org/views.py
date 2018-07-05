@@ -1,4 +1,5 @@
 #coding=utf-8
+import os
 import threading
 import traceback
 import datetime
@@ -8,8 +9,10 @@ from django.core.paginator import Paginator, EmptyPage
 from django.db.models import Q, FieldDoesNotExist, Max
 # Create your views here.
 from django.db.models import QuerySet
+from django.http import StreamingHttpResponse
 from rest_framework import filters , viewsets
 
+from invest.settings import APILOG_PATH
 from mongoDoc.models import ProjectData, MergeFinanceData
 from org.models import organization, orgTransactionPhase, orgRemarks, orgContact, orgBuyout, orgManageFund, orgInvestEvent, orgCooperativeRelationship, \
     orgTags
@@ -19,6 +22,7 @@ from org.serializer import OrgCommonSerializer, OrgDetailSerializer, OrgRemarkDe
     OrgInvestEventSerializer, OrgManageFundSerializer, OrgCooperativeRelationshipSerializer, OrgListSerializer
 from sourcetype.models import TransactionPhases, TagContrastTable
 from utils.customClass import InvestError, JSONResponse, RelationFilter, MySearchFilter
+from utils.somedef import file_iterator
 from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser, add_perm, \
     cache_delete_key, mySortQuery
@@ -319,112 +323,147 @@ class OrganizationView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    # @loginTokenIsAvailable(['org.export_org'])
-    # def getExcel(self, request, *args, **kwargs):
-    #     orglist = request.GET.get('org','').split(',')
-    #     self.makeExportOrgExcel(orglist)
-    #     return JSONResponse(SuccessResponse({}))
-    #
-    # def makeExportOrgExcel(self, orgidlist):
-    #     # 获取数据
-    #     org_qs = self.queryset.filter(id__in=orgidlist)
-    #     path = ''
-    #     class downloadAllDataroomFile(threading.Thread):
-    #         def __init__(self, org_qs, path):
-    #             self.org_qs = org_qs
-    #             self.path = path
-    #             threading.Thread.__init__(self)
-    #
-    #         def run(self):
-    #             wb = xlwt.Workbook(encoding='utf-8')
-    #             style = xlwt.XFStyle()  # 初始化样式
-    #             style.font.height = 20 * 14
-    #             style.alignment.horz = xlwt.Alignment.HORZ_CENTER
-    #             style.alignment.vert = xlwt.Alignment.VERT_CENTER
-    #             style.alignment.wrap = xlwt.Alignment.WRAP_AT_RIGHT
-    #             ws_org = wb.add_sheet('机构列表', cell_overwrite_ok=True)
-    #             ws_org.write(0, 0, '机构全称', style)
-    #             ws_org.write(0, 1, '描述', style)
-    #             ws_org.col(1).width = 256 * 50
-    #             ws_org.write(0, 2, '合伙人/投委会成员', style)
-    #             ws_org.write(0, 3, '标签', style)
-    #             ws_org.write(0, 4, '投资事件', style)
-    #             ws_org.col(4).width = 256 * 120
-    #             ws_org_hang = 1
-    #
-    #             for org in org_qs:
-    #                 # taglist = []
-    #                 # if org.org_users.all().exists():
-    #                 #     for user in org.org_users.all():
-    #                 #         taglist.append(user.tags.all())
-    #                 # taglist.append(org.tags.all())
-    #                 # tags = reduce(lambda x, y: x | y, taglist).distinct()
-    #                 tags = org.tags.all()
-    #                 tagnamelist = []
-    #                 for tag in tags:
-    #                     tagnamelist.append(tag.nameC)
-    #                 tagstr = '、'.join(tagnamelist)
-    #                 investevents = org.org_orgInvestEvent.all().filter(is_deleted=False)
-    #                 event_list = []
-    #                 com_list = []
-    #                 for event in investevents:
-    #                     com_list.append(event.com_id)
-    #                     event_list.append('项目名称：%s, 行业：%s , 投资日期：%s , 投资轮次：%s, 投资金额：%s' %
-    #                                       (event.comshortname, event.industrytype , str(event.investDate)[:10], event.investType if event.investType else '暂无', event.investSize if event.investSize else '暂无'))
-    #                 eventstr = '\n\r'.join(event_list)
-    #                 ws_org.write(ws_org_hang, 0, str(org.orgfullname), style)  # 全称
-    #                 ws_org.write(ws_org_hang, 1, str(org.description) if org.description else '暂无', style)  # 描述
-    #                 ws_org.write(ws_org_hang, 2, str(org.partnerOrInvestmentCommiterMember) if org.partnerOrInvestmentCommiterMember else '暂无', style)  # 合伙人/投委会
-    #                 ws_org.write(ws_org_hang, 3, tagstr if len(tagstr) > 0 else '暂无', style)  # 标签
-    #                 ws_org.write(ws_org_hang, 4, eventstr if len(eventstr) > 0 else '暂无', style)    #投资事件
-    #
-    #                 com_list = ProjectData.objects.filter(com_id__in=com_list)
-    #                 if len(com_list) > 0:
-    #                     com_sheet = wb.add_sheet(org.orgfullname, cell_overwrite_ok=True)
-    #                     com_sheet.write(0, 0, '全称', style)
-    #                     com_sheet.write(0, 1, '简介', style)
-    #                     com_sheet.write(0, 2, '网址', style)
-    #                     com_sheet.write(0, 3, '电话', style)
-    #                     com_sheet.write(0, 4, '邮箱', style)
-    #                     com_sheet.write(0, 5, '地址', style)
-    #                     com_sheet.write(0, 6, '融资历史', style)
-    #                     com_sheet.col(0).width = 256 * 20
-    #                     com_sheet.col(1).width = 256 * 50
-    #                     com_sheet.col(2).width = 256 * 20
-    #                     com_sheet.col(3).width = 256 * 20
-    #                     com_sheet.col(4).width = 256 * 20
-    #                     com_sheet.col(5).width = 256 * 10
-    #                     com_sheet.col(6).width = 256 * 80
-    #                     ws_com_hang = 1
-    #                     for com in com_list:
-    #                         com_events = MergeFinanceData.objects.filter(com_id=com.com_id)
-    #                         com_event_list = []
-    #                         for com_event in com_events:
-    #                             if com_event.investormerge == 1:
-    #                                 invest_with_list = []
-    #                                 if hasattr(com_event.invsest_with, '__iter__'):
-    #                                     for invesdic in com_event.invsest_with:
-    #                                         if isinstance(invesdic, dict):
-    #                                             invest_with_list.append(invesdic.get('invst_name'))
-    #                                         if isinstance(invesdic, unicode):
-    #                                             invest_with_list.append(invesdic)
-    #                                 invest_with_str = ','.join(invest_with_list)
-    #                             else:
-    #                                 invest_with_str = com_event.merger_with
-    #                             com_event_list.append('轮次：%s, 行业：%s->%s , 日期：%s , 投资方：%s, 投资金额：%s' % (com_event.round, com_event.com_sub_cat_name, com_event.com_cat_name, com_event.date, invest_with_str,com_event.money))
-    #                         com_eventstr = '\n\r'.join(com_event_list)
-    #                         com_sheet.write(ws_com_hang, 0, str(com.com_name), style)  # 全称
-    #                         com_sheet.write(ws_com_hang, 1, str(com.com_des) if com.com_des else '暂无', style)  # 简介
-    #                         com_sheet.write(ws_com_hang, 2, str(com.com_web) if com.com_web else '暂无', style)  # 网址
-    #                         com_sheet.write(ws_com_hang, 3, str(com.mobile) if com.mobile else '暂无', style)  # 电话
-    #                         com_sheet.write(ws_com_hang, 4, str(com.email) if com.email else '暂无', style)  # 邮箱
-    #                         com_sheet.write(ws_com_hang, 5, str(com.com_addr) if com.com_addr else '暂无', style)  # 地址
-    #                         com_sheet.write(ws_com_hang, 6, com_eventstr if len(com_eventstr) > 0 else '暂无', style)  # 融资历史
-    #                         ws_com_hang += 1
-    #                 ws_org_hang += 1
-    #             wb.save('/Users/investarget/Desktop/django_server/test.xls')
-    #     d = downloadAllDataroomFile(org_qs, path)
-    #     d.start()
+    @loginTokenIsAvailable(['org.export_org'])
+    def makeExcel(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            orglist = data.get('org')
+            if len(orglist) > 0:
+                path = str(datetime.date.today()) + '.xls'
+                self.makeExportOrgExcel(orglist, path, request.user.id)
+            else:
+                raise InvestError(2007, msg='机构为空')
+            return JSONResponse(SuccessResponse({'path': path}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable(['org.export_org'])
+    def downExcel(self, request, *args, **kwargs):
+        try:
+            path = request.GET.get('path')
+            fullpath = APILOG_PATH['orgExportPath'] + '%s/' % request.user.id + path
+            if os.path.exists(fullpath):
+                fn = open(fullpath, 'rb')
+                response = StreamingHttpResponse(file_iterator(fn))
+                response['Content-Type'] = 'application/octet-stream'
+                response["content-disposition"] = 'attachment;filename=%s' % path
+                # os.remove(fullpath)
+            else:
+                response = JSONResponse(SuccessResponse({'code':8002, 'msg': '文件不存在'}))
+            return response
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    def makeExportOrgExcel(self, orgidlist, path, user_id):
+        # 获取数据
+        org_qs = self.queryset.filter(id__in=orgidlist)
+        class downloadAllDataroomFile(threading.Thread):
+
+            def run(self):
+                dirpath = APILOG_PATH['orgExportPath'] + '%s/' % user_id
+                fullpath = dirpath + path
+                if not os.path.exists(dirpath):
+                    os.makedirs(dirpath)
+                if os.path.exists(fullpath):
+                    os.remove(fullpath)
+                wb = xlwt.Workbook(encoding='utf-8')
+                style = xlwt.XFStyle()  # 初始化样式
+                style.font.height = 20 * 14
+                style.alignment.horz = xlwt.Alignment.HORZ_CENTER
+                style.alignment.vert = xlwt.Alignment.VERT_CENTER
+                style.alignment.wrap = xlwt.Alignment.WRAP_AT_RIGHT
+                ws_org = wb.add_sheet('机构列表', cell_overwrite_ok=True)
+                ws_org.write(0, 0, '机构全称', style)
+                ws_org.write(0, 1, '描述', style)
+                ws_org.col(1).width = 256 * 50
+                ws_org.write(0, 2, '合伙人/投委会成员', style)
+                ws_org.write(0, 3, '标签', style)
+                ws_org.write(0, 4, '投资事件', style)
+                ws_org.col(4).width = 256 * 120
+                ws_org_hang = 1
+
+                for org in org_qs:
+                    tags = org.tags.all()
+                    tagnamelist = []
+                    for tag in tags:
+                        tagnamelist.append(tag.nameC)
+                    tagstr = '、'.join(tagnamelist)
+                    investevents = org.org_orgInvestEvent.all().filter(is_deleted=False)
+                    event_list = []
+                    com_list = []
+                    for event in investevents:
+                        com_list.append(event.com_id)
+                        if len(event_list) < 30:  #最多写入30条投资历史
+                            event_list.append('项目名称：%s, 行业：%s , 投资日期：%s , 投资轮次：%s, 投资金额：%s' %
+                                              (event.comshortname, event.industrytype , str(event.investDate)[:10], event.investType if event.investType else '暂无', event.investSize if event.investSize else '暂无'))
+                    eventstr = '\n\r'.join(event_list)
+                    if len(eventstr) > 30000:
+                        eventstr = eventstr[:30000] + '......'
+                    ws_org.write(ws_org_hang, 0, str(org.orgfullname), style)  # 全称
+                    ws_org.write(ws_org_hang, 1, str(org.description) if org.description else '暂无', style)  # 描述
+                    ws_org.write(ws_org_hang, 2, str(org.partnerOrInvestmentCommiterMember) if org.partnerOrInvestmentCommiterMember else '暂无', style)  # 合伙人/投委会
+                    ws_org.write(ws_org_hang, 3, tagstr if len(tagstr) > 0 else '暂无', style)  # 标签
+                    ws_org.write(ws_org_hang, 4, eventstr if len(eventstr) > 0 else '暂无', style)    #投资事件
+
+                    com_list = ProjectData.objects.filter(com_id__in=com_list)
+                    if len(com_list) > 0:
+                        com_sheet = wb.add_sheet(org.orgfullname, cell_overwrite_ok=True)
+                        com_sheet.write(0, 0, '全称', style)
+                        com_sheet.write(0, 1, '简介', style)
+                        com_sheet.write(0, 2, '网址', style)
+                        com_sheet.write(0, 3, '电话', style)
+                        com_sheet.write(0, 4, '邮箱', style)
+                        com_sheet.write(0, 5, '地址', style)
+                        com_sheet.write(0, 6, '融资历史', style)
+                        com_sheet.col(0).width = 256 * 20
+                        com_sheet.col(1).width = 256 * 50
+                        com_sheet.col(2).width = 256 * 20
+                        com_sheet.col(3).width = 256 * 20
+                        com_sheet.col(4).width = 256 * 20
+                        com_sheet.col(5).width = 256 * 10
+                        com_sheet.col(6).width = 256 * 80
+                        ws_com_hang = 1
+                        for com in com_list:
+                            com_events = MergeFinanceData.objects.filter(com_id=com.com_id)
+                            com_event_list = []
+                            for com_event in com_events:
+                                if com_event.investormerge == 1:
+                                    invest_with_list = []
+                                    if hasattr(com_event.invsest_with, '__iter__'):
+                                        for invesdic in com_event.invsest_with:
+                                            if isinstance(invesdic, dict):
+                                                invest_with_list.append(invesdic.get('invst_name'))
+                                            if isinstance(invesdic, unicode):
+                                                invest_with_list.append(invesdic)
+                                    invest_with_str = ','.join(invest_with_list)
+                                else:
+                                    invest_with_str = com_event.merger_with
+                                com_event_list.append('轮次：%s, 行业：%s->%s , 日期：%s , 投资方：%s, 投资金额：%s' % (com_event.round, com_event.com_sub_cat_name, com_event.com_cat_name, com_event.date, invest_with_str,com_event.money))
+                            com_eventstr = '\n\r'.join(com_event_list)
+                            com_sheet.write(ws_com_hang, 0, str(com.com_name), style)  # 全称
+                            com_sheet.write(ws_com_hang, 1, str(com.com_des) if com.com_des else '暂无', style)  # 简介
+                            com_sheet.write(ws_com_hang, 2, str(com.com_web) if com.com_web else '暂无', style)  # 网址
+                            com_sheet.write(ws_com_hang, 3, str(com.mobile) if com.mobile else '暂无', style)  # 电话
+                            com_sheet.write(ws_com_hang, 4, str(com.email) if com.email else '暂无', style)  # 邮箱
+                            com_sheet.write(ws_com_hang, 5, str(com.com_addr) if com.com_addr else '暂无', style)  # 地址
+                            com_sheet.write(ws_com_hang, 6, com_eventstr if len(com_eventstr) > 0 else '暂无', style)  # 融资历史
+                            ws_com_hang += 1
+                    ws_org_hang += 1
+                wb.save(fullpath)
+        if org_qs.exists():
+            d = downloadAllDataroomFile()
+            d.start()
+        else:
+            raise InvestError(2007, msg='机构为空')
+
+
 
 
 class OrgRemarkView(viewsets.ModelViewSet):
