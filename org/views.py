@@ -25,7 +25,7 @@ from utils.customClass import InvestError, JSONResponse, RelationFilter, MySearc
 from utils.somedef import file_iterator
 from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser, add_perm, \
-    cache_delete_key, mySortQuery
+    cache_delete_key, mySortQuery, deleteExpireDir
 from django.db import transaction,models
 from django_filters import FilterSet
 
@@ -327,13 +327,13 @@ class OrganizationView(viewsets.ModelViewSet):
     def makeExcel(self, request, *args, **kwargs):
         try:
             data = request.data
-            orglist = data.get('org')
+            orglist = data.get('org', [])
             if len(orglist) > 0:
                 path = str(datetime.date.today()) + '.xls'
                 self.makeExportOrgExcel(orglist, path, request.user.id)
             else:
                 raise InvestError(2007, msg='机构为空')
-            return JSONResponse(SuccessResponse({'path': path}))
+            return JSONResponse(SuccessResponse({'filename': path}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -343,14 +343,18 @@ class OrganizationView(viewsets.ModelViewSet):
     @loginTokenIsAvailable(['org.export_org'])
     def downExcel(self, request, *args, **kwargs):
         try:
-            path = request.GET.get('path')
-            fullpath = APILOG_PATH['orgExportPath'] + '%s/' % request.user.id + path
+            rootdirpath = APILOG_PATH['orgExportPath']
+            deleteExpireDir(rootdirpath)
+            path = request.GET.get('filename')
+            if not path:
+                raise InvestError(2007, msg='文件名不能为空')
+            fullpath = rootdirpath + '%s/' % request.user.id + path
             if os.path.exists(fullpath):
                 fn = open(fullpath, 'rb')
                 response = StreamingHttpResponse(file_iterator(fn))
                 response['Content-Type'] = 'application/octet-stream'
                 response["content-disposition"] = 'attachment;filename=%s' % path
-                # os.remove(fullpath)
+                os.remove(fullpath)
             else:
                 response = JSONResponse(SuccessResponse({'code':8002, 'msg': '文件不存在'}))
             return response
@@ -382,9 +386,10 @@ class OrganizationView(viewsets.ModelViewSet):
                 ws_org = wb.add_sheet('机构列表', cell_overwrite_ok=True)
                 ws_org.write(0, 0, '机构全称', style)
                 ws_org.write(0, 1, '描述', style)
-                ws_org.col(1).width = 256 * 50
+                ws_org.col(1).width = 256 * 60
                 ws_org.write(0, 2, '合伙人/投委会成员', style)
                 ws_org.write(0, 3, '标签', style)
+                ws_org.col(3).width = 256 * 40
                 ws_org.write(0, 4, '投资事件', style)
                 ws_org.col(4).width = 256 * 120
                 ws_org_hang = 1

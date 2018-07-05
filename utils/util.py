@@ -1,5 +1,7 @@
 #coding=utf-8
+import os
 
+import shutil
 from django.core.cache import cache
 import datetime
 import traceback
@@ -57,6 +59,34 @@ def logexcption(msg=None):
     f = open(filepath, 'a')
     f.writelines(now.strftime('%H:%M:%S')+'\n'+ traceback.format_exc()+ msg if msg else ' ' +'\n\n')
     f.close()
+
+
+def deleteExpireDir(rootpath, expire=1):
+    #删除过期的文件夹/文件
+    if (os.path.exists(rootpath)):
+        files = os.listdir(rootpath)
+        for file in files:
+            m = os.path.join(rootpath, file)
+            if (os.path.isdir(m)) and checkDirCtimeExpire(m, expire):
+                #过期的文件夹
+                if os.path.exists(m):
+                    shutil.rmtree(m)
+            if (os.path.isfile(m)) and checkDirCtimeExpire(m, expire):
+                #过期的文件
+                if os.path.exists(m):
+                    os.remove(m)
+
+
+def checkDirCtimeExpire(path, expire=1):
+    filePath = unicode(path, 'utf8')
+    timeStamp = os.path.getctime(filePath)
+    datetimeStruct = datetime.datetime.fromtimestamp(timeStamp)
+    if datetimeStruct < (datetime.datetime.now() - datetime.timedelta(hours=24 * expire)):
+        return True
+    else:
+        return False
+
+
 
 def checkIPAddressCanPass(ip):
     key = 'ip_%s'%str(ip)
