@@ -57,7 +57,7 @@ def qiniu_coverupload(request):
                 raise InvestError(2020, msg=str(info))
         else:
             raise InvestError(2020, msg=str(ret))
-        if filetype in ['xlsx', 'doc', 'docx', 'xls', 'ppt', 'pptx'] and isChangeToPdf in ['true', True, '1', 1, u'true']:
+        if filetype in ['doc', 'docx', 'ppt', 'pptx'] and isChangeToPdf in ['true', True, '1', 1, u'true']:
             key = outputFileKey
             dirpath = APILOG_PATH['uploadFilePath']
             if not os.path.exists(dirpath):
@@ -68,6 +68,8 @@ def qiniu_coverupload(request):
                 for chunk in uploaddata.chunks():
                     destination.write(chunk)
             convertAndUploadOffice(inputFilePath, outputFilePath, bucket_name, outputFileKey)
+        elif filetype in ['xlsx', 'xls']:
+            key = outputFileKey
         else:
             key = inputFileKey
         return JSONResponse(SuccessResponse({'key': key, 'url': return_url, 'realfilekey': inputFileKey}))
@@ -111,7 +113,7 @@ def bigfileupload(request):
                 raise InvestError(2020, msg=str(info))
         else:
             raise InvestError(2020, msg=str(ret))
-        if filetype in ['xlsx', 'doc', 'docx', 'xls', 'ppt', 'pptx'] and isChangeToPdf in ['true', True, '1', 1, u'true']:
+        if filetype in ['doc', 'docx', 'ppt', 'pptx'] and isChangeToPdf in ['true', True, '1', 1, u'true']:
             key = outputFileKey
             dirpath = APILOG_PATH['uploadFilePath']
             if not os.path.exists(dirpath):
@@ -122,6 +124,8 @@ def bigfileupload(request):
                 for chunk in uploaddata.chunks():
                     destination.write(chunk)
             convertAndUploadOffice(inputFilePath, outputFilePath, bucket_name, outputFileKey)
+        elif filetype in ['xlsx', 'xls']:
+            key = outputFileKey
         else:
             key = inputFileKey
         return JSONResponse(SuccessResponse({'key':key,'url':return_url,'realfilekey':inputFileKey}))
