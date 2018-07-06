@@ -128,8 +128,8 @@ MESSAGE_DICT = {
         'email_sign': None,
         'title_cn': "机构BD任务",
         'title_en': "Schedule issue",
-        'content_cn': "您有新的机构BD任务",
-        'content_en': "You have a new BD issue of organization today",
+        'content_cn': "项目【%s】有新的BD任务分配给您，请查看",
+        'content_en': "Project【%s】has a new BD task for you,please check in the system",
         'messagetype': '11',
     },
     'orgBdExpire':{

@@ -3,7 +3,7 @@ import threading
 import traceback
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Max
 from django.db.models import QuerySet
 from django.shortcuts import render_to_response
 from django_filters import FilterSet
@@ -433,7 +433,10 @@ class OrgBDView(viewsets.ModelViewSet):
                 pass
             else:
                 raise InvestError(2009)
-            queryset = queryset.values('org','proj').annotate(orgcount=Count('org'),projcount=Count('proj')).order_by('org')
+            sortfield = request.GET.get('sort', 'created')
+            if request.GET.get('desc', 1) in ('1', u'1', 1):
+                sortfield = '-' + sortfield
+            queryset = queryset.values('org','proj').annotate(orgcount=Count('org'),projcount=Count('proj'),created=Max('createdtime')).order_by(sortfield)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -531,7 +534,7 @@ class OrgBDView(viewsets.ModelViewSet):
                         if request.user != neworgBD.manager:
                             today = datetime.date.today()
                             if len(self.queryset.filter(createdtime__year=today.year, createdtime__month=today.month,
-                                                        createdtime__day=today.day, manager_id=neworgBD.manager)) == 1:
+                                                        createdtime__day=today.day, manager_id=neworgBD.manager, proj=neworgBD.proj)) == 1:
                                 sendmessage_orgBDMessage(neworgBD, receiver=neworgBD.manager,
                                                          types=['app', 'webmsg', 'sms'], sender=request.user)
                         add_perm('BD.user_manageOrgBD', neworgBD.manager, neworgBD)
@@ -580,8 +583,19 @@ class OrgBDView(viewsets.ModelViewSet):
             data.pop('datasource', None)
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
+            elif request.user.id == instance.createuser_id:
+                data = {'bd_status': data.get('bd_status', instance.bd_status_id),
+                        'response': data.get('response', instance.response_id),
+                        'isimportant': bool(data.get('isimportant', instance.isimportant))}
+
             elif request.user.has_perm('BD.user_manageOrgBD', instance):
                 data = {'bd_status': data.get('bd_status', instance.bd_status_id), 'response': data.get('response', instance.response_id), 'isimportant': bool(data.get('isimportant', instance.isimportant))}
+            elif instance.proj:
+                if request.user in [instance.proj.takeUser, instance.proj.makeUser]:
+                    data = {'bd_status': data.get('bd_status', instance.bd_status_id),
+                            'response': data.get('response', instance.response_id),
+                            'isimportant': bool(data.get('isimportant', instance.isimportant))}
+
             else:
                 raise InvestError(2009)
             with transaction.atomic():
@@ -593,7 +607,7 @@ class OrgBDView(viewsets.ModelViewSet):
                         if request.user != neworgBD.manager:
                             today = datetime.date.today()
                             if len(self.queryset.filter(createdtime__year=today.year, createdtime__month=today.month,
-                                                        createdtime__day=today.day, manager_id=neworgBD.manager)) == 1:
+                                                        createdtime__day=today.day, manager_id=neworgBD.manager, proj=neworgBD.proj)) == 1:
                                 sendmessage_orgBDMessage(neworgBD, receiver=neworgBD.manager,
                                                          types=['app', 'webmsg', 'sms'], sender=request.user)
                         add_perm('BD.user_manageOrgBD', neworgBD.manager, neworgBD)
@@ -675,7 +689,7 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
             elif request.user.has_perm('BD.user_getOrgBD'):
-                queryset = queryset.filter(Q(orgBD__in=request.user.user_orgBDs.all()) | Q(orgBD__proj__in=request.user.usertake_projs.all()) | Q(orgBD__proj__in=request.user.usermake_projs.all()))
+                queryset = queryset.filter(Q(orgBD__createuser=request.user) | Q(orgBD__in=request.user.user_orgBDs.all()) | Q(orgBD__proj__in=request.user.usertake_projs.all()) | Q(orgBD__proj__in=request.user.usermake_projs.all()))
             else:
                 raise InvestError(2009)
             try:
@@ -700,8 +714,13 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
             bdinstance = OrgBD.objects.get(id=int(data['orgBD']))
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
+            elif request.user.id == bdinstance.createuser_id:
+                pass
             elif request.user.has_perm('BD.user_manageOrgBD', bdinstance):
                 pass
+            elif bdinstance.proj:
+                if request.user in [bdinstance.proj.takeUser, bdinstance.proj.makeUser]:
+                    pass
             else:
                 raise InvestError(2009)
             lang = request.GET.get('lang')

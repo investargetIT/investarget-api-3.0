@@ -705,12 +705,17 @@ def sendmessage_orgBDMessage(model,receiver,types,sender=None):
             model = self.model
             sender = self.sender
             lang = 'cn'
+            projtitle = '空'
+            if model.proj:
+                projtitle = model.proj.projtitleC
             if self.receiver.country:
                 if self.receiver.country.areaCode not in ['86', u'86', None, '', u'']:
                     lang = 'en'
+                    if model.proj:
+                        projtitle = model.proj.projtitleE
             msgdic = MESSAGE_DICT['orgBDMessage']
             title = msgdic['title_%s' % lang]
-            content = msgdic['content_%s' % lang]
+            content = msgdic['content_%s' % lang] % projtitle
             messagetype = msgdic['messagetype']
             if 'app' in types and sendAppmsg:
                 try:
