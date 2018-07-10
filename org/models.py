@@ -278,17 +278,18 @@ class orgRemarks(MyModel):
         super(orgRemarks,self).save(force_insert,force_update,using,update_fields)
 
 taskstatuschoice = (
-    (1, '未开始'),
-    (2, '正在进行'),
-    (3, '已完成'),
-    (4, '已过期'),
+    (1, '已失败'),
+    (2, '已过期'),
+    (3, '未开始'),
+    (4, '正在进行'),
+    (5, '已完成'),
 )
 
 class orgExportExcelTask(MyModel):
     orglist = models.TextField(blank=True, null=True)
     filename = models.CharField(max_length=40, blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_orgexporttasks', on_delete=models.SET_NULL)
-    status = models.PositiveSmallIntegerField(blank=True, choices=taskstatuschoice, default=1, help_text='当前状态')
+    status = models.PositiveSmallIntegerField(blank=True, choices=taskstatuschoice, default=3, help_text='当前状态')
     completetime = models.DateTimeField(blank=True, null=True, help_text='完成时间')
     No = models.IntegerField(blank=True, null=True, help_text='排序')
 

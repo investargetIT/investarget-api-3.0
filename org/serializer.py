@@ -23,6 +23,17 @@ class OrgExportExcelTaskSerializer(serializers.ModelSerializer):
         model = orgExportExcelTask
         fields = '__all__'
 
+class OrgExportExcelTaskDetailSerializer(serializers.ModelSerializer):
+    createuser = serializers.SerializerMethodField()
+
+    class Meta:
+        model = orgExportExcelTask
+        fields = '__all__'
+
+    def get_createuser(self, obj):
+        if obj.createuser:
+            return {'id': obj.createuser.id, 'usernameC': obj.createuser.usernameC, 'usernameE': obj.createuser.usernameE}
+        return None
 
 class OrgUpdateSerializer(serializers.ModelSerializer):
 
