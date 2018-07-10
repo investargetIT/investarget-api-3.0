@@ -1562,7 +1562,7 @@ class OrgExportExcelTaskView(viewsets.ModelViewSet):
 
 def makeExportOrgExcel():
     markfilepath = APILOG_PATH['markFilePath']
-    class downloadAllDataroomFile(threading.Thread):
+    class startdotaskthread(threading.Thread):
 
         def getTask(self):
             task_qs = orgExportExcelTask.objects.filter(status=1, is_deleted=False).order_by('id')
@@ -1718,5 +1718,5 @@ def makeExportOrgExcel():
     if not os.path.exists(markfilepath):
         f = open(markfilepath, 'w')
         f.close()
-        d = downloadAllDataroomFile(markfilepath)
+        d = startdotaskthread()
         d.start()
