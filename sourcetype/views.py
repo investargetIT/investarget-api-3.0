@@ -582,6 +582,8 @@ def getmenulist(user):
         qslist.append(allmenuobj.filter(id__in=[19]))
     if user.has_perm('dataroom.get_companydataroom'):
         qslist.append(allmenuobj.filter(id__in=[31]))
-    qslist.append(allmenuobj.filter(id__in=[1, 4, 6, 7, 8, 10, 11, 14, 15, 16, 18, 20, 21, 24, 26, 27, 28, 30]))
+    if user.has_perm('org.export_org'):
+        qslist.append(allmenuobj.filter(id__in=[32]))
+    qslist.append(allmenuobj.filter(id__in=[1, 4, 6, 7, 8, 10, 11, 14, 15, 16, 18, 20, 21, 24, 26, 27, 28, 30, 33]))
     qsres = reduce(lambda x,y:x|y,qslist).distinct().filter(is_deleted=False).order_by('index')
     return WebMenuSerializer(qsres,many=True).data

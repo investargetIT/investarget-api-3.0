@@ -481,10 +481,79 @@ def sendmessage_dataroomfileupdate(model,receiver,types,sender=None):
             receiver = self.receiver
             model = self.model
             sender = self.sender
+            # if isinstance(model, dataroom_User_file):
+            #     if 'app' in types and sendAppmsg:
+            #         try:
+            #             content = 'DataRoom有文件更新，点击查看详情'
+            #             receiver_alias = receiver.id
+            #             bdage = 1
+            #             n_extras = {}
+            #             pushnotification(content, receiver_alias, bdage, n_extras)
+            #         except Exception:
+            #             logexcption()
+            #     if 'email' in types and sendEmail and checkEmailTrue(receiver.email):
+            #         try:
+            #             destination = receiver.email
+            #             projectsign = 'umZlP3'
+            #             vars = {'projectC': getProjTitleWithSuperLink(model.dataroom.proj), 'projectE': getProjTitleWithSuperLink(model.dataroom.proj, 'en')}
+            #             xsendEmail(destination, projectsign, vars)
+            #         except Exception:
+            #             logexcption()
+            #     if 'sms' in types and sendSms:
+            #         try:
+            #             destination = receiver.mobile
+            #             projectsign = 'huvrW4'
+            #             vars = {'project': model.dataroom.proj.projtitleC}
+            #             xsendSms(destination, projectsign, vars)
+            #         except Exception:
+            #             logexcption()
+            #     if 'webmsg' in types and sendWebmsg:
+            #         try:
+            #             content = '您的项目%s，DataRoom有文件更新，请登录后查看'%model.dataroom.proj.projtitleC
+            #             title = 'DataRoom有文件更新，点击查看详情'
+            #             messagetype = 7
+            #             saveMessage(content, messagetype, title, receiver, sender,modeltype='dataroom_User_file',sourceid=model.id)
+            #         except Exception:
+            #             logexcption()
+
+    if checkReceiverToSendMsg(receiver):
+        sendmessage_dataroomfileupdateThread(model,receiver,types,sender).start()
+
+
+def sendmessage_dataroomuseradd(model,receiver,types,sender=None):
+    """
+    :param model: dataroom_User_file type
+    :param receiver: myuser type
+    :param types: list
+    :param sender: myuser type
+    :return: None
+    """
+    class sendmessage_dataroomfileupdateThread(threading.Thread):
+        def __init__(self, model, receiver, types, sender=None):
+            self.model = model
+            self.receiver = receiver
+            self.types = types
+            self.sender = sender
+            threading.Thread.__init__(self)
+
+        def run(self):
+            types = self.types
+            receiver = self.receiver
+            model = self.model
+            sender = self.sender
             if isinstance(model, dataroom_User_file):
+                lang = 'cn'
+                projtitle =  model.dataroom.proj.projtitleC
+                if self.receiver.country:
+                    if self.receiver.country.areaCode not in ['86', u'86', None, '', u'']:
+                        lang = 'en'
+                        projtitle =  model.dataroom.proj.projtitleE
+                msgdic = MESSAGE_DICT['dataroomuseradd']
+                title = msgdic['title_%s' % lang]
+                content = msgdic['content_%s' % lang] % projtitle
+                messagetype = msgdic['messagetype']
                 if 'app' in types and sendAppmsg:
                     try:
-                        content = 'DataRoom有文件更新，点击查看详情'
                         receiver_alias = receiver.id
                         bdage = 1
                         n_extras = {}
@@ -494,30 +563,28 @@ def sendmessage_dataroomfileupdate(model,receiver,types,sender=None):
                 if 'email' in types and sendEmail and checkEmailTrue(receiver.email):
                     try:
                         destination = receiver.email
-                        projectsign = 'umZlP3'
-                        vars = {'projectC': getProjTitleWithSuperLink(model.dataroom.proj), 'projectE': getProjTitleWithSuperLink(model.dataroom.proj, 'en')}
+                        projectsign = msgdic['email_sign']
+                        vars = {'projectC': model.dataroom.proj.projtitleC, 'projectE': model.dataroom.proj.projtitleE}
                         xsendEmail(destination, projectsign, vars)
                     except Exception:
                         logexcption()
                 if 'sms' in types and sendSms:
                     try:
                         destination = receiver.mobile
-                        projectsign = 'huvrW4'
-                        vars = {'project': model.dataroom.proj.projtitleC}
+                        projectsign = msgdic['sms_sign']
+                        vars = {'project': projtitle}
                         xsendSms(destination, projectsign, vars)
                     except Exception:
                         logexcption()
                 if 'webmsg' in types and sendWebmsg:
                     try:
-                        content = '您的项目%s，DataRoom有文件更新，请登录后查看'%model.dataroom.proj.projtitleC
-                        title = 'DataRoom有文件更新，点击查看详情'
-                        messagetype = 7
                         saveMessage(content, messagetype, title, receiver, sender,modeltype='dataroom_User_file',sourceid=model.id)
                     except Exception:
                         logexcption()
 
     if checkReceiverToSendMsg(receiver):
         sendmessage_dataroomfileupdateThread(model,receiver,types,sender).start()
+
 
 def sendmessage_projectpublish(model, receiver, types, sender=None):
     """
