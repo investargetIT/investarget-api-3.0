@@ -276,3 +276,26 @@ class orgRemarks(MyModel):
         # if not self.datasource or self.datasource != self.org.datasource:
         #     raise InvestError(code=8888,msg='机构备注没有datasource')
         super(orgRemarks,self).save(force_insert,force_update,using,update_fields)
+
+taskstatuschoice = (
+    (1, '未开始'),
+    (2, '正在进行'),
+    (3, '已完成'),
+    (4, '已过期'),
+)
+
+class orgExportExcelTask(MyModel):
+    orglist = models.TextField(blank=True, null=True)
+    filename = models.CharField(max_length=40, blank=True, null=True)
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_orgexporttasks', on_delete=models.SET_NULL)
+    status = models.PositiveSmallIntegerField(blank=True, choices=taskstatuschoice, default=1, help_text='当前状态')
+    completetime = models.DateTimeField(blank=True, null=True, help_text='完成时间')
+    No = models.IntegerField(blank=True, null=True, help_text='排序')
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if not self.orglist or not self.filename:
+            raise InvestError(code=2007, msg='orglist, filename 不能为空')
+        if '/' in self.filename or u'/' in self.filename:
+            raise InvestError(code=2007, msg='filename 不能包含\'/\'')
+        super(orgExportExcelTask, self).save(force_insert, force_update, using, update_fields)

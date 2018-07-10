@@ -1,7 +1,7 @@
 
 from rest_framework import serializers
 from org.models import organization, orgRemarks, orgTransactionPhase, orgBuyout, orgContact, orgInvestEvent, \
-    orgCooperativeRelationship, orgManageFund
+    orgCooperativeRelationship, orgManageFund, orgExportExcelTask
 from sourcetype.serializer import transactionPhasesSerializer, tagSerializer
 
 
@@ -15,6 +15,12 @@ class OrgCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = organization
+        fields = '__all__'
+
+class OrgExportExcelTaskSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = orgExportExcelTask
         fields = '__all__'
 
 

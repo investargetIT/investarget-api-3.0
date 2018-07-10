@@ -30,7 +30,7 @@ def read_from_cache(key):
     value = cache.get(key)
     return value
 #写
-def write_to_cache(key ,value, time_out=REDIS_TIMEOUT):
+def write_to_cache(key, value, time_out=REDIS_TIMEOUT):
     cache.set(key, value, time_out)
 
 #删除

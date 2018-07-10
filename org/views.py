@@ -7,19 +7,17 @@ import datetime
 import xlwt
 from django.core.paginator import Paginator, EmptyPage
 from django.db.models import Q, FieldDoesNotExist, Max
-# Create your views here.
-from django.db.models import QuerySet
 from django.http import StreamingHttpResponse
 from rest_framework import filters , viewsets
 
 from invest.settings import APILOG_PATH
 from mongoDoc.models import ProjectData, MergeFinanceData
 from org.models import organization, orgTransactionPhase, orgRemarks, orgContact, orgBuyout, orgManageFund, orgInvestEvent, orgCooperativeRelationship, \
-    orgTags
+    orgTags, orgExportExcelTask
 from org.serializer import OrgCommonSerializer, OrgDetailSerializer, OrgRemarkDetailSerializer, OrgCreateSerializer,\
     OrgUpdateSerializer, OrgBuyoutCreateSerializer, OrgContactCreateSerializer, OrgInvestEventCreateSerializer,\
     OrgManageFundCreateSerializer, OrgCooperativeRelationshipCreateSerializer, OrgBuyoutSerializer, OrgContactSerializer, \
-    OrgInvestEventSerializer, OrgManageFundSerializer, OrgCooperativeRelationshipSerializer, OrgListSerializer
+    OrgInvestEventSerializer, OrgManageFundSerializer, OrgCooperativeRelationshipSerializer, OrgListSerializer, OrgExportExcelTaskSerializer
 from sourcetype.models import TransactionPhases, TagContrastTable
 from utils.customClass import InvestError, JSONResponse, RelationFilter, MySearchFilter
 from utils.somedef import file_iterator
@@ -1448,263 +1446,277 @@ class OrgBuyoutView(viewsets.ModelViewSet):
 
 
 
-#
-# class OrgExportExcelTaskView(viewsets.ModelViewSet):
-#     filter_backends = (filters.DjangoFilterBackend,)
-#     queryset = orgExportExcelTask.objects.filter(is_deleted=False)
-#     filter_fields = ('status', 'filename', 'createuser')
-#     serializer_class = OrgExportExcelTaskSerializer
-#     redis_key = 'orgExportExcleTask'
-#
-#
-#     @loginTokenIsAvailable()
-#     def list(self, request, *args, **kwargs):
-#         try:
-#             page_size = request.GET.get('page_size', 10)
-#             page_index = request.GET.get('page_index', 1)
-#             queryset = self.filter_queryset(self.get_queryset()).order_by('-createdtime')
-#             try:
-#                 count = queryset.count()
-#                 queryset = Paginator(queryset, page_size)
-#                 queryset = queryset.page(page_index)
-#             except EmptyPage:
-#                 return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
-#             serializer = self.serializer_class(queryset, many=True)
-#             return JSONResponse(SuccessResponse({'count':count, 'data':serializer.data}))
-#         except InvestError as err:
-#             return JSONResponse(InvestErrorResponse(err))
-#         except Exception:
-#             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-#
-#     @loginTokenIsAvailable()
-#     def create(self, request, *args, **kwargs):
-#         try:
-#             with transaction.atomic():
-#                 data = request.data
-#                 orglist = data.get('org')
-#                 if len(orglist) > 0:
-#                     path = str(datetime.datetime.now())[:19].replace(' ', 'T') + '.xls'
-#                     data = {
-#                         'orglist': orglist,
-#                         'filename': path,
-#                         'createuser': request.user.id,
-#                         'status': 1,
-#                     }
-#                 else:
-#                     raise InvestError(2007, msg='机构为空')
-#                 instanceserializer = OrgExportExcelTaskSerializer(data=data)
-#                 if instanceserializer.is_valid():
-#                     instance = instanceserializer.save()
-#                 else:
-#                     raise InvestError(code=20071,msg='data有误_%s' % instanceserializer.error_messages)
-#                 return JSONResponse(SuccessResponse(self.serializer_class(instance).data))
-#         except InvestError as err:
-#             return JSONResponse(InvestErrorResponse(err))
-#         except Exception:
-#             catchexcption(request)
-#             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-#
-#     def downExcel(self, request, *args, **kwargs):
-#         try:
-#             user = checkrequesttoken(request.GET.get('token', None))
-#             if not user.has_perm('org.export_org'):
-#                 raise InvestError(2009)
-#             rootdirpath = APILOG_PATH['orgExportPath']
-#             instance = self.get_object()
-#             fullpath = rootdirpath + instance.filename
-#             if os.path.exists(fullpath):
-#                 fn = open(fullpath, 'rb')
-#                 response = StreamingHttpResponse(file_iterator(fn))
-#                 response['Content-Type'] = 'application/octet-stream'
-#                 response["content-disposition"] = 'attachment;filename=%s' % instance.filename
-#             else:
-#                 response = JSONResponse(SuccessResponse({'code': 8002, 'msg': '文件不存在或者已被删除'}))
-#             return response
-#         except InvestError as err:
-#             return JSONResponse(InvestErrorResponse(err))
-#         except Exception:
-#             catchexcption(request)
-#             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-#
-#     @loginTokenIsAvailable()
-#     def destroy(self, request, *args, **kwargs):
-#         try:
-#             lang = request.GET.get('lang')
-#             instance = self.get_object()
-#             if request.user.has_perm('org.admin_changeorg'):
-#                 pass
-#             else:
-#                 raise InvestError(code=2009, msg='没有权限')
-#             with transaction.atomic():
-#                 fullpath = APILOG_PATH['orgExportPath'] + instance.filename
-#                 if os.path.exists(fullpath):
-#                     os.remove(fullpath)
-#                 instance.delete()
-#                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data,lang)))
-#         except InvestError as err:
-#             return JSONResponse(InvestErrorResponse(err))
-#         except Exception:
-#             catchexcption(request)
-#             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-#
-#
-#
-# def makeExportOrgExcel():
-#     class downloadAllDataroomFile(threading.Thread):
-#
-#         def getTask(self):
-#             task_qs = orgExportExcelTask.objects.filter(status=1, is_deleted=False).order_by('id')
-#             if task_qs.exists():
-#                 return task_qs
-#             else:
-#                 return None
-#
-#         def executeTask(self, task_qs):
-#             for exporttask in task_qs:
-#                 exporttask.update(status=2)
-#                 orgidliststr = exporttask.orglist
-#                 if len(orgidliststr) > 0 and exporttask.filename:
-#                     orgidlist = orgidliststr.split(',')
-#                     org_qs = organization.objects.filter(is_deleted=False).filter(id__in=orgidlist)[1:300]
-#                     if org_qs.exists():
-#                         fullpath = APILOG_PATH['orgExportPath'] + exporttask.filename
-#                         if not os.path.exists(fullpath):
-#                             wb = xlwt.Workbook(encoding='utf-8')
-#                             style = xlwt.XFStyle()  # 初始化样式
-#                             style.font.height = 20 * 14
-#                             style.alignment.horz = xlwt.Alignment.HORZ_CENTER
-#                             style.alignment.vert = xlwt.Alignment.VERT_CENTER
-#                             style.alignment.wrap = xlwt.Alignment.WRAP_AT_RIGHT
-#                             ws_org = wb.add_sheet('机构列表', cell_overwrite_ok=True)
-#                             ws_org.write(0, 0, '机构全称', style)
-#                             ws_org.write(0, 1, '描述', style)
-#                             ws_org.col(1).width = 256 * 60
-#                             ws_org.write(0, 2, '合伙人/投委会成员', style)
-#                             ws_org.write(0, 3, '标签', style)
-#                             ws_org.col(3).width = 256 * 40
-#                             ws_org.write(0, 4, '投资事件', style)
-#                             ws_org.col(4).width = 256 * 120
-#                             ws_org_hang = 1
-#
-#                             for org in org_qs:
-#                                 tags = org.tags.all()
-#                                 tagnamelist = []
-#                                 for tag in tags:
-#                                     tagnamelist.append(tag.nameC)
-#                                 tagstr = '、'.join(tagnamelist)
-#                                 investevents = org.org_orgInvestEvent.all().filter(is_deleted=False)
-#                                 event_list = []
-#                                 com_list = []
-#                                 for event in investevents:
-#                                     com_list.append(event.com_id)
-#                                     if len(event_list) < 30:  # 最多写入30条投资历史
-#                                         event_list.append('项目名称：%s, 行业：%s , 投资日期：%s , 投资轮次：%s, 投资金额：%s' %
-#                                                           (event.comshortname, event.industrytype,
-#                                                            str(event.investDate)[:10],
-#                                                            event.investType if event.investType else '暂无',
-#                                                            event.investSize if event.investSize else '暂无'))
-#                                 eventstr = '\n\r'.join(event_list)
-#                                 if len(eventstr) > 30000:
-#                                     eventstr = eventstr[:30000] + '......'
-#                                 ws_org.write(ws_org_hang, 0, str(org.orgfullname), style)  # 全称
-#                                 ws_org.write(ws_org_hang, 1, str(org.description) if org.description else '暂无',
-#                                              style)  # 描述
-#                                 ws_org.write(ws_org_hang, 2, str(
-#                                     org.partnerOrInvestmentCommiterMember) if org.partnerOrInvestmentCommiterMember else '暂无',
-#                                              style)  # 合伙人/投委会
-#                                 ws_org.write(ws_org_hang, 3, tagstr if len(tagstr) > 0 else '暂无', style)  # 标签
-#                                 ws_org.write(ws_org_hang, 4, eventstr if len(eventstr) > 0 else '暂无', style)  # 投资事件
-#
-#                                 com_list = ProjectData.objects.filter(com_id__in=com_list)
-#                                 if len(com_list) > 0:
-#                                     com_sheet = wb.add_sheet(org.orgfullname, cell_overwrite_ok=True)
-#                                     com_sheet.write(0, 0, '全称', style)
-#                                     com_sheet.write(0, 1, '简介', style)
-#                                     com_sheet.write(0, 2, '网址', style)
-#                                     com_sheet.write(0, 3, '电话', style)
-#                                     com_sheet.write(0, 4, '邮箱', style)
-#                                     com_sheet.write(0, 5, '地址', style)
-#                                     com_sheet.write(0, 6, '融资历史', style)
-#                                     com_sheet.col(0).width = 256 * 20
-#                                     com_sheet.col(1).width = 256 * 50
-#                                     com_sheet.col(2).width = 256 * 20
-#                                     com_sheet.col(3).width = 256 * 20
-#                                     com_sheet.col(4).width = 256 * 20
-#                                     com_sheet.col(5).width = 256 * 10
-#                                     com_sheet.col(6).width = 256 * 80
-#                                     ws_com_hang = 1
-#                                     for com in com_list:
-#                                         com_events = MergeFinanceData.objects.filter(com_id=com.com_id)
-#                                         com_event_list = []
-#                                         for com_event in com_events:
-#                                             if com_event.investormerge == 1:
-#                                                 invest_with_list = []
-#                                                 if hasattr(com_event.invsest_with, '__iter__'):
-#                                                     for invesdic in com_event.invsest_with:
-#                                                         if isinstance(invesdic, dict):
-#                                                             invest_with_list.append(invesdic.get('invst_name'))
-#                                                         if isinstance(invesdic, unicode):
-#                                                             invest_with_list.append(invesdic)
-#                                                 invest_with_str = ','.join(invest_with_list)
-#                                             else:
-#                                                 invest_with_str = com_event.merger_with
-#                                             com_event_list.append('轮次：%s, 行业：%s->%s , 日期：%s , 投资方：%s, 投资金额：%s' % (
-#                                                 com_event.round, com_event.com_sub_cat_name, com_event.com_cat_name,
-#                                                 com_event.date,
-#                                                 invest_with_str, com_event.money))
-#                                         com_eventstr = '\n\r'.join(com_event_list)
-#                                         com_sheet.write(ws_com_hang, 0, str(com.com_name), style)  # 全称
-#                                         com_sheet.write(ws_com_hang, 1, str(com.com_des) if com.com_des else '暂无',
-#                                                         style)  # 简介
-#                                         com_sheet.write(ws_com_hang, 2, str(com.com_web) if com.com_web else '暂无',
-#                                                         style)  # 网址
-#                                         com_sheet.write(ws_com_hang, 3, str(com.mobile) if com.mobile else '暂无',
-#                                                         style)  # 电话
-#                                         com_sheet.write(ws_com_hang, 4, str(com.email) if com.email else '暂无',
-#                                                         style)  # 邮箱
-#                                         com_sheet.write(ws_com_hang, 5, str(com.com_addr) if com.com_addr else '暂无',
-#                                                         style)  # 地址
-#                                         com_sheet.write(ws_com_hang, 6, com_eventstr if len(com_eventstr) > 0 else '暂无',
-#                                                         style)  # 融资历史
-#                                         ws_com_hang += 1
-#                                 ws_org_hang += 1
-#                             wb.save(fullpath)
-#                         exporttask.update(status=3, completetime=datetime.datetime.now())
-#                     else:
-#                         self.deleteTask(exporttask)
-#                 else:
-#                     self.deleteTask(exporttask)
-#
-#         def deleteTask(self, task):
-#             fullpath = APILOG_PATH['orgExportPath'] + task.filename
-#             if os.path.exists(fullpath):
-#                 os.remove(fullpath)
-#             task.delete()
-#
-#         def doTask(self):
-#             task_qs = self.getTask()
-#             if task_qs:
-#                 self.executeTask(task_qs)
-#                 self.doTask()
-#
-#         def expireTasks(self):
-#             task_qs = orgExportExcelTask.objects.filter(status__in=[1,2,3], is_deleted=False,
-#                                                         completetime__lt=(datetime.datetime.now() - datetime.timedelta(days=1)))
-#
-#             if task_qs.exists():
-#                 for task in task_qs:
-#                     fullpath = APILOG_PATH['orgExportPath'] + task.filename
-#                     if os.path.exists(fullpath):
-#                         os.remove(fullpath)
-#                     task.update(status=4)
-#
-#
-#         def run(self):
-#             self.doTask()
-#             cache_delete_key('orgexporttask')
-#
-#     isthreadgoing = read_from_cache('orgexporttask')
-#     if isthreadgoing is None:
-#         write_to_cache_unexpire('orgexporttask', True)
-#         d = downloadAllDataroomFile()
-#         d.start()
+
+class OrgExportExcelTaskView(viewsets.ModelViewSet):
+    filter_backends = (filters.DjangoFilterBackend,)
+    queryset = orgExportExcelTask.objects.filter(is_deleted=False)
+    filter_fields = ('status', 'filename', 'createuser')
+    serializer_class = OrgExportExcelTaskSerializer
+    redis_key = 'orgExportExcleTask'
+
+    def expireTasks(self):
+        task_qs = self.get_queryset().filter(status__in=[1, 2, 3], is_deleted=False,
+                                                    completetime__lt=(
+                                                    datetime.datetime.now() - datetime.timedelta(days=1)))
+
+        if task_qs.exists():
+            for task in task_qs:
+                fullpath = APILOG_PATH['orgExportPath'] + task.filename
+                if os.path.exists(fullpath):
+                    os.remove(fullpath)
+                task.update(status=4)
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            self.expireTasks()
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            queryset = self.filter_queryset(self.get_queryset()).order_by('-createdtime')
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = self.serializer_class(queryset, many=True)
+            return JSONResponse(SuccessResponse({'count':count, 'data':serializer.data}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        try:
+            with transaction.atomic():
+                data = request.data
+                orglist = data.get('org')
+                if len(orglist) > 0:
+                    path = str(datetime.datetime.now())[:19].replace(' ', 'T') + '.xls'
+                    data = {
+                        'orglist': orglist,
+                        'filename': path,
+                        'createuser': request.user.id,
+                        'status': 1,
+                    }
+                else:
+                    raise InvestError(2007, msg='机构为空')
+                instanceserializer = OrgExportExcelTaskSerializer(data=data)
+                if instanceserializer.is_valid():
+                    instance = instanceserializer.save()
+                    makeExportOrgExcel()
+                else:
+                    raise InvestError(code=20071,msg='data有误_%s' % instanceserializer.error_messages)
+                return JSONResponse(SuccessResponse(self.serializer_class(instance).data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    def downExcel(self, request, *args, **kwargs):
+        try:
+            user = checkrequesttoken(request.GET.get('token', None))
+            if not user.has_perm('org.export_org'):
+                raise InvestError(2009)
+            rootdirpath = APILOG_PATH['orgExportPath']
+            instance = self.get_object()
+            fullpath = rootdirpath + instance.filename
+            if os.path.exists(fullpath):
+                fn = open(fullpath, 'rb')
+                response = StreamingHttpResponse(file_iterator(fn))
+                response['Content-Type'] = 'application/octet-stream'
+                response["content-disposition"] = 'attachment;filename=%s' % instance.filename
+            else:
+                response = JSONResponse(SuccessResponse({'code': 8002, 'msg': '文件不存在或者已被删除'}))
+            return response
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            if request.user.has_perm('org.admin_changeorg'):
+                pass
+            else:
+                raise InvestError(code=2009, msg='没有权限')
+            with transaction.atomic():
+                fullpath = APILOG_PATH['orgExportPath'] + instance.filename
+                if os.path.exists(fullpath):
+                    os.remove(fullpath)
+                instance.delete()
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data,lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+
+def makeExportOrgExcel():
+    markfilepath = APILOG_PATH['markFilePath']
+    class downloadAllDataroomFile(threading.Thread):
+
+        def getTask(self):
+            task_qs = orgExportExcelTask.objects.filter(status=1, is_deleted=False).order_by('id')
+            if task_qs.exists():
+                return task_qs
+            else:
+                return None
+
+        def executeTask(self, task_qs):
+            for exporttask in task_qs:
+                exporttask.update(status=2)
+                orgidliststr = exporttask.orglist
+                if len(orgidliststr) > 0 and exporttask.filename:
+                    orgidlist = orgidliststr.split(',')
+                    org_qs = organization.objects.filter(is_deleted=False).filter(id__in=orgidlist)[1:300]
+                    if org_qs.exists():
+                        fullpath = APILOG_PATH['orgExportPath'] + exporttask.filename
+                        if not os.path.exists(fullpath):
+                            wb = xlwt.Workbook(encoding='utf-8')
+                            style = xlwt.XFStyle()  # 初始化样式
+                            style.font.height = 20 * 14
+                            style.alignment.horz = xlwt.Alignment.HORZ_CENTER
+                            style.alignment.vert = xlwt.Alignment.VERT_CENTER
+                            style.alignment.wrap = xlwt.Alignment.WRAP_AT_RIGHT
+                            ws_org = wb.add_sheet('机构列表', cell_overwrite_ok=True)
+                            ws_org.write(0, 0, '机构全称', style)
+                            ws_org.write(0, 1, '描述', style)
+                            ws_org.col(1).width = 256 * 60
+                            ws_org.write(0, 2, '合伙人/投委会成员', style)
+                            ws_org.write(0, 3, '标签', style)
+                            ws_org.col(3).width = 256 * 40
+                            ws_org.write(0, 4, '投资事件', style)
+                            ws_org.col(4).width = 256 * 120
+                            ws_org_hang = 1
+
+                            for org in org_qs:
+                                tags = org.tags.all()
+                                tagnamelist = []
+                                for tag in tags:
+                                    tagnamelist.append(tag.nameC)
+                                tagstr = '、'.join(tagnamelist)
+                                investevents = org.org_orgInvestEvent.all().filter(is_deleted=False)
+                                event_list = []
+                                com_list = []
+                                for event in investevents:
+                                    com_list.append(event.com_id)
+                                    if len(event_list) < 30:  # 最多写入30条投资历史
+                                        event_list.append('项目名称：%s, 行业：%s , 投资日期：%s , 投资轮次：%s, 投资金额：%s' %
+                                                          (event.comshortname, event.industrytype,
+                                                           str(event.investDate)[:10],
+                                                           event.investType if event.investType else '暂无',
+                                                           event.investSize if event.investSize else '暂无'))
+                                eventstr = '\n\r'.join(event_list)
+                                if len(eventstr) > 30000:
+                                    eventstr = eventstr[:30000] + '......'
+                                ws_org.write(ws_org_hang, 0, str(org.orgfullname), style)  # 全称
+                                ws_org.write(ws_org_hang, 1, str(org.description) if org.description else '暂无',
+                                             style)  # 描述
+                                ws_org.write(ws_org_hang, 2, str(
+                                    org.partnerOrInvestmentCommiterMember) if org.partnerOrInvestmentCommiterMember else '暂无',
+                                             style)  # 合伙人/投委会
+                                ws_org.write(ws_org_hang, 3, tagstr if len(tagstr) > 0 else '暂无', style)  # 标签
+                                ws_org.write(ws_org_hang, 4, eventstr if len(eventstr) > 0 else '暂无', style)  # 投资事件
+
+                                com_list = ProjectData.objects.filter(com_id__in=com_list)
+                                if len(com_list) > 0:
+                                    com_sheet = wb.add_sheet(org.orgfullname, cell_overwrite_ok=True)
+                                    com_sheet.write(0, 0, '全称', style)
+                                    com_sheet.write(0, 1, '简介', style)
+                                    com_sheet.write(0, 2, '网址', style)
+                                    com_sheet.write(0, 3, '电话', style)
+                                    com_sheet.write(0, 4, '邮箱', style)
+                                    com_sheet.write(0, 5, '地址', style)
+                                    com_sheet.write(0, 6, '融资历史', style)
+                                    com_sheet.col(0).width = 256 * 20
+                                    com_sheet.col(1).width = 256 * 50
+                                    com_sheet.col(2).width = 256 * 20
+                                    com_sheet.col(3).width = 256 * 20
+                                    com_sheet.col(4).width = 256 * 20
+                                    com_sheet.col(5).width = 256 * 10
+                                    com_sheet.col(6).width = 256 * 80
+                                    ws_com_hang = 1
+                                    for com in com_list:
+                                        com_events = MergeFinanceData.objects.filter(com_id=com.com_id)
+                                        com_event_list = []
+                                        for com_event in com_events:
+                                            if com_event.investormerge == 1:
+                                                invest_with_list = []
+                                                if hasattr(com_event.invsest_with, '__iter__'):
+                                                    for invesdic in com_event.invsest_with:
+                                                        if isinstance(invesdic, dict):
+                                                            invest_with_list.append(invesdic.get('invst_name'))
+                                                        if isinstance(invesdic, unicode):
+                                                            invest_with_list.append(invesdic)
+                                                invest_with_str = ','.join(invest_with_list)
+                                            else:
+                                                invest_with_str = com_event.merger_with
+                                            com_event_list.append('轮次：%s, 行业：%s->%s , 日期：%s , 投资方：%s, 投资金额：%s' % (
+                                                com_event.round, com_event.com_sub_cat_name, com_event.com_cat_name,
+                                                com_event.date,
+                                                invest_with_str, com_event.money))
+                                        com_eventstr = '\n\r'.join(com_event_list)
+                                        com_sheet.write(ws_com_hang, 0, str(com.com_name), style)  # 全称
+                                        com_sheet.write(ws_com_hang, 1, str(com.com_des) if com.com_des else '暂无',
+                                                        style)  # 简介
+                                        com_sheet.write(ws_com_hang, 2, str(com.com_web) if com.com_web else '暂无',
+                                                        style)  # 网址
+                                        com_sheet.write(ws_com_hang, 3, str(com.mobile) if com.mobile else '暂无',
+                                                        style)  # 电话
+                                        com_sheet.write(ws_com_hang, 4, str(com.email) if com.email else '暂无',
+                                                        style)  # 邮箱
+                                        com_sheet.write(ws_com_hang, 5, str(com.com_addr) if com.com_addr else '暂无',
+                                                        style)  # 地址
+                                        com_sheet.write(ws_com_hang, 6, com_eventstr if len(com_eventstr) > 0 else '暂无',
+                                                        style)  # 融资历史
+                                        ws_com_hang += 1
+                                ws_org_hang += 1
+                            wb.save(fullpath)
+                        exporttask.update(status=3, completetime=datetime.datetime.now())
+                    else:
+                        self.deleteTask(exporttask)
+                else:
+                    self.deleteTask(exporttask)
+
+        def deleteTask(self, task):
+            fullpath = APILOG_PATH['orgExportPath'] + task.filename
+            if os.path.exists(fullpath):
+                os.remove(fullpath)
+            task.delete()
+
+        def doTask(self):
+            task_qs = self.getTask()
+            if task_qs:
+                self.executeTask(task_qs)
+                self.doTask()
+
+        def expireTasks(self):
+            task_qs = orgExportExcelTask.objects.filter(status__in=[1, 2, 3], is_deleted=False,
+                                                 completetime__lt=(
+                                                     datetime.datetime.now() - datetime.timedelta(days=1)))
+
+            if task_qs.exists():
+                for task in task_qs:
+                    fullpath = APILOG_PATH['orgExportPath'] + task.filename
+                    if os.path.exists(fullpath):
+                        os.remove(fullpath)
+                    task.update(status=4)
+
+        def run(self):
+            self.doTask()
+            os.remove(markfilepath)
+
+    if not os.path.exists(markfilepath):
+        f = open(markfilepath, 'w')
+        f.close()
+        d = downloadAllDataroomFile(markfilepath)
+        d.start()

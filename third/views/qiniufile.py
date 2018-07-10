@@ -236,20 +236,6 @@ def downloadFileToPath(key,bucket,path):
         return path
 
 
-@api_view(['GET'])
-def testconvert(request):
-    try:
-        convertAndUploadOffice('aaa','aaa','aaa','aaaa')
-        import time
-        time.sleep(5)
-        return JSONResponse(SuccessResponse({}))
-    except InvestError as err:
-        return JSONResponse(InvestErrorResponse(err))
-    except Exception:
-        catchexcption(request)
-        return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
-
 
 def convertAndUploadOffice(inputpath, outputpath, bucket_name, bucket_key):
     """
