@@ -124,7 +124,7 @@ MESSAGE_DICT = {
         'messagetype': '10',
     },
     'orgBDMessage':{
-        'sms_sign': "M2d4Q3",
+        'sms_sign': "DxCbY3",
         'email_sign': None,
         'title_cn': "机构BD任务",
         'title_en': "Schedule issue",

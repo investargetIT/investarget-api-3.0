@@ -734,7 +734,7 @@ def sendmessage_orgBDMessage(model,receiver,types,sender=None):
                 try:
                     destination = receiver.mobile
                     projectsign = msgdic['sms_sign']
-                    vars = {}
+                    vars = {'proj': projtitle}
                     xsendSms(destination, projectsign, vars)
                 except Exception:
                     logexcption()
