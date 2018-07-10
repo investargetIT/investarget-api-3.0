@@ -1580,7 +1580,7 @@ def makeExportOrgExcel():
                     orgidliststr = exporttask.orglist
                     if len(orgidliststr) > 0 and exporttask.filename:
                         orgidlist = orgidliststr.split(',')
-                        org_qs = organization.objects.filter(is_deleted=False).filter(id__in=orgidlist)[1:300]
+                        org_qs = organization.objects.filter(is_deleted=False).filter(id__in=orgidlist)[:300]
                         if org_qs.exists():
                             fullpath = APILOG_PATH['orgExportPath'] + exporttask.filename
                             if not os.path.exists(fullpath):
@@ -1607,7 +1607,7 @@ def makeExportOrgExcel():
                                     for tag in tags:
                                         tagnamelist.append(tag.nameC)
                                     tagstr = '、'.join(tagnamelist)
-                                    investevents = org.org_orgInvestEvent.all().filter(is_deleted=False)
+                                    investevents = org.org_orgInvestEvent.all().filter(is_deleted=False).order_by('-investDate')
                                     event_list = []
                                     com_list = []
                                     for event in investevents:
