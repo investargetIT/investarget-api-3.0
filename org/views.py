@@ -15,7 +15,7 @@ from rest_framework import filters , viewsets
 from invest.settings import APILOG_PATH
 from mongoDoc.models import ProjectData, MergeFinanceData
 from org.models import organization, orgTransactionPhase, orgRemarks, orgContact, orgBuyout, orgManageFund, orgInvestEvent, orgCooperativeRelationship, \
-    orgTags, orgExportExcleTask
+    orgTags
 from org.serializer import OrgCommonSerializer, OrgDetailSerializer, OrgRemarkDetailSerializer, OrgCreateSerializer,\
     OrgUpdateSerializer, OrgBuyoutCreateSerializer, OrgContactCreateSerializer, OrgInvestEventCreateSerializer,\
     OrgManageFundCreateSerializer, OrgCooperativeRelationshipCreateSerializer, OrgBuyoutSerializer, OrgContactSerializer, \
@@ -25,7 +25,7 @@ from utils.customClass import InvestError, JSONResponse, RelationFilter, MySearc
 from utils.somedef import file_iterator
 from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser, add_perm, \
-    cache_delete_key, mySortQuery, deleteExpireDir, checkrequesttoken, write_to_cache_unexpire
+    cache_delete_key, mySortQuery, deleteExpireDir, checkrequesttoken
 from django.db import transaction,models
 from django_filters import FilterSet
 
@@ -1448,11 +1448,112 @@ class OrgBuyoutView(viewsets.ModelViewSet):
 
 
 
+#
+# class OrgExportExcelTaskView(viewsets.ModelViewSet):
+#     filter_backends = (filters.DjangoFilterBackend,)
+#     queryset = orgExportExcelTask.objects.filter(is_deleted=False)
+#     filter_fields = ('status', 'filename', 'createuser')
+#     serializer_class = OrgExportExcelTaskSerializer
+#     redis_key = 'orgExportExcleTask'
+#
+#
+#     @loginTokenIsAvailable()
+#     def list(self, request, *args, **kwargs):
+#         try:
+#             page_size = request.GET.get('page_size', 10)
+#             page_index = request.GET.get('page_index', 1)
+#             queryset = self.filter_queryset(self.get_queryset()).order_by('-createdtime')
+#             try:
+#                 count = queryset.count()
+#                 queryset = Paginator(queryset, page_size)
+#                 queryset = queryset.page(page_index)
+#             except EmptyPage:
+#                 return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+#             serializer = self.serializer_class(queryset, many=True)
+#             return JSONResponse(SuccessResponse({'count':count, 'data':serializer.data}))
+#         except InvestError as err:
+#             return JSONResponse(InvestErrorResponse(err))
+#         except Exception:
+#             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+#
+#     @loginTokenIsAvailable()
+#     def create(self, request, *args, **kwargs):
+#         try:
+#             with transaction.atomic():
+#                 data = request.data
+#                 orglist = data.get('org')
+#                 if len(orglist) > 0:
+#                     path = str(datetime.datetime.now())[:19].replace(' ', 'T') + '.xls'
+#                     data = {
+#                         'orglist': orglist,
+#                         'filename': path,
+#                         'createuser': request.user.id,
+#                         'status': 1,
+#                     }
+#                 else:
+#                     raise InvestError(2007, msg='机构为空')
+#                 instanceserializer = OrgExportExcelTaskSerializer(data=data)
+#                 if instanceserializer.is_valid():
+#                     instance = instanceserializer.save()
+#                 else:
+#                     raise InvestError(code=20071,msg='data有误_%s' % instanceserializer.error_messages)
+#                 return JSONResponse(SuccessResponse(self.serializer_class(instance).data))
+#         except InvestError as err:
+#             return JSONResponse(InvestErrorResponse(err))
+#         except Exception:
+#             catchexcption(request)
+#             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+#
+#     def downExcel(self, request, *args, **kwargs):
+#         try:
+#             user = checkrequesttoken(request.GET.get('token', None))
+#             if not user.has_perm('org.export_org'):
+#                 raise InvestError(2009)
+#             rootdirpath = APILOG_PATH['orgExportPath']
+#             instance = self.get_object()
+#             fullpath = rootdirpath + instance.filename
+#             if os.path.exists(fullpath):
+#                 fn = open(fullpath, 'rb')
+#                 response = StreamingHttpResponse(file_iterator(fn))
+#                 response['Content-Type'] = 'application/octet-stream'
+#                 response["content-disposition"] = 'attachment;filename=%s' % instance.filename
+#             else:
+#                 response = JSONResponse(SuccessResponse({'code': 8002, 'msg': '文件不存在或者已被删除'}))
+#             return response
+#         except InvestError as err:
+#             return JSONResponse(InvestErrorResponse(err))
+#         except Exception:
+#             catchexcption(request)
+#             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+#
+#     @loginTokenIsAvailable()
+#     def destroy(self, request, *args, **kwargs):
+#         try:
+#             lang = request.GET.get('lang')
+#             instance = self.get_object()
+#             if request.user.has_perm('org.admin_changeorg'):
+#                 pass
+#             else:
+#                 raise InvestError(code=2009, msg='没有权限')
+#             with transaction.atomic():
+#                 fullpath = APILOG_PATH['orgExportPath'] + instance.filename
+#                 if os.path.exists(fullpath):
+#                     os.remove(fullpath)
+#                 instance.delete()
+#                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data,lang)))
+#         except InvestError as err:
+#             return JSONResponse(InvestErrorResponse(err))
+#         except Exception:
+#             catchexcption(request)
+#             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+#
+#
+#
 # def makeExportOrgExcel():
 #     class downloadAllDataroomFile(threading.Thread):
 #
 #         def getTask(self):
-#             task_qs = orgExportExcleTask.objects.filter(status=1, is_deleted=False).order_by('id')
+#             task_qs = orgExportExcelTask.objects.filter(status=1, is_deleted=False).order_by('id')
 #             if task_qs.exists():
 #                 return task_qs
 #             else:
@@ -1570,15 +1671,32 @@ class OrgBuyoutView(viewsets.ModelViewSet):
 #                             wb.save(fullpath)
 #                         exporttask.update(status=3, completetime=datetime.datetime.now())
 #                     else:
-#                         exporttask.delete()
+#                         self.deleteTask(exporttask)
 #                 else:
-#                     exporttask.delete()
+#                     self.deleteTask(exporttask)
+#
+#         def deleteTask(self, task):
+#             fullpath = APILOG_PATH['orgExportPath'] + task.filename
+#             if os.path.exists(fullpath):
+#                 os.remove(fullpath)
+#             task.delete()
 #
 #         def doTask(self):
 #             task_qs = self.getTask()
 #             if task_qs:
 #                 self.executeTask(task_qs)
 #                 self.doTask()
+#
+#         def expireTasks(self):
+#             task_qs = orgExportExcelTask.objects.filter(status__in=[1,2,3], is_deleted=False,
+#                                                         completetime__lt=(datetime.datetime.now() - datetime.timedelta(days=1)))
+#
+#             if task_qs.exists():
+#                 for task in task_qs:
+#                     fullpath = APILOG_PATH['orgExportPath'] + task.filename
+#                     if os.path.exists(fullpath):
+#                         os.remove(fullpath)
+#                     task.update(status=4)
 #
 #
 #         def run(self):
