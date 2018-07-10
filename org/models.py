@@ -279,7 +279,6 @@ class orgRemarks(MyModel):
 
 taskstatuschoice = (
     (1, '已失败'),
-    (2, '已过期'),
     (3, '未开始'),
     (4, '正在进行'),
     (5, '已完成'),

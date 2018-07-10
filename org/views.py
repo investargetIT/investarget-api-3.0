@@ -1465,8 +1465,7 @@ class OrgExportExcelTaskView(viewsets.ModelViewSet):
                 fullpath = APILOG_PATH['orgExportPath'] + task.filename
                 if os.path.exists(fullpath):
                     os.remove(fullpath)
-                task.status = 2
-                task.save()
+                task.delete()
 
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
@@ -1718,8 +1717,7 @@ def makeExportOrgExcel():
                     fullpath = APILOG_PATH['orgExportPath'] + task.filename
                     if os.path.exists(fullpath):
                         os.remove(fullpath)
-                    task.status = 2
-                    task.save()
+                    task.delete()
 
         def run(self):
             self.doTask()
