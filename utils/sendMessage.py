@@ -29,6 +29,17 @@ def getProjTitleWithSuperLink(proj,lang='cn'):
         proj_superlink = '<a href=\'%s/app/projects/%s\'>%s</a>'%(getbase_domain(proj.datasource), proj.id, proj.projtitleE)
     return proj_superlink
 
+
+def getDataroomTitleWithSuperLink(dataroom,lang='cn'):
+    if lang == 'cn':
+        proj_superlink = '<a href=\'%s/app/dataroom/detail?id=%s&isClose=false&projectID=%s\'>%s</a>'%\
+                         (getbase_domain(dataroom.datasource), dataroom.id, dataroom.proj.id, dataroom.proj.projtitleC)
+    else:
+        proj_superlink = '<a href=\'%s/app/dataroom/detail?id=%s&isClose=false&projectID=%s\'>%s</a>'%\
+                         (getbase_domain(dataroom.datasource), dataroom.id, dataroom.proj.id, dataroom.proj.projtitleE)
+    return proj_superlink
+
+
 typelist = ['sms','app','email','webmsg']
 
 favoriteTypeConf = {
@@ -528,7 +539,7 @@ def sendmessage_dataroomuseradd(model,receiver,types,sender=None):
     :param sender: myuser type
     :return: None
     """
-    class sendmessage_dataroomfileupdateThread(threading.Thread):
+    class sendmessage_dataroomuseraddThread(threading.Thread):
         def __init__(self, model, receiver, types, sender=None):
             self.model = model
             self.receiver = receiver
@@ -540,50 +551,21 @@ def sendmessage_dataroomuseradd(model,receiver,types,sender=None):
             types = self.types
             receiver = self.receiver
             model = self.model
-            sender = self.sender
+
             if isinstance(model, dataroom_User_file):
-                lang = 'cn'
-                projtitle =  model.dataroom.proj.projtitleC
-                if self.receiver.country:
-                    if self.receiver.country.areaCode not in ['86', u'86', None, '', u'']:
-                        lang = 'en'
-                        projtitle =  model.dataroom.proj.projtitleE
                 msgdic = MESSAGE_DICT['dataroomuseradd']
-                title = msgdic['title_%s' % lang]
-                content = msgdic['content_%s' % lang] % projtitle
-                messagetype = msgdic['messagetype']
-                if 'app' in types and sendAppmsg:
-                    try:
-                        receiver_alias = receiver.id
-                        bdage = 1
-                        n_extras = {}
-                        pushnotification(content, receiver_alias, bdage, n_extras)
-                    except Exception:
-                        logexcption()
+
                 if 'email' in types and sendEmail and checkEmailTrue(receiver.email):
                     try:
                         destination = receiver.email
                         projectsign = msgdic['email_sign']
-                        vars = {'projectC': model.dataroom.proj.projtitleC, 'projectE': model.dataroom.proj.projtitleE}
+                        vars = {'projectC': getDataroomTitleWithSuperLink(model.dataroom, 'cn'), 'projectE': getDataroomTitleWithSuperLink(model.dataroom, 'en')}
                         xsendEmail(destination, projectsign, vars)
-                    except Exception:
-                        logexcption()
-                if 'sms' in types and sendSms:
-                    try:
-                        destination = receiver.mobile
-                        projectsign = msgdic['sms_sign']
-                        vars = {'project': projtitle}
-                        xsendSms(destination, projectsign, vars)
-                    except Exception:
-                        logexcption()
-                if 'webmsg' in types and sendWebmsg:
-                    try:
-                        saveMessage(content, messagetype, title, receiver, sender,modeltype='dataroom_User_file',sourceid=model.id)
                     except Exception:
                         logexcption()
 
     if checkReceiverToSendMsg(receiver):
-        sendmessage_dataroomfileupdateThread(model,receiver,types,sender).start()
+        sendmessage_dataroomuseraddThread(model,receiver,types,sender).start()
 
 
 def sendmessage_projectpublish(model, receiver, types, sender=None):

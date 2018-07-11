@@ -33,6 +33,7 @@ user_dataroom = views.User_DataroomfileView.as_view({
 
 user_dataroomone =  views.User_DataroomfileView.as_view({
         'get':'retrieve',
+        'post':'sendEmailNotifaction',
         'put':'update',
         'delete':'destroy',
 })

@@ -17,7 +17,7 @@ from invest.settings import APILOG_PATH
 from proj.models import project
 from third.views.qiniufile import deleteqiniufile, downloadFileToPath
 from utils.customClass import InvestError, JSONResponse, RelationFilter
-from utils.sendMessage import sendmessage_dataroomfileupdate
+from utils.sendMessage import sendmessage_dataroomfileupdate, sendmessage_dataroomuseradd
 from utils.somedef import file_iterator,  addWaterMarkToPdfFiles, addWaterMark
 from utils.util import returnListChangeToLanguage, loginTokenIsAvailable, \
     returnDictChangeToLanguage, catchexcption, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
@@ -64,7 +64,7 @@ class DataroomView(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size')
-            page_index = request.GET.get('page_index')  # 从第一页开始
+            page_index = request.GET.get('page_index')
             lang = request.GET.get('lang')
             if not page_size:
                 page_size = 10
@@ -97,7 +97,7 @@ class DataroomView(viewsets.ModelViewSet):
     def companylist(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size', 10)
-            page_index = request.GET.get('page_index', 1)  # 从第一页开始
+            page_index = request.GET.get('page_index', 1)
             lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset()).filter(datasource=self.request.user.datasource, isCompanyFile=True)
             try:
@@ -198,23 +198,6 @@ class DataroomView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
-    # @loginTokenIsAvailable(['dataroom.downloadDataroom'])
-    # def makeDataroomAllFilesZip(self, request, *args, **kwargs):
-    #     try:
-    #         instance = self.get_object()
-    #         userid = request.GET.get('user', request.user.id)
-    #         watermarkcontent = request.GET.get('water',None)
-    #         watermarkcontent = str(watermarkcontent).split(',')
-    #         qs = instance.dataroom_directories.all().filter(is_deleted=False)
-    #         rootpath = APILOG_PATH['dataroomFilePath'] + '/' + 'dataroom_%s%s'%(str(instance.id), '_%s'%userid if userid else '')
-    #         startMakeDataroomZip(qs, rootpath , instance,userid,watermarkcontent)
-    #         return JSONResponse(SuccessResponse('dataroom_%s%s.zip'%(str(instance.id), '_%s'%userid if userid else '')))
-    #     except InvestError as err:
-    #         return JSONResponse(InvestErrorResponse(err))
-    #     except Exception:
-    #         catchexcption(request)
-    #         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable(['dataroom.downloadDataroom'])
     def checkZipStatus(self, request, *args, **kwargs):
@@ -556,6 +539,7 @@ class User_DataroomfileView(viewsets.ModelViewSet):
            create:新建用户-dataroom关系
            retrieve:查看该dataroom用户可见文件列表
            update:编辑该dataroom用户可见文件列表
+           sendEmailNotifaction:发送邮件通知
            destroy:减少用户可见dataroom
         """
     filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
@@ -637,6 +621,24 @@ class User_DataroomfileView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(code=20071, msg='data有误_%s' % user_dataroomserializer.errors)
                 return JSONResponse(SuccessResponse(user_dataroomserializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def sendEmailNotifaction(self,  request, *args, **kwargs):
+        try:
+            user_dataroom = self.get_object()
+            if request.user.has_perm('dataroom.admin_adddataroom'):
+                pass
+            elif request.user == user_dataroom.trader:
+                pass
+            else:
+                raise InvestError(2009)
+            sendmessage_dataroomuseradd(user_dataroom, user_dataroom.user, ['email'], sender=request.user)
+            return JSONResponse(SuccessResponse(True))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
