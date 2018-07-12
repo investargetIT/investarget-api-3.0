@@ -49,6 +49,7 @@ class ProjectFilter(FilterSet):
     tags = RelationFilter(filterstr='tags',lookup_method='in',relationName='project_tags__is_deleted')
     service = RelationFilter(filterstr='proj_services__service', lookup_method='in', relationName='proj_services__is_deleted')
     projstatus = RelationFilter(filterstr='projstatus',lookup_method='in')
+    bdm =  RelationFilter(filterstr='proj_orgBDs__manager', lookup_method='in')
     country = RelationFilter(filterstr='country',lookup_method='in')
     netIncome_USD_F = RelationFilter(filterstr='proj_finances__netIncome_USD',lookup_method='gte')
     netIncome_USD_T = RelationFilter(filterstr='proj_finances__netIncome_USD', lookup_method='lte')
@@ -56,7 +57,7 @@ class ProjectFilter(FilterSet):
     grossProfit_T = RelationFilter(filterstr='proj_finances__grossProfit', lookup_method='lte')
     class Meta:
         model = project
-        fields = ('ids', 'createuser','service','supportUser','ismarketplace','isoverseasproject','industries','tags','projstatus','country','netIncome_USD_F','netIncome_USD_T','grossProfit_F','grossProfit_T')
+        fields = ('ids', 'bdm', 'createuser','service','supportUser','ismarketplace','isoverseasproject','industries','tags','projstatus','country','netIncome_USD_F','netIncome_USD_T','grossProfit_F','grossProfit_T')
 
 
 class ProjectView(viewsets.ModelViewSet):
