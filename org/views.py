@@ -30,7 +30,7 @@ from django_filters import FilterSet
 
 
 class OrganizationFilter(FilterSet):
-    proj = RelationFilter(filterstr='org_orgBDs__proj', lookup_method='in')
+    proj = RelationFilter(filterstr='org_orgBDs__proj', relationName='org_orgBDs__is_deleted', lookup_method='in')
     orgfullname = RelationFilter(filterstr='orgfullname')
     ids = RelationFilter(filterstr='id', lookup_method='in')
     lv = RelationFilter(filterstr='orglevel', lookup_method='in')

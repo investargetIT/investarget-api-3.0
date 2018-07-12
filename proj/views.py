@@ -49,7 +49,7 @@ class ProjectFilter(FilterSet):
     tags = RelationFilter(filterstr='tags',lookup_method='in',relationName='project_tags__is_deleted')
     service = RelationFilter(filterstr='proj_services__service', lookup_method='in', relationName='proj_services__is_deleted')
     projstatus = RelationFilter(filterstr='projstatus',lookup_method='in')
-    bdm =  RelationFilter(filterstr='proj_orgBDs__manager', lookup_method='in')
+    bdm =  RelationFilter(filterstr='proj_orgBDs__manager', relationName='proj_orgBDs__is_deleted', lookup_method='in')
     country = RelationFilter(filterstr='country',lookup_method='in')
     netIncome_USD_F = RelationFilter(filterstr='proj_finances__netIncome_USD',lookup_method='gte')
     netIncome_USD_T = RelationFilter(filterstr='proj_finances__netIncome_USD', lookup_method='lte')
