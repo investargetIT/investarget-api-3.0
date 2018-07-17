@@ -1591,7 +1591,7 @@ def makeExportOrgExcel():
                                 style.alignment.vert = xlwt.Alignment.VERT_CENTER
                                 style.alignment.wrap = xlwt.Alignment.WRAP_AT_RIGHT
                                 ws_org = wb.add_sheet('机构列表', cell_overwrite_ok=True)
-                                ws_org.write(0, 0, '机构全称', style)
+                                ws_org.write(0, 0, '机构简称', style)
                                 ws_org.write(0, 1, '描述', style)
                                 ws_org.col(1).width = 256 * 60
                                 ws_org.write(0, 2, '合伙人/投委会成员', style)
@@ -1621,7 +1621,7 @@ def makeExportOrgExcel():
                                     eventstr = '\n\r'.join(event_list)
                                     if len(eventstr) > 30000:
                                         eventstr = eventstr[:30000] + '......'
-                                    ws_org.write(ws_org_hang, 0, str(org.orgfullname), style)  # 全称
+                                    ws_org.write(ws_org_hang, 0, str(org.orgnameC), style)  # 全称
                                     ws_org.write(ws_org_hang, 1, str(org.description) if org.description else '暂无',
                                                  style)  # 描述
                                     ws_org.write(ws_org_hang, 2, str(
