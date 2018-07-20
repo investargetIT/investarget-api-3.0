@@ -41,6 +41,7 @@ from django_filters import FilterSet
 class UserFilter(FilterSet):
     groups = RelationFilter(filterstr='groups', lookup_method='in')
     org = RelationFilter(filterstr='org',lookup_method='in')
+    onjob = RelationFilter(filterstr='onjob')
     usernameC = RelationFilter(filterstr='usernameC')
     title = RelationFilter(filterstr='title', lookup_method='in')
     usercode = RelationFilter(filterstr='usercode', lookup_method='in')
@@ -53,7 +54,7 @@ class UserFilter(FilterSet):
     investor = RelationFilter(filterstr='trader_relations__investoruser', lookup_method='in',relationName='trader_relations__is_deleted')
     class Meta:
         model = MyUser
-        fields = ('groups','org','tags','userstatus','currency','orgtransactionphases','orgarea','usercode','title','trader','investor','usernameC')
+        fields = ('onjob', 'groups','org','tags','userstatus','currency','orgtransactionphases','orgarea','usercode','title','trader','investor','usernameC')
 
 
 class UserView(viewsets.ModelViewSet):
