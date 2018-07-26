@@ -97,7 +97,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin,MyModel):
     usernameC = models.CharField(help_text='姓名',max_length=128,db_index=True,blank=True,null=True,)
     usernameE = models.CharField(help_text='name',max_length=128,db_index=True,blank=True,null=True)
     mobileAreaCode = models.CharField(max_length=10,blank=True,null=True,default='86')
-    mobile = models.CharField(help_text='手机',max_length=32,db_index=True,blank=True,null=True,)
+    mobile = models.CharField(help_text='手机',max_length=32,db_index=True,blank=True,null=True)
     description = models.TextField(help_text='简介',blank=True,default='description')
     tags = models.ManyToManyField(Tag, through='userTags', through_fields=('user', 'tag'), blank=True,related_name='tag_users')
     email = models.EmailField(help_text='邮箱', max_length=128,db_index=True,blank=True,null=True)
@@ -170,7 +170,11 @@ class MyUser(AbstractBaseUser, PermissionsMixin,MyModel):
         try:
             if not self.mobileAreaCode:
                 self.mobileAreaCode = '86'
-            if not self.email and not self.mobile:
+            if self.mobile:
+                self.mobile = self.mobile.replace(' ', '')
+            if self.email:
+                self.email = self.email.replace(' ', '')
+            if not self.email or not self.mobile:
                 raise InvestError(code=2007)
             if not self.mobile.isdigit():
                 raise InvestError(2007, msg='mobile 必须是纯数字')
@@ -373,8 +377,8 @@ class UserRelation(MyModel):
             raise InvestError(code=8888,msg='datasource有误')
         if self.datasource !=self.traderuser.datasource or self.datasource != self.investoruser.datasource:
             raise InvestError(code=8888,msg='requestuser.datasource不匹配')
-        if self.traderuser.userstatus_id == 1:
-            raise InvestError(code=2022,msg='用户尚未审核通过，无法建立联系')
+        if self.traderuser.userstatus_id != 2:
+            raise InvestError(code=2022,msg='交易师尚未审核通过，无法建立联系')
         if self.pk:
             userrelation = UserRelation.objects.exclude(pk=self.pk).filter(is_deleted=False,datasource=self.datasource,investoruser=self.investoruser)
         else:
