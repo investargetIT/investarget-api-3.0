@@ -196,7 +196,8 @@ class ProjectBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageProjectBD'):
                 pass
             elif request.user.has_perm('BD.user_manageProjectBD', instance):
-                data = {'bd_status': data.get('bd_status', instance.bd_status_id)}
+                # data = {'bd_status': data.get('bd_status', instance.bd_status_id)}
+                pass
             else:
                 raise InvestError(2009)
             with transaction.atomic():
