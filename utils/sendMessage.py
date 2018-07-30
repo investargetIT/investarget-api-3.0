@@ -185,7 +185,7 @@ def sendmessage_favoriteproject(model,receiver, sender=None):
                             destination = receiver.mobile
                             projectsign =  msgdic['sms_sign']
                             if model.favoritetype_id in [3,5]:
-                                vars = {'user': sendername, 'project': projtitle, }
+                                vars = {'user': sender.usernameC, 'project': model.proj.projtitleC}
                             else:
                                 vars = {'project':model.proj.projtitleC}
                             xsendSms(destination, projectsign, vars)
@@ -333,7 +333,7 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                         if model.userstatus.id == 2:
                             destination = receiver.mobile
                             projectsign = 'EXIDv1'
-                            vars = {'user': username}
+                            vars = {'user': model.usernameC}
                             xsendSms(destination, projectsign, vars)
                     except Exception:
                         logexcption()
@@ -429,11 +429,11 @@ def sendmessage_timelineauditstatuchange(model,receiver,types,sender=None):
             sender = self.sender
             if isinstance(model, timelineTransationStatu):
                 lang = 'cn'
-                projtitle =  model.timeline.proj.projtitleC
+                projtitle = model.timeline.proj.projtitleC
                 if self.receiver.country:
                     if self.receiver.country.areaCode not in ['86', u'86', None, '', u'']:
                         lang = 'en'
-                        projtitle =  model.timeline.proj.projtitleE
+                        projtitle = model.timeline.proj.projtitleE
                 msgdic = MESSAGE_DICT['timelineauditstatuchange']
                 title = msgdic['title_%s' % lang]
                 content = msgdic['content_%s' % lang] % projtitle
@@ -458,7 +458,7 @@ def sendmessage_timelineauditstatuchange(model,receiver,types,sender=None):
                     try:
                         destination = receiver.mobile
                         projectsign = 'tNEV93'
-                        vars = {'project': projtitle}
+                        vars = {'project': model.timeline.proj.projtitleC}
                         xsendSms(destination, projectsign, vars)
                     except Exception:
                         logexcption()
@@ -783,7 +783,7 @@ def sendmessage_orgBDMessage(model,receiver,types,sender=None):
                 try:
                     destination = receiver.mobile
                     projectsign = msgdic['sms_sign']
-                    vars = {'proj': projtitle}
+                    vars = {'proj': model.proj.projtitleC}
                     xsendSms(destination, projectsign, vars)
                 except Exception:
                     logexcption()
