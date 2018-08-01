@@ -100,7 +100,7 @@ class ProjSerializer(serializers.ModelSerializer):
         depth = 1
 
 class ProjCommonSerializer(serializers.ModelSerializer):
-    supportUser = ()
+    supportUser = UserCommenSerializer()
     country = countrySerializer()
     tags = serializers.SerializerMethodField()
     industries = serializers.SerializerMethodField()
