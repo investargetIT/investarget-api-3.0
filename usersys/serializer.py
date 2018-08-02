@@ -266,7 +266,7 @@ class UserListSerializer(serializers.ModelSerializer):
 
     def get_mobiletrue(self, obj):
         if obj.mobile:
-            an = re.search('^[1](3[0-9]|47|5[0-9]|8[0-9])[0-9]{8}$', obj.mobile)
+            an = re.search('^(13[0-9]|14[579]|15[0-3,5-9]|17[0135678]|18[0-9])[\d*]{8}$', obj.mobile)
             if an:
                 return True
         return False
