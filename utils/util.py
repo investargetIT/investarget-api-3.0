@@ -15,6 +15,9 @@ from utils.customClass import JSONResponse, InvestError
 
 REDIS_TIMEOUT = 1 * 24 * 60 * 60
 
+mobielrestr = r'^(13[0-9]|14[579]|15[0-3,5-9]|17[0135678]|18[0-9])([0-9]{8})$'
+
+
 def SuccessResponse(data,msg=None):
     response = {'code':1000,'errormsg':msg,'result':data}
     return response
