@@ -1,4 +1,6 @@
 #coding=utf-8
+import re
+
 from django.contrib.auth.models import Group, Permission
 from rest_framework import serializers
 
@@ -37,7 +39,8 @@ class UserCommenSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MyUser
-        fields = ('id', 'usernameC', 'usernameE', 'tags', 'userstatus', 'photourl', 'title', 'onjob', 'mobile', 'email', 'is_active', 'org')
+        fields = ('id', 'usernameC', 'usernameE', 'tags', 'userstatus', 'photourl', 'title', 'onjob', 'mobile', 'email',
+                  'is_active', 'org')
         depth = 1
 
     def get_tags(self, obj):
@@ -90,11 +93,13 @@ class GroupCreateSerializer(serializers.ModelSerializer):
 class UserInfoSerializer(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
     photourl = serializers.SerializerMethodField()
+    mobiletrue = serializers.SerializerMethodField()
     country = countrySerializer()
 
     class Meta:
         model = MyUser
-        fields = ('usernameC', 'usernameE', 'org', 'department', 'mobile', 'email', 'wechat', 'title', 'id', 'tags', 'userstatus', 'photourl', 'is_active', 'orgarea', 'country', 'onjob', 'hasIM')
+        fields = ('usernameC', 'usernameE', 'org', 'department', 'mobile', 'mobiletrue', 'email', 'wechat', 'title',
+                  'id', 'tags', 'userstatus', 'photourl', 'is_active', 'orgarea', 'country', 'onjob', 'hasIM')
         depth = 1
 
     def get_tags(self, obj):
@@ -102,6 +107,13 @@ class UserInfoSerializer(serializers.ModelSerializer):
         if qs.exists():
             return tagSerializer(qs,many=True).data
         return None
+
+    def get_mobiletrue(self, obj):
+        if obj.mobile:
+            an = re.search('^[1](3[0-9]|47|5[0-9]|8[0-9])[0-9]{8}$', obj.mobile)
+            if an:
+                return True
+        return False
 
     def get_photourl(self, obj):
         if obj.photoKey:
@@ -210,7 +222,8 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MyUser
-        exclude = ('usercode', 'is_staff', 'is_superuser', 'createuser', 'createdtime', 'deletedtime', 'deleteduser', 'is_deleted', 'lastmodifyuser', 'lastmodifytime', 'registersource', 'datasource')
+        exclude = ('usercode', 'is_staff', 'is_superuser', 'createuser', 'createdtime', 'deletedtime', 'deleteduser',
+                   'is_deleted', 'lastmodifyuser', 'lastmodifytime', 'registersource', 'datasource')
         depth = 1
 
     def get_tags(self, obj):
@@ -236,21 +249,27 @@ class CreatUserSerializer(serializers.ModelSerializer):
 class UpdateUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = MyUser
-        # fields = ('groups','photoBucket','photoKey','cardBucket','cardKey','wechat','org','username','usernameE',
-        # 'mobileAreaCode','mobile','description','tags','email','title','gender','school','specialty','registersource','remark',)
         exclude = ('password','datasource')
 
 
 # 用户列表显示信息
 class UserListSerializer(serializers.ModelSerializer):
     org = OrgCommonSerializer()
+    mobiletrue = serializers.SerializerMethodField()
     trader_relation = serializers.SerializerMethodField()
     photourl = serializers.SerializerMethodField()
 
     class Meta:
         model = MyUser
-        fields = ('id','groups','tags','country','department','usernameC','usernameE','mobile','email','title','userstatus','org','trader_relation','photourl','is_active', 'hasIM', 'wechat')
+        fields = ('id','groups','tags','country', 'department', 'usernameC', 'usernameE', 'mobile', 'mobiletrue',
+                  'email', 'title', 'userstatus', 'org', 'trader_relation', 'photourl','is_active', 'hasIM', 'wechat')
 
+    def get_mobiletrue(self, obj):
+        if obj.mobile:
+            an = re.search('^[1](3[0-9]|47|5[0-9]|8[0-9])[0-9]{8}$', obj.mobile)
+            if an:
+                return True
+        return False
 
     def get_trader_relation(self, obj):
         usertrader = obj.investor_relations.filter(relationtype=True, is_deleted=False)
@@ -284,11 +303,13 @@ class UserListCommenSerializer(serializers.ModelSerializer):
     photourl = serializers.SerializerMethodField()
     mobile = serializers.SerializerMethodField()
     email = serializers.SerializerMethodField()
+    mobiletrue = serializers.SerializerMethodField()
     org = OrgCommonSerializer()
 
     class Meta:
         model = MyUser
-        fields = ('id', 'usernameC', 'usernameE', 'tags', 'userstatus', 'photourl', 'title', 'onjob', 'mobile', 'email', 'is_active', 'org')
+        fields = ('id', 'usernameC', 'usernameE', 'tags', 'userstatus', 'photourl', 'title', 'onjob', 'mobile',
+                  'mobiletrue', 'email', 'is_active', 'org')
 
 
     def get_photourl(self, obj):
@@ -296,6 +317,13 @@ class UserListCommenSerializer(serializers.ModelSerializer):
             return getUrlWithBucketAndKey('image', obj.photoKey)
         else:
             return None
+
+    def get_mobiletrue(self, obj):
+        if obj.mobile:
+            an = re.search('^[1](3[0-9]|47|5[0-9]|8[0-9])[0-9]{8}$', obj.mobile)
+            if an:
+                return True
+        return False
 
     def get_mobile(self, obj):
         if obj.mobile and obj.mobile not in ['', u'']:
