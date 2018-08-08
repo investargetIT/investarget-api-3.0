@@ -34,7 +34,7 @@ class ProjectData(Document):
     com_fund_needs_name = StringField(null=True) #融资需求
     com_des = StringField(null=True)   #公司介绍
     invse_total_money = StringField(null=True)  #融资总额
-    com_addr = StringField(null=True, default='其他')   #公司所在地
+    com_addr = StringField(null=True)   #公司所在地
     mobile = StringField(null=True)  # 公司联系方式
     email = StringField(null=True)  # 公司邮箱
     detailaddress = StringField(null=True)  # 公司地址
@@ -50,8 +50,6 @@ class ProjectData(Document):
         if self.pk is None:
             if len(ProjectData.objects.filter(com_id=self.com_id)) > 0:
                 raise InvestError(8001,msg='数据重复')
-        if not self.com_addr:
-            self.com_addr = '其他'
         super(ProjectData,self).save(force_insert,validate,clean,write_concern,cascade,cascade_kwargs,_refs,save_condition,signal_kwargs,**kwargs)
 
 class MergeFinanceData(Document):
