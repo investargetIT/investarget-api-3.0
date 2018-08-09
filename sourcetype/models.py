@@ -57,6 +57,7 @@ class OrgBdResponse(models.Model):
     id = models.AutoField(primary_key=True)
     nameC = models.CharField(max_length=64,blank=True,null=True)
     nameE = models.CharField(max_length=64, blank=True, null=True)
+    sort = models.IntegerField(blank=True, default=1)
     is_deleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
