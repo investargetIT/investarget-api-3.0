@@ -1,17 +1,14 @@
 #coding=utf8
-import threading
+
 import traceback
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction
-from django.db.models import Q, Count, Max
-from django.db.models import QuerySet
+from django.db.models import QuerySet, Q, Count, Max
 from django.shortcuts import render_to_response
 from django_filters import FilterSet
 import datetime
-
 import json
 from django.core.serializers.json import DjangoJSONEncoder
-# Create your views here.
 from rest_framework import filters, viewsets
 from BD.models import ProjectBD, ProjectBDComments, OrgBDComments, OrgBD, MeetingBD
 from BD.serializers import ProjectBDSerializer, ProjectBDCreateSerializer, ProjectBDCommentsCreateSerializer, \
@@ -152,7 +149,7 @@ class ProjectBDView(viewsets.ModelViewSet):
                     if newprojectBD.manager:
                         add_perm('BD.user_manageProjectBD', newprojectBD.manager, newprojectBD)
                 else:
-                    raise InvestError(4009,msg='项目BD创建失败——%s'%projectBD.error_messages)
+                    raise InvestError(4009,msg='项目BD创建失败——%s'%projectBD.errors)
                 if comments:
                     data['projectBD'] = newprojectBD.id
                     commentinstance = ProjectBDCommentsCreateSerializer(data=data)
@@ -209,7 +206,7 @@ class ProjectBDView(viewsets.ModelViewSet):
                         add_perm('BD.user_manageProjectBD', newprojectBD.manager, newprojectBD)
                         rem_perm('BD.user_manageProjectBD', oldmanager, newprojectBD)
                 else:
-                    raise InvestError(4009, msg='项目BD修改失败——%s' % projectBD.error_messages)
+                    raise InvestError(4009, msg='项目BD修改失败——%s' % projectBD.errors)
                 return JSONResponse(
                     SuccessResponse(returnDictChangeToLanguage(ProjectBDSerializer(newprojectBD).data, lang)))
         except InvestError as err:
@@ -470,7 +467,7 @@ class OrgBDView(viewsets.ModelViewSet):
             desc = request.GET.get('desc', 1)
             if desc in ('1', u'1', 1):
                 sortfield = '-' + sortfield
-            queryset = queryset.order_by('-isimportant', sortfield)
+            queryset = queryset.order_by(sortfield)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)

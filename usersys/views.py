@@ -308,7 +308,7 @@ class UserView(viewsets.ModelViewSet):
                             usertaglist.append(userTags(user=user, tag_id=tag, ))
                         user.user_usertags.bulk_create(usertaglist)
                 else:
-                    raise InvestError(code=20071,msg='userdata有误_%s\n%s' % (userserializer.error_messages, userserializer.errors))
+                    raise InvestError(code=20071,msg='userdata有误_%s' % (userserializer.errors))
                 if user.createuser:
                     add_perm('usersys.user_getuser', user.createuser, user)
                     add_perm('usersys.user_changeuser', user.createuser, user)
