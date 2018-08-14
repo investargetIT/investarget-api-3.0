@@ -94,7 +94,7 @@ def jpush_v3(app_key, payload):
     return https_request(app_key, body, "https://api.jpush.cn/v3/push", 'application/json', version=1)
 
 
-def pushnotification(receiver_alias,content,bdage,n_extras=None):
+def pushnotification(content,receiver_alias,bdage,n_extras=None):
     platform = [
         "android",
         "ios",

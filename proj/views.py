@@ -1143,8 +1143,6 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
             data['datasource'] = request.user.datasource.id
             projidlist = data.pop('projs',None)
             user = self.get_user(userid)
-            push_alias = None
-            pushcontent = None
             if ftype == 4:
                 pass
             elif ftype == 5:
@@ -1154,16 +1152,12 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
                 traderuser = self.get_user(traderid)
                 if not user.has_perm('usersys.user_interestproj', traderuser):
                     raise InvestError(code=4005)
-                push_alias = traderuser.id
-                pushcontent = '投资人%s对%s个项目感兴趣，请尽快联系'%(request.user.usernameC,len(projidlist))
             elif ftype in [1,2]:
                 if not request.user.has_perm('proj.admin_addfavorite'):
                     raise InvestError(code=4005)
             elif ftype == 3:
                 if not request.user.has_perm('usersys.user_addfavorite', user):
                     raise InvestError(code=4005)
-                push_alias = user.id
-                pushcontent = '交易师(%s)给您推荐%s个项目'%(request.user.usernameC,len(projidlist))
             else:
                 raise InvestError(code=2009)
             with transaction.atomic():
@@ -1187,8 +1181,6 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
                     else:
                         receiver = proj.user
                     sendmessage_favoriteproject(proj, receiver, sender=request.user)
-                if push_alias:
-                    pushnotification(receiver_alias=push_alias,content=pushcontent,bdage=1)
                 return JSONResponse(SuccessResponse(returnListChangeToLanguage(favoriteProjectList,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
