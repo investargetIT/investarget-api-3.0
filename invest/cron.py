@@ -79,7 +79,7 @@ def sendExpiredScheduleMsg():
     if schedule_qs.exists():
         for instance in schedule_qs:
             sendmessage_schedulemsg(instance, receiver=instance.createuser,
-                                    types=['app', 'wenmsg'])
+                                    types=['app', 'webmsg'])
 def sendExpiredTimelineMsg():
     timelineTransationStatu_qs = timelineTransationStatu.objects.all().filter(is_deleted=False,isActive=True,
                                                                inDate__year=datetime.datetime.now().year,
@@ -88,4 +88,4 @@ def sendExpiredTimelineMsg():
     if timelineTransationStatu_qs.exists():
         for instance in timelineTransationStatu_qs:
             sendmessage_timelinealertcycleexpire(instance, receiver=instance.createuser,
-                                    types=['app', 'wenmsg'])
+                                    types=['app', 'webmsg'])
