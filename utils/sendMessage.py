@@ -164,7 +164,11 @@ def sendmessage_favoriteproject(model,receiver, sender=None):
                         try:
                             receiver_alias = receiver.id
                             bdage = 1
-                            n_extras = {'info': {'proj': model.proj_id, 'ftype': model.favoritetype_id},
+                            n_extras = {'info': {
+                                                'proj': model.proj_id,
+                                                'projtitle': projtitle,
+                                                'ftype': model.favoritetype_id
+                                                },
                                         'type': 'favoriteProject'}
                             pushnotification(content, receiver_alias, bdage, n_extras)
                         except Exception:
@@ -770,7 +774,12 @@ def sendmessage_orgBDMessage(model,receiver,types,sender=None):
                 try:
                     receiver_alias = receiver.id
                     bdage = 1
-                    n_extras = {'info': {'proj': model.proj_id if model.proj else None, 'org': model.org_id if model.org else None},
+                    n_extras = {'info': {
+                                        'proj': model.proj_id if model.proj else None,
+                                        'projtitle': projtitle,
+                                        'org': model.org_id if model.org else None,
+                                        'orgname': model.org.orgnameC if model.org else None
+                                        },
                                 'type': 'OrgBD'}
                     pushnotification(content, receiver_alias, bdage, n_extras)
                 except Exception:
