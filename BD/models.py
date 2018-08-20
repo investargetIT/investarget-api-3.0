@@ -96,6 +96,7 @@ class OrgBD(MyModel):
     expirationtime = models.DateTimeField(blank=True,null=True,help_text='BD过期时间')
     response = MyForeignKey(OrgBdResponse, blank=True, null=True, related_name='OrgBD_response')
     isSolved = models.BooleanField(blank=True, default=False, help_text='BD是否已处理')
+    isRead = models.BooleanField(blank=True, default=False, help_text='是否已读')
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_OrgBD')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_OrgBD')
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_OrgBD')

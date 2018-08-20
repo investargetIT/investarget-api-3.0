@@ -24,7 +24,7 @@ projbdcomment_detail = views.ProjectBDCommentsView.as_view({
 })
 orgbd_baselist = views.OrgBDView.as_view({
         'get': 'baselist',
-
+        'post': 'readBd',
 })
 
 orgbd_list = views.OrgBDView.as_view({

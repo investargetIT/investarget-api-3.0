@@ -378,13 +378,14 @@ class OrgBDFilter(FilterSet):
     response = RelationFilter(filterstr='response', lookup_method='in')
     proj = RelationFilter(filterstr='proj', lookup_method='in')
     isSolved = RelationFilter(filterstr='isSolved')
+    isRead = RelationFilter(filterstr='isRead')
     isimportant = RelationFilter(filterstr='isimportant')
     bd_status = RelationFilter(filterstr='bd_status', lookup_method='in')
     stime = RelationFilter(filterstr='createdtime', lookup_method='gt')
     etime = RelationFilter(filterstr='createdtime', lookup_method='lt')
     class Meta:
         model = OrgBD
-        fields = ('manager', 'bd_status', 'org', 'proj', 'stime', 'etime', 'response', 'isimportant', 'isSolved')
+        fields = ('manager', 'bd_status', 'org', 'proj', 'stime', 'etime', 'response', 'isimportant', 'isSolved', 'isRead')
 
 
 class OrgBDView(viewsets.ModelViewSet):
@@ -565,6 +566,23 @@ class OrgBDView(viewsets.ModelViewSet):
                 raise InvestError(2009)
             serializer = self.serializer_class(instance, context={'user_id': request.user.id})
             return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def readBd(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            bdlist = data.get('bds')
+            bdQuery = self.get_queryset().filter(manager_id=request.user.id, id__in=bdlist)
+            count = 0
+            if bdQuery.exists():
+                count = bdQuery.count()
+                bdQuery.update(isRead=True)
+            return JSONResponse(SuccessResponse({'count': count}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
