@@ -390,9 +390,12 @@ class OrgBDFilter(FilterSet):
 
 class OrgBDView(viewsets.ModelViewSet):
     """
+    baselist:统计机构BD项目
+    countBd:统计机构BD负责人
     list:获取机构BD
     create:增加机构BD
     retrieve:查看机构BD信息
+    readBd:已读回执
     update:修改机构BD信息
     destroy:删除机构BD
     """
