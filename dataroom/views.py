@@ -424,7 +424,7 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['dataroom.admin_adddataroom', 'dataroom.user_adddataroomfile'])
+    @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
@@ -504,7 +504,7 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
 
 
 
-    @loginTokenIsAvailable(['dataroom.admin_deletedataroom', 'dataroom.user_deletedataroomfile'])
+    @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
         try:
             filelist = request.data.get('filelist',None)
