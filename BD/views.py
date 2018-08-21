@@ -390,8 +390,9 @@ class OrgBDFilter(FilterSet):
 
 class OrgBDView(viewsets.ModelViewSet):
     """
-    baselist:统计机构BD项目
-    countBd:统计机构BD负责人
+    countBDProjectOrg:统计机构BD项目机构
+    countBDManager:统计机构BD负责人
+    countBDProject:统计机构BD项目
     list:获取机构BD
     create:增加机构BD
     retrieve:查看机构BD信息
@@ -426,7 +427,7 @@ class OrgBDView(viewsets.ModelViewSet):
         return queryset
 
     @loginTokenIsAvailable()
-    def baselist(self, request, *args, **kwargs):
+    def countBDProjectOrg(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size', 10)
             page_index = request.GET.get('page_index', 1)
@@ -451,6 +452,30 @@ class OrgBDView(viewsets.ModelViewSet):
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def countBDProject(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            queryset = self.filter_queryset(self.get_queryset())
+            sortfield = request.GET.get('sort', 'created')
+            if request.GET.get('desc', 1) in ('1', u'1', 1):
+                sortfield = '-' + sortfield
+            queryset = queryset.values('proj').annotate(count=Count('proj'), created=Max('createdtime')).order_by(sortfield)
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = json.dumps(list(queryset), cls=DjangoJSONEncoder)
+            return JSONResponse(SuccessResponse({'count': count, 'data': json.loads(serializer)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
 
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
@@ -486,7 +511,7 @@ class OrgBDView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable()
-    def countBd(self, request, *args, **kwargs):
+    def countBDManager(self, request, *args, **kwargs):
         try:
             queryset = self.filter_queryset(self.get_queryset())
             if request.user.has_perm('BD.manageOrgBD'):

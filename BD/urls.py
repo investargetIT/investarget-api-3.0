@@ -23,17 +23,27 @@ projbdcomment_detail = views.ProjectBDCommentsView.as_view({
         'delete': 'destroy'
 })
 orgbd_baselist = views.OrgBDView.as_view({
-        'get': 'baselist',
-        'post': 'readBd',
+        'get': 'countBDProjectOrg',
 })
 
 orgbd_list = views.OrgBDView.as_view({
         'get': 'list',
         'post': 'create'
 })
-orgbd_count = views.OrgBDView.as_view({
-        'get': 'countBd',
+
+orgbd_managercount = views.OrgBDView.as_view({
+        'get': 'countBDManager',
+
 })
+
+orgbd_read = views.OrgBDView.as_view({
+        'post': 'readBd',
+})
+
+orgbd_projectcount = views.OrgBDView.as_view({
+        'get': 'countBDProject',
+})
+
 orgbd_detail = views.OrgBDView.as_view({
         'get': 'retrieve',
         'put': 'update',
@@ -64,7 +74,6 @@ deleteAttachment = views.MeetingBDView.as_view({
 
 })
 
-
 urlpatterns = [
         url(r'^projbd/$', projbd_list, name='projbd_list'),
         url(r'^projbd/count/$', projbd_count, name='projbd_count'),
@@ -72,8 +81,10 @@ urlpatterns = [
         url(r'^projbd/comment/$', projdbcomment_list, name='projdbcomment_list'),
         url(r'^projbd/comment/(?P<pk>\d+)/$', projbdcomment_detail, name='projbdcomment_detail'),
         url(r'^orgbd/$', orgbd_list, name='orgbd_list'),
+        url(r'^orgbd/read/$', orgbd_read, name='orgbd_read'),
         url(r'^orgbdbase/$', orgbd_baselist, name='orgbdbase_list'),
-        url(r'^orgbd/count/$', orgbd_count, name='orgbd_count'),
+        url(r'^orgbd/count/$', orgbd_managercount, name='orgbd_managercount'),
+        url(r'^orgbd/proj/$', orgbd_projectcount, name='orgbd_projectcount'),
         url(r'^orgbd/(?P<pk>\d+)/$', orgbd_detail, name='orgbd_detail'),
         url(r'^orgbd/comment/$', orgbdcomment_list, name='orgbdcomment_list'),
         url(r'^orgbd/comment/(?P<pk>\d+)/$', orgbdcomment_detail, name='orgbdcomment_detail'),

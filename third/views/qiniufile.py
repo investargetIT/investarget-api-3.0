@@ -7,21 +7,16 @@ import random
 import string
 import threading
 import traceback
-
 import qiniu
 import requests
-from django.http import StreamingHttpResponse
 
 from qiniu import BucketManager
 from qiniu.services.storage.uploader import _Resume, put_file
 from rest_framework.decorators import api_view
-
 from invest.settings import APILOG_PATH
-from third.thirdconfig import qiniu_url, ACCESS_KEY, SECRET_KEY, fops, pipeline
+from third.thirdconfig import qiniu_url, ACCESS_KEY, SECRET_KEY
 from utils.customClass import JSONResponse, InvestError, MyUploadProgressRecorder
-from utils.somedef import addWaterMark, file_iterator
-from utils.util import InvestErrorResponse, ExceptionResponse, SuccessResponse, loginTokenIsAvailable, checkrequesttoken, \
-    catchexcption, checkRequestToken, logexcption
+from utils.util import InvestErrorResponse, ExceptionResponse, SuccessResponse, logexcption
 
 
 #覆盖上传
