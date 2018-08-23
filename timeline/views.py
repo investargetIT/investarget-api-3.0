@@ -149,7 +149,8 @@ class TimelineView(viewsets.ModelViewSet):
             timelinedata = data.pop('timelinedata', None)
             statudata = data.pop('statusdata', None)
             lang = request.GET.get('lang')
-            timelinedata['createuser'] = request.user.id
+            if not timelinedata.get('createuser', None):
+                timelinedata['createuser'] = request.user.id
             timelinedata['datasource'] = request.user.datasource_id
             if timelinedata.get('isClose', None) in ['true','True','1',1,'Yes','yes']:
                 timelinedata['closeDate'] = datetime.datetime.now()
