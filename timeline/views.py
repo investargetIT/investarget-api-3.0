@@ -231,7 +231,7 @@ class TimelineView(viewsets.ModelViewSet):
             statudata = data.pop('statusdata',None)
             sendmessage = False
             with transaction.atomic():
-                newactivetimelinestatu,newtimeline = None,None
+                newactivetimelinestatu = None
                 if statudata:
                     timelinetransationStatus = statudata.get('transationStatus')
                     if timelinetransationStatus:
@@ -267,12 +267,12 @@ class TimelineView(viewsets.ModelViewSet):
                         timelinedata['closeDate'] = None
                     timelineseria = TimeLineUpdateSerializer(timeline,data=timelinedata)
                     if timelineseria.is_valid():
-                        newtimeline = timelineseria.save()
+                        timeline = timelineseria.save()
                     else:
                         raise InvestError(code=20071, msg=timelineseria.errors)
-                cache_delete_key(self.redis_key + '_%s' % newtimeline.id)
+                cache_delete_key(self.redis_key + '_%s' % timeline.id)
                 if sendmessage:
-                    sendmessage_timelineauditstatuchange(newactivetimelinestatu, newtimeline.proj.takeUser, ['app', 'email', 'webmsg'], sender=request.user)
+                    sendmessage_timelineauditstatuchange(newactivetimelinestatu, timeline.proj.takeUser, ['app', 'email', 'webmsg'], sender=request.user)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(TimeLineSerializer(timeline).data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
