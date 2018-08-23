@@ -70,7 +70,6 @@ class OrgBDSerializer(serializers.ModelSerializer):
     proj = ProjSimpleSerializer()
     BDComments = serializers.SerializerMethodField()
     usertitle = titleTypeSerializer()
-    bd_status = BDStatusSerializer()
     cardurl = serializers.SerializerMethodField()
     userreamrk = serializers.SerializerMethodField()
     userattachment = serializers.SerializerMethodField()

@@ -380,12 +380,11 @@ class OrgBDFilter(FilterSet):
     isSolved = RelationFilter(filterstr='isSolved')
     isRead = RelationFilter(filterstr='isRead')
     isimportant = RelationFilter(filterstr='isimportant')
-    bd_status = RelationFilter(filterstr='bd_status', lookup_method='in')
     stime = RelationFilter(filterstr='createdtime', lookup_method='gt')
     etime = RelationFilter(filterstr='createdtime', lookup_method='lt')
     class Meta:
         model = OrgBD
-        fields = ('manager', 'bd_status', 'org', 'proj', 'stime', 'etime', 'response', 'isimportant', 'isSolved', 'isRead')
+        fields = ('manager', 'org', 'proj', 'stime', 'etime', 'response', 'isimportant', 'isSolved', 'isRead')
 
 
 class OrgBDView(viewsets.ModelViewSet):
@@ -629,16 +628,14 @@ class OrgBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
             elif request.user.id == instance.createuser_id:
-                data = {'bd_status': data.get('bd_status', instance.bd_status_id),
-                        'response': data.get('response', instance.response_id),
+                data = {'response': data.get('response', instance.response_id),
                         'isimportant': bool(data.get('isimportant', instance.isimportant))}
 
             elif request.user.has_perm('BD.user_manageOrgBD', instance):
-                data = {'bd_status': data.get('bd_status', instance.bd_status_id), 'response': data.get('response', instance.response_id), 'isimportant': bool(data.get('isimportant', instance.isimportant))}
+                data = {'response': data.get('response', instance.response_id), 'isimportant': bool(data.get('isimportant', instance.isimportant))}
             elif instance.proj:
                 if request.user in [instance.proj.takeUser, instance.proj.makeUser]:
-                    data = {'bd_status': data.get('bd_status', instance.bd_status_id),
-                            'response': data.get('response', instance.response_id),
+                    data = {'response': data.get('response', instance.response_id),
                             'isimportant': bool(data.get('isimportant', instance.isimportant))}
 
             else:

@@ -92,7 +92,6 @@ class OrgBD(MyModel):
     bduser = MyForeignKey(MyUser,blank=True,null=True,help_text='bd对象id')
     manager = MyForeignKey(MyUser,blank=True,null=True,help_text='负责人',related_name='user_orgBDs')
     isimportant = models.BooleanField(blank=True, default=False, help_text='是否重点BD')
-    bd_status = MyForeignKey(BDStatus,blank=True,null=True,help_text='bd状态')
     expirationtime = models.DateTimeField(blank=True,null=True,help_text='BD过期时间')
     response = MyForeignKey(OrgBdResponse, blank=True, null=True, related_name='OrgBD_response')
     isSolved = models.BooleanField(blank=True, default=False, help_text='BD是否已处理')
@@ -135,12 +134,6 @@ class OrgBD(MyModel):
             if self.proj:
                 if self.proj.projstatus < 4:
                     raise InvestError(5003,msg='项目尚未终审发布')
-        if self.pk and not self.is_deleted:
-            if self.bd_status.nameC == 'BD成功':
-                if self.bduser:
-                    comments = self.OrgBD_comments.all().filter(is_deleted=False)
-                    for comment in comments:
-                        makeUserRemark(self.bduser,comment,self.manager)
         return super(OrgBD, self).save(*args, **kwargs)
 
 class OrgBDComments(MyModel):
