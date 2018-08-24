@@ -151,7 +151,7 @@ class OrgBD(MyModel):
                 if self.proj.projstatus < 4:
                     raise InvestError(5003,msg='项目尚未终审发布')
         timelinestatu_id = timelineStatusContrast.get(str(self.response_id))
-        if not self.is_deleted and self.bduser and timelinestatu_id:
+        if self.pk and not self.is_deleted and self.bduser and timelinestatu_id:
             if not (self.id and self.response == OrgBD.objects.get(id=self.id).response):
                 try:
                     timeline_qs = timeline.objects.filter(is_deleted=0, investor=self.bduser, proj=self.proj, trader=self.manager)
