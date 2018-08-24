@@ -17,11 +17,13 @@ from BD.serializers import ProjectBDSerializer, ProjectBDCreateSerializer, Proje
 from invest.settings import cli_domain
 from proj.models import project
 from third.views.qiniufile import deleteqiniufile
+from timeline.models import timeline
+from timeline.models import timelineremark
 from utils.customClass import RelationFilter, InvestError, JSONResponse
 from utils.sendMessage import sendmessage_orgBDMessage, sendmessage_orgBDExpireMessage
 from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
     returnListChangeToLanguage, catchexcption, returnDictChangeToLanguage, mySortQuery, add_perm, rem_perm, \
-    read_from_cache, write_to_cache, cache_delete_key
+    read_from_cache, write_to_cache, cache_delete_key, logexcption
 
 
 class ProjectBDFilter(FilterSet):
@@ -625,6 +627,7 @@ class OrgBDView(viewsets.ModelViewSet):
             oldmanager = instance.manager
             data.pop('createuser', None)
             data.pop('datasource', None)
+            remark = data.get('remark', None)
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
             elif request.user.id == instance.createuser_id:
@@ -644,6 +647,15 @@ class OrgBDView(viewsets.ModelViewSet):
                 orgBD = OrgBDCreateSerializer(instance,data=data)
                 if orgBD.is_valid():
                     neworgBD = orgBD.save()
+                    if remark and remark.strip() != '' and neworgBD.response_id not in [4, 5, 6, None] and neworgBD.bduser and neworgBD.proj:
+                        try:
+                            timeline_qs = timeline.objects.filter(is_deleted=0, investor=neworgBD.bduser,
+                                                                  proj=neworgBD.proj, trader=neworgBD.manager)
+                            if timeline_qs.exists():
+                                timelineremark(timeline=timeline_qs.first(), remark=remark,
+                                               createuser=neworgBD.createuser, datasource_id=neworgBD.datasource).save()
+                        except Exception:
+                            logexcption(msg='同步备注失败，OrgBD_id-%s ' % neworgBD.id)
                     oldmanager_id = data.get('manager', None)
                     if oldmanager_id and oldmanager_id != oldmanager.id:
                         if request.user != neworgBD.manager:

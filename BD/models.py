@@ -9,14 +9,30 @@ from org.models import organization
 from proj.models import project
 from sourcetype.models import BDStatus, OrgArea, Country, OrgBdResponse
 from sourcetype.models import TitleType
+from timeline.models import timeline, timelineremark, timelineTransationStatu
 from usersys.models import MyUser
-from usersys.views import makeUserRemark
 from utils.customClass import MyForeignKey, InvestError, MyModel
+from utils.util import logexcption
 
 bd_sourcetype = (
     (0,'全库搜索'),
     (1,'其他')
 )
+
+timelineStatusContrast = {
+    '1': 1,
+    '2': 2,
+    '3': 3,
+    '7': 4,
+    '8': 5,
+    '9': 6,
+    '10': 7,
+    '11': 8,
+    '12': 9,
+    '13': 10,
+    '14': 11,
+}
+
 class ProjectBD(MyModel):
     country = MyForeignKey(Country, blank=True, null=True, help_text='项目国家')
     location = MyForeignKey(OrgArea, blank=True, null=True, help_text='项目地区')
@@ -134,6 +150,24 @@ class OrgBD(MyModel):
             if self.proj:
                 if self.proj.projstatus < 4:
                     raise InvestError(5003,msg='项目尚未终审发布')
+        timelinestatu_id = timelineStatusContrast.get(str(self.response_id))
+        if not self.is_deleted and self.bduser and timelinestatu_id:
+            if not (self.id and self.response == OrgBD.objects.get(id=self.id).response):
+                try:
+                    timeline_qs = timeline.objects.filter(is_deleted=0, investor=self.bduser, proj=self.proj, trader=self.manager)
+                    if not timeline_qs.exists():
+                        timelineistance = timeline(investor=self.bduser, trader=self.manager, proj=self.proj, createuser=self.manager, datasource_id=self.datasource)
+                        timelineistance.save()
+                        timelineTransationStatu(timeline=timelineistance, transationStatus_id=timelinestatu_id, isActive=True, alertCycle=7).save()
+                    else:
+                        if timelineTransationStatu.objects.filter(timeline=timeline_qs.first(), is_deleted=0).exists():
+                            timelineTransationStatu.objects.filter(timeline=timeline_qs.first(), is_deleted=0).filter(isActive=True)\
+                                .update(transationStatus_id=timelinestatu_id)
+                        else:
+                            timelineTransationStatu(timeline=timeline_qs.first(), transationStatus_id=timelinestatu_id,
+                                                    isActive=True,alertCycle=7).save()
+                except Exception:
+                    logexcption(msg='同步创建时间轴失败，OrgBD_id-%s ' % self.id)
         return super(OrgBD, self).save(*args, **kwargs)
 
 class OrgBDComments(MyModel):
@@ -154,6 +188,13 @@ class OrgBDComments(MyModel):
         if self.orgBD and not self.orgBD.isSolved:
             self.orgBD.isSolved = True
             self.orgBD.save(update_fields=['isSolved'])
+        if not self.pk:
+            try:
+                timeline_qs = timeline.objects.filter(is_deleted=0, investor=self.orgBD.bduser, proj=self.orgBD.proj, trader=self.orgBD.manager)
+                if timeline_qs.exists():
+                    timelineremark(timeline=timeline_qs.first(), remark=self.comments, createuser=self.createuser, datasource_id=self.datasource).save()
+            except Exception:
+                logexcption(msg='同步备注失败，OrgBD_id-%s ' % self.orgBD.id)
         return super(OrgBDComments, self).save(*args, **kwargs)
 
 
