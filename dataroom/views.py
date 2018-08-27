@@ -272,8 +272,8 @@ class DataroomView(viewsets.ModelViewSet):
                 response['Content-Length'] = os.path.getsize(rootpath)
                 response['Content-Type'] = 'application/octet-stream'
                 response["content-disposition"] = 'attachment;filename=%s' % path
-                # os.remove(rootpath)
-                # if os.path.exists(direcpath):
+                # os.remove(rootpath)            # 删除压缩包
+                # if os.path.exists(direcpath):  # 删除源文件
                 #     shutil.rmtree(direcpath)
             else:
                 if os.path.exists(direcpath):
@@ -300,7 +300,7 @@ def startMakeDataroomZip(directory_qs, file_qs, path, watermarkcontent=None):
             self.zipDirectory()
 
         def downloadFiles(self, files, times=1):
-            if times < 3:
+            if times <= 10:
                 if os.path.exists(self.path):
                     shutil.rmtree(self.path)
                 makeDirWithdirectoryobjs(self.directory_qs, self.path)
