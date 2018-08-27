@@ -269,6 +269,7 @@ class DataroomView(viewsets.ModelViewSet):
             if os.path.exists(rootpath):
                 fn = open(rootpath, 'rb')
                 response = StreamingHttpResponse(file_iterator(fn))
+                response['Content-Length'] = os.path.getsize(rootpath)
                 response['Content-Type'] = 'application/octet-stream'
                 response["content-disposition"] = 'attachment;filename=%s' % path
                 # os.remove(rootpath)
