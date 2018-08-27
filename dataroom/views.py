@@ -238,7 +238,7 @@ class DataroomView(viewsets.ModelViewSet):
                     directory_qs = instance.dataroom_directories.all().filter(is_deleted=False, isFile=False)
                     rootpath = APILOG_PATH['dataroomFilePath'] + '/' + 'dataroom_%s%s' % (
                     str(instance.id), '_%s' % userid if userid else '')
-                    startMakeDataroomZip(directory_qs, file_qs, rootpath, instance, watermarkcontent)
+                    startMakeDataroomZip(directory_qs, file_qs, rootpath, watermarkcontent)
                     response = JSONResponse(SuccessResponse({'code': 8002, 'msg': '文件不存在'}))
             return response
         except InvestError as err:
@@ -286,7 +286,7 @@ class DataroomView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-def startMakeDataroomZip(directory_qs, file_qs, path, dataroominstance, watermarkcontent=None):
+def startMakeDataroomZip(directory_qs, file_qs, path, watermarkcontent=None):
     class downloadAllDataroomFile(threading.Thread):
         def __init__(self, directory_qs, file_qs, path):
             self.directory_qs = directory_qs
@@ -296,18 +296,30 @@ def startMakeDataroomZip(directory_qs, file_qs, path, dataroominstance, watermar
 
         def run(self):
             makeDirWithdirectoryobjs(self.directory_qs, self.path)
-            filepaths = []
-            for file_obj in self.file_qs:
-                path = getPathWithFile(file_obj, self.path)
-                savepath = downloadFileToPath(key=file_obj.realfilekey, bucket=file_obj.bucket, path=path)
-                if savepath:
-                    filetype = path.split('.')[-1]
-                    if filetype in ['pdf', u'pdf']:
-                        filepaths.append(path)
-            if len(filepaths) > 0:
-                addWaterMarkToPdfFiles(filepaths, watermarkcontent)
+            self.downloadFiles(self.file_qs)
+            self.zipDirectory()
+
+        def downloadFiles(self, files, times=1):
+            if times < 3:
+                if os.path.exists(self.path):
+                    shutil.rmtree(self.path)
+                filepaths = []
+                for file_obj in files:
+                    path = getPathWithFile(file_obj, self.path)
+                    savepath = downloadFileToPath(key=file_obj.realfilekey, bucket=file_obj.bucket, path=path)
+                    if savepath:
+                        filetype = path.split('.')[-1]
+                        if filetype in ['pdf', u'pdf']:
+                            filepaths.append(path)
+                if len(filepaths) > 0:
+                    try:
+                        addWaterMarkToPdfFiles(filepaths, watermarkcontent)
+                    except Exception:
+                        self.downloadFiles(files, times + 1)
+
+        def zipDirectory(self):
             import zipfile
-            zipf = zipfile.ZipFile(self.path+'.zip', 'w')
+            zipf = zipfile.ZipFile(self.path + '.zip', 'w')
             pre_len = len(os.path.dirname(self.path))
             for parent, dirnames, filenames in os.walk(self.path):
                 for filename in filenames:
@@ -317,9 +329,9 @@ def startMakeDataroomZip(directory_qs, file_qs, path, dataroominstance, watermar
             zipf.close()
             if os.path.exists(self.path):
                 shutil.rmtree(self.path)
+
     d = downloadAllDataroomFile(directory_qs, file_qs, path)
     d.start()
-    # d.join()
 
 def makeDirWithdirectoryobjs(directory_objs ,rootpath):
     if os.path.exists(rootpath):

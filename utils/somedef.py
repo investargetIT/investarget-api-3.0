@@ -140,12 +140,13 @@ def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
             PdfWriter(out_path, trailer=input_file).write()
             os.remove(path)
             os.rename(out_path, path)
-        except Exception:
+        except Exception as err:
             print '覆盖水印pdf失败--%s--源文件%s' % (now, path)
             filepath = APILOG_PATH['excptionlogpath'] + '/' + now.strftime('%Y-%m-%d')
             f = open(filepath, 'a')
             f.writelines(now.strftime('%H:%M:%S') + '\n' + traceback.format_exc() + '\n\n')
             f.close()
+            raise err
     if os.path.exists(watermarkpath):
         os.remove(watermarkpath)
     return
