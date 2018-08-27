@@ -295,7 +295,6 @@ def startMakeDataroomZip(directory_qs, file_qs, path, watermarkcontent=None):
             threading.Thread.__init__(self)
 
         def run(self):
-            makeDirWithdirectoryobjs(self.directory_qs, self.path)
             self.downloadFiles(self.file_qs)
             self.zipDirectory()
 
@@ -303,6 +302,7 @@ def startMakeDataroomZip(directory_qs, file_qs, path, watermarkcontent=None):
             if times < 3:
                 if os.path.exists(self.path):
                     shutil.rmtree(self.path)
+                makeDirWithdirectoryobjs(self.directory_qs, self.path)
                 filepaths = []
                 for file_obj in files:
                     path = getPathWithFile(file_obj, self.path)
