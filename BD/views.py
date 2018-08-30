@@ -638,7 +638,6 @@ class OrgBDView(viewsets.ModelViewSet):
             data.pop('createuser', None)
             data.pop('datasource', None)
             remark = data.get('remark', None)
-            cache_delete_patternKey(key='/bd/orgbd*')
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
             elif request.user.id == instance.createuser_id:
@@ -661,6 +660,7 @@ class OrgBDView(viewsets.ModelViewSet):
                 orgBD = OrgBDCreateSerializer(instance,data=data)
                 if orgBD.is_valid():
                     neworgBD = orgBD.save()
+                    cache_delete_patternKey(key='/bd/orgbd*')
                     if remark and remark.strip() != '' and neworgBD.response_id not in [4, 5, 6, None] and neworgBD.bduser and neworgBD.proj:
                         try:
                             timeline_qs = timeline.objects.filter(is_deleted=0, investor=neworgBD.bduser,
@@ -710,6 +710,7 @@ class OrgBDView(viewsets.ModelViewSet):
                 instance.OrgBD_comments.filter(is_deleted=False).update(is_deleted=True, deleteduser=request.user,
                                                                         deletedtime=datetime.datetime.now())
             cache_delete_key(self.redis_key)
+            cache_delete_patternKey(key='/bd/orgbd*')
             return JSONResponse(SuccessResponse({'isDeleted': True,}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -798,6 +799,7 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
                 commentinstance = OrgBDCommentsCreateSerializer(data=data)
                 if commentinstance.is_valid():
                     newcommentinstance = commentinstance.save()
+                    cache_delete_patternKey(key='/bd/orgbd*')
                 else:
                     raise InvestError(5004, msg='创建机构BDcomments失败--%s' % commentinstance.error_messages)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgBDCommentsSerializer(newcommentinstance).data, lang)))
@@ -823,6 +825,7 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
                 instance.deleteduser = request.user
                 instance.deletedtime = datetime.datetime.now()
                 instance.save()
+                cache_delete_patternKey(key='/bd/orgbd*')
             return JSONResponse(SuccessResponse({'isDeleted': True, }))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
