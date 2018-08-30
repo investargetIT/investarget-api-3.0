@@ -489,6 +489,12 @@ class OrgBDView(viewsets.ModelViewSet):
                 pass
             else:
                 raise InvestError(2009)
+            query_string = request.META['QUERY_STRING']
+            uriPath = str(request.path)
+            cachekey = '{}_{}_{}'.format(uriPath, query_string, request.user.id)
+            response = read_from_cache(cachekey)
+            if response:
+                return JSONResponse(SuccessResponse(response))
             countres = queryset.values_list('manager').annotate(Count('manager'))
             countlist = []
             for manager_count in countres:
@@ -505,7 +511,9 @@ class OrgBDView(viewsets.ModelViewSet):
             except EmptyPage:
                 return JSONResponse(SuccessResponse({'count': 0, 'data': [], 'manager_count':countlist}))
             serializer = OrgBDSerializer(queryset, many=True, context={'user_id': request.user.id})
-            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang), 'manager_count':countlist}))
+            response = {'count':count,'data':returnListChangeToLanguage(serializer.data,lang), 'manager_count':countlist}
+            write_to_cache(cachekey, response)
+            return JSONResponse(SuccessResponse(response))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -622,6 +630,7 @@ class OrgBDView(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         try:
             data = request.data
+            data['lastmodifyuser'] = request.user.id
             lang = request.GET.get('lang')
             instance = self.get_object()
             oldmanager = instance.manager
@@ -632,15 +641,18 @@ class OrgBDView(viewsets.ModelViewSet):
                 pass
             elif request.user.id == instance.createuser_id:
                 data = {'response': data.get('response', instance.response_id),
-                        'isimportant': bool(data.get('isimportant', instance.isimportant))}
+                        'isimportant': bool(data.get('isimportant', instance.isimportant)),
+                        'lastmodifyuser': request.user.id}
 
             elif request.user.has_perm('BD.user_manageOrgBD', instance):
-                data = {'response': data.get('response', instance.response_id), 'isimportant': bool(data.get('isimportant', instance.isimportant))}
+                data = {'response': data.get('response', instance.response_id),
+                        'isimportant': bool(data.get('isimportant', instance.isimportant)),
+                        'lastmodifyuser': request.user.id}
             elif instance.proj:
                 if request.user in [instance.proj.takeUser, instance.proj.makeUser]:
                     data = {'response': data.get('response', instance.response_id),
-                            'isimportant': bool(data.get('isimportant', instance.isimportant))}
-
+                            'isimportant': bool(data.get('isimportant', instance.isimportant)),
+                            'lastmodifyuser': request.user.id}
             else:
                 raise InvestError(2009)
             with transaction.atomic():
