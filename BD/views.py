@@ -481,10 +481,6 @@ class OrgBDView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size', 10)
-            page_index = request.GET.get('page_index', 1)
-            lang = request.GET.get('lang', 'cn')
-            queryset = self.filter_queryset(self.get_queryset())
             if request.user.has_perm('BD.manageOrgBD') or request.user.has_perm('BD.user_getOrgBD'):
                 pass
             else:
@@ -495,6 +491,10 @@ class OrgBDView(viewsets.ModelViewSet):
             response = read_from_cache(cachekey)
             if response:
                 return JSONResponse(SuccessResponse(response))
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
+            queryset = self.filter_queryset(self.get_queryset())
             countres = queryset.values_list('manager').annotate(Count('manager'))
             countlist = []
             for manager_count in countres:
