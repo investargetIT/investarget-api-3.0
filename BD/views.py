@@ -23,7 +23,7 @@ from utils.customClass import RelationFilter, InvestError, JSONResponse
 from utils.sendMessage import sendmessage_orgBDMessage, sendmessage_orgBDExpireMessage
 from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
     returnListChangeToLanguage, catchexcption, returnDictChangeToLanguage, mySortQuery, add_perm, rem_perm, \
-    read_from_cache, write_to_cache, cache_delete_key, logexcption
+    read_from_cache, write_to_cache, cache_delete_key, logexcption, cache_delete_patternKey
 
 
 class ProjectBDFilter(FilterSet):
@@ -619,6 +619,7 @@ class OrgBDView(viewsets.ModelViewSet):
             if bdQuery.exists():
                 count = bdQuery.count()
                 bdQuery.update(isRead=True)
+                cache_delete_patternKey(key='/bd/orgbd*')
             return JSONResponse(SuccessResponse({'count': count}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -637,6 +638,7 @@ class OrgBDView(viewsets.ModelViewSet):
             data.pop('createuser', None)
             data.pop('datasource', None)
             remark = data.get('remark', None)
+            cache_delete_patternKey(key='/bd/orgbd*')
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
             elif request.user.id == instance.createuser_id:

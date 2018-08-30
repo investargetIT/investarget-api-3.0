@@ -36,12 +36,16 @@ def read_from_cache(key):
 def write_to_cache(key, value, time_out=REDIS_TIMEOUT):
     cache.set(key, value, time_out)
 
-#删除
+#删除全部
 def cache_clearALL():
     cache.clear()
 #删除
 def cache_delete_key(key):
     cache.delete(key)
+
+#批量删除（通配符）
+def cache_delete_patternKey(key):
+    cache.delete_pattern(key)
 
 #记录request error
 def catchexcption(request):
