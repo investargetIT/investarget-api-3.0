@@ -497,7 +497,7 @@ class OrgBDView(viewsets.ModelViewSet):
             except EmptyPage:
                 return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             serializer = OrgBDSerializer(queryset, many=True, context={'user_id': request.user.id})
-            response = {'count':count,'data':returnListChangeToLanguage(serializer.data,lang), 'manager_count':countlist}
+            response = {'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}
             write_to_cache(cachekey, response)
             return JSONResponse(SuccessResponse(response))
         except InvestError as err:
