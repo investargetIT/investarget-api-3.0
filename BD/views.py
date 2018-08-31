@@ -485,10 +485,6 @@ class OrgBDView(viewsets.ModelViewSet):
             page_index = request.GET.get('page_index', 1)
             lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
-            countres = queryset.values_list('manager').annotate(Count('manager'))
-            countlist = []
-            for manager_count in countres:
-                countlist.append({'manager':manager_count[0],'count':manager_count[1]})
             sortfield = request.GET.get('sort', 'createdtime')
             desc = request.GET.get('desc', 1)
             if desc in ('1', u'1', 1):
@@ -499,7 +495,7 @@ class OrgBDView(viewsets.ModelViewSet):
                 queryset = Paginator(queryset, page_size)
                 queryset = queryset.page(page_index)
             except EmptyPage:
-                return JSONResponse(SuccessResponse({'count': 0, 'data': [], 'manager_count':countlist}))
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             serializer = OrgBDSerializer(queryset, many=True, context={'user_id': request.user.id})
             response = {'count':count,'data':returnListChangeToLanguage(serializer.data,lang), 'manager_count':countlist}
             write_to_cache(cachekey, response)
@@ -519,12 +515,10 @@ class OrgBDView(viewsets.ModelViewSet):
             else:
                 raise InvestError(2009)
             queryset = self.filter_queryset(self.get_queryset())
-            countres = queryset.values_list('manager').annotate(Count('manager'))
-            countlist = []
-            for manager_count in countres:
-                countlist.append({'manager': manager_count[0], 'count': manager_count[1]})
             count = queryset.count()
-            return JSONResponse(SuccessResponse({'count': count, 'manager_count': countlist}))
+            queryset = queryset.values_list('manager').annotate(count=Count('manager'))
+            serializer = json.dumps(list(queryset), cls=DjangoJSONEncoder)
+            return JSONResponse(SuccessResponse({'count': count, 'manager_count': json.loads(serializer)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
