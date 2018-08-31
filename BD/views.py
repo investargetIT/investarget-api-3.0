@@ -430,23 +430,16 @@ class OrgBDView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def countBDProjectOrg(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size', 10)
-            page_index = request.GET.get('page_index', 1)
-            queryset = self.filter_queryset(self.get_queryset())
             if request.user.has_perm('BD.manageOrgBD') or request.user.has_perm('BD.user_getOrgBD'):
                 pass
             else:
                 raise InvestError(2009)
+            queryset = self.filter_queryset(self.get_queryset())
             sortfield = request.GET.get('sort', 'created')
             if request.GET.get('desc', 1) in ('1', u'1', 1):
                 sortfield = '-' + sortfield
+            count = queryset.count()
             queryset = queryset.values('org','proj').annotate(orgcount=Count('org'),projcount=Count('proj'),created=Max('createdtime')).order_by(sortfield)
-            try:
-                count = queryset.count()
-                queryset = Paginator(queryset, page_size)
-                queryset = queryset.page(page_index)
-            except EmptyPage:
-                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             serializer = json.dumps(list(queryset), cls=DjangoJSONEncoder)
             return JSONResponse(SuccessResponse({'count': count, 'data': json.loads(serializer)}))
         except InvestError as err:
@@ -457,19 +450,16 @@ class OrgBDView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def countBDProject(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size', 10)
-            page_index = request.GET.get('page_index', 1)
+            if request.user.has_perm('BD.manageOrgBD') or request.user.has_perm('BD.user_getOrgBD'):
+                pass
+            else:
+                raise InvestError(2009)
             queryset = self.filter_queryset(self.get_queryset())
             sortfield = request.GET.get('sort', 'created')
             if request.GET.get('desc', 1) in ('1', u'1', 1):
                 sortfield = '-' + sortfield
+            count = queryset.count()
             queryset = queryset.values('proj').annotate(count=Count('proj'), created=Max('createdtime')).order_by(sortfield)
-            try:
-                count = queryset.count()
-                queryset = Paginator(queryset, page_size)
-                queryset = queryset.page(page_index)
-            except EmptyPage:
-                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             serializer = json.dumps(list(queryset), cls=DjangoJSONEncoder)
             return JSONResponse(SuccessResponse({'count': count, 'data': json.loads(serializer)}))
         except InvestError as err:
@@ -522,20 +512,38 @@ class OrgBDView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def countBDManager(self, request, *args, **kwargs):
         try:
-            queryset = self.filter_queryset(self.get_queryset())
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
             elif request.user.has_perm('BD.user_getOrgBD'):
-                # queryset = queryset.filter(Q(manager=request.user) | Q(createuser=request.user) | Q(proj__in=request.user.usertake_projs.all()) | Q(proj__in=request.user.usermake_projs.all()))
                 pass
             else:
                 raise InvestError(2009)
+            queryset = self.filter_queryset(self.get_queryset())
             countres = queryset.values_list('manager').annotate(Count('manager'))
             countlist = []
             for manager_count in countres:
                 countlist.append({'manager': manager_count[0], 'count': manager_count[1]})
             count = queryset.count()
             return JSONResponse(SuccessResponse({'count': count, 'manager_count': countlist}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def countBDResponse(self, request, *args, **kwargs):
+        try:
+            if request.user.has_perm('BD.manageOrgBD'):
+                pass
+            elif request.user.has_perm('BD.user_getOrgBD'):
+                pass
+            else:
+                raise InvestError(2009)
+            queryset = self.filter_queryset(self.get_queryset())
+            count = queryset.count()
+            queryset = queryset.values('response').annotate(count=Count('response'))
+            serializer = json.dumps(list(queryset), cls=DjangoJSONEncoder)
+            return JSONResponse(SuccessResponse({'count': count, 'response_count': json.loads(serializer)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:

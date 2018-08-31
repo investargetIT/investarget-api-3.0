@@ -36,6 +36,11 @@ orgbd_managercount = views.OrgBDView.as_view({
 
 })
 
+orgbd_responsecount = views.OrgBDView.as_view({
+        'get': 'countBDResponse',
+
+})
+
 orgbd_read = views.OrgBDView.as_view({
         'post': 'readBd',
 })
@@ -84,6 +89,7 @@ urlpatterns = [
         url(r'^orgbd/read/$', orgbd_read, name='orgbd_read'),
         url(r'^orgbdbase/$', orgbd_baselist, name='orgbdbase_list'),
         url(r'^orgbd/count/$', orgbd_managercount, name='orgbd_managercount'),
+        url(r'^orgbd/response/$', orgbd_responsecount, name='orgbd_responsecount'),
         url(r'^orgbd/proj/$', orgbd_projectcount, name='orgbd_projectcount'),
         url(r'^orgbd/(?P<pk>\d+)/$', orgbd_detail, name='orgbd_detail'),
         url(r'^orgbd/comment/$', orgbdcomment_list, name='orgbdcomment_list'),
