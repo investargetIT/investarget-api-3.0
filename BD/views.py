@@ -430,6 +430,8 @@ class OrgBDView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def countBDProjectOrg(self, request, *args, **kwargs):
         try:
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
             if request.user.has_perm('BD.manageOrgBD') or request.user.has_perm('BD.user_getOrgBD'):
                 pass
             else:
@@ -438,7 +440,12 @@ class OrgBDView(viewsets.ModelViewSet):
             sortfield = request.GET.get('sort', 'created')
             if request.GET.get('desc', 1) in ('1', u'1', 1):
                 sortfield = '-' + sortfield
-            count = queryset.count()
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             queryset = queryset.values('org','proj').annotate(orgcount=Count('org'),projcount=Count('proj'),created=Max('createdtime')).order_by(sortfield)
             serializer = json.dumps(list(queryset), cls=DjangoJSONEncoder)
             return JSONResponse(SuccessResponse({'count': count, 'data': json.loads(serializer)}))
