@@ -205,6 +205,7 @@ class MeetingBD(MyModel):
     username = models.CharField(max_length=64, blank=True, null=True, help_text='姓名')
     usermobile = models.CharField(max_length=64, blank=True, null=True, help_text='电话')
     bduser = MyForeignKey(MyUser, blank=True, null=True, help_text='bd对象id')
+    address = models.TextField(blank=True, null=True, help_text='会议具体地址')
     manager = MyForeignKey(MyUser, blank=True, null=True, help_text='负责人', related_name='user_MeetBDs')
     comments = models.TextField(blank=True, null=True, help_text='会议纪要')
     meet_date = models.DateTimeField(blank=True, null=True, help_text='会议时间')
