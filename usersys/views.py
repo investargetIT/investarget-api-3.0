@@ -137,7 +137,7 @@ class UserView(viewsets.ModelViewSet):
                 serializerclass = UserListCommenSerializer
             sortfield = request.GET.get('sort', 'createdtime')
             desc = request.GET.get('desc', 1)
-            queryset = mySortQuery(queryset, sortfield, desc)
+            queryset = mySortQuery(queryset, sortfield, desc, True)
             count = queryset.count()
             try:
                 queryset = Paginator(queryset, page_size)

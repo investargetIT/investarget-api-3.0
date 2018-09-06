@@ -291,7 +291,7 @@ def requestDictChangeToLanguage(model,dictdata,lang=None):
     return newdict
 
 
-def mySortQuery(queryset,sortfield,desc):
+def mySortQuery(queryset, sortfield, desc, created=False):
     '''
 
     :param queryset: 排序集合，queryset类型
@@ -302,7 +302,10 @@ def mySortQuery(queryset,sortfield,desc):
     try:
         if desc in ('1', u'1', 1):
             sortfield = '-' + sortfield
-        queryset = queryset.order_by(sortfield)
+        if created:
+            queryset = queryset.order_by(sortfield, '-createdtime')
+        else:
+            queryset = queryset.order_by(sortfield)
         return queryset
     except FieldError:
         raise InvestError(8891,msg='无效字段')
