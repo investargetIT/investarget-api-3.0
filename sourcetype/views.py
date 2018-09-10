@@ -574,8 +574,8 @@ def getmenulist(user):
         qslist.append(allmenuobj.filter(id__in=[29, 23]))
     if user.has_perm('APILog.manage_userinfolog'):#日志查询
         qslist.append(allmenuobj.filter(id__in=[9]))
-    if user.has_perm('msg.admin_manageSchedule'):#日程管理
-        qslist.append(allmenuobj.filter(id__in=[25]))
+    # if user.has_perm('msg.admin_manageSchedule'):#日程管理
+    #     qslist.append(allmenuobj.filter(id__in=[25]))
     if user.is_superuser:
         qslist.append(allmenuobj.filter(id__in=[17]))
     if user.has_perm('proj.admin_addproj') or user.has_perm('proj.user_addproj'):
@@ -584,6 +584,6 @@ def getmenulist(user):
         qslist.append(allmenuobj.filter(id__in=[31]))
     if user.has_perm('org.export_org'):
         qslist.append(allmenuobj.filter(id__in=[32]))
-    qslist.append(allmenuobj.filter(id__in=[1, 4, 6, 7, 8, 10, 11, 14, 15, 16, 18, 20, 21, 24, 26, 27, 28, 30, 33]))
+    qslist.append(allmenuobj.filter(id__in=[1, 4, 6, 7, 8, 10, 11, 14, 15, 16, 18, 20, 21, 24, 25, 26, 27, 28, 30, 33]))
     qsres = reduce(lambda x,y:x|y,qslist).distinct().filter(is_deleted=False).order_by('index')
     return WebMenuSerializer(qsres,many=True).data

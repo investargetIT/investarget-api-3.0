@@ -1664,8 +1664,11 @@ class GroupPermissionView(viewsets.ModelViewSet):
                 queryset = queryset.page(page_index)
             except EmptyPage:
                 return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
-
-            serializer = GroupDetailSerializer(queryset, many=True)
+            if not request.user.is_superuser:
+                serializerclass = GroupSerializer
+            else:
+                serializerclass = GroupDetailSerializer
+            serializer = serializerclass(queryset, many=True)
             return JSONResponse(
                 SuccessResponse({'count': count, 'data':serializer.data}))
         except InvestError as err:
