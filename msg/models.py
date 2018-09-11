@@ -14,7 +14,11 @@ from usersys.models import MyUser
 
 #站内信
 from utils.customClass import InvestError, MyForeignKey, MyModel
-
+scheduleChoice = (
+    (1,'路演会议'),
+    (2,'约见公司'),
+    (3,'约见投资人'),
+)
 
 class message(MyModel):
     content = models.TextField(verbose_name='站内信详细内容',blank=True,null=True)
@@ -39,6 +43,7 @@ class message(MyModel):
         db_table = 'msg'
 
 class schedule(MyModel):
+    type = models.SmallIntegerField(blank=True, default=3, help_text='日程类别',choices=scheduleChoice)
     user = MyForeignKey(MyUser,blank=True,null=True,help_text='日程对象',related_name='user_beschedule',on_delete=CASCADE)
     scheduledtime = models.DateTimeField(blank=True,null=True,help_text='日程预定时间',)
     comments = models.TextField(blank=True, null=True, help_text='内容')
