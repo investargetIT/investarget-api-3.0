@@ -20,8 +20,7 @@ class ScheduleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = schedule
-        fields = ('id','comments','scheduledtime','user','address','projtitle','proj','createuser','createdtime','country','location')
-
+        exclude = ('deleteduser', 'datasource', 'is_deleted', 'deletedtime', 'lastmodifytime')
 
 
 class MsgSerializer(serializers.ModelSerializer):
