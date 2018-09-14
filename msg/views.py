@@ -109,7 +109,7 @@ class ScheduleView(viewsets.ModelViewSet):
     filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
     queryset = schedule.objects.all().filter(is_deleted=False)
     filter_fields = ('proj','createuser','user','projtitle','country')
-    search_fields = ('createuser__usernameC','createuser__mobile','user__usernameC','user__mobile')
+    search_fields = ('createuser__usernameC', 'user__usernameC', 'user__mobile', 'proj__projtitleC', 'proj__projtitleE')
     serializer_class = ScheduleSerializer
 
 

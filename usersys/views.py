@@ -290,6 +290,8 @@ class UserView(viewsets.ModelViewSet):
                         if not group.permissions.filter(codename='as_investor').exists():
                             raise InvestError(2009,msg='新增用户非投资人类型')
                         data['groups'] = [group.id]
+                    else:
+                        raise InvestError(2009, msg='新增用户没有分配正确组别')
                 else:
                     raise InvestError(2009, msg='没有新增权限')
                 cannoteditlist = [key for key in keylist if key in canNotChangeField]
