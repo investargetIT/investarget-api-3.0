@@ -10,7 +10,7 @@ import datetime
 import json
 from django.core.serializers.json import DjangoJSONEncoder
 from rest_framework import filters, viewsets
-from BD.models import ProjectBD, ProjectBDComments, OrgBDComments, OrgBD, MeetingBD
+from BD.models import ProjectBD, ProjectBDComments, OrgBDComments, OrgBD, MeetingBD, MeetBDShareToken
 from BD.serializers import ProjectBDSerializer, ProjectBDCreateSerializer, ProjectBDCommentsCreateSerializer, \
     ProjectBDCommentsSerializer, OrgBDCommentsSerializer, OrgBDCommentsCreateSerializer, OrgBDCreateSerializer, \
     OrgBDSerializer, MeetingBDSerializer, MeetingBDCreateSerializer
@@ -866,6 +866,8 @@ class MeetingBDView(viewsets.ModelViewSet):
     retrieve:查看会议BD信息
     update:修改会议BD信息
     destroy:删除会议BD
+    getShareMeetingBDdetail:根据sharetoken获取会议BD
+    getShareMeetingBDtoken:获取会议BD分享sharetoken
     """
     filter_backends = (filters.DjangoFilterBackend,filters.SearchFilter)
     queryset = MeetingBD.objects.filter(is_deleted=False)
@@ -1057,6 +1059,50 @@ class MeetingBDView(viewsets.ModelViewSet):
                 instance.deletedtime = datetime.datetime.now()
                 instance.save()
             return JSONResponse(SuccessResponse({'isDeleted': True,}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable()
+    def getShareMeetingBDtoken(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            meetinglist = data.get('meetings', None)
+            if not isinstance(meetinglist, (list, tuple)):
+                raise InvestError(2007, msg='except string list')
+            meetings = ','.join(map(str, meetinglist))
+            with transaction.atomic():
+                sharetokenset = MeetBDShareToken.objects.filter(user=request.user, meetings=meetings)
+                if sharetokenset.exists():
+                    sharetoken = sharetokenset.last()
+                else:
+                    sharetoken = MeetBDShareToken(user=request.user, meetings=meetings)
+                    sharetoken.save()
+                return JSONResponse(SuccessResponse(sharetoken.key))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    def getShareMeetingBDdetail(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            tokenkey = request.GET.get('token')
+            if tokenkey:
+                token = MeetBDShareToken.objects.filter(key=tokenkey)
+                if token.exists():
+                    meetingstr = token.first().meetings
+                    meetinglist = meetingstr.split(',')
+                else:
+                    raise InvestError(2009,msg='token无效')
+            else:
+                raise InvestError(2009, msg='token无效')
+            serializer = MeetingBDSerializer(self.get_queryset().filter(id__in=meetinglist), many=True)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:

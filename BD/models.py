@@ -2,6 +2,10 @@
 from __future__ import unicode_literals
 
 import datetime
+
+import binascii
+import os
+
 from django.db import models
 
 # Create your models here.
@@ -239,3 +243,22 @@ class MeetingBD(MyModel):
             self.usertitle = self.bduser.title
         self.datasource = self.manager.datasource_id
         return super(MeetingBD, self).save(*args, **kwargs)
+
+
+class MeetBDShareToken(models.Model):
+    key = models.CharField(max_length=50, primary_key=True,help_text='sharetoken')
+    user = MyForeignKey(MyUser, related_name='user_MeetBDsharetoken',help_text='用户的分享token')
+    meetings = models.TextField(blank=True, null=True, help_text='BD记录的分享token')
+    created = models.DateTimeField(help_text="CreatedTime", auto_now_add=True, blank=True)
+    is_deleted = models.BooleanField(help_text='是否已被删除', blank=True, default=False)
+
+    class Meta:
+        db_table = 'BD_meetingbdsharetoken'
+
+    def save(self, *args, **kwargs):
+        if not self.key:
+            self.key = self.generate_key()
+        return super(MeetBDShareToken, self).save(*args, **kwargs)
+
+    def generate_key(self):
+        return binascii.hexlify(os.urandom(25)).decode()

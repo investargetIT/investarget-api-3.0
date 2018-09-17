@@ -68,6 +68,11 @@ meetbd_list = views.MeetingBDView.as_view({
         'post': 'create'
 })
 
+meetbd_share = views.MeetingBDView.as_view({
+        'get': 'getShareMeetingBDdetail',
+        'post': 'getShareMeetingBDtoken'
+})
+
 meetbd_detail = views.MeetingBDView.as_view({
         'get': 'retrieve',
         'put': 'update',
@@ -95,6 +100,7 @@ urlpatterns = [
         url(r'^orgbd/comment/$', orgbdcomment_list, name='orgbdcomment_list'),
         url(r'^orgbd/comment/(?P<pk>\d+)/$', orgbdcomment_detail, name='orgbdcomment_detail'),
         url(r'^meetbd/$', meetbd_list, name='meetbd_list'),
+        url(r'^meetbd/share/$', meetbd_share, name='meetbd_share'),
         url(r'^meetbd/(?P<pk>\d+)/$', meetbd_detail, name='meetbd_detail'),
         url(r'^meetbd/delatt/(?P<pk>\d+)/$', deleteAttachment, name='deleteAttachment'),
 ]
