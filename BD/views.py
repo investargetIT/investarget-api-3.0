@@ -1101,7 +1101,7 @@ class MeetingBDView(viewsets.ModelViewSet):
                     raise InvestError(2009,msg='token无效')
             else:
                 raise InvestError(2009, msg='token无效')
-            serializer = MeetingBDSerializer(self.get_queryset().filter(id__in=meetinglist, isShow=True), many=True)
+            serializer = MeetingBDSerializer(self.get_queryset().filter(id__in=meetinglist), many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))

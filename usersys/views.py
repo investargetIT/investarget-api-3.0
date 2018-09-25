@@ -624,9 +624,16 @@ class UserView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def getCount(self, request, *args, **kwargs):
         try:
-            totalcount = self.get_queryset().count()
-            newcount = self.get_queryset().filter(createdtime__gte=datetime.datetime.now() - datetime.timedelta(days=1)).count()
-            result = {'total':totalcount,'new':newcount}
+            totalcount = read_from_cache('user_totalcount')
+            if not totalcount:
+                totalcount = self.get_queryset().count()
+                write_to_cache('user_totalcount', totalcount)
+            newcount = read_from_cache('user_newcount')
+            if not newcount:
+                newcount = self.get_queryset().filter(
+                    createdtime__gte=datetime.datetime.now() - datetime.timedelta(days=1)).count()
+                write_to_cache('user_newcount', newcount)
+            result = {'total': totalcount, 'new': newcount}
             return JSONResponse(SuccessResponse(result))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
