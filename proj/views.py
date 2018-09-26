@@ -304,7 +304,7 @@ class ProjectView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(4004,msg='token无效')
             else:
-                raise InvestError(code=4004, msg='没有权限查看隐藏项目')
+                raise InvestError(code=4004, msg='没有权限查看项目')
             serializer = ProjDetailSerializer_user_withoutsecretinfo(instance)
             viewprojlog(userid=None,projid=instance.id,sourceid=clienttype)
             return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data,lang)))

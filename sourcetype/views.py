@@ -25,7 +25,6 @@ class TagView(viewsets.ModelViewSet):
         update:修改标签
         destroy:删除标签
     """
-
     queryset = Tag.objects.all().filter(is_deleted=False)
     serializer_class = tagSerializer
 

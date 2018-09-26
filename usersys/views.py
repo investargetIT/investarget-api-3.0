@@ -5,11 +5,9 @@ from django.contrib import auth
 from django.contrib.auth.models import Group, Permission
 from django.core.exceptions import FieldDoesNotExist
 from django.core.paginator import Paginator, EmptyPage
-from django.db import transaction,models
-from django.db.models import Q, Count
-from django.db.models import QuerySet
-from rest_framework import filters
-from rest_framework import viewsets
+from django.db import transaction, models, connection
+from django.db.models import Q, Count, QuerySet
+from rest_framework import filters, viewsets
 
 from rest_framework.decorators import api_view, detail_route, list_route
 
@@ -66,6 +64,7 @@ class UserView(viewsets.ModelViewSet):
     findpassword:找回密码
     changepassword:修改密码
     resetpassword:重置密码
+    getAvaibleFalseMobileNumber:获取可用手机号
     update:修改用户信息
     destroy:删除用户
     """
@@ -616,6 +615,17 @@ class UserView(viewsets.ModelViewSet):
             return JSONResponse(SuccessResponse({'result':result,'user':returnDictChangeToLanguage(user,lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def getAvaibleFalseMobileNumber(self, request, *args, **kwargs):
+        try:
+            cursor = connection.cursor()
+            cursor.execute('select getmaxmobilenumber()')
+            row = cursor.fetchone()[0]
+            return JSONResponse(SuccessResponse(row))
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
@@ -1783,7 +1793,6 @@ class PermissionView(viewsets.ModelViewSet):
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
 
 
 @api_view(['POST'])
