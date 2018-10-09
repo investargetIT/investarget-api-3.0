@@ -5,8 +5,7 @@ import time, random, json,  sys, os
 from third.thirdconfig import my_product, apns_production_boolean
 
 sys.path.insert(0, os.path.dirname(sys.path[0]))
-reload(sys)
-sys.setdefaultencoding('utf8')
+
 
 import requests
 
@@ -44,7 +43,6 @@ def https_request(app_key, body, url, content_type=None, version=None, params=No
 
     headers['connection'] = 'keep-alive'
     headers['content-type'] = 'application/json'
-    # print url,body
     try:
         response = https.request('POST', url, data=body, params=params, headers=headers)
     # 合并返回
@@ -90,7 +88,6 @@ def push_params_v3(content, receiver_value, platform, bdage, n_extras):
 
 def jpush_v3(app_key, payload):
     body = json.dumps(payload)
-    # print body
     return https_request(app_key, body, "https://api.jpush.cn/v3/push", 'application/json', version=1)
 
 

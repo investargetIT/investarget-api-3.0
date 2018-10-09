@@ -1,6 +1,6 @@
 #coding=utf-8
 from django.conf.urls import url
-import views
+from sourcetype import views
 
 tag = views.TagView.as_view({
         'get': 'list',

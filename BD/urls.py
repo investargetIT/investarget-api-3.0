@@ -1,5 +1,5 @@
 from django.conf.urls import url, include
-import views
+from BD import views
 
 projbd_list = views.ProjectBDView.as_view({
         'get': 'list',

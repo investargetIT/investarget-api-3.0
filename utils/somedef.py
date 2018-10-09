@@ -67,9 +67,9 @@ def addWaterMark(pdfpath, watermarkcontent=None):
         os.remove(pdfpath)
         os.rename(out_path, pdfpath)
         os.remove(watermarkpath)
-        print '覆盖水印pdf--%s--源文件%s' % (now, out_path)
+        print('覆盖水印pdf--%s--源文件%s' % (now, out_path))
     except Exception:
-        print '覆盖水印pdf出错--%s--源文件%s' % (now, out_path)
+        print('覆盖水印pdf出错--%s--源文件%s' % (now, out_path))
         filepath = APILOG_PATH['excptionlogpath'] + '/' + now.strftime('%Y-%m-%d')
         f = open(filepath, 'a')
         f.writelines(now.strftime('%H:%M:%S') + '\n' + traceback.format_exc() + '\n\n')
@@ -121,7 +121,7 @@ def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
         watermark = create_watermark(watermarkpath, watermarkcontent)
     except Exception:
         now = datetime.datetime.now()
-        print '制作水印pdf--%s'%now
+        print('制作水印pdf--%s'%now)
         filepath = APILOG_PATH['excptionlogpath'] + '/' + now.strftime('%Y-%m-%d')
         f = open(filepath, 'a')
         f.writelines(now.strftime('%H:%M:%S') + '\n' + traceback.format_exc() + '\n\n')
@@ -131,7 +131,7 @@ def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
     for path in pdfpaths:
         try:
             now = datetime.datetime.now()
-            print '覆盖水印pdf--%s--源文件%s' % (now, path)
+            print('覆盖水印pdf--%s--源文件%s' % (now, path))
             out_path = path.split('.')[0] + '-out' + '.pdf'
 
             input_file = PdfReader(path)
@@ -141,7 +141,7 @@ def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
             os.remove(path)
             os.rename(out_path, path)
         except Exception as err:
-            print '覆盖水印pdf失败--%s--源文件%s' % (now, path)
+            print('覆盖水印pdf失败--%s--源文件%s' % (now, path))
             filepath = APILOG_PATH['excptionlogpath'] + '/' + now.strftime('%Y-%m-%d')
             f = open(filepath, 'a')
             f.writelines(now.strftime('%H:%M:%S') + '\n' + traceback.format_exc() + '\n\n')

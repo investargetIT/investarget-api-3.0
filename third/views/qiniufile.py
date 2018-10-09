@@ -252,7 +252,7 @@ def convertAndUploadOffice(inputpath, outputpath, bucket_name, bucket_key):
                 logexcption(msg='文件转换失败')
             if os.path.exists(outputpath):
                 success, url, key = qiniuuploadfile(outputpath, bucket_name, bucket_key)
-                print success,url,key
+                print(success,url,key)
                 os.remove(outputpath)
             if os.path.exists(inputpath):
                 os.remove(inputpath)

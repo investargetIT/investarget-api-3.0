@@ -11,8 +11,6 @@ from sourcetype.models import AuditStatus, OrgType , TransactionPhases,CurrencyT
 from usersys.models import MyUser
 from utils.customClass import InvestError, MyForeignKey, MyModel
 
-reload(sys)
-sys.setdefaultencoding('utf-8')
 # Create your models here.
 
 class organization(MyModel):

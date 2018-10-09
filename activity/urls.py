@@ -1,6 +1,6 @@
 #coding=utf-8
 from django.conf.urls import url
-import views
+from activity import views
 
 
 activityView = views.ActivityView.as_view({

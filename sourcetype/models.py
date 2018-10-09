@@ -7,9 +7,6 @@ import datetime
 from django.db import models
 from utils.customClass import MyForeignKey
 
-reload(sys)
-sys.setdefaultencoding('utf-8')
-
 
 class AuditStatus(models.Model):
     '''

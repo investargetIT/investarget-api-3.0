@@ -4,6 +4,7 @@ from sourcetype.models import TransactionType, TransactionPhases, Specialty, Sch
     AuditStatus, ProjectStatus, OrgType, FavoriteType, MessageType, ClientType, TitleType, Country, \
     DataSource, TransactionStatus, webmenu, CharacterType, orgtitletable, Service, OrgAttribute, BDStatus, AndroidAppVersion, OrgBdResponse, \
     OrgLevelType, FamiliarLevel
+from third.views.qiniufile import getUrlWithBucketAndKey
 
 
 class AuditStatusSerializer(serializers.ModelSerializer):
@@ -88,7 +89,7 @@ class countrySerializer(serializers.ModelSerializer):
     def get_url(self, obj):
         if not obj.key:
             return None
-        return 'https://o79atf82v.qnssl.com/' + obj.key
+        return getUrlWithBucketAndKey('image', obj.key)
 
 class countryWithContinentSerializer(serializers.ModelSerializer):
 
@@ -120,8 +121,8 @@ class industrySerializer(serializers.ModelSerializer):
 
     def get_url(self, obj):
         if not obj.key:
-            return 'https://o79atf82v.qnssl.com/' + '040.jpg'
-        return 'https://o79atf82v.qnssl.com/' + obj.key
+            return getUrlWithBucketAndKey('image', '040.jpg')
+        return getUrlWithBucketAndKey('image', obj.key)
 
 
 class industryWithPIndustrySerializer(serializers.ModelSerializer):

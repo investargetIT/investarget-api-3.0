@@ -1,6 +1,6 @@
 #coding=utf-8
 from django.conf.urls import url
-import views
+from usersys import views
 
 
 user_list = views.UserView.as_view({

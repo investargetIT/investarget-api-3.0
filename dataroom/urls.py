@@ -1,6 +1,6 @@
 #coding=utf-8
 from django.conf.urls import url
-import views
+from dataroom import views
 
 dataroom = views.DataroomView.as_view({
         'get': 'list',

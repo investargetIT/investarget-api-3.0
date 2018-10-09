@@ -1,6 +1,6 @@
 #coding=utf-8
 from django.conf.urls import url
-import views
+from emailmanage import views
 
 sendemaillist = views.EmailgroupsendlistView.as_view({
         'get': 'list',

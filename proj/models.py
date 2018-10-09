@@ -18,8 +18,6 @@ import sys
 from utils.customClass import InvestError, MyForeignKey, MyModel
 from utils.util import add_perm, rem_perm
 
-reload(sys)
-sys.setdefaultencoding('utf-8')
 
 
 class project(MyModel):

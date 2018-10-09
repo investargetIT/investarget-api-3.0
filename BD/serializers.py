@@ -91,7 +91,7 @@ class OrgBDSerializer(serializers.ModelSerializer):
     def get_cardurl(self, obj):
         if obj.bduser:
             if obj.bduser.cardKey:
-                return 'https://o79atf82v.qnssl.com/' + obj.bduser.cardKey
+                return getUrlWithBucketAndKey('image', obj.bduser.cardKey)
         return None
 
     def get_userreamrk(self, obj):

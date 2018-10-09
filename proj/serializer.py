@@ -24,7 +24,7 @@ class ProjIndustrySerializer(serializers.ModelSerializer):
 
     def get_url(self, obj):
         if obj.key:
-            return 'https://o79atf82v.qnssl.com/' + obj.key
+            return  getUrlWithBucketAndKey('image', obj.key)
         return None
 
     def get_nameC(self, obj):

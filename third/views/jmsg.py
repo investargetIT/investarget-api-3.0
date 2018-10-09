@@ -92,7 +92,7 @@ def saveMessages(messages):
     for message in messages:
         if isinstance(message, dict) and message.get('msgid', None) is not None:
 
-            print message
+            print(message)
 
 
 # u'sui_mtime': 1521514266,

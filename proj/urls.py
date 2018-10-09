@@ -1,7 +1,7 @@
 from django.conf.urls import url, include
 # from rest_framework import routers
 
-import views
+from proj import views
 proj_list = views.ProjectView.as_view({
         'get': 'list',
         'post': 'create'

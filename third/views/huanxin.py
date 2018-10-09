@@ -31,7 +31,6 @@ def http_result(r):
         }
         if r.request.body:
             error_log["payload"] = r.request.body
-        # print json.dumps(error_log)
 
     if r.status_code == requests.codes.ok:
         return True, r.json()
@@ -153,17 +152,6 @@ def makePaswd(password):
     m.update(password)
     return m.hexdigest()
 
-
-# def registHuanXinIM(request):
-#     query = MyUser.objects.filter(is_deleted=False)
-#     for user in query:
-#         result = registHuanXinIMWithUser(user)
-#         print '**********'
-#         print user.id
-#         print success
-#         print result
-#         print '\n\n\n'
-#     return JSONResponse({'res': ''})
 
 def deleteHuanXinIMWithUser(user):
     username = user.id
