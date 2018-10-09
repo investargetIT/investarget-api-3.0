@@ -3,7 +3,8 @@
 import time, random, json,  sys, os
 
 from third.thirdconfig import my_product, apns_production_boolean
-
+reload(sys)
+sys.setdefaultencoding('utf8')
 sys.path.insert(0, os.path.dirname(sys.path[0]))
 
 
