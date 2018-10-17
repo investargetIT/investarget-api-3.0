@@ -1,7 +1,6 @@
 import traceback
 
 from django.core.paginator import Paginator, EmptyPage
-from django.shortcuts import render
 from rest_framework import viewsets
 from activity.models import activity
 from activity.serializer import ActivitySerializer
