@@ -128,7 +128,7 @@ class UserView(viewsets.ModelViewSet):
             if not page_size:
                 page_size = 10
             else:
-                page_size = 100 if page_size > 100 else page_size
+                page_size = 100 if int(page_size) > 100 else page_size
             if not page_index:
                 page_index = 1
             queryset = self.filter_queryset(self.get_queryset())
@@ -1234,7 +1234,7 @@ class UserRelationView(viewsets.ModelViewSet):
             if not page_size:
                 page_size = 10
             else:
-                page_size = 100 if page_size > 100 else page_size
+                page_size = 100 if int(page_size) > 100 else page_size
             lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
             if request.user.has_perm('usersys.admin_getuserrelation'):
