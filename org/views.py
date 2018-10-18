@@ -6,7 +6,7 @@ import datetime
 
 import xlwt
 from django.core.paginator import Paginator, EmptyPage
-from django.db.models import Q, FieldDoesNotExist, Max
+from django.db.models import Q, FieldDoesNotExist, Max, Count
 from django.http import StreamingHttpResponse
 from rest_framework import filters , viewsets
 
@@ -20,6 +20,7 @@ from org.serializer import OrgCommonSerializer, OrgDetailSerializer, OrgRemarkDe
     OrgInvestEventSerializer, OrgManageFundSerializer, OrgCooperativeRelationshipSerializer, OrgListSerializer, OrgExportExcelTaskSerializer, \
     OrgExportExcelTaskDetailSerializer
 from sourcetype.models import TransactionPhases, TagContrastTable
+from usersys.models import UserRelation
 from utils.customClass import InvestError, JSONResponse, RelationFilter, MySearchFilter
 from utils.somedef import file_iterator
 from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, returnListChangeToLanguage, \
@@ -1599,6 +1600,8 @@ def makeExportOrgExcel():
                                 ws_org.col(3).width = 256 * 40
                                 ws_org.write(0, 4, '投资事件', style)
                                 ws_org.col(4).width = 256 * 120
+                                ws_org.write(0, 5, '机构投资人', style)
+                                ws_org.col(4).width = 256 * 80
                                 ws_org_hang = 1
 
                                 for org in org_qs:
@@ -1621,6 +1624,19 @@ def makeExportOrgExcel():
                                     eventstr = '\n\r'.join(event_list)
                                     if len(eventstr) > 30000:
                                         eventstr = eventstr[:30000] + '......'
+                                    userData_list = []
+                                    investorList = org.org_users.all().filter(is_deleted=False)
+                                    relation_qs = UserRelation.objects.filter(investoruser__in=investorList,
+                                                                              is_deleted=False).select_related(
+                                        'investoruser', 'traderuser')
+                                    relations = relation_qs.values('investoruser').annotate(count=Count('investoruser'),
+                                                                                            max=Max('familiar__score'))
+                                    for relation in relations:
+                                        instance = relation_qs.filter(investoruser_id=relation['investoruser'],
+                                                                      familiar__score=relation['max']).first(
+                                            userData_list.append('投资人：%s, 交易师：%s' % (
+                                            instance.investoruser.usernameC, instance.traderuser.usernameC)))
+                                    userDataStr = '\n\r'.join(userData_list)
                                     ws_org.write(ws_org_hang, 0, str(org.orgnameC), style)  # 全称
                                     ws_org.write(ws_org_hang, 1, str(org.description) if org.description else '暂无',
                                                  style)  # 描述
@@ -1629,7 +1645,7 @@ def makeExportOrgExcel():
                                                  style)  # 合伙人/投委会
                                     ws_org.write(ws_org_hang, 3, tagstr if len(tagstr) > 0 else '暂无', style)  # 标签
                                     ws_org.write(ws_org_hang, 4, eventstr if len(eventstr) > 0 else '暂无', style)  # 投资事件
-
+                                    ws_org.write(ws_org_hang, 5, userDataStr if len(userDataStr) > 0 else '暂无', style)  # 机构投资人
                                     com_list = ProjectData.objects.filter(com_id__in=com_list)
                                     if len(com_list) > 0:
                                         com_sheet = wb.add_sheet(org.orgfullname, cell_overwrite_ok=True)
