@@ -1748,7 +1748,7 @@ class GroupPermissionView(viewsets.ModelViewSet):
             with transaction.atomic():
                 group = self.get_object()
                 data = request.data
-                serializer = GroupSerializer(group,data=data)
+                serializer = GroupCreateSerializer(group, data=data)
                 if serializer.is_valid():
                     serializer.save()
                 else:

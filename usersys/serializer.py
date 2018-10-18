@@ -84,11 +84,11 @@ class GroupSerializer(serializers.ModelSerializer):
         model = Group
         fields = ('id', 'name')
 
-# 权限组基本信息
+# 权限组信息
 class GroupCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
-        fields = ('id', 'name', 'datasource')
+        fields = '__all__'
 
 
 class UserInfoSerializer(serializers.ModelSerializer):
