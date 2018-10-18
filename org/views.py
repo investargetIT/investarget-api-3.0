@@ -1640,6 +1640,9 @@ def makeExportOrgExcel():
                                     for relationData in relations:
                                         relationinstance = relation_qs.filter(investoruser_id=relationData['investoruser'], familiar__score=relationData['max']).first()
                                         userData_list.append('投资人：%s, 交易师：%s' % (relationinstance.investoruser.usernameC, relationinstance.traderuser.usernameC))
+                                    noRelationUser = investorList.exclude(id__in=relation_qs.values_list('investoruser'))
+                                    for noUser in noRelationUser:
+                                        userData_list.append('投资人：%s, 交易师：暂无' % noUser.usernameC)
                                     userDataStr = '\n\r'.join(userData_list)
                                     ws_org.write(ws_org_hang, 0, str(org.orgnameC), style)  # 全称
                                     ws_org.write(ws_org_hang, 1, str(org.description) if org.description else '暂无',
