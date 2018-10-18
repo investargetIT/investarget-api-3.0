@@ -25,7 +25,7 @@ from utils.customClass import InvestError, JSONResponse, RelationFilter, MySearc
 from utils.somedef import file_iterator
 from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser, add_perm, \
-    cache_delete_key, mySortQuery, deleteExpireDir, checkrequesttoken, mobielrestr
+    cache_delete_key, mySortQuery, deleteExpireDir, checkrequesttoken, mobielrestr, logexcption
 from django.db import transaction,models
 from django_filters import FilterSet
 
@@ -1495,10 +1495,12 @@ class OrgExportExcelTaskView(viewsets.ModelViewSet):
             with transaction.atomic():
                 data = request.data
                 orglist = data.get('org')
+                taglist = data.get('tag')
                 if len(orglist) > 0:
                     path = str(datetime.datetime.now())[:19].replace(' ', 'T') + '.xls'
                     data = {
                         'orglist': orglist,
+                        'taglist': taglist,
                         'filename': path,
                         'createuser': request.user.id,
                     }
@@ -1579,6 +1581,8 @@ def makeExportOrgExcel():
                 exporttask.save()
                 try:
                     orgidliststr = exporttask.orglist
+                    tagidliststr = exporttask.taglist
+                    tagidlist = tagidliststr.split(',') if len(tagidliststr) > 0 else None
                     if len(orgidliststr) > 0 and exporttask.filename:
                         orgidlist = orgidliststr.split(',')
                         org_qs = organization.objects.filter(is_deleted=False).filter(id__in=orgidlist)[:300]
@@ -1601,7 +1605,7 @@ def makeExportOrgExcel():
                                 ws_org.write(0, 4, '投资事件', style)
                                 ws_org.col(4).width = 256 * 120
                                 ws_org.write(0, 5, '机构投资人', style)
-                                ws_org.col(4).width = 256 * 80
+                                ws_org.col(5).width = 256 * 80
                                 ws_org_hang = 1
 
                                 for org in org_qs:
@@ -1626,16 +1630,16 @@ def makeExportOrgExcel():
                                         eventstr = eventstr[:30000] + '......'
                                     userData_list = []
                                     investorList = org.org_users.all().filter(is_deleted=False)
+                                    if isinstance(tagidlist, list) and len(tagidlist) > 0:
+                                        investorList = investorList.filter(tags__in=tagidlist)
                                     relation_qs = UserRelation.objects.filter(investoruser__in=investorList,
                                                                               is_deleted=False).select_related(
                                         'investoruser', 'traderuser')
                                     relations = relation_qs.values('investoruser').annotate(count=Count('investoruser'),
                                                                                             max=Max('familiar__score'))
-                                    for relation in relations:
-                                        instance = relation_qs.filter(investoruser_id=relation['investoruser'],
-                                                                      familiar__score=relation['max']).first(
-                                            userData_list.append('投资人：%s, 交易师：%s' % (
-                                            instance.investoruser.usernameC, instance.traderuser.usernameC)))
+                                    for relationData in relations:
+                                        relationinstance = relation_qs.filter(investoruser_id=relationData['investoruser'], familiar__score=relationData['max']).first()
+                                        userData_list.append('投资人：%s, 交易师：%s' % (relationinstance.investoruser.usernameC, relationinstance.traderuser.usernameC))
                                     userDataStr = '\n\r'.join(userData_list)
                                     ws_org.write(ws_org_hang, 0, str(org.orgnameC), style)  # 全称
                                     ws_org.write(ws_org_hang, 1, str(org.description) if org.description else '暂无',
@@ -1708,6 +1712,7 @@ def makeExportOrgExcel():
                     else:
                         self.deleteTask(exporttask)
                 except Exception:
+                    logexcption()
                     exporttask.status = 1
                     exporttask.save()
 

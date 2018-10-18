@@ -286,6 +286,7 @@ taskstatuschoice = (
 class orgExportExcelTask(MyModel):
     orglist = models.TextField(blank=True, null=True)
     filename = models.CharField(max_length=40, blank=True, null=True)
+    taglist = models.TextField(blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_orgexporttasks', on_delete=models.SET_NULL)
     status = models.PositiveSmallIntegerField(blank=True, choices=taskstatuschoice, default=3, help_text='当前状态')
     completetime = models.DateTimeField(blank=True, null=True, help_text='完成时间')
