@@ -1582,7 +1582,7 @@ def makeExportOrgExcel():
                 try:
                     orgidliststr = exporttask.orglist
                     tagidliststr = exporttask.taglist
-                    tagidlist = tagidliststr.split(',') if len(tagidliststr) > 0 else None
+                    tagidlist = tagidliststr.split(',') if tagidliststr else None
                     if len(orgidliststr) > 0 and exporttask.filename:
                         orgidlist = orgidliststr.split(',')
                         org_qs = organization.objects.filter(is_deleted=False).filter(id__in=orgidlist)[:300]
