@@ -226,7 +226,7 @@ class UserView(viewsets.ModelViewSet):
                         org = orgset.first()
                     else:
                         org = organization()
-                        org.orgfullname = orgname
+                        org.orgnameC = orgname
                         org.datasource= userdatasource
                         org.orgstatus_id = 1
                         org.createdtime = datetime.datetime.now()
