@@ -14,7 +14,7 @@ from proj.models import project
 from sourcetype.models import BDStatus, OrgArea, Country, OrgBdResponse
 from sourcetype.models import TitleType
 from timeline.models import timeline, timelineremark, timelineTransationStatu
-from usersys.models import MyUser
+from usersys.models import MyUser, UserRemarks
 from utils.customClass import MyForeignKey, InvestError, MyModel
 from utils.util import logexcption
 
@@ -198,7 +198,13 @@ class OrgBDComments(MyModel):
                 if timeline_qs.exists():
                     timelineremark(timeline=timeline_qs.first(), remark=self.comments, createuser=self.createuser, datasource_id=self.datasource).save()
             except Exception:
-                logexcption(msg='同步备注失败，OrgBD_id-%s ' % self.orgBD.id)
+                logexcption(msg='同步备注到时间轴失败，OrgBD_id-%s ' % self.orgBD.id)
+            try:
+                if self.orgBD.bduser:
+                    remark = '项目名称：%s \n\r备注信息：%s' % (self.orgBD.proj.projtitleC if self.orgBD.proj else '', self.comments if self.comments else '')
+                    UserRemarks(user=self.orgBD.bduser, remark=remark, createuser=self.createuser, datasource_id=self.datasource).save()
+            except Exception:
+                logexcption(msg='同步备注到用户失败，OrgBD_id-%s ' % self.orgBD.id)
         return super(OrgBDComments, self).save(*args, **kwargs)
 
 
