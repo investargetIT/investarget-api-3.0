@@ -282,6 +282,7 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
                 queryset = queryset.filter(projectBD__in=request.user.user_projBDs.all())
             else:
                 raise InvestError(2009)
+            queryset = queryset.order_by('-createdtime')
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)

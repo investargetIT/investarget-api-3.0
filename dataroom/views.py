@@ -21,7 +21,7 @@ from utils.sendMessage import sendmessage_dataroomfileupdate, sendmessage_dataro
 from utils.somedef import file_iterator,  addWaterMarkToPdfFiles, addWaterMark
 from utils.util import returnListChangeToLanguage, loginTokenIsAvailable, \
     returnDictChangeToLanguage, catchexcption, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
-    logexcption, checkrequesttoken
+    logexcption, checkrequesttoken, deleteExpireDir
 import datetime
 from django_filters import FilterSet
 import os
@@ -354,31 +354,6 @@ def getPathWithFile(file_obj,rootpath,currentpath=None):
         currentpath = file_obj.parent.filename + '/' + currentpath
         return getPathWithFile(file_obj.parent, rootpath, currentpath)
 
-
-def deleteExpireDir(rootpath):
-    #删除过期的文件夹/文件
-    if (os.path.exists(rootpath)):
-        files = os.listdir(rootpath)
-        for file in files:
-            m = os.path.join(rootpath, file)
-            if (os.path.isdir(m)) and checkDirCtimeExpire(m):
-                #过期的文件夹
-                if os.path.exists(m):
-                    shutil.rmtree(m)
-            if (os.path.isfile(m)) and checkDirCtimeExpire(m):
-                #过期的文件
-                if os.path.exists(m):
-                    os.remove(m)
-
-
-def checkDirCtimeExpire(path, expire=1):
-    filePath = unicode(path, 'utf8')
-    timeStamp = os.path.getctime(filePath)
-    datetimeStruct = datetime.datetime.fromtimestamp(timeStamp)
-    if datetimeStruct < (datetime.datetime.now() - datetime.timedelta(hours=24 * expire)):
-        return True
-    else:
-        return False
 
 
 class DataroomdirectoryorfileView(viewsets.ModelViewSet):
