@@ -17,7 +17,7 @@ from mongoDoc.serializers import GroupEmailDataSerializer, IMChatMessagesSeriali
     ProjectNewsSerializer, ProjIndustryInfoSerializer, GroupEmailListSerializer, CompanySearchNameSerializer
 from utils.customClass import JSONResponse, InvestError, AppEventRateThrottle
 from utils.util import SuccessResponse, InvestErrorResponse, ExceptionResponse, catchexcption, logexcption, \
-    loginTokenIsAvailable
+    loginTokenIsAvailable, read_from_cache, write_to_cache
 
 ChinaList = ['北京','上海','广东','浙江','江苏','天津','福建','湖北','湖南','四川','河北','山西','内蒙古',
              '辽宁','吉林','黑龙江','安徽','江西','山东','河南','广西','海南','重庆','贵州','云南','西藏',
@@ -198,37 +198,49 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
 
     def companyCountByCat(self):
         allCat = CompanyCatData.objects.all().filter(p_cat_name=None)
-        countDic = {}
-        for cat in allCat:
-            count = ProjectData.objects.all().filter(com_cat_name=cat.cat_name).count()
-            countDic[cat.cat_name] = count
+        countDic = read_from_cache('countCompanyByCat')
+        if not countDic:
+            countDic = {}
+            for cat in allCat:
+                count = ProjectData.objects.all().filter(com_cat_name=cat.cat_name).count()
+                countDic[cat.cat_name] = count
+            write_to_cache('countCompanyByCat', countDic)
         return countDic
 
     def eventCountByCat(self):
         allCat = CompanyCatData.objects.all().filter(p_cat_name=None)
-        countDic = {}
-        for cat in allCat:
-            count = self.queryset.filter(com_cat_name=cat.cat_name).count()
-            countDic[cat.cat_name] = count
+        countDic = read_from_cache('countEventByCat')
+        if not countDic:
+            countDic = {}
+            for cat in allCat:
+                count = self.queryset.filter(com_cat_name=cat.cat_name).count()
+                countDic[cat.cat_name] = count
+            write_to_cache('countEventByCat', countDic)
         return countDic
 
     def eventCountByRound(self):
         timelist = ['2010','2011','2012','2013','2014','2015','2016','2017','2018']
-        countList = {}
-        for year in timelist:
-            qs = self.queryset.filter(date__startswith=year)
-            countDic = {}
-            for cat in RoundList:
-                count = qs.filter(round=cat).count()
-                countDic[cat] = count
-            countList[year] = countDic
+        countList = read_from_cache('countEventByRound')
+        if not countList:
+            countList = {}
+            for year in timelist:
+                qs = self.queryset.filter(date__startswith=year)
+                countDic = {}
+                for cat in RoundList:
+                    count = qs.filter(round=cat).count()
+                    countDic[cat] = count
+                countList[year] = countDic
+            write_to_cache('countEventByRound', countList)
         return countList
 
     def eventCountByAddress(self):
-        countDic = {}
-        for cat in ChinaList:
-            count = self.queryset.filter(com_addr=cat).count()
-            countDic[cat] = count
+        countDic = read_from_cache('countEventByAddress')
+        if not countDic:
+            countDic = {}
+            for cat in ChinaList:
+                count = self.queryset.filter(com_addr=cat).count()
+                countDic[cat] = count
+            write_to_cache('countEventByAddress', countDic)
         return countDic
 
 class ProjectDataView(viewsets.ModelViewSet):
