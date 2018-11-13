@@ -1431,6 +1431,7 @@ def makeExportOrgExcel():
                 exporttask.status = 4
                 exporttask.save()
                 try:
+                    taskdatasource = exporttask.createuser.datasource
                     orgidliststr = exporttask.orglist
                     tagidliststr = exporttask.taglist
                     tagidlist = tagidliststr.split(',') if tagidliststr else None
@@ -1448,15 +1449,16 @@ def makeExportOrgExcel():
                                 style.alignment.wrap = xlwt.Alignment.WRAP_AT_RIGHT
                                 ws_org = wb.add_sheet('机构列表', cell_overwrite_ok=True)
                                 ws_org.write(0, 0, '机构简称', style)
-                                ws_org.write(0, 1, '描述', style)
-                                ws_org.col(1).width = 256 * 60
-                                ws_org.write(0, 2, '合伙人/投委会成员', style)
-                                ws_org.write(0, 3, '标签', style)
-                                ws_org.col(3).width = 256 * 40
-                                ws_org.write(0, 4, '投资事件', style)
-                                ws_org.col(4).width = 256 * 120
-                                ws_org.write(0, 5, '机构投资人', style)
-                                ws_org.col(5).width = 256 * 80
+                                ws_org.write(0, 1, '机构全称', style)
+                                ws_org.write(0, 2, '描述', style)
+                                ws_org.col(2).width = 256 * 60
+                                ws_org.write(0, 3, '合伙人/投委会成员', style)
+                                ws_org.write(0, 4, '标签', style)
+                                ws_org.col(4).width = 256 * 40
+                                ws_org.write(0, 5, '投资事件', style)
+                                ws_org.col(5).width = 256 * 120
+                                ws_org.write(0, 6, '机构投资人', style)
+                                ws_org.col(6).width = 256 * 80
                                 ws_org_hang = 1
 
                                 for org in org_qs:
@@ -1480,7 +1482,7 @@ def makeExportOrgExcel():
                                     if len(eventstr) > 30000:
                                         eventstr = eventstr[:30000] + '......'
                                     userData_list = []
-                                    investorList = org.org_users.all().filter(is_deleted=False)
+                                    investorList = org.org_users.all().filter(is_deleted=False, datasource=taskdatasource)
                                     if isinstance(tagidlist, list) and len(tagidlist) > 0:
                                         investorList = investorList.filter(tags__in=tagidlist)
                                     relation_qs = UserRelation.objects.filter(investoruser__in=investorList,
@@ -1495,15 +1497,16 @@ def makeExportOrgExcel():
                                     for noUser in noRelationUser:
                                         userData_list.append('投资人：%s, 交易师：暂无' % noUser.usernameC)
                                     userDataStr = '\n\r'.join(userData_list)
-                                    ws_org.write(ws_org_hang, 0, str(org.orgnameC), style)  # 全称
-                                    ws_org.write(ws_org_hang, 1, str(org.description) if org.description else '暂无',
+                                    ws_org.write(ws_org_hang, 0, str(org.orgnameC), style)  # 简称
+                                    ws_org.write(ws_org_hang, 1, str(org.orgfullname), style)  # 简称
+                                    ws_org.write(ws_org_hang, 2, str(org.description) if org.description else '暂无',
                                                  style)  # 描述
-                                    ws_org.write(ws_org_hang, 2, str(
+                                    ws_org.write(ws_org_hang, 3, str(
                                         org.partnerOrInvestmentCommiterMember) if org.partnerOrInvestmentCommiterMember else '暂无',
                                                  style)  # 合伙人/投委会
-                                    ws_org.write(ws_org_hang, 3, tagstr if len(tagstr) > 0 else '暂无', style)  # 标签
-                                    ws_org.write(ws_org_hang, 4, eventstr if len(eventstr) > 0 else '暂无', style)  # 投资事件
-                                    ws_org.write(ws_org_hang, 5, userDataStr if len(userDataStr) > 0 else '暂无', style)  # 机构投资人
+                                    ws_org.write(ws_org_hang, 4, tagstr if len(tagstr) > 0 else '暂无', style)  # 标签
+                                    ws_org.write(ws_org_hang, 5, eventstr if len(eventstr) > 0 else '暂无', style)  # 投资事件
+                                    ws_org.write(ws_org_hang, 6, userDataStr if len(userDataStr) > 0 else '暂无', style)  # 机构投资人
                                     com_list = ProjectData.objects.filter(com_id__in=com_list)
                                     if len(com_list) > 0:
                                         com_sheet = wb.add_sheet(org.orgfullname, cell_overwrite_ok=True)
