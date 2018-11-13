@@ -80,17 +80,11 @@ class UserView(viewsets.ModelViewSet):
             "or override the `get_queryset()` method."
             % self.__class__.__name__
         )
-        queryset = read_from_cache(self.redis_key)
-        if not queryset:
-            queryset = self.queryset
-            write_to_cache(self.redis_key, queryset)
-        if isinstance(queryset, QuerySet):
-            if self.request.user.is_authenticated:
-                queryset = queryset.filter(datasource=self.request.user.datasource)
-            else:
-                queryset = queryset.all()
+        queryset = self.queryset
+        if self.request.user.is_authenticated:
+            queryset = queryset.filter(datasource=self.request.user.datasource)
         else:
-            raise InvestError(code=8890)
+            queryset = queryset.all()
         return queryset
 
     def get_object(self,pk=None):
