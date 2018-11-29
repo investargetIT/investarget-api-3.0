@@ -133,7 +133,7 @@ class ScheduleView(viewsets.ModelViewSet):
             else:
                 queryset = queryset.filter(createuser_id=request.user.id)
             sortfield = request.GET.get('sort', 'scheduledtime')
-            desc = request.GET.get('desc', 1)
+            desc = request.GET.get('desc', 0)
             queryset = mySortQuery(queryset, sortfield, desc)
             try:
                 count = queryset.count()
