@@ -1498,7 +1498,7 @@ def makeExportOrgExcel():
                                         userData_list.append('投资人：%s, 交易师：暂无' % noUser.usernameC)
                                     userDataStr = '\n\r'.join(userData_list)
                                     ws_org.write(ws_org_hang, 0, str(org.orgnameC), style)  # 简称
-                                    ws_org.write(ws_org_hang, 1, str(org.orgfullname), style)  # 简称
+                                    ws_org.write(ws_org_hang, 1, str(org.orgfullname), style)  # 全称
                                     ws_org.write(ws_org_hang, 2, str(org.description) if org.description else '暂无',
                                                  style)  # 描述
                                     ws_org.write(ws_org_hang, 3, str(

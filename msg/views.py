@@ -132,7 +132,7 @@ class ScheduleView(viewsets.ModelViewSet):
                 queryset = queryset
             else:
                 queryset = queryset.filter(createuser_id=request.user.id)
-            sortfield = request.GET.get('sort', 'createdtime')
+            sortfield = request.GET.get('sort', 'scheduledtime')
             desc = request.GET.get('desc', 1)
             queryset = mySortQuery(queryset, sortfield, desc)
             try:
