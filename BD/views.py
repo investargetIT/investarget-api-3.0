@@ -66,7 +66,7 @@ class ProjectBDView(viewsets.ModelViewSet):
         queryset = self.queryset
         if isinstance(queryset, QuerySet):
             if self.request.user.is_authenticated:
-                queryset = queryset.filter(datasource=self.request.user.datasource_id)
+                queryset = queryset.filter(datasource_id=self.request.user.datasource_id)
             else:
                 queryset = queryset
         else:
@@ -262,7 +262,7 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
         queryset = self.queryset
         if isinstance(queryset, QuerySet):
             if self.request.user.is_authenticated:
-                queryset = queryset.filter(datasource=self.request.user.datasource_id)
+                queryset = queryset.filter(datasource_id=self.request.user.datasource_id)
             else:
                 queryset = queryset
         else:
@@ -422,7 +422,7 @@ class OrgBDView(viewsets.ModelViewSet):
             write_to_cache(self.redis_key, queryset)
         if isinstance(queryset, QuerySet):
             if self.request.user.is_authenticated:
-                queryset = queryset.filter(datasource=self.request.user.datasource_id)
+                queryset = queryset.filter(datasource_id=self.request.user.datasource_id)
             else:
                 queryset = queryset
         else:
@@ -685,7 +685,7 @@ class OrgBDView(viewsets.ModelViewSet):
                                                                   proj=neworgBD.proj, trader=neworgBD.manager)
                             if timeline_qs.exists():
                                 timelineremark(timeline=timeline_qs.first(), remark=remark,
-                                               createuser=neworgBD.createuser, datasource_id=neworgBD.datasource).save()
+                                               createuser=neworgBD.createuser, datasource=neworgBD.datasource).save()
                         except Exception:
                             logexcption(msg='同步备注失败，OrgBD_id-%s ' % neworgBD.id)
                     oldmanager_id = data.get('manager', None)
@@ -757,7 +757,7 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
         queryset = self.queryset
         if isinstance(queryset, QuerySet):
             if self.request.user.is_authenticated:
-                queryset = queryset.filter(datasource=self.request.user.datasource_id)
+                queryset = queryset.filter(datasource_id=self.request.user.datasource_id)
             else:
                 queryset = queryset
         else:
@@ -885,7 +885,7 @@ class MeetingBDView(viewsets.ModelViewSet):
         queryset = self.queryset
         if isinstance(queryset, QuerySet):
             if self.request.user.is_authenticated:
-                queryset = queryset.filter(datasource=self.request.user.datasource_id)
+                queryset = queryset.filter(datasource_id=self.request.user.datasource_id)
             else:
                 queryset = queryset
         else:

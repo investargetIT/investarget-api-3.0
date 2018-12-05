@@ -27,8 +27,7 @@ from proj.serializer import ProjSerializer, FinanceSerializer, ProjCreatSerializ
     ProjDetailSerializer_admin_withoutsecretinfo, ProjDetailSerializer_admin_withsecretinfo, ProjDetailSerializer_user_withoutsecretinfo, \
     ProjDetailSerializer_user_withsecretinfo, ProjAttachmentCreateSerializer, ProjIndustryCreateSerializer, \
     ProjDetailSerializer_all
-from sourcetype.models import Tag, Industry, TransactionType, DataSource, Service
-from third.views.jpush import pushnotification
+from sourcetype.models import Tag, TransactionType, DataSource, Service
 from third.views.qiniufile import deleteqiniufile
 from usersys.models import MyUser
 from utils.somedef import addWaterMark, file_iterator
@@ -1229,5 +1228,4 @@ def testPdf(request):
         res = render(request, 'proj_template_cn.html', aaa)
     else:
         res = render(request, 'proj_template_en.html', aaa)
-    return HttpResponse(res)
-
+    return res

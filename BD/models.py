@@ -11,7 +11,7 @@ from django.db import models
 # Create your models here.
 from org.models import organization
 from proj.models import project
-from sourcetype.models import BDStatus, OrgArea, Country, OrgBdResponse
+from sourcetype.models import BDStatus, OrgArea, Country, OrgBdResponse, DataSource
 from sourcetype.models import TitleType
 from timeline.models import timeline, timelineremark, timelineTransationStatu
 from usersys.models import MyUser, UserRemarks
@@ -53,7 +53,7 @@ class ProjectBD(MyModel):
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_ProjectBD')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_ProjectBD')
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_ProjectBD')
-    datasource = models.IntegerField(blank=True,null=True)
+    datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
 
     class Meta:
         permissions = (
@@ -76,7 +76,7 @@ class ProjectBD(MyModel):
             self.usermobile = self.bduser.mobile
             self.usertitle = self.bduser.title
             self.useremail = self.bduser.email
-        self.datasource = self.manager.datasource_id
+        self.datasource = self.manager.datasource
         if not self.source:
             if self.source_type == 0:
                 self.sourcee = '全库搜索'
@@ -91,7 +91,7 @@ class ProjectBDComments(MyModel):
     projectBD = MyForeignKey(ProjectBD,blank=True,null=True,help_text='bd项目',related_name='ProjectBD_comments')
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_ProjectBDComments')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_ProjectBDComments')
-    datasource = models.IntegerField(blank=True,null=True)
+    datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
 
 
     def save(self, *args, **kwargs):
@@ -119,7 +119,7 @@ class OrgBD(MyModel):
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_OrgBD')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_OrgBD')
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_OrgBD')
-    datasource = models.IntegerField(blank=True, null=True)
+    datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
 
     class Meta:
         permissions = (
@@ -136,7 +136,7 @@ class OrgBD(MyModel):
             self.username = self.bduser.usernameC
             self.usermobile = self.bduser.mobile
             self.usertitle = self.bduser.title
-        self.datasource = self.manager.datasource_id
+        self.datasource = self.manager.datasource
         if not self.manager.onjob and not self.is_deleted:
             raise InvestError(2024)
         if self.bduser and not self.is_deleted:
@@ -160,7 +160,7 @@ class OrgBD(MyModel):
                 try:
                     timeline_qs = timeline.objects.filter(is_deleted=0, investor=self.bduser, proj=self.proj, trader=self.manager)
                     if not timeline_qs.exists():
-                        timelineistance = timeline(investor=self.bduser, trader=self.manager, proj=self.proj, createuser=self.manager, datasource_id=self.datasource)
+                        timelineistance = timeline(investor=self.bduser, trader=self.manager, proj=self.proj, createuser=self.manager, datasource=self.datasource)
                         timelineistance.save()
                         timelineTransationStatu(timeline=timelineistance, transationStatus_id=timelinestatu_id, isActive=True, alertCycle=7).save()
                     else:
@@ -180,7 +180,7 @@ class OrgBDComments(MyModel):
     orgBD = MyForeignKey(OrgBD,blank=True,null=True,help_text='机构BD',related_name='OrgBD_comments')
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_OrgBDComments')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_OrgBDComments')
-    datasource = models.IntegerField(blank=True,null=True)
+    datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
 
     def save(self, *args, **kwargs):
 
@@ -196,13 +196,13 @@ class OrgBDComments(MyModel):
             try:
                 timeline_qs = timeline.objects.filter(is_deleted=0, investor=self.orgBD.bduser, proj=self.orgBD.proj, trader=self.orgBD.manager)
                 if timeline_qs.exists():
-                    timelineremark(timeline=timeline_qs.first(), remark=self.comments, createuser=self.createuser, datasource_id=self.datasource).save()
+                    timelineremark(timeline=timeline_qs.first(), remark=self.comments, createuser=self.createuser, datasource=self.datasource).save()
             except Exception:
                 logexcption(msg='同步备注到时间轴失败，OrgBD_id-%s ' % self.orgBD.id)
             try:
                 if self.orgBD.bduser:
                     remark = '项目名称：%s \n\r备注信息：%s' % (self.orgBD.proj.projtitleC if self.orgBD.proj else '', self.comments if self.comments else '')
-                    UserRemarks(user=self.orgBD.bduser, remark=remark, createuser=self.createuser, datasource_id=self.datasource).save()
+                    UserRemarks(user=self.orgBD.bduser, remark=remark, createuser=self.createuser, datasource=self.datasource).save()
             except Exception:
                 logexcption(msg='同步备注到用户失败，OrgBD_id-%s ' % self.orgBD.id)
         return super(OrgBDComments, self).save(*args, **kwargs)
@@ -228,7 +228,7 @@ class MeetingBD(MyModel):
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_MeetBD')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_MeetBD')
     lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_MeetBD')
-    datasource = models.IntegerField(blank=True, null=True)
+    datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
 
     class Meta:
         permissions = (
@@ -247,7 +247,7 @@ class MeetingBD(MyModel):
             self.username = self.bduser.usernameC
             self.usermobile = self.bduser.mobile
             self.usertitle = self.bduser.title
-        self.datasource = self.manager.datasource_id
+        self.datasource = self.manager.datasource
         return super(MeetingBD, self).save(*args, **kwargs)
 
 

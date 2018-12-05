@@ -165,7 +165,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin,MyModel):
         if self.pk and self.groups.exists() and self.groups.first().datasource != self.datasource:
             raise InvestError(code=8888,msg='group 与 user datasource不同')
         if self.country:
-            if self.country.datasource != self.datasource_id:
+            if self.country.datasource != self.datasource:
                 raise InvestError(8888)
         try:
             if not self.mobileAreaCode:
@@ -299,8 +299,8 @@ class userTags(MyModel):
 
     def save(self, *args, **kwargs):
         if self.tag and self.user:
-            if self.tag.datasource != self.user.datasource_id:
-                raise InvestError(8888)
+            if self.tag.datasource != self.user.datasource:
+                raise InvestError(8888, msg='标签来源不符')
         return super(userTags, self).save(*args, **kwargs)
 
 

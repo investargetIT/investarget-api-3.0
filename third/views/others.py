@@ -54,7 +54,7 @@ def ccupload(request):
         for keya in data_dict.keys():
             uploaddata = data_dict[keya]
         urlstr = 'http://bcr2.intsig.net/BCRService/BCR_VCF2?user=summer.xia@investarget.com&pass=P8YSCG7AQLM66S7M&json=1&lang=15'
-        response = requests.post(urlstr,uploaddata)
+        response = requests.post(urlstr, uploaddata)
         return JSONResponse(SuccessResponse(response.content))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))

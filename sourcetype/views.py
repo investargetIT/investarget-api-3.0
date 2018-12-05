@@ -32,7 +32,7 @@ class TagView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             source = request.META.get('HTTP_SOURCE', 1)
-            queryset = self.filter_queryset(self.get_queryset()).filter(datasource=source)
+            queryset = self.filter_queryset(self.get_queryset()).filter(datasource_id=source)
             serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
@@ -192,7 +192,7 @@ class CountryView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             source = request.META.get('HTTP_SOURCE',1)
-            queryset = self.filter_queryset(self.get_queryset()).filter(datasource=source).order_by('-sortweight')
+            queryset = self.filter_queryset(self.get_queryset()).filter(datasource_id=source).order_by('-sortweight')
             serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:
@@ -249,7 +249,7 @@ class IndustryView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             source = request.META.get('HTTP_SOURCE', 1)
-            queryset = self.filter_queryset(self.get_queryset()).filter(datasource=source)
+            queryset = self.filter_queryset(self.get_queryset()).filter(datasource_id=source)
             serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
         except InvestError as err:

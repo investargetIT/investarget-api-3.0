@@ -184,8 +184,8 @@ class projectTags(MyModel):
         db_table = "project_tags"
 
     def save(self, *args, **kwargs):
-        if self.tag.datasource != self.proj.datasource_id:
-            raise InvestError(8888)
+        if self.tag.datasource != self.proj.datasource:
+            raise InvestError(8888, msg='标签来源不符')
         return super(projectTags, self).save(*args, **kwargs)
 
 
@@ -200,8 +200,8 @@ class projectIndustries(MyModel):
     class Meta:
         db_table = "project_industries"
     def save(self, *args, **kwargs):
-        if self.industry.datasource != self.proj.datasource_id:
-            raise InvestError(8888)
+        if self.industry.datasource != self.proj.datasource:
+            raise InvestError(8888, msg='行业来源不符')
         if not self.key:
             self.bucket = self.industry.bucket
             self.key = self.industry.key

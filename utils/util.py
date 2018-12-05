@@ -27,7 +27,6 @@ def InvestErrorResponse(err):
 def ExceptionResponse(msg):
     response = {'code':9999, 'errormsg': msg, 'result': None}
     return response
-
 #读
 def read_from_cache(key):
     value = cache.get(key)

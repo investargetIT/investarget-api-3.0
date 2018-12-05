@@ -9,6 +9,20 @@ from utils.customClass import MyForeignKey
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
+class DataSource(models.Model):
+    '''
+    平台来源（数据）
+     '''
+    id = models.AutoField(primary_key=True)
+    nameC = models.CharField(max_length=32,blank=True,null=True)
+    nameE = models.CharField(max_length=128, blank=True, null=True)
+    domain = models.CharField(max_length=64, blank=True, null=True)
+    is_deleted = models.BooleanField(blank=True, default=False)
+
+    def __str__(self):
+        return self.nameC
+
+
 class AuditStatus(models.Model):
     '''
     审核状态
@@ -171,7 +185,7 @@ class Country(models.Model):
     level = models.PositiveSmallIntegerField(blank=True,default=1)
     sortweight = models.PositiveSmallIntegerField(blank=True,default=1)
     is_deleted = models.BooleanField(blank=True, default=False)
-    datasource = models.PositiveSmallIntegerField(blank=True,default=1)
+    datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
 
     def __str__(self):
         return self.countryC
@@ -224,7 +238,7 @@ class Industry(models.Model):
     bucket = models.CharField(max_length=16, blank=True, default='image')
     key = models.CharField(max_length=64, blank=True, null=True)
     is_deleted = models.BooleanField(blank=True, default=False)
-    datasource = models.SmallIntegerField(blank=True, default=1)
+    datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
     def __str__(self):
         return self.countryC
 
@@ -237,7 +251,7 @@ class Tag(models.Model):
     nameC = models.CharField(max_length=20,blank=True,null=True)
     nameE = models.CharField(max_length=128,blank=True,null=True)
     hotpoint = models.SmallIntegerField(blank=True, default=0)
-    datasource = models.SmallIntegerField(blank=True, default=1)
+    datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
     is_deleted = models.BooleanField(blank=True, default=False)
 
     def __str__(self):
@@ -341,20 +355,6 @@ class TransactionStatus(models.Model):
         return self.nameC
 
 
-class DataSource(models.Model):
-    '''
-    平台来源（数据）
-     '''
-    id = models.AutoField(primary_key=True)
-    nameC = models.CharField(max_length=32,blank=True,null=True)
-    nameE = models.CharField(max_length=128, blank=True, null=True)
-    domain = models.CharField(max_length=64, blank=True, null=True)
-    is_deleted = models.BooleanField(blank=True, default=False)
-
-    def __str__(self):
-        return self.nameC
-
-
 class webmenu(models.Model):
     """
     菜单
@@ -400,7 +400,7 @@ class templatesign(models.Model):
     name = models.CharField(max_length=32, blank=True, null=True, help_text='模板名称')
     email_type = models.SmallIntegerField(blank=True, default=1, help_text='邮件类型')
     webmsg_type = models.SmallIntegerField(blank=True, default=1, help_text='站内信类型')
-    datasource = models.SmallIntegerField(blank=True, default=1)
+    datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
     is_deleted = models.BooleanField(blank=True, default=False)
 
 
