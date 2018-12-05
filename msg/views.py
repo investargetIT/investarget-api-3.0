@@ -121,7 +121,7 @@ class ScheduleView(viewsets.ModelViewSet):
             lang = request.GET.get('lang', 'cn')
             date = request.GET.get('date')
             time = request.GET.get('time')
-            queryset = self.filter_queryset(self.queryset.filter(datasource=request.user.datasource_id))
+            queryset = self.filter_queryset(self.queryset.filter(datasource_id=request.user.datasource_id))
             if date:
                 date = datetime.datetime.strptime(date.encode('utf-8'), "%Y-%m-%d")
                 queryset = queryset.filter(scheduledtime__year=date.year,scheduledtime__month=date.month)

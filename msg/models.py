@@ -54,7 +54,7 @@ class schedule(MyModel):
     projtitle = models.CharField(max_length=128,blank=True,null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_schedule')
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_schedule')
-    datasource = models.IntegerField(blank=True, null=True)
+    datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
     class Meta:
         db_table = 'schedule'
         permissions = (
@@ -69,5 +69,5 @@ class schedule(MyModel):
                 raise InvestError(2007,msg='日程时间不能是今天以前的时间')
             if self.proj:
                 self.projtitle = self.proj.projtitleC
-        self.datasource = self.createuser.datasource_id
+        self.datasource = self.createuser.datasource
         return super(schedule, self).save(*args, **kwargs)
