@@ -601,6 +601,7 @@ class OrgBDView(viewsets.ModelViewSet):
                     if commentinstance.is_valid():
                         commentinstance.save()
                 cache_delete_key(self.redis_key)
+                cache_delete_patternKey(key='/bd/orgbd*')
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgBDSerializer(neworgBD, context={'user_id': request.user.id}).data,lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
