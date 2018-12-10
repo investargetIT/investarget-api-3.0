@@ -213,7 +213,7 @@ class UserView(viewsets.ModelViewSet):
                 orgname = data.pop('orgname', None)
                 if orgname:
                     filters = Q(orgfullname=orgname)
-                    orgset = organization.objects.filter(filters,is_deleted=False,datasource=userdatasource)
+                    orgset = organization.objects.filter(filters,is_deleted=False)
                     if orgset.exists():
                         org = orgset.first()
                     else:
