@@ -15,7 +15,7 @@ class activity(MyModel):
     bucket = models.CharField(max_length=16,blank=True,null=True)
     key = models.CharField(max_length=64,blank=True,null=True)
     index = models.SmallIntegerField(blank=True,null=True)
-    detailUrl = models.URLField(blank=True,null=True)
+    detailUrl = models.URLField(max_length=500, blank=True, null=True)
     isActive = models.BooleanField(blank=True,default=True)
     isNews = models.BooleanField(blank=True,default=False)
     deleteduser = MyForeignKey(MyUser,blank=True,null=True,related_name='userdelete_activities')
