@@ -248,8 +248,9 @@ class Tag(models.Model):
     热门标签
     '''
     id = models.AutoField(primary_key=True)
-    nameC = models.CharField(max_length=20,blank=True,null=True)
-    nameE = models.CharField(max_length=128,blank=True,null=True)
+    nameC = models.CharField(max_length=20, blank=True, null=True)
+    nameE = models.CharField(max_length=128, blank=True, null=True)
+    scopeName = models.CharField(max_length=128, blank=True, null=True)
     hotpoint = models.SmallIntegerField(blank=True, default=0)
     datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
     is_deleted = models.BooleanField(blank=True, default=False)
