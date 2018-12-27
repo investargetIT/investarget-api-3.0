@@ -89,7 +89,6 @@ def create_watermark(waterpath, watermarkcontent):
     c = canvas.Canvas(waterpath, A1)
     c.rotate(45)
     fontsize = 20
-    space = 150                # 水印间距
     c.setFont("song", fontsize)
     c.translate(0, -A1[1] * 0.5)
     width0 = c.stringWidth(text=watermarkcontent[0], fontName='song', fontSize=fontsize)
@@ -101,11 +100,11 @@ def create_watermark(waterpath, watermarkcontent):
         while x < A1[0]:
             c.setFillAlpha(0.05)
             c.drawCentredString(x, y, watermarkcontent[0])
-            x = x + width0 + space
+            x = x + width0 + 150
             c.drawCentredString(x, y, watermarkcontent[1])
-            x = x + width1 + space
+            x = x + width1 + 80
             c.drawCentredString(x, y, watermarkcontent[2])
-            x = x + width2 + space
+            x = x + width2 + 80
         y += 60
     c.save()
     pdf_watermark = PageMerge().add(PdfReader(waterpath).pages[0])[0]

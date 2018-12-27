@@ -45,7 +45,7 @@ class DataroomView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.SearchFilter,filters.DjangoFilterBackend,)
     queryset = dataroom.objects.all().filter(is_deleted=False)
-    search_fields = ('proj__projtitleC', 'proj__projtitleE', 'proj__supportUser__usernameC')
+    search_fields = ('proj__projtitleC', 'proj__projtitleE', 'proj__supportUser__usernameC', 'dataroom_users__user__usernameC')
     filter_class = DataroomFilter
     serializer_class = DataroomSerializer
 
