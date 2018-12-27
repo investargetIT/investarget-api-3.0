@@ -89,7 +89,7 @@ def create_watermark(waterpath, watermarkcontent):
     c = canvas.Canvas(waterpath, A1)
     c.rotate(45)
     fontsize = 20
-    space = 80                # 水印间距
+    space = 150                # 水印间距
     c.setFont("song", fontsize)
     c.translate(0, -A1[1] * 0.5)
     width0 = c.stringWidth(text=watermarkcontent[0], fontName='song', fontSize=fontsize)
