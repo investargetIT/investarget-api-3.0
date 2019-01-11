@@ -63,8 +63,6 @@ def qiniu_coverupload(request):
                 for chunk in uploaddata.chunks():
                     destination.write(chunk)
             convertAndUploadOffice(inputFilePath, outputFilePath, bucket_name, outputFileKey)
-        elif filetype in ['xlsx', 'xls']:
-            key = outputFileKey
         else:
             key = inputFileKey
         return JSONResponse(SuccessResponse({'key': key, 'url': return_url, 'realfilekey': inputFileKey}))
@@ -119,8 +117,6 @@ def bigfileupload(request):
                 for chunk in uploaddata.chunks():
                     destination.write(chunk)
             convertAndUploadOffice(inputFilePath, outputFilePath, bucket_name, outputFileKey)
-        elif filetype in ['xlsx', 'xls']:
-            key = outputFileKey
         else:
             key = inputFileKey
         return JSONResponse(SuccessResponse({'key':key,'url':return_url,'realfilekey':inputFileKey}))
