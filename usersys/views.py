@@ -16,6 +16,7 @@ from org.models import organization
 from sourcetype.views import getmenulist
 from third.models import MobileAuthCode
 from third.views.huanxin import registHuanXinIMWithUser, deleteHuanXinIMWithUser
+from third.views.qiniufile import deleteqiniufile
 from third.views.weixinlogin import get_openid
 from timeline.models import timeline
 from usersys.models import MyUser, UserRelation, userTags, UserFriendship, MyToken, UnreachUser, UserRemarks, \
@@ -817,10 +818,6 @@ class UserAttachmentView(viewsets.ModelViewSet):
         lang = request.GET.get('lang')
         data['createuser'] = request.user.id
         data['datasource'] = request.user.datasource.id
-        # if request.user.is_superuser:
-        #     pass
-        # else:
-        #     raise InvestError(2009)
         try:
             with transaction.atomic():
                 attachmentserializer = UserAttachmentSerializer(data=data)
@@ -840,10 +837,6 @@ class UserAttachmentView(viewsets.ModelViewSet):
         try:
             remark = self.get_object()
             lang = request.GET.get('lang')
-            # if request.user.is_superuser:
-            #     pass
-            # else:
-            #     raise InvestError(code=2009)
             data = request.data
             data.pop('createuser',None)
             data.pop('createdtime',None)
@@ -865,19 +858,12 @@ class UserAttachmentView(viewsets.ModelViewSet):
     @loginTokenIsAvailable(['usersys.user_getuserbase', ])
     def destroy(self, request, *args, **kwargs):
         try:
-            lang = request.GET.get('lang')
             instance = self.get_object()
-            # if request.user.is_superuser:
-            #     pass
-            # else:
-            #     raise InvestError(code=2009)
             with transaction.atomic():
                 instance.is_deleted = True
-                instance.deleteduser = request.user
-                instance.deletedtime = datetime.datetime.now()
-                instance.save()
-                return JSONResponse(
-                    SuccessResponse(returnDictChangeToLanguage(UserAttachmentSerializer(instance).data, lang)))
+                deleteqiniufile(instance.bucket, instance.key)
+                instance.delete()
+                return JSONResponse(SuccessResponse({'isdeleted': True}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -904,10 +890,6 @@ class UserEventView(viewsets.ModelViewSet):
             page_index = request.GET.get('page_index', 1)
             lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
-            # if request.user.is_superuser:
-            #     pass
-            # else:
-            #     queryset = queryset.filter(user__investor_relations__in=request.user.trader_relations.all())
             sortfield = request.GET.get('sort', 'createdtime')
             desc = request.GET.get('desc', 1)
             queryset = mySortQuery(queryset, sortfield, desc)
@@ -1002,10 +984,6 @@ class UserEventView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             instance = self.get_object()
-            # if request.user.is_superuser:
-            #     pass
-            # else:
-            #     raise InvestError(code=2009)
             with transaction.atomic():
                 instance.is_deleted = True
                 instance.deleteduser = request.user
