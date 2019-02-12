@@ -35,6 +35,7 @@ class ProjectData(Document):
     com_des = StringField(null=True)   #公司介绍
     invse_total_money = StringField(null=True)  #融资总额
     com_addr = StringField(null=True)   #公司所在地
+    com_city = StringField(null=True)  # 公司所在地
     mobile = StringField(null=True)  # 公司联系方式
     email = StringField(null=True)  # 公司邮箱
     detailaddress = StringField(null=True)  # 公司地址
