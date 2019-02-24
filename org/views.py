@@ -12,14 +12,18 @@ from rest_framework import filters , viewsets
 
 from invest.settings import APILOG_PATH
 from mongoDoc.models import ProjectData, MergeFinanceData
-from org.models import organization, orgTransactionPhase, orgRemarks, orgContact, orgBuyout, orgManageFund, orgInvestEvent, orgCooperativeRelationship, \
-    orgTags, orgExportExcelTask
-from org.serializer import OrgCommonSerializer, OrgDetailSerializer, OrgRemarkDetailSerializer, OrgCreateSerializer,\
-    OrgUpdateSerializer, OrgBuyoutCreateSerializer, OrgContactCreateSerializer, OrgInvestEventCreateSerializer,\
-    OrgManageFundCreateSerializer, OrgCooperativeRelationshipCreateSerializer, OrgBuyoutSerializer, OrgContactSerializer, \
-    OrgInvestEventSerializer, OrgManageFundSerializer, OrgCooperativeRelationshipSerializer, OrgListSerializer, OrgExportExcelTaskSerializer, \
-    OrgExportExcelTaskDetailSerializer
+from org.models import organization, orgTransactionPhase, orgRemarks, orgContact, orgBuyout, orgManageFund, \
+    orgInvestEvent, orgCooperativeRelationship, \
+    orgTags, orgExportExcelTask, orgAttachments
+from org.serializer import OrgCommonSerializer, OrgDetailSerializer, OrgRemarkDetailSerializer, OrgCreateSerializer, \
+    OrgUpdateSerializer, OrgBuyoutCreateSerializer, OrgContactCreateSerializer, OrgInvestEventCreateSerializer, \
+    OrgManageFundCreateSerializer, OrgCooperativeRelationshipCreateSerializer, OrgBuyoutSerializer, \
+    OrgContactSerializer, \
+    OrgInvestEventSerializer, OrgManageFundSerializer, OrgCooperativeRelationshipSerializer, OrgListSerializer, \
+    OrgExportExcelTaskSerializer, \
+    OrgExportExcelTaskDetailSerializer, OrgAttachmentSerializer
 from sourcetype.models import TransactionPhases, TagContrastTable
+from third.views.qiniufile import deleteqiniufile
 from usersys.models import UserRelation
 from utils.customClass import InvestError, JSONResponse, RelationFilter, MySearchFilter
 from utils.somedef import file_iterator
@@ -1413,6 +1417,111 @@ class OrgExportExcelTaskView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+class OrgAttachmentFilter(FilterSet):
+    org = RelationFilter(filterstr='org', lookup_method='in')
+
+    class Meta:
+        model = orgAttachments
+        fields = ('org',)
+
+class OrgAttachmentView(viewsets.ModelViewSet):
+    """
+            list: 机构附件列表
+            create: 新建机构附件
+            update: 修改机构附件信息
+            destroy: 删除机构附件
+            """
+    filter_backends = (filters.DjangoFilterBackend,)
+    queryset = orgAttachments.objects.all().filter(is_deleted=False)
+    filter_class = OrgAttachmentFilter
+    serializer_class = OrgAttachmentSerializer
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
+            queryset = self.filter_queryset(self.get_queryset())
+            sortfield = request.GET.get('sort', 'createdtime')
+            desc = request.GET.get('desc', 1)
+            queryset = mySortQuery(queryset, sortfield, desc)
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = self.serializer_class(queryset, many=True)
+            return JSONResponse(
+                SuccessResponse({'count': count, 'data': returnListChangeToLanguage(serializer.data, lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable(['org.admin_manageorgattachment', ])
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        lang = request.GET.get('lang')
+        data['createuser'] = request.user.id
+        try:
+            with transaction.atomic():
+                attachmentserializer = self.serializer_class(data=data)
+                if attachmentserializer.is_valid():
+                    instance = attachmentserializer.save()
+                else:
+                    raise InvestError(code=20071, msg='data有误_%s\n%s' %  attachmentserializer.errors)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(attachmentserializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable(['org.admin_manageorgattachment', ])
+    def update(self, request, *args, **kwargs):
+        try:
+            remark = self.get_object()
+            lang = request.GET.get('lang')
+            data = request.data
+            data.pop('createuser',None)
+            data.pop('createdtime',None)
+            with transaction.atomic():
+                serializer = self.serializer_class(remark, data=data)
+                if serializer.is_valid():
+                    newinstance = serializer.save()
+                else:
+                    raise InvestError(code=20071,
+                                      msg='data有误_%s\n%s' % (serializer.error_messages, serializer.errors))
+                return JSONResponse(
+                    SuccessResponse(returnDictChangeToLanguage(UserAttachmentSerializer(newinstance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable(['org.admin_manageorgattachment', ])
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            with transaction.atomic():
+                instance.is_deleted = True
+                deleteqiniufile(instance.bucket, instance.key)
+                if instance.key != instance.realkey:
+                    deleteqiniufile(instance.bucket, instance.realkey)
+                instance.delete()
+                return JSONResponse(SuccessResponse({'isdeleted': True}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
 
 
 

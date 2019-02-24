@@ -106,6 +106,17 @@ org_buyoutdetail = views.OrgBuyoutView.as_view({
 })
 
 
+org_attachmentlist = views.OrgAttachmentView.as_view({
+        'get': 'list',
+        'post': 'create'
+})
+
+
+org_attachmentdetail = views.OrgAttachmentView.as_view({
+        'put': 'update',
+        'delete': 'destroy'
+})
+
 
 urlpatterns = [
         url(r'^$', org_list,name='org-list'),
@@ -124,5 +135,6 @@ urlpatterns = [
         url(r'^buyout/(?P<pk>\d+)/$', org_buyoutdetail,name='org_buyout-detail'),
         url(r'^excel/$', org_exportlist,name='org_excel-list'),
         url(r'^excel/(?P<pk>\d+)/$', org_exportdetail,name='org_excel-detail'),
-
+        url(r'^atta/$', org_attachmentlist,name='org_attachment-list'),
+        url(r'^atta/(?P<pk>\d+)/$', org_attachmentdetail,name='org_attachment-detail'),
 ]

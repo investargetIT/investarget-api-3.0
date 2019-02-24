@@ -1,7 +1,7 @@
 
 from rest_framework import serializers
 from org.models import organization, orgRemarks, orgTransactionPhase, orgBuyout, orgContact, orgInvestEvent, \
-    orgCooperativeRelationship, orgManageFund, orgExportExcelTask
+    orgCooperativeRelationship, orgManageFund, orgExportExcelTask, orgAttachments
 from sourcetype.serializer import transactionPhasesSerializer, tagSerializer
 
 
@@ -154,3 +154,9 @@ class OrgManageFundSerializer(serializers.ModelSerializer):
     class Meta:
         model = orgManageFund
         exclude = ('createuser', 'deleteduser', 'createdtime', 'is_deleted', 'deletedtime', 'lastmodifytime')
+
+class OrgAttachmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = orgAttachments
+        fields = '__all__'
+

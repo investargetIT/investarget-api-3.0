@@ -304,3 +304,27 @@ class orgExportExcelTask(MyModel):
         if '/' in self.filename or u'/' in self.filename:
             raise InvestError(code=2007, msg='filename 不能包含\'/\'')
         super(orgExportExcelTask, self).save(force_insert, force_update, using, update_fields)
+
+
+
+class orgAttachments(MyModel):
+    org = MyForeignKey(organization, related_name='org_orgAttachments', blank=True, on_delete=models.SET_NULL)
+    bucket = models.CharField(max_length=64, blank=True, default='image')
+    key = models.CharField(max_length=128, blank=True, null=True, help_text='保存文件转换pdf后的key')
+    realkey = models.CharField(max_length=128, blank=True, null=True, help_text='保存文件原始key')
+    filename = models.CharField(max_length=128, blank=True, null=True)
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_orgAttachments')
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_orgAttachments')
+
+    class Meta:
+        db_table = "org_attachments"
+        permissions = (
+            ('admin_manageorgattachment', '管理机构备注（增删改）'),
+        )
+
+    def save(self, *args, **kwargs):
+        return super(userAttachments, self).save(*args, **kwargs)
+
+
+
+
