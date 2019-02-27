@@ -323,7 +323,7 @@ class orgAttachments(MyModel):
         )
 
     def save(self, *args, **kwargs):
-        return super(userAttachments, self).save(*args, **kwargs)
+        return super(orgAttachments, self).save(*args, **kwargs)
 
 
 

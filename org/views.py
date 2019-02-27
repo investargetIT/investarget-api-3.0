@@ -1497,7 +1497,7 @@ class OrgAttachmentView(viewsets.ModelViewSet):
                     raise InvestError(code=20071,
                                       msg='data有误_%s\n%s' % (serializer.error_messages, serializer.errors))
                 return JSONResponse(
-                    SuccessResponse(returnDictChangeToLanguage(UserAttachmentSerializer(newinstance).data, lang)))
+                    SuccessResponse(returnDictChangeToLanguage(self.serializer_class(newinstance).data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
