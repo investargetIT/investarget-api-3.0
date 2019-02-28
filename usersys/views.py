@@ -1820,6 +1820,8 @@ def login(request):
                         user = thirdaccount.user
             if not user:
                 raise InvestError(2009, msg='登录无效')
+        if user.userstatus_id == 3:
+            raise InvestError(2022, msg='用户审核未通过，如有疑问请咨询相关工作人员。')
         user.last_login = datetime.datetime.now()
         if not user.is_active:
             user.is_active = True

@@ -139,6 +139,21 @@ def loginTokenIsAvailable(permissions=None):#判断class级别权限
         return _token_available
     return token_available
 
+
+#根据token设置request.user
+def setrequestuser(request):
+    tokenkey = request.META.get('HTTP_TOKEN', None)
+    if tokenkey:
+        try:
+            token = MyToken.objects.get(key=tokenkey, is_deleted=False)
+            if not token.timeout():
+                request.user = token.user
+        except MyToken.DoesNotExist:
+            pass
+        except Exception as err:
+            raise InvestError(3000,msg=repr(err))
+
+
 #检查def request的token
 def checkRequestToken():
     def token_available(func):
@@ -155,6 +170,8 @@ def checkRequestToken():
                             return JSONResponse(InvestErrorResponse(InvestError(3000, msg='token过期')))
                         if token.user.is_deleted:
                             return JSONResponse(InvestErrorResponse(InvestError(3000, msg='用户不存在')))
+                        if token.user.userstatus_id == 3:
+                            return JSONResponse(InvestErrorResponse(InvestError(3000, msg='用户审核未通过，如有疑问请咨询相关工作人员。')))
                         request.user = token.user
                         return func(request, *args, **kwargs)
                 else:
@@ -165,7 +182,8 @@ def checkRequestToken():
     return token_available
 
 
-def checkrequesttoken(token):#验证token有效
+#验证token有效
+def checkrequesttoken(token):
     if token:
         try:
             token = MyToken.objects.get(key=token, is_deleted=False)
@@ -176,24 +194,12 @@ def checkrequesttoken(token):#验证token有效
                 raise InvestError(3000, msg='token过期')
             if token.user.is_deleted:
                 raise InvestError(3000, msg='用户不存在')
+            if token.user.userstatus_id == 3:
+                raise InvestError(2022, msg='用户审核未通过，如有疑问请咨询相关工作人员。')
             return token.user
     else:
         raise InvestError(3000, msg='NO TOKEN')
 
-
-def setrequestuser(request):#根据token设置request.user
-    tokenkey = request.META.get('HTTP_TOKEN', None)
-    if tokenkey:
-        try:
-            token = MyToken.objects.get(key=tokenkey, is_deleted=False)
-            if not token.timeout():
-                request.user = token.user
-        except MyToken.DoesNotExist:
-            pass
-        except Exception as err:
-            raise InvestError(3000,msg=repr(err))
-    else:
-        pass
 
 def add_perm(perm,user_or_group,obj=None):
     if user_or_group:
@@ -292,7 +298,6 @@ def requestDictChangeToLanguage(model,dictdata,lang=None):
 
 def mySortQuery(queryset, sortfield, desc, created=False):
     '''
-
     :param queryset: 排序集合，queryset类型
     :param sortfield: 排序字段，str类型
     :param desc: 正反序
