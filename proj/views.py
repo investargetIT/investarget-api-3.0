@@ -283,6 +283,8 @@ class ProjectView(viewsets.ModelViewSet):
                 if request.user.has_perm('proj.user_getproj', instance) or request.user.has_perm(
                         'proj.admin_getproj'):
                     pass
+                elif request.user.has_perm('usersys.as_trader') and request.user.userstatus_id == 2:
+                    pass
                 else:
                     raise InvestError(code=4004, msg='没有权限查看隐藏项目')
             serializer = serializerclass(instance)
