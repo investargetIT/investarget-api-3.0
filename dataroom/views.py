@@ -611,7 +611,7 @@ class User_DataroomfileView(viewsets.ModelViewSet):
         try:
             data = request.data
             dataroomid = data['dataroom']
-            dataroominstance = dataroom.objects.filter(is_deleted=False, id=dataroomid, datasource=request.user.datasource)
+            dataroominstance = dataroom.objects.get(is_deleted=False, id=dataroomid, datasource=request.user.datasource)
             if request.user in [dataroominstance.proj.takeUser, dataroominstance.proj.makeUser]:
                 pass
             elif request.user.has_perm('dataroom.admin_adddataroom'):
