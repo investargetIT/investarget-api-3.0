@@ -115,7 +115,7 @@ class DataroomView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
-    @loginTokenIsAvailable(['dataroom.admin_adddataroom'])
+    @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
@@ -130,6 +130,12 @@ class DataroomView(viewsets.ModelViewSet):
             if proj.projstatus_id < 4:
                 raise InvestError(5003, msg='项目尚未终审发布')
             with transaction.atomic():
+                if request.user in [proj.takeUser, proj.makeUser]:
+                    pass
+                elif request.user.has_perm('dataroom.admin_adddataroom'):
+                    pass
+                else:
+                    raise InvestError(2009)
                 publicdataroom = self.get_queryset().filter(proj=proj)
                 if publicdataroom.exists():
                     responsedataroom = DataroomCreateSerializer(publicdataroom.first()).data
@@ -424,7 +430,7 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             if request.user.has_perm('dataroom.admin_adddataroom'):
                 pass
             elif request.user.has_perm('dataroom.user_adddataroomfile'):
-                if request.user in (dataroominstance.proj.takeUser, dataroominstance.proj.makeUser, dataroominstance.proj.supportUser):
+                if request.user in (dataroominstance.proj.takeUser, dataroominstance.proj.makeUser):
                     pass
                 else:
                     raise InvestError(2009, msg='非承揽承做无法上传文件')
@@ -453,7 +459,7 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['dataroom.admin_changedataroom'])
+    @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
         try:
             data = request.data
@@ -462,6 +468,12 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             if fileid is None:
                 raise InvestError(2007,msg='fileid cannot be null')
             file = self.get_object(fileid)
+            if request.user in [file.dataroom.proj.takeUser, file.dataroom.proj.makeUser]:
+                pass
+            elif request.user.has_perm('dataroom.admin_changedataroom'):
+                pass
+            else:
+                raise InvestError(2009)
             data['lastmodifyuser'] = request.user.id
             data['lastmodifytime'] = datetime.datetime.now()
             if data.get('dataroom', None):
@@ -504,14 +516,12 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
                     if request.user.has_perm('dataroom.admin_deletedataroom'):
                         pass
                     elif request.user.has_perm('dataroom.user_deletedataroomfile'):
-                        if request.user in (instance.dataroom.proj.takeUser, instance.dataroom.proj.makeUser,
-                                            instance.dataroom.proj.supportUser):
+                        if request.user in (instance.dataroom.proj.takeUser, instance.dataroom.proj.makeUser):
                             pass
                         else:
                             raise InvestError(2009, msg='非承揽承做无法删除文件')
                     else:
                         raise InvestError(2009, msg='没有删除文件的权限')
-
                     deleteInstance(instance, request.user)
                 return JSONResponse(SuccessResponse(filelist))
         except InvestError as err:
@@ -596,10 +606,18 @@ class User_DataroomfileView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['dataroom.admin_adddataroom'])
+    @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
+            dataroomid = data['dataroom']
+            dataroominstance = dataroom.objects.filter(is_deleted=False, id=dataroomid, datasource=request.user.datasource)
+            if request.user in [dataroominstance.proj.takeUser, dataroominstance.proj.makeUser]:
+                pass
+            elif request.user.has_perm('dataroom.admin_adddataroom'):
+                pass
+            else:
+                raise InvestError(2009)
             with transaction.atomic():
                 data['datasource'] = request.user.datasource_id
                 data['createuser'] = request.user.id
@@ -623,6 +641,8 @@ class User_DataroomfileView(viewsets.ModelViewSet):
                 pass
             elif request.user == user_dataroom.trader:
                 pass
+            elif request.user in [user_dataroom.dataroom.proj.takeUser, user_dataroom.dataroom.proj.makeUser]:
+                pass
             else:
                 raise InvestError(2009)
             sendmessage_dataroomuseradd(user_dataroom, user_dataroom.user, ['email'], sender=request.user)
@@ -643,6 +663,8 @@ class User_DataroomfileView(viewsets.ModelViewSet):
             if request.user.has_perm('dataroom.admin_changedataroom'):
                 pass
             elif request.user == user_dataroom.trader:
+                pass
+            elif request.user in [user_dataroom.dataroom.proj.takeUser, user_dataroom.dataroom.proj.makeUser]:
                 pass
             else:
                 raise InvestError(2009)
