@@ -551,7 +551,7 @@ class OrgBDView(viewsets.ModelViewSet):
                 raise InvestError(2009)
             queryset = self.filter_queryset(self.get_queryset())
             count = queryset.count()
-            queryset = queryset.values('response').annotate(count=Count('response'))
+            queryset = queryset.values('response').annotate(count=Count('*'))
             serializer = json.dumps(list(queryset), cls=DjangoJSONEncoder)
             return JSONResponse(SuccessResponse({'count': count, 'response_count': json.loads(serializer)}))
         except InvestError as err:
