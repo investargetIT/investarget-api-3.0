@@ -128,7 +128,7 @@ class OrganizationView(viewsets.ModelViewSet):
                 if request.user.is_anonymous:
                     pass
                 else:
-                    if instance.orglevel_id == 1:
+                    if instance.orglevel_id == 1 or instance.orglevel_id == 2:
                         user_count = self.checkOrgUserContactInfoTruth(instance, request.user.datasource)
                     if request.user.has_perm('org.admin_getorg') or request.user.has_perm('org.user_getorg',instance):
                         actionlist['get'] = True
