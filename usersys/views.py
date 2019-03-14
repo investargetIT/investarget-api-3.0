@@ -20,12 +20,13 @@ from third.views.qiniufile import deleteqiniufile
 from third.views.weixinlogin import get_openid
 from timeline.models import timeline
 from usersys.models import MyUser, UserRelation, userTags, UserFriendship, MyToken, UnreachUser, UserRemarks, \
-    userAttachments, userEvents, UserContrastThirdAccount
-from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer,\
-    CreatUserSerializer , UserCommenSerializer , UserRelationCreateSerializer, UserFriendshipSerializer, \
-    UserFriendshipDetailSerializer, UserFriendshipUpdateSerializer, GroupSerializer, GroupDetailSerializer, GroupCreateSerializer, PermissionSerializer, \
+    userAttachments, userEvents, UserContrastThirdAccount, UserSessionToken
+from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer, \
+    CreatUserSerializer, UserCommenSerializer, UserRelationCreateSerializer, UserFriendshipSerializer, \
+    UserFriendshipDetailSerializer, UserFriendshipUpdateSerializer, GroupSerializer, GroupDetailSerializer, \
+    GroupCreateSerializer, PermissionSerializer, \
     UpdateUserSerializer, UnreachUserSerializer, UserRemarkSerializer, UserRemarkCreateSerializer, \
-    UserListCommenSerializer, UserAttachmentSerializer, UserEventSerializer
+    UserListCommenSerializer, UserAttachmentSerializer, UserEventSerializer, UserSessionTokenSerializer
 from sourcetype.models import Tag, DataSource, TagContrastTable
 from utils import perimissionfields
 from utils.customClass import JSONResponse, InvestError, RelationFilter
@@ -1768,6 +1769,62 @@ class PermissionView(viewsets.ModelViewSet):
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+class UserSessionTokenView(viewsets.ModelViewSet):
+    """
+    list: 获取用户可用sessionToken列表
+    create: 生成新的用户可用sessionToken
+    destroy: 删除某个用户sessionToken
+    """
+    queryset = UserSessionToken.objects.filter(is_deleted=False)
+    serializer_class = UserSessionTokenSerializer
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            queryset = self.queryset.filter(user=request.user)
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = self.serializer_class(queryset, many=True)
+            return JSONResponse(SuccessResponse({'count': count, 'data': serializer.data}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        try:
+            with transaction.atomic():
+                sessionToken = UserSessionToken.objects.create(user=request.user, is_deleted=False)
+                serializer = self.serializer_class(sessionToken)
+                return JSONResponse(SuccessResponse(serializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            with transaction.atomic():
+                sessionToken = self.get_object()
+                sessionToken.is_deleted = True
+                sessionToken.save()
+                return JSONResponse(SuccessResponse({'is_deleted': True}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 

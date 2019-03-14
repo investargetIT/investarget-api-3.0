@@ -510,3 +510,20 @@ class UserFriendship(MyModel):
                 remove_perm('usersys.user_getfavorite', self.friend, self.user)
         super(UserFriendship,self).save(*args, **kwargs)
 
+
+class UserSessionToken(models.Model):
+    id = models.AutoField(primary_key=True)
+    key = models.CharField('Key', max_length=40)
+    user = MyForeignKey(MyUser, related_name='user_sessionToken')
+    created = models.DateTimeField(help_text="CreatedTime", auto_now_add=True, null=True)
+    is_deleted = models.BooleanField(help_text='是否已被删除', blank=True, default=False)
+    class Meta:
+        db_table = 'user_sessiontoken'
+
+    def save(self, *args, **kwargs):
+        if not self.key:
+            self.key = self.generate_key()
+        return super(UserSessionToken, self).save(*args, **kwargs)
+
+    def generate_key(self):
+        return binascii.hexlify(os.urandom(20)).decode()

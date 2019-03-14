@@ -10,7 +10,7 @@ from django.core.exceptions import FieldError
 from guardian.shortcuts import assign_perm, remove_perm
 
 from invest.settings import APILOG_PATH
-from usersys.models import MyToken
+from usersys.models import MyToken, UserSessionToken
 from utils.customClass import JSONResponse, InvestError
 
 REDIS_TIMEOUT = 1 * 24 * 60 * 60
@@ -199,6 +199,18 @@ def checkrequesttoken(token):
             return token.user
     else:
         raise InvestError(3000, msg='NO TOKEN')
+
+def checkSessionToken(token, user_id):
+    if token and user_id:
+        try:
+            token = UserSessionToken.objects.get(key=token, user_id=user_id, is_deleted=False)
+        except UserSessionToken.DoesNotExist:
+            raise InvestError(3008)
+        else:
+            token.is_deleted = True
+            token.save()
+    else:
+        raise InvestError(3008, msg='sessionToken不存在')
 
 
 def add_perm(perm,user_or_group,obj=None):

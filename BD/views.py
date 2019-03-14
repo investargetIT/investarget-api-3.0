@@ -23,7 +23,7 @@ from utils.customClass import RelationFilter, InvestError, JSONResponse
 from utils.sendMessage import sendmessage_orgBDMessage, sendmessage_orgBDExpireMessage
 from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
     returnListChangeToLanguage, catchexcption, returnDictChangeToLanguage, mySortQuery, add_perm, rem_perm, \
-    read_from_cache, write_to_cache, cache_delete_key, logexcption, cache_delete_patternKey
+    read_from_cache, write_to_cache, cache_delete_key, logexcption, cache_delete_patternKey, checkSessionToken
 
 
 class ProjectBDFilter(FilterSet):
@@ -563,6 +563,8 @@ class OrgBDView(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
+            sessionToken = data.get('sessionToken')
+            checkSessionToken(sessionToken, request.user.id)
             lang = request.GET.get('lang')
             comments = data.get('comments',None)
             data['createuser'] = request.user.id

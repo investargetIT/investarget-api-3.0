@@ -123,8 +123,18 @@ unreachuser_deteil = views.UnReachUserView.as_view({
         'put': 'update',
         'delete': 'destroy',
 })
+
 checkUserAccountExist = views.UserView.as_view({
         'get':'checkUserAccountExist',
+})
+
+get_session = views.UserSessionTokenView.as_view({
+        'get': 'list',
+        'post': 'create'
+})
+
+delete_session = views.UserSessionTokenView.as_view({
+        'delete': 'destroy',
 })
 
 
@@ -155,5 +165,7 @@ urlpatterns = [
     url(r'^unuser/(?P<pk>\d+)/$', unreachuser_deteil, name='unreachuser_-detail'),
     url(r'^remark/$',userremark_list, name='userremark-list'),
     url(r'^remark/(?P<pk>\d+)/$', userremark_detail, name='userremark-detail'),
+    url(r'^session/$', get_session, name='userSessionToken_list'),
+    url(r'^session/(?P<pk>\d+)/$', delete_session, name='delete_sessionToken'),
     # url(r'^test/$',views.test)
 ]

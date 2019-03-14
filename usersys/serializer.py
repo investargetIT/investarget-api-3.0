@@ -9,7 +9,8 @@ from org.serializer import OrgCommonSerializer
 from sourcetype.serializer import tagSerializer, countrySerializer, titleTypeSerializer
 from third.views.qiniufile import getUrlWithBucketAndKey
 from utils.util import mobielrestr
-from .models import MyUser, UserRelation, UserFriendship, UnreachUser, UserRemarks, userAttachments, userEvents
+from .models import MyUser, UserRelation, UserFriendship, UnreachUser, UserRemarks, userAttachments, userEvents, \
+    UserSessionToken
 
 
 class UnreachUserSerializer(serializers.ModelSerializer):
@@ -347,3 +348,8 @@ class UserListCommenSerializer(serializers.ModelSerializer):
             return center
         else:
             return None
+
+class UserSessionTokenSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserSessionToken
+        exclude = ('is_deleted', 'user')
