@@ -19,11 +19,12 @@ from proj.models import project
 from third.views.qiniufile import deleteqiniufile
 from timeline.models import timeline
 from timeline.models import timelineremark
+from usersys.views import checkSessionToken
 from utils.customClass import RelationFilter, InvestError, JSONResponse
 from utils.sendMessage import sendmessage_orgBDMessage, sendmessage_orgBDExpireMessage
 from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
     returnListChangeToLanguage, catchexcption, returnDictChangeToLanguage, mySortQuery, add_perm, rem_perm, \
-    read_from_cache, write_to_cache, cache_delete_key, logexcption, cache_delete_patternKey, checkSessionToken
+    read_from_cache, write_to_cache, cache_delete_key, logexcption, cache_delete_patternKey
 
 
 class ProjectBDFilter(FilterSet):
@@ -562,9 +563,8 @@ class OrgBDView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
         try:
+            checkSessionToken(request)
             data = request.data
-            sessionToken = data.get('sessionToken')
-            checkSessionToken(sessionToken, request.user.id)
             lang = request.GET.get('lang')
             comments = data.get('comments',None)
             data['createuser'] = request.user.id
@@ -584,7 +584,7 @@ class OrgBDView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(2009)
             with transaction.atomic():
-                orgBD = OrgBDCreateSerializer(data=data)
+                orgBD = OrgBDCreateSerializer(data=da ta)
                 if orgBD.is_valid():
                     neworgBD = orgBD.save()
                     if neworgBD.manager:
