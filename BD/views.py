@@ -584,7 +584,7 @@ class OrgBDView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(2009)
             with transaction.atomic():
-                orgBD = OrgBDCreateSerializer(data=da ta)
+                orgBD = OrgBDCreateSerializer(data=data)
                 if orgBD.is_valid():
                     neworgBD = orgBD.save()
                     if neworgBD.manager:
