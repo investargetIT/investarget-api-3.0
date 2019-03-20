@@ -3,6 +3,7 @@ import traceback
 import datetime
 from django.contrib import auth
 from django.contrib.auth.models import Group, Permission
+from django.contrib.sessions.backends.cache import SessionStore
 from django.core.exceptions import FieldDoesNotExist
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction, models, connection
@@ -1779,21 +1780,34 @@ def getSessionToken(request):
     获取sessionToken
     """
     try:
-        request.session['st'] = True
-        return JSONResponse(SuccessResponse({}))
+        session_key = request.COOKIES.get('sid', None)
+        if not session_key:
+            request.session['stoken'] = True
+            request.session.save()
+            session = request.session
+        else:
+            session = SessionStore(session_key)
+            session['stoken'] = True
+            session.save()
+        res = JSONResponse(SuccessResponse({}))
+        res.set_cookie('sid', session.session_key, httponly=True)
+        return res
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
     except Exception:
         catchexcption(request)
         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+
 def checkSessionToken(request):
     """
     验证sessionToken
     """
-    aa = request.session.get('st', None)
-    if request.session.get('st', None):
-        del request.session['st']
+    session_key = request.COOKIES.get('sid', None)
+    session = SessionStore(session_key)
+    session_data = session.load()
+    if session_data.get('stoken', None):
+        session.delete()
     else:
         raise InvestError(3008)
 
