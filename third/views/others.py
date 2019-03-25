@@ -105,8 +105,8 @@ def getQRCode(request):
 def recordUpload(request):
     try:
         record = datetime.datetime.now().strftime('%y%m%d%H%M%S')+''.join(random.sample(string.ascii_lowercase,6))
-        write_to_cache(record, {'bucket':None,'key':None,'realfilekey':None,'filename':None,'is_active':True})
-        return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
+        write_to_cache(record, {'files': [], 'is_active': True})
+        return JSONResponse(SuccessResponse({record: read_from_cache(record)}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
     except Exception:
@@ -118,14 +118,11 @@ def updateUpload(request):
     try:
         data = request.data
         record = data.get('record')
-        bucket = data.get('bucket')
-        key = data.get('key')
-        realfilekey = data.get('realfilekey')
-        filename = data.get('filename','mobilefile')
+        files = data.get('files', [])
         if read_from_cache(record) is None:
-            raise InvestError(8003,msg='没有这条记录')
-        write_to_cache(record, {'bucket':bucket,'key':key,'filename':filename,'realfilekey':realfilekey,'is_active':True}, 3600)
-        return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
+            raise InvestError(8003, msg='没有这条记录')
+        write_to_cache(record, {'files': files, 'is_active':True}, 3600)
+        return JSONResponse(SuccessResponse({record: read_from_cache(record)}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
     except Exception:
@@ -136,9 +133,10 @@ def updateUpload(request):
 def selectUpload(request):
     try:
         record = request.GET.get('record')
-        if read_from_cache(record) is None:
-            raise InvestError(8003,msg='没有这条记录')
-        return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
+        recordDic = read_from_cache(record)
+        if recordDic is None:
+            raise InvestError(8003, msg='没有这条记录')
+        return JSONResponse(SuccessResponse({record: read_from_cache(record)}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
     except Exception:
@@ -152,10 +150,10 @@ def cancelUpload(request):
         record = data.get('record')
         recordDic = read_from_cache(record)
         if recordDic is None:
-            raise InvestError(8003,msg='没有这条记录')
+            raise InvestError(8003, msg='没有这条记录')
         recordDic['is_active'] = False
         write_to_cache(record, recordDic, 3600)
-        return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
+        return JSONResponse(SuccessResponse({record: read_from_cache(record)}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
     except Exception:
@@ -170,10 +168,12 @@ def deleteUpload(request):
         recordDic = read_from_cache(record)
         if recordDic is None:
             raise InvestError(8003, msg='没有这条记录')
-        deleteqiniufile(key=recordDic['key'],bucket=recordDic['bucket'])
-        deleteqiniufile(key=recordDic['realfilekey'], bucket=recordDic['bucket'])
+        files = recordDic.get('files', [])
+        for file in files:
+            deleteqiniufile(key=file['key'], bucket=file['bucket'])
+            deleteqiniufile(key=file['realfilekey'], bucket=file['bucket'])
         cache_delete_key(record)
-        return JSONResponse(SuccessResponse({record:read_from_cache(record)}))
+        return JSONResponse(SuccessResponse({record: read_from_cache(record)}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
     except Exception:
