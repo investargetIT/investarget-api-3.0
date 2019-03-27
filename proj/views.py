@@ -569,7 +569,16 @@ class ProjectView(viewsets.ModelViewSet):
             pdfpath = APILOG_PATH['pdfpath_base'] + 'P' + datetime.datetime.now().strftime('%Y%m%d%H%M%S') + '.pdf'
             config = pdfkit.configuration(wkhtmltopdf=APILOG_PATH['wkhtmltopdf'])
             aaa = pdfkit.from_url(PROJECTPDF_URLPATH + str(proj.id)+'&lang=%s'%lang, pdfpath, configuration=config, options=options)
-            out_path = addWaterMark(pdfpath,watermarkcontent=[request.user.usernameC, request.user.org.orgnameC if request.user.org else request.user.email, request.user.email])
+            if request.user not in [proj.takeUser, proj.makeUser]:
+                if lang == 'cn':
+                    username = request.user.usernameC
+                    orgname = request.user.org.orgnameC if request.user.org else ''
+                else:
+                    username = request.user.usernameE
+                    orgname = request.user.org.orgnameE if request.user.org else ''
+                out_path = addWaterMark(pdfpath, watermarkcontent=[username, orgname, request.user.email])
+            else:
+                out_path = pdfpath
             if aaa:
                 fn = open(out_path, 'rb')
                 response = StreamingHttpResponse(file_iterator(fn))
