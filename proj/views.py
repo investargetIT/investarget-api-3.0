@@ -570,12 +570,12 @@ class ProjectView(viewsets.ModelViewSet):
             config = pdfkit.configuration(wkhtmltopdf=APILOG_PATH['wkhtmltopdf'])
             aaa = pdfkit.from_url(PROJECTPDF_URLPATH + str(proj.id)+'&lang=%s'%lang, pdfpath, configuration=config, options=options)
             if request.user not in [proj.takeUser, proj.makeUser]:
-                if lang == 'cn':
-                    username = request.user.usernameC
-                    orgname = request.user.org.orgnameC if request.user.org else ''
-                else:
-                    username = request.user.usernameE
-                    orgname = request.user.org.orgnameE if request.user.org else ''
+                username = request.user.usernameC
+                orgname = request.user.org.orgnameC if request.user.org else ''
+                if lang == 'en':
+                    username = request.user.usernameE if request.user.usernameE else request.user.usernameC
+                    if request.user.org:
+                        orgname = request.user.org.orgnameE if request.user.org.orgnameE else request.user.org.orgnameC
                 out_path = addWaterMark(pdfpath, watermarkcontent=[username, orgname, request.user.email])
             else:
                 out_path = pdfpath
