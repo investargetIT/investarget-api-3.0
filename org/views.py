@@ -461,8 +461,6 @@ class OrgRemarkView(viewsets.ModelViewSet):
                 raise InvestError(code=2009)
             data = request.data
             data['lastmodifyuser'] = request.user.id
-            data['lastmodifytime'] = datetime.datetime.now()
-            data.pop('datasource', None)
             with transaction.atomic():
                 orgserializer = OrgRemarkDetailSerializer(orgremark, data=data)
                 if orgserializer.is_valid():

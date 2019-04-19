@@ -261,7 +261,7 @@ class orgRemarks(MyModel):
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_orgremarks',on_delete=models.SET_NULL)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_orgremarks',on_delete=models.SET_NULL)
     lastmodifyuser = MyForeignKey(MyUser,  blank=True, null=True,related_name='usermodify_orgremarks', related_query_name='orgremark_modifyuser',on_delete=models.SET_NULL)
-    datasource = MyForeignKey(DataSource, help_text='数据源')
+    datasource = MyForeignKey(DataSource, blank=True, null=True, help_text='数据源')
     class Meta:
         db_table = "orgremark"
         permissions = (
@@ -277,8 +277,7 @@ class orgRemarks(MyModel):
         )
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
-        # if not self.datasource or self.datasource != self.org.datasource:
-        #     raise InvestError(code=8888,msg='机构备注没有datasource')
+        self.datasource = self.createuser.datasource
         super(orgRemarks,self).save(force_insert,force_update,using,update_fields)
 
 taskstatuschoice = (
