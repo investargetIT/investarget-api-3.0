@@ -18,6 +18,7 @@ scheduleChoice = (
     (1,'路演会议'),
     (2,'约见公司'),
     (3,'约见投资人'),
+    (4,'视频会议'),
 )
 
 class message(MyModel):
@@ -69,5 +70,11 @@ class schedule(MyModel):
                 raise InvestError(2007,msg='日程时间不能是今天以前的时间')
             if self.proj:
                 self.projtitle = self.proj.projtitleC
+            if self.type == 4:
+                if self.pk:
+                    type4queryset = schedule.objects.exclude(pk=self.pk).filter(is_deleted=False, datasource=self.datasource, type=self.type, scheduledtime=self.scheduledtime)
+                else:
+                    type4queryset = schedule.objects.filter(is_deleted=False, datasource=self.datasource, type=self.type, scheduledtime=self.scheduledtime)
+                if (type4queryset.exists()): raise InvestError(2007, msg='相同时间只能有一个视频会议存在')
         self.datasource = self.createuser.datasource
         return super(schedule, self).save(*args, **kwargs)
