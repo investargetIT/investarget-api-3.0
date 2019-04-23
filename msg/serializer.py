@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.validators import UniqueTogetherValidator
 
 from msg.models import message, schedule
 from proj.serializer import ProjCommonSerializer
@@ -10,6 +11,12 @@ class ScheduleCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = schedule
         fields = '__all__'
+        validators = [
+            UniqueTogetherValidator(
+                queryset = schedule.objects.filter(type=4, is_deleted=False),
+                fields = ('type', 'scheduledtime')
+            )
+        ]
 
 class ScheduleSerializer(serializers.ModelSerializer):
     user = UserInfoSerializer()

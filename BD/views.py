@@ -19,12 +19,11 @@ from proj.models import project
 from third.views.qiniufile import deleteqiniufile
 from timeline.models import timeline
 from timeline.models import timelineremark
-from usersys.views import checkSessionToken
 from utils.customClass import RelationFilter, InvestError, JSONResponse
 from utils.sendMessage import sendmessage_orgBDMessage, sendmessage_orgBDExpireMessage
 from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
     returnListChangeToLanguage, catchexcption, returnDictChangeToLanguage, mySortQuery, add_perm, rem_perm, \
-    read_from_cache, write_to_cache, cache_delete_key, logexcption, cache_delete_patternKey
+    read_from_cache, write_to_cache, cache_delete_key, logexcption, cache_delete_patternKey, checkSessionToken
 
 
 class ProjectBDFilter(FilterSet):

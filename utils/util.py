@@ -8,7 +8,7 @@ import traceback
 
 from django.core.exceptions import FieldError
 from guardian.shortcuts import assign_perm, remove_perm
-
+from django.contrib.sessions.backends.cache import SessionStore
 from invest.settings import APILOG_PATH
 from usersys.models import MyToken
 from utils.customClass import JSONResponse, InvestError
@@ -199,6 +199,19 @@ def checkrequesttoken(token):
             return token.user
     else:
         raise InvestError(3000, msg='NO TOKEN')
+
+
+def checkSessionToken(request):
+    """
+    验证sessionToken
+    """
+    session_key = request.COOKIES.get('sid', None)
+    session = SessionStore(session_key)
+    session_data = session.load()
+    if session_data.get('stoken', None):
+        session.delete()
+    else:
+        raise InvestError(3008)
 
 
 def add_perm(perm,user_or_group,obj=None):

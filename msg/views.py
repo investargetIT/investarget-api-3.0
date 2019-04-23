@@ -13,7 +13,7 @@ from msg.models import message, schedule
 from msg.serializer import MsgSerializer, ScheduleSerializer, ScheduleCreateSerializer
 from utils.customClass import InvestError, JSONResponse
 from utils.util import logexcption, loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
-    catchexcption, returnListChangeToLanguage, returnDictChangeToLanguage, mySortQuery
+    catchexcption, returnListChangeToLanguage, returnDictChangeToLanguage, mySortQuery, checkSessionToken
 
 
 def saveMessage(content,type,title,receiver,sender=None,modeltype=None,sourceid=None):
@@ -151,19 +151,18 @@ class ScheduleView(viewsets.ModelViewSet):
 
     @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
-        data = request.data
-        lang = request.GET.get('lang')
-        data['createuser'] = request.user.id
-        data['datasource'] = request.user.datasource.id
         try:
+            checkSessionToken(request)
+            data = request.data
+            lang = request.GET.get('lang')
+            data['createuser'] = request.user.id
+            data['datasource'] = request.user.datasource.id
             with transaction.atomic():
                 scheduleserializer = ScheduleCreateSerializer(data=data)
                 if scheduleserializer.is_valid():
                     scheduleserializer.save()
                 else:
-                    raise InvestError(code=20071,
-                                      msg='data有误_%s\n%s' % (
-                                          scheduleserializer.error_messages, scheduleserializer.errors))
+                    raise InvestError(code=20071, msg='参数错误：%s' % scheduleserializer.errors)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(scheduleserializer.data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -205,11 +204,11 @@ class ScheduleView(viewsets.ModelViewSet):
             data['lastmodifyuser'] = request.user.id
             data['lastmodifytime'] = datetime.datetime.now()
             with transaction.atomic():
-                serializer = ScheduleCreateSerializer(instance, data=data)
-                if serializer.is_valid():
-                    newinstance = serializer.save()
+                scheduleserializer = ScheduleCreateSerializer(instance, data=data)
+                if scheduleserializer.is_valid():
+                    newinstance = scheduleserializer.save()
                 else:
-                    raise InvestError(code=20071, msg='data有误_%s' %  serializer.errors)
+                    raise InvestError(code=20071, msg='参数错误：%s' % scheduleserializer.errors)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(ScheduleSerializer(newinstance).data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))

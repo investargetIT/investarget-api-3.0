@@ -1799,21 +1799,6 @@ def getSessionToken(request):
         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
-def checkSessionToken(request):
-    """
-    验证sessionToken
-    """
-    session_key = request.COOKIES.get('sid', None)
-    session = SessionStore(session_key)
-    session_data = session.load()
-    if session_data.get('stoken', None):
-        session.delete()
-    else:
-        raise InvestError(3008)
-
-
-
-
 @api_view(['POST'])
 def login(request):
     """用户登录 """
