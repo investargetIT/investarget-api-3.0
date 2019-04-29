@@ -408,7 +408,7 @@ class OrgRemarkView(viewsets.ModelViewSet):
                 raise InvestError(code=2009)
         else:
             raise InvestError(code=20072)
-        if not data['createuser']:
+        if not data.get('createuser'):
             data['createuser'] = request.user.id
         data['datasource'] = request.user.datasource.id
         try:
