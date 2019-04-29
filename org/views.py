@@ -395,30 +395,25 @@ class OrgRemarkView(viewsets.ModelViewSet):
 
     @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
-        data = request.data
-        lang = request.GET.get('lang')
-        orgid = data.get('org',None)
-        if orgid:
-            org = self.get_org(orgid=orgid)
+        try:
+            data = request.data
+            lang = request.GET.get('lang')
             if request.user.has_perm('org.admin_addorgremark'):
                 pass
             elif request.user.has_perm('org.user_addorgremark'):
                 pass
             else:
                 raise InvestError(code=2009)
-        else:
-            raise InvestError(code=20072)
-        if not data.get('createuser'):
-            data['createuser'] = request.user.id
-        data['datasource'] = request.user.datasource.id
-        try:
+            if not data.get('createuser'):
+                data['createuser'] = request.user.id
+            data['datasource'] = request.user.datasource.id
             with transaction.atomic():
                 orgremarkserializer = OrgRemarkDetailSerializer(data=data)
                 if orgremarkserializer.is_valid():
                     orgremark = orgremarkserializer.save()
                 else:
                     raise InvestError(code=20071,
-                                      msg='data有误_%s\n%s' % (orgremarkserializer.error_messages, orgremarkserializer.errors))
+                                      msg='data有误_%s' %  orgremarkserializer.errors)
                 if orgremark.createuser:
                     add_perm('org.user_getorgremark', orgremark.createuser, orgremark)
                     add_perm('org.user_changeorgremark', orgremark.createuser, orgremark)
