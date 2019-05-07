@@ -1061,11 +1061,12 @@ class UserRemarkView(viewsets.ModelViewSet):
 
     @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
-        data = request.data
-        lang = request.GET.get('lang')
-        data['createuser'] = request.user.id
-        data['datasource'] = request.user.datasource.id
         try:
+            data = request.data
+            lang = request.GET.get('lang')
+            if not data.get('createuser'):
+                data['createuser'] = request.user.id
+            data['datasource'] = request.user.datasource.id
             with transaction.atomic():
                 remarkserializer = UserRemarkCreateSerializer(data=data)
                 if remarkserializer.is_valid():
