@@ -72,3 +72,20 @@ class schedule(MyModel):
                 self.projtitle = self.proj.projtitleC
         self.datasource = self.createuser.datasource
         return super(schedule, self).save(*args, **kwargs)
+
+class webexUser(MyModel):
+    schedule = MyForeignKey(schedule, blank=True, null=True, related_name='schedule_webexUser', help_text='视频会议')
+    url_address = models.TextField(blank=True, null=True, help_text='参会链接')
+    user = MyForeignKey(MyUser, blank=True, null=True, related_name='user_webexUser', help_text='参会人员')
+    email = models.EmailField(max_length=128, blank=True, null=True, help_text='参会人员邮箱')
+    name = models.CharField(max_length=128, blank=True, null=True, help_text='参会人员姓名')
+    meetingRole = models.CharField(max_length=64, null=True, help_text='参会人员角色类型')
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_webexUser')
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_webexUser')
+    datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
+    class Meta:
+        db_table = 'webexUser'
+
+    def save(self, *args, **kwargs):
+        self.datasource = self.createuser.datasource
+        return super(webexUser, self).save(*args, **kwargs)

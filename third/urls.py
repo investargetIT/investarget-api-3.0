@@ -2,7 +2,7 @@
 from django.conf.urls import url
 from third.views import submail
 from third.views import qiniufile
-from third.views import huanxin
+from third.views import webex
 from third.views import others
 urlpatterns = [
     url(r'^sms$', submail.sendSmscode, name='sendsmscode', ),
@@ -12,10 +12,11 @@ urlpatterns = [
     url(r'^ccupload', others.ccupload, name='ccupload', ),
     url(r'^uploadToken$', qiniufile.qiniu_uploadtoken, name='getuploadtoken',),
     url(r'^downloadUrl$', qiniufile.qiniu_downloadurl, name='getdownloadurl',),
-    url(r'^getQRCode$', others.getQRCode,name='getQRCode',),
-    url(r'^recordUpload', others.recordUpload,name='recordUpload',),
-    url(r'^updateUpload', others.updateUpload,name='updateUploadRecord',),
-    url(r'^selectUpload', others.selectUpload,name='selectFromUploadRecord',),
-    url(r'^cancelUpload', others.cancelUpload,name='cancelUploadRecord',),
-    url(r'^deleteUpload', others.deleteUpload,name='deleteUploadRecord',),
+    url(r'^getQRCode$', others.getQRCode, name='getQRCode',),
+    url(r'^recordUpload', others.recordUpload, name='recordUpload',),
+    url(r'^updateUpload', others.updateUpload, name='updateUploadRecord',),
+    url(r'^selectUpload', others.selectUpload, name='selectFromUploadRecord',),
+    url(r'^cancelUpload', others.cancelUpload, name='cancelUploadRecord',),
+    url(r'^deleteUpload', others.deleteUpload, name='deleteUploadRecord',),
+    url(r'^createMeeting', webex.createWebEXMeeting, name='createWebEXMeeting',),
 ]

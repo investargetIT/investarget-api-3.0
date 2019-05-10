@@ -1111,10 +1111,7 @@ class UserRemarkView(viewsets.ModelViewSet):
             else:
                 raise InvestError(code=2009)
             data = request.data
-            data.pop('createuser',None)
-            data.pop('createdtime',None)
             data['lastmodifyuser'] = request.user.id
-            data['lastmodifytime'] = datetime.datetime.now()
             with transaction.atomic():
                 serializer = UserRemarkCreateSerializer(remark, data=data)
                 if serializer.is_valid():
