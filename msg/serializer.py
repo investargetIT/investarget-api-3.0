@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from msg.models import message, schedule, webexUser
+from msg.models import message, schedule, webexUser, webexMeeting
 from proj.serializer import ProjCommonSerializer
 from sourcetype.serializer import countrySerializer, orgAreaSerializer
 from usersys.serializer import UserCommenSerializer,UserInfoSerializer
@@ -11,12 +11,7 @@ class ScheduleCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = schedule
         fields = '__all__'
-        validators = [
-            UniqueTogetherValidator(
-                queryset = schedule.objects.filter(type=4, is_deleted=False),
-                fields = ('type', 'scheduledtime')
-            )
-        ]
+
 
 class ScheduleSerializer(serializers.ModelSerializer):
     user = UserInfoSerializer()
@@ -33,6 +28,12 @@ class ScheduleSerializer(serializers.ModelSerializer):
 class MsgSerializer(serializers.ModelSerializer):
     class Meta:
         model = message
+        fields = '__all__'
+
+
+class WebEXMeetingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = webexMeeting
         fields = '__all__'
 
 

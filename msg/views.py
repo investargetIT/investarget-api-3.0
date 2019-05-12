@@ -2,6 +2,8 @@
 import traceback
 
 import datetime
+
+import requests
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction
 
@@ -9,12 +11,14 @@ from django.db import transaction
 from rest_framework import filters
 from rest_framework import viewsets
 
-from msg.models import message, schedule, webexUser
-from msg.serializer import MsgSerializer, ScheduleSerializer, ScheduleCreateSerializer, WebEXUserSerializer
+from msg.models import message, schedule, webexUser, webexMeeting
+from msg.serializer import MsgSerializer, ScheduleSerializer, ScheduleCreateSerializer, WebEXUserSerializer, \
+    WebEXMeetingSerializer
+from third.thirdconfig import webEX_siteName, webEX_webExID, webEX_password
 from utils.customClass import InvestError, JSONResponse
 from utils.util import logexcption, loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
     catchexcption, returnListChangeToLanguage, returnDictChangeToLanguage, mySortQuery, checkSessionToken
-
+import xml.etree.cElementTree as ET
 
 def saveMessage(content,type,title,receiver,sender=None,modeltype=None,sourceid=None):
     try:
@@ -240,6 +244,169 @@ class ScheduleView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
+class WebEXMeetingView(viewsets.ModelViewSet):
+    """
+        list: 视频会议列表
+        create: 新增视频会议
+        retrieve: 查看某一视频会议
+        update: 修改某一视频会议信息
+        destroy: 删除某一视频会议
+        """
+    filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
+    queryset = webexMeeting.objects.all().filter(is_deleted=False)
+    filter_fields = ('title', 'meetingKey', 'createuser')
+    search_fields = ('startDate', 'createuser__usernameC', 'createuser__usernameE')
+    serializer_class = WebEXMeetingSerializer
+
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
+            queryset = self.filter_queryset(self.queryset.filter(datasource_id=request.user.datasource_id))
+            sortfield = request.GET.get('sort', 'startDate')
+            desc = request.GET.get('desc', 0)
+            queryset = mySortQuery(queryset, sortfield, desc)
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = self.serializer_class(queryset, many=True)
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data, lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            data['createuser'] = request.user.id
+            with transaction.atomic():
+                instanceSerializer = self.serializer_class(data=data)
+                if instanceSerializer.is_valid():
+                    instance = instanceSerializer.save()
+                else:
+                    raise InvestError(code=20071, msg='参数错误：%s' % instanceSerializer.errors)
+                data['startDate'] = instance.startDate.strftime('%m/%d/%Y %H:%M:%S')
+                XML_body = self.getXMLBody(webEX_siteName, webEX_webExID, webEX_password, data)
+                url = 'https://investarget.webex.com.cn/WBXService/XMLService'
+                s = requests.post(url=url, data=XML_body.encode("utf-8"))
+                if s.status_code == 200:
+                    res = ET.fromstring(s.text)
+                    meetingkey = next(res.iter('{http://www.webex.com/schemas/2002/06/service/meeting}meetingkey')).text
+                    serv_host = next(res.iter('{http://www.webex.com/schemas/2002/06/service}host')).text
+                    serv_attendee = next(res.iter('{http://www.webex.com/schemas/2002/06/service}attendee')).text
+                    meetGuestToken = next(res.iter('{http://www.webex.com/schemas/2002/06/service/meeting}guestToken')).text
+                    meetingData = {'meetingKey': meetingkey, 'url_host': serv_host, 'url_attendee': serv_attendee,
+                              'guestToken': meetGuestToken}
+                    newInstanceSerializer = self.serializer_class(instance, data=meetingData)
+                    if newInstanceSerializer.is_valid():
+                        newInstanceSerializer.save()
+                else:
+                    raise InvestError(8006, msg=s.text)
+            return JSONResponse(SuccessResponse(instanceSerializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    def getXMLBody(self, webEX_siteName, webEX_webExID, webEX_password, data):
+        meetingPassword = data.get('password', 'Aa123456')  # 会议密码
+        title = data.get('title', 'Test Meeting')  # 会议名称
+        agenda = data.get('agenda', 'Test')  # 会议议程
+        startDate = data.get('startDate', '5/30/2019 10:00:00')  # 会议开始时间（格式：11/30/2015 10:00:00）
+        duration = data.get('duration', '60')  # 会议持续时间（单位：分钟）
+        XML_body = """
+                            <?xml version="1.0" encoding="UTF-8"?>
+                            <serv:message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                                <header>
+                                    <securityContext>
+                                        <siteName>{siteName}</siteName>
+                                        <webExID>{webExID}</webExID>
+                                        <password>{password}</password>
+                                    </securityContext>
+                                </header>
+                                <body>
+                                    <bodyContent xsi:type="java:com.webex.service.binding.meeting.CreateMeeting">
+                                        <accessControl>
+                                            <meetingPassword>{meetingPassword}</meetingPassword>
+                                        </accessControl>
+                                        <metaData>
+                                            <confName>{title}</confName>
+                                            <agenda>{agenda}</agenda>
+                                        </metaData>
+                                        <schedule>
+                                            <startDate>{startDate}</startDate>
+                                            <duration>{duration}</duration>
+                                        </schedule>
+                                    </bodyContent>
+                                </body>
+                            </serv:message>
+                        """.format(siteName=webEX_siteName, webExID=webEX_webExID, password=webEX_password,
+                                   meetingPassword=meetingPassword, title=title, agenda=agenda,
+                                   startDate=startDate, duration=duration)
+        return XML_body
+
+
+    @loginTokenIsAvailable()
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            serializer = self.serializer_class(instance)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            data = request.data
+            with transaction.atomic():
+                instanceSerializer = self.serializer_class(instance, data=data)
+                if instanceSerializer.is_valid():
+                    instanceSerializer.save()
+                else:
+                    raise InvestError(code=20071, msg='参数错误：%s' % instanceSerializer.errors)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(instanceSerializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            with transaction.atomic():
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
 class WebEXUserView(viewsets.ModelViewSet):
     """
         list: 视频会议参会人员列表
@@ -250,8 +417,8 @@ class WebEXUserView(viewsets.ModelViewSet):
         """
     filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
     queryset = webexUser.objects.all().filter(is_deleted=False)
-    filter_fields = ('user', 'name', 'email', 'schedule')
-    search_fields = ('schedule__scheduledtime', 'user__usernameC', 'user__usernameE', 'name', 'email')
+    filter_fields = ('user', 'name', 'email', 'meeting', 'meetingRole')
+    search_fields = ('meeting__startDate', 'user__usernameC', 'user__usernameE', 'name', 'email')
     serializer_class = WebEXUserSerializer
 
 

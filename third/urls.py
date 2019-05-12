@@ -2,7 +2,6 @@
 from django.conf.urls import url
 from third.views import submail
 from third.views import qiniufile
-from third.views import webex
 from third.views import others
 urlpatterns = [
     url(r'^sms$', submail.sendSmscode, name='sendsmscode', ),
@@ -18,5 +17,4 @@ urlpatterns = [
     url(r'^selectUpload', others.selectUpload, name='selectFromUploadRecord',),
     url(r'^cancelUpload', others.cancelUpload, name='cancelUploadRecord',),
     url(r'^deleteUpload', others.deleteUpload, name='deleteUploadRecord',),
-    url(r'^createMeeting', webex.createWebEXMeeting, name='createWebEXMeeting',),
 ]

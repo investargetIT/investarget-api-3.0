@@ -73,13 +73,56 @@ class schedule(MyModel):
         self.datasource = self.createuser.datasource
         return super(schedule, self).save(*args, **kwargs)
 
+
+class webexMeeting(MyModel):
+    startDate = models.DateTimeField(blank=True, null=True, help_text='会议预定时间',)
+    duration = models.PositiveIntegerField(blank=True, default=60, help_text='会议持续时间（单位：分钟）')
+    title = models.CharField(max_length=128, blank=True, null=True, help_text='会议标题')
+    agenda = models.TextField(blank=True, null=True, help_text='会议议程')
+    password = models.CharField(max_length=32, blank=True, null=True, help_text='会议密码')
+    meetingKey = models.CharField(max_length=32, blank=True, null=True)
+    url_host = models.CharField(max_length=200, blank=True, null=True)
+    url_attendee = models.CharField(max_length=200, blank=True, null=True)
+    guestToken = models.CharField(max_length=64, blank=True, null=True)
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_webexMeeting')
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_webexMeeting')
+    datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
+    class Meta:
+        db_table = 'webexMeeting'
+        ordering = ['startDate']
+        permissions = (
+
+        )
+
+    def save(self, *args, **kwargs):
+        if not self.is_deleted:
+            if self.createuser is None:
+                raise InvestError(2007, msg='createuser can`t be null')
+            if self.pk:
+                QS = webexMeeting.objects.exclude(pk=self.pk).filter(is_deleted=False)
+            else:
+                QS = webexMeeting.objects.filter(is_deleted=False)
+            laterMeetingQS = QS.filter(startDate__gte=self.startDate)
+            earlierMeetingQS = QS.filter(startDate__lte=self.startDate)
+            if laterMeetingQS.exists():
+                laterMeeting = laterMeetingQS.order_by('startDate').first()
+                if (self.startDate + datetime.timedelta(minutes=self.duration)) > laterMeeting.startDate:
+                    raise InvestError(8006, msg='视频会议时间冲突，已存在开始时间处于本次创建会议持续期间的会议')
+            if earlierMeetingQS.exists():
+                earlierMeeting = earlierMeetingQS.order_by('startDate').last()
+                if (earlierMeeting.startDate +  datetime.timedelta(minutes=earlierMeeting.duration)) > self.startDate:
+                    raise InvestError(8006, msg='视频会议时间冲突，已存在结束时间处于本次创建会议持续期间的会议')
+        self.datasource = self.createuser.datasource
+        return super(webexMeeting, self).save(*args, **kwargs)
+
 class webexUser(MyModel):
-    schedule = MyForeignKey(schedule, blank=True, null=True, related_name='schedule_webexUser', help_text='视频会议')
+    meeting = MyForeignKey(webexMeeting, blank=True, null=True, related_name='meeting_webexUser', help_text='视频会议')
     url_address = models.TextField(blank=True, null=True, help_text='参会链接')
+    meetingKey = models.CharField(max_length=32, blank=True, null=True)
     user = MyForeignKey(MyUser, blank=True, null=True, related_name='user_webexUser', help_text='参会人员')
     email = models.EmailField(max_length=128, blank=True, null=True, help_text='参会人员邮箱')
     name = models.CharField(max_length=128, blank=True, null=True, help_text='参会人员姓名')
-    meetingRole = models.CharField(max_length=64, null=True, help_text='参会人员角色类型')
+    meetingRole = models.BooleanField(blank=True, default=False, help_text='参会人员角色(主持人/参会人)')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_webexUser')
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_webexUser')
     datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
