@@ -269,18 +269,19 @@ class DataroomView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(2009, msg='非管理员权限')
             path = 'dataroom_%s%s' % (dataroominstance.id, ('_%s' % userid) if userid else '') + '.zip'
-            rootpath = APILOG_PATH['dataroomFilePath'] + '/' + path
-            direcpath = APILOG_PATH['dataroomFilePath'] + '/' + path
-            direcpath = direcpath.replace('.zip','')
-            if os.path.exists(rootpath):
-                fn = open(rootpath, 'rb')
+            zipFilepath = APILOG_PATH['dataroomFilePath'] + '/' + path
+            direcpath = zipFilepath.replace('.zip','')
+            if os.path.exists(zipFilepath):
+                fn = open(zipFilepath, 'rb')
                 response = StreamingHttpResponse(file_iterator(fn))
-                response['Content-Length'] = os.path.getsize(rootpath)
+                zipFileSize = os.path.getsize(zipFilepath)
+                response['Content-Length'] = zipFileSize
                 response['Content-Type'] = 'application/octet-stream'
                 response["content-disposition"] = 'attachment;filename=%s' % path
-                # os.remove(rootpath)            # 删除压缩包
-                # if os.path.exists(direcpath):  # 删除源文件
-                #     shutil.rmtree(direcpath)
+                if zipFileSize < 10 * 1024:
+                    os.remove(zipFilepath)            # 删除压缩包
+                    if os.path.exists(direcpath):  # 删除源文件
+                        shutil.rmtree(direcpath)
             else:
                 if os.path.exists(direcpath):
                     response = JSONResponse(SuccessResponse({'code':8004, 'msg': '压缩中'}))
