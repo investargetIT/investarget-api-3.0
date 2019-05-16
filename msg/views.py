@@ -257,7 +257,7 @@ class WebEXMeetingView(viewsets.ModelViewSet):
     filter_fields = ('title', 'meetingKey', 'createuser')
     search_fields = ('startDate', 'createuser__usernameC', 'createuser__usernameE')
     serializer_class = WebEXMeetingSerializer
-
+    webex_url = 'https://investarget.webex.com.cn/WBXService/XMLService'
 
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
@@ -282,59 +282,30 @@ class WebEXMeetingView(viewsets.ModelViewSet):
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+    def getXMLHeaders(self):
+        headers = """
+                        <header>
+                            <securityContext>
+                                <siteName>{siteName}</siteName>
+                                <webExID>{webExID}</webExID>
+                                <password>{password}</password>
+                            </securityContext>
+                        </header>
+            """.format(siteName=webEX_siteName, webExID=webEX_webExID, password=webEX_password)
+        return headers
 
 
-    @loginTokenIsAvailable()
-    def create(self, request, *args, **kwargs):
-        try:
-            data = request.data
-            data['createuser'] = request.user.id
-            with transaction.atomic():
-                instanceSerializer = self.serializer_class(data=data)
-                if instanceSerializer.is_valid():
-                    instance = instanceSerializer.save()
-                else:
-                    raise InvestError(code=20071, msg='参数错误：%s' % instanceSerializer.errors)
-                data['startDate'] = instance.startDate.strftime('%m/%d/%Y %H:%M:%S')
-                XML_body = self.getXMLBody(webEX_siteName, webEX_webExID, webEX_password, data)
-                url = 'https://investarget.webex.com.cn/WBXService/XMLService'
-                s = requests.post(url=url, data=XML_body.encode("utf-8"))
-                if s.status_code == 200:
-                    res = ET.fromstring(s.text)
-                    meetingkey = next(res.iter('{http://www.webex.com/schemas/2002/06/service/meeting}meetingkey')).text
-                    serv_host = next(res.iter('{http://www.webex.com/schemas/2002/06/service}host')).text
-                    serv_attendee = next(res.iter('{http://www.webex.com/schemas/2002/06/service}attendee')).text
-                    meetGuestToken = next(res.iter('{http://www.webex.com/schemas/2002/06/service/meeting}guestToken')).text
-                    meetingData = {'meetingKey': meetingkey, 'url_host': serv_host, 'url_attendee': serv_attendee,
-                              'guestToken': meetGuestToken}
-                    newInstanceSerializer = self.serializer_class(instance, data=meetingData)
-                    if newInstanceSerializer.is_valid():
-                        newInstanceSerializer.save()
-                else:
-                    raise InvestError(8006, msg=s.text)
-            return JSONResponse(SuccessResponse(instanceSerializer.data))
-        except InvestError as err:
-            return JSONResponse(InvestErrorResponse(err))
-        except Exception:
-            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
-
-    def getXMLBody(self, webEX_siteName, webEX_webExID, webEX_password, data):
+    def getCreateXMLBody(self, data):
+        headers = self.getXMLHeaders()
         meetingPassword = data.get('password', 'Aa123456')  # 会议密码
-        title = data.get('title', 'Test Meeting')  # 会议名称
-        agenda = data.get('agenda', 'Test')  # 会议议程
-        startDate = data.get('startDate', '5/30/2019 10:00:00')  # 会议开始时间（格式：11/30/2015 10:00:00）
+        title = data.get('title', '')  # 会议名称
+        agenda = data.get('agenda', '议程暂无')  # 会议议程
+        startDate = data.get('startDate', '')  # 会议开始时间（格式：11/30/2015 10:00:00）
         duration = data.get('duration', '60')  # 会议持续时间（单位：分钟）
         XML_body = """
                             <?xml version="1.0" encoding="UTF-8"?>
                             <serv:message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-                                <header>
-                                    <securityContext>
-                                        <siteName>{siteName}</siteName>
-                                        <webExID>{webExID}</webExID>
-                                        <password>{password}</password>
-                                    </securityContext>
-                                </header>
+                                {headers}
                                 <body>
                                     <bodyContent xsi:type="java:com.webex.service.binding.meeting.CreateMeeting">
                                         <accessControl>
@@ -351,10 +322,47 @@ class WebEXMeetingView(viewsets.ModelViewSet):
                                     </bodyContent>
                                 </body>
                             </serv:message>
-                        """.format(siteName=webEX_siteName, webExID=webEX_webExID, password=webEX_password,
-                                   meetingPassword=meetingPassword, title=title, agenda=agenda,
+                        """.format(headers=headers, meetingPassword=meetingPassword, title=title, agenda=agenda,
                                    startDate=startDate, duration=duration)
         return XML_body
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            data['createuser'] = request.user.id
+            with transaction.atomic():
+                instanceSerializer = self.serializer_class(data=data)
+                if instanceSerializer.is_valid():
+                    instance = instanceSerializer.save()
+                else:
+                    raise InvestError(code=20071, msg='参数错误：%s' % instanceSerializer.errors)
+                data['startDate'] = instance.startDate.strftime('%m/%d/%Y %H:%M:%S')
+                XML_body = self.getCreateXMLBody(data)
+                s = requests.post(url=self.webex_url, data=XML_body.encode("utf-8"))
+                if s.status_code == 200:
+                    res = ET.fromstring(s.text)
+                    result = next(res.iter('{http://www.webex.com/schemas/2002/06/service}result')).text
+                    if result == 'FAILURE':
+                        reason = next(res.iter('{http://www.webex.com/schemas/2002/06/service}reason')).text
+                        raise InvestError(8006, msg=reason)
+                    else:
+                        meetingkey = next(res.iter('{http://www.webex.com/schemas/2002/06/service/meeting}meetingkey')).text
+                        serv_host = next(res.iter('{http://www.webex.com/schemas/2002/06/service}host')).text
+                        serv_attendee = next(res.iter('{http://www.webex.com/schemas/2002/06/service}attendee')).text
+                        meetGuestToken = next(res.iter('{http://www.webex.com/schemas/2002/06/service/meeting}guestToken')).text
+                        meetingData = {'meetingKey': meetingkey, 'url_host': serv_host, 'url_attendee': serv_attendee,
+                                  'guestToken': meetGuestToken}
+                        newInstanceSerializer = self.serializer_class(instance, data=meetingData)
+                        if newInstanceSerializer.is_valid():
+                            newInstanceSerializer.save()
+                else:
+                    raise InvestError(8006, msg=s.text)
+            return JSONResponse(SuccessResponse(instanceSerializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
     @loginTokenIsAvailable()
@@ -370,6 +378,38 @@ class WebEXMeetingView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+    def getUpdateXMLBody(self, meetingKey, data):
+        headers = self.getXMLHeaders()
+        password = '<meetingPassword>{}</meetingPassword>'.format(data['password']) if data.get('password') else '' #会议密码
+        confName = '<confName>{}</confName>'.format(data['title']) if data.get('title') else ''  # 会议名称
+        agenda = '<agenda>{}</agenda>'.format(data['agenda']) if data.get('agenda') else ''  # 会议议程
+        startDate = '<startDate>{}</startDate>'.format(data['startDate']) if data.get('startDate') else ''  # 会议开始时间
+        duration = '<duration>{}</duration>'.format(data['duration']) if data.get('duration') else ''  # 会议持续时间
+        XML_body = """
+                            <?xml version="1.0" encoding="UTF-8"?>
+                            <serv:message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                                {headers}
+                                <body>
+                                    <bodyContent xsi:type="java:com.webex.service.binding.meeting.SetMeeting">
+                                        <meetingkey>{meetingKey}</meetingkey>
+                                        <accessControl>
+                                            {meetingPassword}
+                                        </accessControl>
+                                        <metaData>
+                                            {confName}
+                                            {agenda}
+                                        </metaData>
+                                        <schedule>
+                                            {startDate}
+                                            {duration}
+                                        </schedule>
+                                    </bodyContent>
+                                </body>
+                            </serv:message>
+                        """.format(headers=headers, meetingKey=meetingKey, meetingPassword=password, confName=confName,
+                                   agenda=agenda, startDate=startDate, duration=duration)
+        return XML_body
+
     @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
         try:
@@ -382,24 +422,72 @@ class WebEXMeetingView(viewsets.ModelViewSet):
                     instanceSerializer.save()
                 else:
                     raise InvestError(code=20071, msg='参数错误：%s' % instanceSerializer.errors)
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(instanceSerializer.data, lang)))
+            data['startDate'] = instance.startDate.strftime('%m/%d/%Y %H:%M:%S')
+            XML_body = self.getUpdateXMLBody(instance.meetingKey, data)
+            s = requests.post(url=self.webex_url, data=XML_body.encode("utf-8"))
+            if s.status_code != 200:
+                raise InvestError(8006, msg=s.text)
+            else:
+                res = ET.fromstring(s.text)
+                result = next(res.iter('{http://www.webex.com/schemas/2002/06/service}result')).text
+                if result == 'FAILURE':
+                    reason = next(res.iter('{http://www.webex.com/schemas/2002/06/service}reason')).text
+                    raise InvestError(8006, msg=reason)
+                else:
+                    serv_host = next(res.iter('{http://www.webex.com/schemas/2002/06/service}host')).text
+                    serv_attendee = next(res.iter('{http://www.webex.com/schemas/2002/06/service}attendee')).text
+                    meetingData = {'url_host': serv_host, 'url_attendee': serv_attendee,}
+                    with transaction.atomic():
+                        instanceSerializer = self.serializer_class(instance, data=meetingData)
+                        if instanceSerializer.is_valid():
+                            instanceSerializer.save()
+                        else:
+                            raise InvestError(code=20071, msg='参数错误：%s' % instanceSerializer.errors)
+                    return JSONResponse(SuccessResponse(returnDictChangeToLanguage(instanceSerializer.data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+
+    def getDeleteXMLBody(self, meetingKey):
+        headers = self.getXMLHeaders()
+        XML_body = """
+                            <?xml version="1.0" encoding="UTF-8"?>
+                            <serv:message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                                {headers}
+                                <body>
+                                    <bodyContent xsi:type="java:com.webex.service.binding.meeting.DelMeeting">
+                                        <meetingKey>{meetingKey}</meetingKey>
+                                    </bodyContent>
+                                </body>
+                            </serv:message>
+                        """.format(headers=headers, meetingKey=meetingKey)
+        return XML_body
+
     @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
             instance = self.get_object()
-            with transaction.atomic():
-                instance.is_deleted = True
-                instance.deleteduser = request.user
-                instance.deletedtime = datetime.datetime.now()
-                instance.save()
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data, lang)))
+            XML_body = self.getDeleteXMLBody(instance.meetingKey)
+            s = requests.post(url=self.webex_url, data=XML_body.encode("utf-8"))
+            if s.status_code != 200:
+                raise InvestError(8006, msg=s.text)
+            else:
+                res = ET.fromstring(s.text)
+                result = next(res.iter('{http://www.webex.com/schemas/2002/06/service}result')).text
+                if result == 'FAILURE':
+                    reason = next(res.iter('{http://www.webex.com/schemas/2002/06/service}reason')).text
+                    raise InvestError(8006, msg=reason)
+                else:
+                    with transaction.atomic():
+                        instance.is_deleted = True
+                        instance.deleteduser = request.user
+                        instance.deletedtime = datetime.datetime.now()
+                        instance.save()
+                    return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
