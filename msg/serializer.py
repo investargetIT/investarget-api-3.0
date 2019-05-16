@@ -41,3 +41,9 @@ class WebEXUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = webexUser
         fields = '__all__'
+        validators = [
+            UniqueTogetherValidator(
+                queryset=webexUser.objects.filter(is_deleted=False),
+                fields=('meeting', 'email')
+            )
+        ]

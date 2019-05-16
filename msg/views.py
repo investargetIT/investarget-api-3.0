@@ -538,15 +538,14 @@ class WebEXUserView(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
-            lang = request.GET.get('lang')
-            data['createuser'] = request.user.id
+            map(lambda x: x.update({'createuser': request.user.id}), data)
             with transaction.atomic():
-                instanceSerializer = self.serializer_class(data=data)
+                instanceSerializer = self.serializer_class(data=data, many=True)
                 if instanceSerializer.is_valid():
                     instanceSerializer.save()
                 else:
-                    raise InvestError(code=20071, msg='参数错误：%s' % instanceSerializer.errors)
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(instanceSerializer.data, lang)))
+                    raise InvestError(code=20071, msg=instanceSerializer.errors)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(instanceSerializer.data)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
