@@ -43,37 +43,6 @@ class message(MyModel):
     class Meta:
         db_table = 'msg'
 
-class schedule(MyModel):
-    type = models.SmallIntegerField(blank=True, default=3, help_text='日程类别',choices=scheduleChoice)
-    user = MyForeignKey(MyUser,blank=True,null=True,help_text='日程对象',related_name='user_beschedule',on_delete=CASCADE)
-    scheduledtime = models.DateTimeField(blank=True,null=True,help_text='日程预定时间',)
-    comments = models.TextField(blank=True, null=True, help_text='内容')
-    address = models.TextField(blank=True, null=True, help_text='具体地址')
-    country = MyForeignKey(Country,blank=True,null=True,help_text='国家')
-    location = MyForeignKey(OrgArea, blank=True, null=True, help_text='地区')
-    proj = MyForeignKey(project,blank=True,null=True,help_text='日程项目',related_name='proj_schedule')
-    projtitle = models.CharField(max_length=128,blank=True,null=True)
-    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_schedule')
-    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_schedule')
-    datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
-    class Meta:
-        db_table = 'schedule'
-        permissions = (
-            ('admin_manageSchedule', '管理员管理日程'),
-        )
-
-    def save(self, *args, **kwargs):
-        if not self.is_deleted:
-            if self.createuser is None:
-                raise InvestError(2007,msg='createuser can`t be null')
-            if self.scheduledtime.strftime("%Y-%m-%d") < datetime.datetime.now().strftime("%Y-%m-%d"):
-                raise InvestError(2007,msg='日程时间不能是今天以前的时间')
-            if self.proj:
-                self.projtitle = self.proj.projtitleC
-        self.datasource = self.createuser.datasource
-        return super(schedule, self).save(*args, **kwargs)
-
-
 class webexMeeting(MyModel):
     startDate = models.DateTimeField(blank=True, null=True, help_text='会议预定时间',)
     duration = models.PositiveIntegerField(blank=True, default=60, help_text='会议持续时间（单位：分钟）')
@@ -84,6 +53,7 @@ class webexMeeting(MyModel):
     url_host = models.CharField(max_length=200, blank=True, null=True)
     url_attendee = models.CharField(max_length=200, blank=True, null=True)
     guestToken = models.CharField(max_length=64, blank=True, null=True)
+    hostKey = models.CharField(max_length=16, blank=True, null=True)
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_webexMeeting')
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_webexMeeting')
     datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
@@ -114,6 +84,39 @@ class webexMeeting(MyModel):
                     raise InvestError(8006, msg='视频会议时间冲突，已存在结束时间处于本次创建会议持续期间的会议')
         self.datasource = self.createuser.datasource
         return super(webexMeeting, self).save(*args, **kwargs)
+
+
+class schedule(MyModel):
+    type = models.SmallIntegerField(blank=True, default=3, help_text='日程类别',choices=scheduleChoice)
+    user = MyForeignKey(MyUser,blank=True,null=True,help_text='日程对象',related_name='user_beschedule',on_delete=CASCADE)
+    scheduledtime = models.DateTimeField(blank=True,null=True,help_text='日程预定时间',)
+    comments = models.TextField(blank=True, null=True, help_text='内容')
+    address = models.TextField(blank=True, null=True, help_text='具体地址')
+    country = MyForeignKey(Country,blank=True,null=True,help_text='国家')
+    location = MyForeignKey(OrgArea, blank=True, null=True, help_text='地区')
+    meeting = MyForeignKey(webexMeeting, blank=True, null=True, related_name='meeting_schedule', help_text='视频会议')
+    proj = MyForeignKey(project,blank=True,null=True,help_text='日程项目',related_name='proj_schedule')
+    projtitle = models.CharField(max_length=128,blank=True,null=True)
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_schedule')
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_schedule')
+    datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
+    class Meta:
+        db_table = 'schedule'
+        permissions = (
+            ('admin_manageSchedule', '管理员管理日程'),
+        )
+
+    def save(self, *args, **kwargs):
+        if not self.is_deleted:
+            if self.createuser is None:
+                raise InvestError(2007,msg='createuser can`t be null')
+            if self.scheduledtime.strftime("%Y-%m-%d") < datetime.datetime.now().strftime("%Y-%m-%d"):
+                raise InvestError(2007,msg='日程时间不能是今天以前的时间')
+            if self.proj:
+                self.projtitle = self.proj.projtitleC
+        self.datasource = self.createuser.datasource
+        return super(schedule, self).save(*args, **kwargs)
+
 
 class webexUser(MyModel):
     meeting = MyForeignKey(webexMeeting, blank=True, null=True, related_name='meeting_webexUser', help_text='视频会议')
