@@ -8,6 +8,7 @@ from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction
 
 # Create your views here.
+from django.db.models import Q
 from rest_framework import filters
 from rest_framework import viewsets
 
@@ -448,7 +449,7 @@ class ScheduleView(viewsets.ModelViewSet):
             if request.user.has_perm('msg.admin_manageSchedule'):
                 queryset = queryset
             else:
-                queryset = queryset.filter(createuser_id=request.user.id)
+                queryset = queryset.filter(Q(user_id=request.user.id) | Q(createuser_id=request.user.id))
             sortfield = request.GET.get('sort', 'scheduledtime')
             desc = request.GET.get('desc', 0)
             queryset = mySortQuery(queryset, sortfield, desc)
@@ -469,20 +470,23 @@ class ScheduleView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
         try:
-            checkSessionToken(request)
+            # checkSessionToken(request)
             data = request.data
-            data['createuser'] = request.user.id
+            map(lambda x: x.update({'createuser': request.user.id,
+                                    'user': request.user.id if not x.get('user') else x['user']
+                                    }), data)
             with transaction.atomic():
-                if data['type'] == 4 and not data.get('meeting'):
-                    data['startDate'] = data['scheduledtime']
-                    meetingInstance = createWebEXMeeting(data)
-                    data['meeting'] = meetingInstance.id
-                scheduleserializer = ScheduleCreateSerializer(data=data)
+                for i in range(0, len(data)):
+                    if data[i]['type'] == 4 and not data[i].get('meeting'):
+                        data[i]['startDate'] = data[i]['scheduledtime']
+                        meetingInstance = createWebEXMeeting(data[i])
+                        data[i]['meeting'] = meetingInstance.id
+                scheduleserializer = ScheduleCreateSerializer(data=data, many=True)
                 if scheduleserializer.is_valid():
-                    instance = scheduleserializer.save()
+                    instances = scheduleserializer.save()
                 else:
                     raise InvestError(code=20071, msg='参数错误：%s' % scheduleserializer.errors)
-                return JSONResponse(SuccessResponse(ScheduleMeetingSerializer(instance).data))
+                return JSONResponse(SuccessResponse(ScheduleMeetingSerializer(instances, many=True).data))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -496,7 +500,7 @@ class ScheduleView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user.has_perm('msg.admin_manageSchedule'):
                 pass
-            elif request.user == instance.createuser:
+            elif request.user in [instance.createuser, instance.user]:
                 pass
             else:
                 raise InvestError(code=2009)
@@ -514,7 +518,7 @@ class ScheduleView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user.has_perm('msg.admin_manageSchedule'):
                 pass
-            elif request.user == instance.createuser:
+            elif request.user in [instance.createuser, instance.user]:
                 pass
             else:
                 raise InvestError(code=2009)
@@ -539,7 +543,7 @@ class ScheduleView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user.has_perm('msg.admin_manageSchedule'):
                 pass
-            elif request.user == instance.createuser:
+            elif request.user in [instance.createuser, instance.user]:
                 pass
             else:
                 raise InvestError(code=2009)
