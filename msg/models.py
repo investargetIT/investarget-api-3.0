@@ -115,6 +115,9 @@ class schedule(MyModel):
                 raise InvestError(2007,msg='日程时间不能是今天以前的时间')
             if self.proj:
                 self.projtitle = self.proj.projtitleC
+        if not self.is_deleted and self.meeting and self.manager:
+            if schedule.objects.exclude(pk=self.pk).filter(is_deleted=False, manager=self.manager, meeting=self.meeting).exists():
+                return
         self.datasource = self.createuser.datasource
         return super(schedule, self).save(*args, **kwargs)
 
