@@ -290,6 +290,9 @@ def getCreateXMLBody(data):
                                            <accessControl>
                                                <meetingPassword>{meetingPassword}</meetingPassword>
                                            </accessControl>
+                                           <telephony>
+                                               <telephonySupport>CALLIN</telephonySupport>
+                                           </telephony>
                                            <metaData>
                                                <confName>{title}</confName>
                                                <agenda>{agenda}</agenda>
