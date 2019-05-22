@@ -426,7 +426,7 @@ class ScheduleView(viewsets.ModelViewSet):
         """
     filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
     queryset = schedule.objects.all().filter(is_deleted=False)
-    filter_fields = ('proj','createuser','user','projtitle','country')
+    filter_fields = ('proj', 'createuser', 'user', 'projtitle', 'country', 'manager')
     search_fields = ('createuser__usernameC', 'user__usernameC', 'user__mobile', 'proj__projtitleC', 'proj__projtitleE')
     serializer_class = ScheduleSerializer
 
@@ -449,7 +449,7 @@ class ScheduleView(viewsets.ModelViewSet):
             if request.user.has_perm('msg.admin_manageSchedule'):
                 queryset = queryset
             else:
-                queryset = queryset.filter(Q(user_id=request.user.id) | Q(createuser_id=request.user.id))
+                queryset = queryset.filter(Q(manager_id=request.user.id) | Q(createuser_id=request.user.id))
             sortfield = request.GET.get('sort', 'scheduledtime')
             desc = request.GET.get('desc', 0)
             queryset = mySortQuery(queryset, sortfield, desc)
@@ -473,7 +473,7 @@ class ScheduleView(viewsets.ModelViewSet):
             # checkSessionToken(request)
             data = request.data
             map(lambda x: x.update({'createuser': request.user.id,
-                                    'user': request.user.id if not x.get('user') else x['user']
+                                    'manager': request.user.id if not x.get('manager') else x['manager']
                                     }), data)
             with transaction.atomic():
                 for i in range(0, len(data)):
@@ -500,7 +500,7 @@ class ScheduleView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user.has_perm('msg.admin_manageSchedule'):
                 pass
-            elif request.user in [instance.createuser, instance.user]:
+            elif request.user in [instance.createuser, instance.manager]:
                 pass
             else:
                 raise InvestError(code=2009)
@@ -518,7 +518,7 @@ class ScheduleView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user.has_perm('msg.admin_manageSchedule'):
                 pass
-            elif request.user in [instance.createuser, instance.user]:
+            elif request.user in [instance.createuser, instance.manager]:
                 pass
             else:
                 raise InvestError(code=2009)
@@ -543,7 +543,7 @@ class ScheduleView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user.has_perm('msg.admin_manageSchedule'):
                 pass
-            elif request.user in [instance.createuser, instance.user]:
+            elif request.user in [instance.createuser, instance.manager]:
                 pass
             else:
                 raise InvestError(code=2009)

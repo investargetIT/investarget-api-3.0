@@ -89,6 +89,7 @@ class webexMeeting(MyModel):
 class schedule(MyModel):
     type = models.SmallIntegerField(blank=True, default=3, help_text='日程类别',choices=scheduleChoice)
     user = MyForeignKey(MyUser,blank=True,null=True,help_text='日程对象',related_name='user_beschedule',on_delete=CASCADE)
+    manager = MyForeignKey(MyUser, blank=True, null=True, help_text='日程归属人', related_name='manager_beschedule')
     scheduledtime = models.DateTimeField(blank=True,null=True,help_text='日程预定时间',)
     comments = models.TextField(blank=True, null=True, help_text='内容')
     address = models.TextField(blank=True, null=True, help_text='具体地址')
