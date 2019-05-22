@@ -473,7 +473,7 @@ class ScheduleView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
         try:
-            # checkSessionToken(request)
+            checkSessionToken(request)
             data = request.data
             map(lambda x: x.update({'createuser': request.user.id,
                                     'manager': request.user.id if not x.get('manager') else x['manager']
