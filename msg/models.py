@@ -134,5 +134,8 @@ class webexUser(MyModel):
         db_table = 'webexUser'
 
     def save(self, *args, **kwargs):
+        if self.user:
+            self.name = self.user.usernameC
+            self.email = self.user.email
         self.datasource = self.createuser.datasource
         return super(webexUser, self).save(*args, **kwargs)
