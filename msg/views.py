@@ -17,6 +17,7 @@ from msg.serializer import MsgSerializer, ScheduleSerializer, ScheduleCreateSeri
     WebEXMeetingSerializer, ScheduleMeetingSerializer
 from third.thirdconfig import webEX_siteName, webEX_webExID, webEX_password
 from utils.customClass import InvestError, JSONResponse
+import utils.sendMessage
 from utils.util import logexcption, loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
     catchexcption, returnListChangeToLanguage, returnDictChangeToLanguage, mySortQuery, checkSessionToken
 import xml.etree.cElementTree as ET
@@ -610,14 +611,15 @@ class WebEXUserView(viewsets.ModelViewSet):
             with transaction.atomic():
                 instanceSerializer = self.serializer_class(data=data, many=True)
                 if instanceSerializer.is_valid():
-                    instanceSerializer.save()
+                    instances = instanceSerializer.save()
                 else:
                     raise InvestError(code=20071, msg=instanceSerializer.errors)
+                utils.sendMessage.sendmessage_WebEXMeetingMessage(instances)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(instanceSerializer.data)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
-            # catchexcption(request)
+            catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable()
@@ -642,7 +644,7 @@ class WebEXUserView(viewsets.ModelViewSet):
             with transaction.atomic():
                 instanceSerializer = self.serializer_class(instance, data=data)
                 if instanceSerializer.is_valid():
-                    newinstance = instanceSerializer.save()
+                    instanceSerializer.save()
                 else:
                     raise InvestError(code=20071, msg='参数错误：%s' % instanceSerializer.errors)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(instanceSerializer.data, lang)))

@@ -826,6 +826,38 @@ def sendmessage_orgBDExpireMessage(receiver, types, content):
         sendmessage_orgBDExpireMessageThread().start()
 
 
+def sendmessage_WebEXMeetingMessage(webEXUsers):
+    """
+    :param receiver: myuser type
+    :param types: list
+    :param content: html
+    :return: None
+    """
+    class sendmessage_orgBDExpireMessageThread(threading.Thread):
+
+        def run(self):
+            for webexuser in webEXUsers:
+                name, email, role, meeting = webexuser.name, webexuser.email, webexuser.meetingRole, webexuser.meeting
+                try:
+                    if role == True:
+                        projectsign = 'N7ygf2'
+                        vars = {'name': name, 'title': meeting.title, 'data': meeting.agenda,
+                                'time': meeting.startDate.strftime('%Y-%m-%d %H:%M'), 'duration': meeting.duration,
+                                'meetingkey': meeting.meetingKey, 'hostkey': meeting.hostKey,
+                                'password': meeting.password,}
+                    else:
+                        projectsign = 'Bk4EY4'
+                        vars = {'name': name, 'title': meeting.title, 'data': meeting.agenda,
+                                'time': meeting.startDate, 'duration': meeting.duration,
+                                'meetingkey': meeting.meetingKey, 'password': meeting.password, }
+                    res = xsendEmail(email, projectsign, vars)
+                except Exception:
+                    logexcption()
+
+    sendmessage_orgBDExpireMessageThread().start()
+
+
+
 # 判断是否发送消息
 def checkReceiverToSendMsg(receiver):
     if receiver is not None:
