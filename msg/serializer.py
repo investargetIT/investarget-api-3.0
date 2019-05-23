@@ -4,6 +4,7 @@ from rest_framework.validators import UniqueTogetherValidator
 from msg.models import message, schedule, webexUser, webexMeeting
 from proj.serializer import ProjCommonSerializer
 from sourcetype.serializer import countrySerializer, orgAreaSerializer
+from third.thirdconfig import webEX_webExID, webEX_password
 from usersys.serializer import UserCommenSerializer,UserInfoSerializer
 
 class MsgSerializer(serializers.ModelSerializer):
@@ -13,9 +14,13 @@ class MsgSerializer(serializers.ModelSerializer):
 
 
 class WebEXMeetingSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
     class Meta:
         model = webexMeeting
         exclude = ('deleteduser', 'datasource', 'is_deleted', 'deletedtime')
+
+    def get_url(self, objc):
+        return 'https://investarget.webex.com.cn/investarget/p.php?AT=LI&WID={}&PW={}'.format(webEX_webExID, webEX_password)
 
 
 class ScheduleCreateSerializer(serializers.ModelSerializer):
