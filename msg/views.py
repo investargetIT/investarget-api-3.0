@@ -238,7 +238,6 @@ class WebEXMeetingView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
         try:
-            lang = request.GET.get('lang')
             instance = self.get_object()
             XML_body = getDeleteXMLBody(instance.meetingKey)
             s = requests.post(url=self.webex_url, data=XML_body.encode("utf-8"))
@@ -256,7 +255,13 @@ class WebEXMeetingView(viewsets.ModelViewSet):
                         instance.deleteduser = request.user
                         instance.deletedtime = datetime.datetime.now()
                         instance.save()
-                    return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data, lang)))
+                        webexUser_qs = instance.meeting_webexUser.all().filter(is_deleted=False)
+                        msg_list = list(webexUser_qs)
+                        webexUser_qs.update(is_deleted=True, deletedtime=datetime.datetime.now(), deleteduser=request.user)
+                        webexSch_qs = instance.meeting_schedule.all().filter(is_deleted=False)
+                        webexSch_qs.update(is_deleted=True, deletedtime=datetime.datetime.now(), deleteduser=request.user)
+                    utils.sendMessage.sendmessage_WebEXMeetingCancelMessage(msg_list)
+                    return JSONResponse(SuccessResponse({'is_deleted': True}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -556,6 +561,9 @@ class ScheduleView(viewsets.ModelViewSet):
                 instance.deleteduser = request.user
                 instance.deletedtime = datetime.datetime.now()
                 instance.save()
+                if instance.meeting and instance.manager:
+                    webexUser_qs = webexUser.objects.filter(is_deleted=False, meeting=instance.meeting, user=instance.manager)
+                    webexUser_qs.update(is_deleted=True, deletedtime=datetime.datetime.now(), deleteduser=request.user)
                 return JSONResponse(SuccessResponse(ScheduleCreateSerializer(instance).data))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))

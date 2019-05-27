@@ -828,12 +828,9 @@ def sendmessage_orgBDExpireMessage(receiver, types, content):
 
 def sendmessage_WebEXMeetingMessage(webEXUsers):
     """
-    :param receiver: myuser type
-    :param types: list
-    :param content: html
-    :return: None
+    :param webEXUsers: Iterable object. like list、 queryset
     """
-    class sendmessage_orgBDExpireMessageThread(threading.Thread):
+    class sendmessage_WebEXMeetingMessageThread(threading.Thread):
 
         def run(self):
             for webexuser in webEXUsers:
@@ -851,13 +848,32 @@ def sendmessage_WebEXMeetingMessage(webEXUsers):
                             vars = {'name': name, 'title': meeting.title, 'data': meeting.agenda,
                                     'time': meeting.startDate.strftime('%Y-%m-%d %H:%M'), 'duration': meeting.duration,
                                     'meetingkey': meeting.meetingKey, 'password': meeting.password, }
-                        res = xsendEmail(email, projectsign, vars)
+                        xsendEmail(email, projectsign, vars)
                     except Exception:
                         logexcption()
 
-    sendmessage_orgBDExpireMessageThread().start()
+    sendmessage_WebEXMeetingMessageThread().start()
 
+def sendmessage_WebEXMeetingCancelMessage(webEXUsers):
+    """
+    :param webEXUsers: Iterable object. like list、 queryset
+    """
+    class sendmessage_WebEXMeetingCancelMessageThread(threading.Thread):
 
+        def run(self):
+            for webexuser in webEXUsers:
+                name, email, role, meeting = webexuser.name, webexuser.email, webexuser.meetingRole, webexuser.meeting
+                if sendEmail and checkEmailTrue(email):
+                    try:
+                        if not role:
+                            projectsign = '0PXbw'
+                            vars = {'name': name, 'title': meeting.title, 'data': meeting.agenda,
+                                        'time': meeting.startDate.strftime('%Y-%m-%d %H:%M'), 'duration': meeting.duration}
+                            xsendEmail(email, projectsign, vars)
+                    except Exception:
+                        logexcption()
+
+    sendmessage_WebEXMeetingCancelMessageThread().start()
 
 # 判断是否发送消息
 def checkReceiverToSendMsg(receiver):
