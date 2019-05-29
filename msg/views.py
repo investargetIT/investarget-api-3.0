@@ -231,7 +231,7 @@ class WebEXMeetingView(viewsets.ModelViewSet):
                             raise InvestError(code=20071, msg='参数错误：%s' % instanceSerializer.errors)
                         if startDate != newInstance.startDate or duration != newInstance.duration or title != newInstance.title:
                             webexSch_qs = instance.meeting_schedule.all().filter(is_deleted=False)
-                            webexSch_qs.update(scheduledtime=startDate, comments=title)
+                            webexSch_qs.update(scheduledtime=newInstance.startDate, comments=newInstance.title)
                             webexUser_qs = instance.meeting_webexUser.all().filter(is_deleted=False)
                             utils.sendMessage.sendmessage_WebEXMeetingMessage(webexUser_qs)
                     return JSONResponse(SuccessResponse(returnDictChangeToLanguage(instanceSerializer.data, lang)))

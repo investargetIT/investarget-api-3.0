@@ -41,7 +41,7 @@ webexuser_list = views.WebEXUserView.as_view({
 
 webexuser_detail = views.WebEXUserView.as_view({
         'get': 'retrieve',
-        'put': 'update',
+        # 'put': 'update',
         'delete': 'destroy',
 })
 
