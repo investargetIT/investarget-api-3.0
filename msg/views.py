@@ -201,6 +201,7 @@ class WebEXMeetingView(viewsets.ModelViewSet):
             lang = request.GET.get('lang')
             instance = self.get_object()
             data = request.data
+            startDate, duration, title = instance.startDate, instance.duration, instance.title
             with transaction.atomic():
                 instanceSerializer = self.serializer_class(instance, data=data)
                 if instanceSerializer.is_valid():
@@ -225,9 +226,14 @@ class WebEXMeetingView(viewsets.ModelViewSet):
                     with transaction.atomic():
                         instanceSerializer = self.serializer_class(instance, data=meetingData)
                         if instanceSerializer.is_valid():
-                            instanceSerializer.save()
+                            newInstance = instanceSerializer.save()
                         else:
                             raise InvestError(code=20071, msg='参数错误：%s' % instanceSerializer.errors)
+                        if startDate != newInstance.startDate or duration != newInstance.duration or title != newInstance.title:
+                            webexSch_qs = instance.meeting_schedule.all().filter(is_deleted=False)
+                            webexSch_qs.update(scheduledtime=startDate, comments=title)
+                            webexUser_qs = instance.meeting_webexUser.all().filter(is_deleted=False)
+                            utils.sendMessage.sendmessage_WebEXMeetingMessage(webexUser_qs)
                     return JSONResponse(SuccessResponse(returnDictChangeToLanguage(instanceSerializer.data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -343,9 +349,7 @@ def get_hostKey(meetingKey):
 
 def getUpdateXMLBody(meetingKey, data):
     headers = getXMLHeaders()
-    password = '<meetingPassword>{}</meetingPassword>'.format(data['password']) if data.get('password') else ''  # 会议密码
     confName = '<confName>{}</confName>'.format(data['title']) if data.get('title') else ''  # 会议名称
-    agenda = '<agenda>{}</agenda>'.format(data['agenda']) if data.get('agenda') else ''  # 会议议程
     startDate = '<startDate>{}</startDate>'.format(data['startDate']) if data.get('startDate') else ''  # 会议开始时间
     duration = '<duration>{}</duration>'.format(data['duration']) if data.get('duration') else ''  # 会议持续时间
     XML_body = """
@@ -355,12 +359,8 @@ def getUpdateXMLBody(meetingKey, data):
                                     <body>
                                         <bodyContent xsi:type="java:com.webex.service.binding.meeting.SetMeeting">
                                             <meetingkey>{meetingKey}</meetingkey>
-                                            <accessControl>
-                                                {meetingPassword}
-                                            </accessControl>
                                             <metaData>
                                                 {confName}
-                                                {agenda}
                                             </metaData>
                                             <schedule>
                                                 {startDate}
@@ -369,8 +369,8 @@ def getUpdateXMLBody(meetingKey, data):
                                         </bodyContent>
                                     </body>
                                 </serv:message>
-                            """.format(headers=headers, meetingKey=meetingKey, meetingPassword=password,
-                                       confName=confName, agenda=agenda, startDate=startDate, duration=duration)
+                            """.format(headers=headers, meetingKey=meetingKey,
+                                       confName=confName, startDate=startDate, duration=duration)
     return XML_body
 
 def getDeleteXMLBody(meetingKey):
