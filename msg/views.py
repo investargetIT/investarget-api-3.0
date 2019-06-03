@@ -120,7 +120,7 @@ class WebEXMeetingView(viewsets.ModelViewSet):
     serializer_class = WebEXMeetingSerializer
     webex_url = 'https://investarget.webex.com.cn/WBXService/XMLService'
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['msg.getMeeting'])
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size', 10)
@@ -143,7 +143,7 @@ class WebEXMeetingView(viewsets.ModelViewSet):
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['msg.manageMeeting', 'msg.createMeeting'])
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
@@ -182,7 +182,7 @@ class WebEXMeetingView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['msg.getMeeting'])
     def retrieve(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
@@ -200,6 +200,8 @@ class WebEXMeetingView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             instance = self.get_object()
+            if request.user != instance.createuser:
+                raise InvestError(2009, msg='没有修改权限')
             data = request.data
             startDate, duration, title = instance.startDate, instance.duration, instance.title
             with transaction.atomic():
@@ -241,7 +243,7 @@ class WebEXMeetingView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['msg.manageMeeting'])
     def destroy(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
@@ -487,6 +489,8 @@ class ScheduleView(viewsets.ModelViewSet):
             with transaction.atomic():
                 for i in range(0, len(data)):
                     if data[i]['type'] == 4 and not data[i].get('meeting'):
+                        if not request.user.has_perm('msg.createMeeting') or not request.user.has_perm('msg.manageMeeting'):
+                            raise InvestError(2009, msg='没有新建视频会议权限')
                         data[i]['startDate'] = data[i]['scheduledtime']
                         meetingInstance = createWebEXMeeting(data[i])
                         data[i]['meeting'] = meetingInstance.id
@@ -587,7 +591,7 @@ class WebEXUserView(viewsets.ModelViewSet):
     serializer_class = WebEXUserSerializer
 
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['msg.manageMeeting', 'msg.getMeeting'])
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size', 10)
@@ -611,7 +615,7 @@ class WebEXUserView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['msg.manageMeeting', 'msg.createMeeting'])
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
@@ -630,7 +634,7 @@ class WebEXUserView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['msg.manageMeeting', 'msg.getMeeting'])
     def retrieve(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
@@ -643,26 +647,7 @@ class WebEXUserView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
-    def update(self, request, *args, **kwargs):
-        try:
-            lang = request.GET.get('lang')
-            instance = self.get_object()
-            data = request.data
-            with transaction.atomic():
-                instanceSerializer = self.serializer_class(instance, data=data)
-                if instanceSerializer.is_valid():
-                    instanceSerializer.save()
-                else:
-                    raise InvestError(code=20071, msg='参数错误：%s' % instanceSerializer.errors)
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(instanceSerializer.data, lang)))
-        except InvestError as err:
-            return JSONResponse(InvestErrorResponse(err))
-        except Exception:
-            catchexcption(request)
-            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['msg.manageMeeting'])
     def destroy(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')

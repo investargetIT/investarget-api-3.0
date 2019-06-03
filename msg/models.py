@@ -61,7 +61,9 @@ class webexMeeting(MyModel):
         db_table = 'webexMeeting'
         ordering = ['startDate']
         permissions = (
-
+            ('manageMeeting', '管理视频会议'),
+            ('getMeeting', '查看视频会议'),
+            ('createMeeting', '创建视频会议'),
         )
 
     def save(self, *args, **kwargs):
