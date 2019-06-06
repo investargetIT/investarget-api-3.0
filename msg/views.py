@@ -200,7 +200,9 @@ class WebEXMeetingView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             instance = self.get_object()
-            if request.user != instance.createuser:
+            if request.user == instance.createuser or webexUser.objects.filter(meeting=instance.id, user=request.user, meetingRole=True).exists():
+                pass
+            else:
                 raise InvestError(2009, msg='没有修改权限')
             data = request.data
             startDate, duration, title = instance.startDate, instance.duration, instance.title

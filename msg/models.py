@@ -143,4 +143,6 @@ class webexUser(MyModel):
             self.name = self.user.usernameC
             self.email = self.user.email
         self.datasource = self.createuser.datasource
+        if self.meetingRole and not self.is_deleted and webexUser.objects.exclude(pk=self.pk).filter(is_deleted=False, meeting=self.meeting, meetingRole=True).exists():
+            raise InvestError(2007, msg='只能有一个主持人')
         return super(webexUser, self).save(*args, **kwargs)

@@ -1,3 +1,5 @@
+#coding=utf-8
+import datetime
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
@@ -15,12 +17,24 @@ class MsgSerializer(serializers.ModelSerializer):
 
 class WebEXMeetingSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
     class Meta:
         model = webexMeeting
         exclude = ('deleteduser', 'datasource', 'is_deleted', 'deletedtime')
 
     def get_url(self, objc):
         return 'https://investarget.webex.com.cn/investarget/p.php?AT=LI&WID={}&PW={}'.format(webEX_webExID, webEX_password)
+
+    def get_status(self, objc):
+        now = datetime.datetime.now()
+        if (objc.startDate + datetime.timedelta(minutes=objc.duration)) <= now:
+            return {'status': 0, 'msg': '已结束'}
+        elif objc.startDate < now and ((objc.startDate + datetime.timedelta(minutes=objc.duration)) > now):
+            return {'status': 1, 'msg': '正在进行'}
+        elif objc.startDate > now and (objc.startDate < (now + datetime.timedelta(hours=24))):
+            return {'status': 2, 'msg': '即将开始'}
+        else:
+            return {'status': 3, 'msg': '暂未开始'}
 
 
 class ScheduleCreateSerializer(serializers.ModelSerializer):
