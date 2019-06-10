@@ -6,7 +6,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
 # Create your models here.
-from django.db.models import CASCADE
+from django.db.models import CASCADE, F
 
 from proj.models import project
 from sourcetype.models import MessageType, DataSource, Country, OrgArea
@@ -46,6 +46,7 @@ class message(MyModel):
 class webexMeeting(MyModel):
     startDate = models.DateTimeField(blank=True, null=True, help_text='会议预定时间',)
     duration = models.PositiveIntegerField(blank=True, default=60, help_text='会议持续时间（单位：分钟）')
+    endDate = models.DateTimeField(blank=True, null=True, help_text='会议结束时间')
     title = models.CharField(max_length=128, blank=True, null=True, help_text='会议标题')
     agenda = models.TextField(blank=True, null=True, help_text='会议议程')
     password = models.CharField(max_length=32, blank=True, null=True, help_text='会议密码')
@@ -67,6 +68,7 @@ class webexMeeting(MyModel):
         )
 
     def save(self, *args, **kwargs):
+        self.endDate = self.startDate + datetime.timedelta(minutes=self.duration)
         if not self.is_deleted:
             if self.createuser is None:
                 raise InvestError(2007, msg='createuser can`t be null')
@@ -78,11 +80,11 @@ class webexMeeting(MyModel):
             earlierMeetingQS = QS.filter(startDate__lte=self.startDate)
             if laterMeetingQS.exists():
                 laterMeeting = laterMeetingQS.order_by('startDate').first()
-                if (self.startDate + datetime.timedelta(minutes=self.duration)) > laterMeeting.startDate:
+                if self.endDate > laterMeeting.startDate:
                     raise InvestError(8006, msg='视频会议时间冲突，已存在开始时间处于本次创建会议持续期间的会议')
             if earlierMeetingQS.exists():
                 earlierMeeting = earlierMeetingQS.order_by('startDate').last()
-                if (earlierMeeting.startDate +  datetime.timedelta(minutes=earlierMeeting.duration)) > self.startDate:
+                if earlierMeeting.endDate > self.startDate:
                     raise InvestError(8006, msg='视频会议时间冲突，已存在结束时间处于本次创建会议持续期间的会议')
         self.datasource = self.createuser.datasource
         return super(webexMeeting, self).save(*args, **kwargs)

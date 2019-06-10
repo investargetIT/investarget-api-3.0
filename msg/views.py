@@ -127,6 +127,17 @@ class WebEXMeetingView(viewsets.ModelViewSet):
             page_index = request.GET.get('page_index', 1)
             lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.queryset.filter(datasource_id=request.user.datasource_id))
+            status = request.GET.get('status')
+            if status:
+                now = datetime.datetime.now()
+                if status == '0':
+                    queryset = queryset.filter(endDate__lte=now)
+                elif status == '1':
+                    queryset = queryset.filter(startDate__lte=now, endDate__gte=now)
+                elif status == '2':
+                    queryset = queryset.filter(startDate__lte=now + datetime.timedelta(hours=24), startDate__gt=now)
+                else:
+                    queryset = queryset.filter(startDate__gt=now + datetime.timedelta(hours=24))
             sortfield = request.GET.get('sort', 'startDate')
             desc = request.GET.get('desc', 0)
             queryset = mySortQuery(queryset, sortfield, desc)
@@ -182,7 +193,7 @@ class WebEXMeetingView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
-    @loginTokenIsAvailable(['msg.getMeeting'])
+    @loginTokenIsAvailable(['msg.getMeeting', 'msg.manageMeeting'])
     def retrieve(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
@@ -200,7 +211,9 @@ class WebEXMeetingView(viewsets.ModelViewSet):
         try:
             lang = request.GET.get('lang')
             instance = self.get_object()
-            if request.user == instance.createuser or webexUser.objects.filter(meeting=instance.id, user=request.user, meetingRole=True).exists():
+            if request.user.has_perm('msg.manageMeeting'):
+                pass
+            elif request.user == instance.createuser or webexUser.objects.filter(meeting=instance.id, user=request.user, meetingRole=True).exists():
                 pass
             else:
                 raise InvestError(2009, msg='没有修改权限')
@@ -245,10 +258,16 @@ class WebEXMeetingView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['msg.manageMeeting'])
+    @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
+            if request.user.has_perm('msg.manageMeeting'):
+                pass
+            elif request.user == instance.createuser or webexUser.objects.filter(meeting=instance.id, user=request.user, meetingRole=True).exists():
+                pass
+            else:
+                raise InvestError(2009, msg='没有删除权限')
             XML_body = getDeleteXMLBody(instance.meetingKey)
             s = requests.post(url=self.webex_url, data=XML_body.encode("utf-8"))
             if s.status_code != 200:

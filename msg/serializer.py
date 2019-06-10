@@ -27,9 +27,9 @@ class WebEXMeetingSerializer(serializers.ModelSerializer):
 
     def get_status(self, objc):
         now = datetime.datetime.now()
-        if (objc.startDate + datetime.timedelta(minutes=objc.duration)) <= now:
+        if objc.endDate <= now:
             return {'status': 0, 'msg': '已结束'}
-        elif objc.startDate < now and ((objc.startDate + datetime.timedelta(minutes=objc.duration)) > now):
+        elif objc.startDate < now and objc.endDate > now:
             return {'status': 1, 'msg': '正在进行'}
         elif objc.startDate > now and (objc.startDate < (now + datetime.timedelta(hours=24))):
             return {'status': 2, 'msg': '即将开始'}
