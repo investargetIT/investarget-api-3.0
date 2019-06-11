@@ -563,7 +563,7 @@ def sendmessage_dataroomuseradd(model,receiver,types,sender=None):
                     try:
                         destination = receiver.email
                         projectsign = msgdic['email_sign']
-                        vars = {'projectC': getDataroomTitleWithSuperLink(model.dataroom, 'cn'), 'projectE': getDataroomTitleWithSuperLink(model.dataroom, 'en')}
+                        vars = {'name': receiver.usernameC, 'projectC': getDataroomTitleWithSuperLink(model.dataroom, 'cn'), 'projectE': getDataroomTitleWithSuperLink(model.dataroom, 'en')}
                         xsendEmail(destination, projectsign, vars)
                     except Exception:
                         logexcption()
