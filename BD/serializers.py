@@ -54,9 +54,11 @@ class OrgBDCommentsCreateSerializer(serializers.ModelSerializer):
 
 
 class OrgBDCommentsSerializer(serializers.ModelSerializer):
+    createuser = UserSimpleSerializer()
+
     class Meta:
         model = OrgBDComments
-        fields = ('comments','id','createdtime','orgBD')
+        fields = ('comments','id','createdtime','orgBD', 'createuser')
 
 
 class OrgBDCreateSerializer(serializers.ModelSerializer):
