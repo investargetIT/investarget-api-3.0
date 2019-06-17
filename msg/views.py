@@ -154,6 +154,23 @@ class WebEXMeetingView(viewsets.ModelViewSet):
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+    @loginTokenIsAvailable()
+    def checkMeeingDateAvailable(self, request, *args, **kwargs):
+        try:
+            startDate = datetime.datetime.strptime(request.GET.get('startDate'), "%Y-%m-%dT%H:%M:%S")
+            duration = int(request.GET.get('duration'))
+            endDate = startDate + datetime.timedelta(minutes=duration)
+            qs = self.get_queryset().filter(Q(startDate__lte=startDate, endDate__gt=startDate) | Q(startDate__lt=endDate, startDate__gte=startDate))
+            if qs.exists():
+                return JSONResponse(SuccessResponse(False))
+            return JSONResponse(SuccessResponse(True))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+
     @loginTokenIsAvailable(['msg.manageMeeting', 'msg.createMeeting'])
     def create(self, request, *args, **kwargs):
         try:
