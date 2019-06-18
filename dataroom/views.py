@@ -17,8 +17,8 @@ from invest.settings import APILOG_PATH
 from proj.models import project
 from third.views.qiniufile import deleteqiniufile, downloadFileToPath
 from utils.customClass import InvestError, JSONResponse, RelationFilter
-from utils.sendMessage import sendmessage_dataroomfileupdate, sendmessage_dataroomuseradd
-from utils.somedef import file_iterator,  addWaterMarkToPdfFiles, addWaterMark
+from utils.sendMessage import sendmessage_dataroomuseradd
+from utils.somedef import file_iterator,  addWaterMarkToPdfFiles
 from utils.util import returnListChangeToLanguage, loginTokenIsAvailable, \
     returnDictChangeToLanguage, catchexcption, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
     logexcption, checkrequesttoken, deleteExpireDir
@@ -278,7 +278,7 @@ class DataroomView(viewsets.ModelViewSet):
                 response['Content-Length'] = zipFileSize
                 response['Content-Type'] = 'application/octet-stream'
                 response["content-disposition"] = 'attachment;filename=%s' % path
-                if zipFileSize < 10 * 1024:
+                if zipFileSize < 10 * 1024 * 1024:
                     os.remove(zipFilepath)            # 删除压缩包
                     if os.path.exists(direcpath):  # 删除源文件
                         shutil.rmtree(direcpath)

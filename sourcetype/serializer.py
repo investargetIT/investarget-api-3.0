@@ -1,9 +1,11 @@
 from rest_framework import serializers
 
-from sourcetype.models import TransactionType, TransactionPhases, Specialty, School, OrgArea, Tag, Industry, CurrencyType, \
+from sourcetype.models import TransactionType, TransactionPhases, Specialty, School, OrgArea, Tag, Industry, \
+    CurrencyType, \
     AuditStatus, ProjectStatus, OrgType, FavoriteType, MessageType, ClientType, TitleType, Country, \
-    DataSource, TransactionStatus, webmenu, CharacterType, orgtitletable, Service, OrgAttribute, BDStatus, AndroidAppVersion, OrgBdResponse, \
-    OrgLevelType, FamiliarLevel
+    DataSource, TransactionStatus, webmenu, CharacterType, orgtitletable, Service, OrgAttribute, BDStatus, \
+    AndroidAppVersion, OrgBdResponse, \
+    OrgLevelType, FamiliarLevel, IndustryGroup
 from third.views.qiniufile import getUrlWithBucketAndKey
 
 
@@ -137,6 +139,11 @@ class tagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         exclude = ('is_deleted','datasource')
+
+class industryGroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IndustryGroup
+        exclude = ('is_deleted',)
 
 
 class serviceSerializer(serializers.ModelSerializer):

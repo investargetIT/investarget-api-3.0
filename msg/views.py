@@ -8,14 +8,16 @@ from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction
 
 # Create your views here.
+from django.db.models import Q
 from rest_framework import filters
 from rest_framework import viewsets
 
 from msg.models import message, schedule, webexUser, webexMeeting
 from msg.serializer import MsgSerializer, ScheduleSerializer, ScheduleCreateSerializer, WebEXUserSerializer, \
-    WebEXMeetingSerializer
+    WebEXMeetingSerializer, ScheduleMeetingSerializer
 from third.thirdconfig import webEX_siteName, webEX_webExID, webEX_password
 from utils.customClass import InvestError, JSONResponse
+import utils.sendMessage
 from utils.util import logexcption, loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
     catchexcption, returnListChangeToLanguage, returnDictChangeToLanguage, mySortQuery, checkSessionToken
 import xml.etree.cElementTree as ET
@@ -102,6 +104,367 @@ class WebMessageView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+
+class WebEXMeetingView(viewsets.ModelViewSet):
+    """
+        list: 视频会议列表
+        create: 新增视频会议
+        retrieve: 查看某一视频会议
+        update: 修改某一视频会议信息
+        destroy: 删除某一视频会议
+        """
+    filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
+    queryset = webexMeeting.objects.all().filter(is_deleted=False)
+    filter_fields = ('title', 'meetingKey', 'createuser')
+    search_fields = ('startDate', 'createuser__usernameC', 'createuser__usernameE')
+    serializer_class = WebEXMeetingSerializer
+    webex_url = 'https://investarget.webex.com.cn/WBXService/XMLService'
+
+    @loginTokenIsAvailable(['msg.getMeeting'])
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
+            queryset = self.filter_queryset(self.queryset.filter(datasource_id=request.user.datasource_id))
+            status = request.GET.get('status')
+            if status:
+                now = datetime.datetime.now()
+                if status == '0':
+                    queryset = queryset.filter(endDate__lte=now)
+                elif status == '1':
+                    queryset = queryset.filter(startDate__lte=now, endDate__gte=now)
+                elif status == '2':
+                    queryset = queryset.filter(startDate__lte=now + datetime.timedelta(hours=24), startDate__gt=now)
+                else:
+                    queryset = queryset.filter(startDate__gt=now + datetime.timedelta(hours=24))
+            sortfield = request.GET.get('sort', 'startDate')
+            desc = request.GET.get('desc', 0)
+            queryset = mySortQuery(queryset, sortfield, desc)
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = self.serializer_class(queryset, many=True)
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data, lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def checkMeeingDateAvailable(self, request, *args, **kwargs):
+        try:
+            startDate = datetime.datetime.strptime(request.GET.get('startDate'), "%Y-%m-%dT%H:%M:%S")
+            duration = int(request.GET.get('duration'))
+            endDate = startDate + datetime.timedelta(minutes=duration)
+            qs = self.get_queryset().filter(Q(startDate__lte=startDate, endDate__gt=startDate) | Q(startDate__lt=endDate, startDate__gte=startDate))
+            if qs.exists():
+                return JSONResponse(SuccessResponse(False))
+            return JSONResponse(SuccessResponse(True))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+
+    @loginTokenIsAvailable(['msg.manageMeeting', 'msg.createMeeting'])
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            data['createuser'] = request.user.id
+            with transaction.atomic():
+                instanceSerializer = self.serializer_class(data=data)
+                if instanceSerializer.is_valid():
+                    instance = instanceSerializer.save()
+                else:
+                    raise InvestError(code=20071, msg='参数错误：%s' % instanceSerializer.errors)
+                data['startDate'] = instance.startDate.strftime('%m/%d/%Y %H:%M:%S')
+                XML_body = getCreateXMLBody(data)
+                s = requests.post(url=self.webex_url, data=XML_body.encode("utf-8"))
+                if s.status_code == 200:
+                    res = ET.fromstring(s.text)
+                    result = next(res.iter('{http://www.webex.com/schemas/2002/06/service}result')).text
+                    if result == 'FAILURE':
+                        reason = next(res.iter('{http://www.webex.com/schemas/2002/06/service}reason')).text
+                        raise InvestError(8006, msg=reason)
+                    else:
+                        meetingkey = next(res.iter('{http://www.webex.com/schemas/2002/06/service/meeting}meetingkey')).text
+                        serv_host = next(res.iter('{http://www.webex.com/schemas/2002/06/service}host')).text
+                        serv_attendee = next(res.iter('{http://www.webex.com/schemas/2002/06/service}attendee')).text
+                        meetGuestToken = next(res.iter('{http://www.webex.com/schemas/2002/06/service/meeting}guestToken')).text
+                        meetingData = {'meetingKey': meetingkey, 'url_host': serv_host, 'url_attendee': serv_attendee,
+                                  'guestToken': meetGuestToken}
+                        newInstanceSerializer = self.serializer_class(instance, data=meetingData)
+                        if newInstanceSerializer.is_valid():
+                            newInstanceSerializer.save()
+                else:
+                    raise InvestError(8006, msg=s.text)
+            return JSONResponse(SuccessResponse(instanceSerializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable(['msg.getMeeting', 'msg.manageMeeting'])
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            serializer = self.serializer_class(instance)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            if request.user.has_perm('msg.manageMeeting'):
+                pass
+            elif request.user == instance.createuser or webexUser.objects.filter(meeting=instance.id, user=request.user, meetingRole=True).exists():
+                pass
+            else:
+                raise InvestError(2009, msg='没有修改权限')
+            data = request.data
+            startDate, duration, title = instance.startDate, instance.duration, instance.title
+            with transaction.atomic():
+                instanceSerializer = self.serializer_class(instance, data=data)
+                if instanceSerializer.is_valid():
+                    instanceSerializer.save()
+                else:
+                    raise InvestError(code=20071, msg='参数错误：%s' % instanceSerializer.errors)
+            data['startDate'] = instance.startDate.strftime('%m/%d/%Y %H:%M:%S')
+            XML_body = getUpdateXMLBody(instance.meetingKey, data)
+            s = requests.post(url=self.webex_url, data=XML_body.encode("utf-8"))
+            if s.status_code != 200:
+                raise InvestError(8006, msg=s.text)
+            else:
+                res = ET.fromstring(s.text)
+                result = next(res.iter('{http://www.webex.com/schemas/2002/06/service}result')).text
+                if result == 'FAILURE':
+                    reason = next(res.iter('{http://www.webex.com/schemas/2002/06/service}reason')).text
+                    raise InvestError(8006, msg=reason)
+                else:
+                    serv_host = next(res.iter('{http://www.webex.com/schemas/2002/06/service}host')).text
+                    serv_attendee = next(res.iter('{http://www.webex.com/schemas/2002/06/service}attendee')).text
+                    meetingData = {'url_host': serv_host, 'url_attendee': serv_attendee,}
+                    with transaction.atomic():
+                        instanceSerializer = self.serializer_class(instance, data=meetingData)
+                        if instanceSerializer.is_valid():
+                            newInstance = instanceSerializer.save()
+                        else:
+                            raise InvestError(code=20071, msg='参数错误：%s' % instanceSerializer.errors)
+                        if startDate != newInstance.startDate or duration != newInstance.duration or title != newInstance.title:
+                            webexSch_qs = instance.meeting_schedule.all().filter(is_deleted=False)
+                            webexSch_qs.update(scheduledtime=newInstance.startDate, comments=newInstance.title)
+                            webexUser_qs = instance.meeting_webexUser.all().filter(is_deleted=False)
+                            utils.sendMessage.sendmessage_WebEXMeetingMessage(webexUser_qs)
+                    return JSONResponse(SuccessResponse(returnDictChangeToLanguage(instanceSerializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            if request.user.has_perm('msg.manageMeeting'):
+                pass
+            elif request.user == instance.createuser or webexUser.objects.filter(meeting=instance.id, user=request.user, meetingRole=True).exists():
+                pass
+            else:
+                raise InvestError(2009, msg='没有删除权限')
+            XML_body = getDeleteXMLBody(instance.meetingKey)
+            s = requests.post(url=self.webex_url, data=XML_body.encode("utf-8"))
+            if s.status_code != 200:
+                raise InvestError(8006, msg=s.text)
+            else:
+                res = ET.fromstring(s.text)
+                result = next(res.iter('{http://www.webex.com/schemas/2002/06/service}result')).text
+                if result == 'FAILURE':
+                    reason = next(res.iter('{http://www.webex.com/schemas/2002/06/service}reason')).text
+                    raise InvestError(8006, msg=reason)
+                else:
+                    with transaction.atomic():
+                        instance.is_deleted = True
+                        instance.deleteduser = request.user
+                        instance.deletedtime = datetime.datetime.now()
+                        instance.save()
+                        webexUser_qs = instance.meeting_webexUser.all().filter(is_deleted=False)
+                        msg_list = list(webexUser_qs)
+                        webexUser_qs.update(is_deleted=True, deletedtime=datetime.datetime.now(), deleteduser=request.user)
+                        webexSch_qs = instance.meeting_schedule.all().filter(is_deleted=False)
+                        webexSch_qs.update(is_deleted=True, deletedtime=datetime.datetime.now(), deleteduser=request.user)
+                    utils.sendMessage.sendmessage_WebEXMeetingCancelMessage(msg_list)
+                    return JSONResponse(SuccessResponse({'is_deleted': True}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+def getXMLHeaders():
+    headers = """
+                         <header>
+                             <securityContext>
+                                 <siteName>{siteName}</siteName>
+                                 <webExID>{webExID}</webExID>
+                                 <password>{password}</password>
+                             </securityContext>
+                         </header>
+             """.format(siteName=webEX_siteName, webExID=webEX_webExID, password=webEX_password)
+    return headers
+
+def getCreateXMLBody(data):
+    headers = getXMLHeaders()
+    meetingPassword = data.get('password', 'Aa123456')  # 会议密码
+    title = data.get('title', '')  # 会议名称
+    agenda = data.get('agenda', '议程暂无')  # 会议议程
+    startDate = data.get('startDate', '')  # 会议开始时间（格式：11/30/2015 10:00:00）
+    duration = data.get('duration', '60')  # 会议持续时间（单位：分钟）
+    XML_body = """
+                               <?xml version="1.0" encoding="UTF-8"?>
+                               <serv:message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                                   {headers}
+                                   <body>
+                                       <bodyContent xsi:type="java:com.webex.service.binding.meeting.CreateMeeting">
+                                           <accessControl>
+                                               <meetingPassword>{meetingPassword}</meetingPassword>
+                                           </accessControl>
+                                           <telephony>
+                                               <telephonySupport>CALLIN</telephonySupport>
+                                           </telephony>
+                                           <metaData>
+                                               <confName>{title}</confName>
+                                               <agenda>{agenda}</agenda>
+                                           </metaData>
+                                           <schedule>
+                                               <startDate>{startDate}</startDate>
+                                               <duration>{duration}</duration>
+                                           </schedule>
+                                       </bodyContent>
+                                   </body>
+                               </serv:message>
+                           """.format(headers=headers, meetingPassword=meetingPassword, title=title, agenda=agenda,
+                                      startDate=startDate, duration=duration)
+    return XML_body
+
+
+def getGetXMLBody(meetingKey):
+    headers = getXMLHeaders()
+    XML_body = """
+                            <?xml version="1.0" encoding="UTF-8"?>
+                            <serv:message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                                {headers}
+                                <body>
+                                    <bodyContent xsi:type="java:com.webex.service.binding.meeting.GetMeeting">
+                                        <meetingKey>{meetingKey}</meetingKey>
+                                    </bodyContent>
+                                </body>
+                            </serv:message>
+                        """.format(headers=headers, meetingKey=meetingKey)
+    return XML_body
+
+def get_hostKey(meetingKey):
+    XML_body = getGetXMLBody(meetingKey)
+    webex_url = 'https://investarget.webex.com.cn/WBXService/XMLService'
+    s = requests.post(url=webex_url, data=XML_body.encode("utf-8"))
+    if s.status_code != 200:
+        raise InvestError(8006, msg=s.text)
+    else:
+        res = ET.fromstring(s.text)
+        hostKey = next(res.iter('{http://www.webex.com/schemas/2002/06/service/meeting}hostKey')).text
+        return hostKey
+
+def getUpdateXMLBody(meetingKey, data):
+    headers = getXMLHeaders()
+    confName = '<confName>{}</confName>'.format(data['title']) if data.get('title') else ''  # 会议名称
+    startDate = '<startDate>{}</startDate>'.format(data['startDate']) if data.get('startDate') else ''  # 会议开始时间
+    duration = '<duration>{}</duration>'.format(data['duration']) if data.get('duration') else ''  # 会议持续时间
+    XML_body = """
+                                <?xml version="1.0" encoding="UTF-8"?>
+                                <serv:message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                                    {headers}
+                                    <body>
+                                        <bodyContent xsi:type="java:com.webex.service.binding.meeting.SetMeeting">
+                                            <meetingkey>{meetingKey}</meetingkey>
+                                            <metaData>
+                                                {confName}
+                                            </metaData>
+                                            <schedule>
+                                                {startDate}
+                                                {duration}
+                                            </schedule>
+                                        </bodyContent>
+                                    </body>
+                                </serv:message>
+                            """.format(headers=headers, meetingKey=meetingKey,
+                                       confName=confName, startDate=startDate, duration=duration)
+    return XML_body
+
+def getDeleteXMLBody(meetingKey):
+    headers = getXMLHeaders()
+    XML_body = """
+                            <?xml version="1.0" encoding="UTF-8"?>
+                            <serv:message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                                {headers}
+                                <body>
+                                    <bodyContent xsi:type="java:com.webex.service.binding.meeting.DelMeeting">
+                                        <meetingKey>{meetingKey}</meetingKey>
+                                    </bodyContent>
+                                </body>
+                            </serv:message>
+                        """.format(headers=headers, meetingKey=meetingKey)
+    return XML_body
+
+
+def createWebEXMeeting(data):
+    webex_url = 'https://investarget.webex.com.cn/WBXService/XMLService'
+    with transaction.atomic():
+        instanceSerializer = WebEXMeetingSerializer(data=data)
+        if instanceSerializer.is_valid():
+            instance = instanceSerializer.save()
+        else:
+            raise InvestError(code=20071, msg='创建会议参数错误：%s' % instanceSerializer.errors)
+        data['startDate'] = instance.startDate.strftime('%m/%d/%Y %H:%M:%S')
+        XML_body = getCreateXMLBody(data)
+        s = requests.post(url=webex_url, data=XML_body.encode("utf-8"))
+        if s.status_code == 200:
+            res = ET.fromstring(s.text)
+            result = next(res.iter('{http://www.webex.com/schemas/2002/06/service}result')).text
+            if result == 'FAILURE':
+                reason = next(res.iter('{http://www.webex.com/schemas/2002/06/service}reason')).text
+                raise InvestError(8006, msg=reason)
+            else:
+                meetingkey = next(res.iter('{http://www.webex.com/schemas/2002/06/service/meeting}meetingkey')).text
+                serv_host = next(res.iter('{http://www.webex.com/schemas/2002/06/service}host')).text
+                serv_attendee = next(res.iter('{http://www.webex.com/schemas/2002/06/service}attendee')).text
+                meetGuestToken = next(res.iter('{http://www.webex.com/schemas/2002/06/service/meeting}guestToken')).text
+                hostKey = get_hostKey(meetingkey)
+                meetingData = {'meetingKey': meetingkey, 'url_host': serv_host, 'url_attendee': serv_attendee,
+                               'guestToken': meetGuestToken, 'hostKey': hostKey}
+                newInstanceSerializer = WebEXMeetingSerializer(instance, data=meetingData)
+                if newInstanceSerializer.is_valid():
+                    newInstance = newInstanceSerializer.save()
+                else:
+                    raise InvestError(code=20071, msg='会议信息错误：%s' % instanceSerializer.errors)
+        else:
+            raise InvestError(8006, msg=s.text)
+        return newInstance
+
+
+
 class ScheduleView(viewsets.ModelViewSet):
     """
         list:日程安排列表
@@ -112,7 +475,7 @@ class ScheduleView(viewsets.ModelViewSet):
         """
     filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
     queryset = schedule.objects.all().filter(is_deleted=False)
-    filter_fields = ('proj','createuser','user','projtitle','country')
+    filter_fields = ('proj', 'createuser', 'user', 'projtitle', 'country', 'manager')
     search_fields = ('createuser__usernameC', 'user__usernameC', 'user__mobile', 'proj__projtitleC', 'proj__projtitleE')
     serializer_class = ScheduleSerializer
 
@@ -135,7 +498,7 @@ class ScheduleView(viewsets.ModelViewSet):
             if request.user.has_perm('msg.admin_manageSchedule'):
                 queryset = queryset
             else:
-                queryset = queryset.filter(createuser_id=request.user.id)
+                queryset = queryset.filter(Q(manager_id=request.user.id) | Q(createuser_id=request.user.id))
             sortfield = request.GET.get('sort', 'scheduledtime')
             desc = request.GET.get('desc', 0)
             queryset = mySortQuery(queryset, sortfield, desc)
@@ -158,16 +521,23 @@ class ScheduleView(viewsets.ModelViewSet):
         try:
             checkSessionToken(request)
             data = request.data
-            lang = request.GET.get('lang')
-            data['createuser'] = request.user.id
-            data['datasource'] = request.user.datasource.id
+            map(lambda x: x.update({'createuser': request.user.id if not x.get('createuser') else x['createuser'],
+                                    'manager': request.user.id if not x.get('manager') else x['manager']
+                                    }), data)
             with transaction.atomic():
-                scheduleserializer = ScheduleCreateSerializer(data=data)
+                for i in range(0, len(data)):
+                    if data[i]['type'] == 4 and not data[i].get('meeting'):
+                        if not request.user.has_perm('msg.createMeeting') or not request.user.has_perm('msg.manageMeeting'):
+                            raise InvestError(2009, msg='没有新建视频会议权限')
+                        data[i]['startDate'] = data[i]['scheduledtime']
+                        meetingInstance = createWebEXMeeting(data[i])
+                        data[i]['meeting'] = meetingInstance.id
+                scheduleserializer = ScheduleCreateSerializer(data=data, many=True)
                 if scheduleserializer.is_valid():
-                    scheduleserializer.save()
+                    instances = scheduleserializer.save()
                 else:
                     raise InvestError(code=20071, msg='参数错误：%s' % scheduleserializer.errors)
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(scheduleserializer.data, lang)))
+                return JSONResponse(SuccessResponse(ScheduleMeetingSerializer(instances, many=True).data))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -181,7 +551,7 @@ class ScheduleView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user.has_perm('msg.admin_manageSchedule'):
                 pass
-            elif request.user == instance.createuser:
+            elif request.user in [instance.createuser, instance.manager]:
                 pass
             else:
                 raise InvestError(code=2009)
@@ -196,24 +566,22 @@ class ScheduleView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
         try:
-            lang = request.GET.get('lang')
             instance = self.get_object()
             if request.user.has_perm('msg.admin_manageSchedule'):
                 pass
-            elif request.user == instance.createuser:
+            elif request.user in [instance.createuser, instance.manager]:
                 pass
             else:
                 raise InvestError(code=2009)
             data = request.data
             data['lastmodifyuser'] = request.user.id
-            data['lastmodifytime'] = datetime.datetime.now()
             with transaction.atomic():
                 scheduleserializer = ScheduleCreateSerializer(instance, data=data)
                 if scheduleserializer.is_valid():
                     newinstance = scheduleserializer.save()
                 else:
                     raise InvestError(code=20071, msg='参数错误：%s' % scheduleserializer.errors)
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(ScheduleSerializer(newinstance).data, lang)))
+                return JSONResponse(SuccessResponse(ScheduleSerializer(newinstance).data))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -223,11 +591,10 @@ class ScheduleView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
         try:
-            lang = request.GET.get('lang')
             instance = self.get_object()
             if request.user.has_perm('msg.admin_manageSchedule'):
                 pass
-            elif request.user == instance.createuser:
+            elif request.user in [instance.createuser, instance.manager]:
                 pass
             else:
                 raise InvestError(code=2009)
@@ -236,170 +603,10 @@ class ScheduleView(viewsets.ModelViewSet):
                 instance.deleteduser = request.user
                 instance.deletedtime = datetime.datetime.now()
                 instance.save()
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(ScheduleCreateSerializer(instance).data, lang)))
-        except InvestError as err:
-            return JSONResponse(InvestErrorResponse(err))
-        except Exception:
-            catchexcption(request)
-            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
-
-class WebEXMeetingView(viewsets.ModelViewSet):
-    """
-        list: 视频会议列表
-        create: 新增视频会议
-        retrieve: 查看某一视频会议
-        update: 修改某一视频会议信息
-        destroy: 删除某一视频会议
-        """
-    filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
-    queryset = webexMeeting.objects.all().filter(is_deleted=False)
-    filter_fields = ('title', 'meetingKey', 'createuser')
-    search_fields = ('startDate', 'createuser__usernameC', 'createuser__usernameE')
-    serializer_class = WebEXMeetingSerializer
-
-
-    @loginTokenIsAvailable()
-    def list(self, request, *args, **kwargs):
-        try:
-            page_size = request.GET.get('page_size', 10)
-            page_index = request.GET.get('page_index', 1)
-            lang = request.GET.get('lang', 'cn')
-            queryset = self.filter_queryset(self.queryset.filter(datasource_id=request.user.datasource_id))
-            sortfield = request.GET.get('sort', 'startDate')
-            desc = request.GET.get('desc', 0)
-            queryset = mySortQuery(queryset, sortfield, desc)
-            try:
-                count = queryset.count()
-                queryset = Paginator(queryset, page_size)
-                queryset = queryset.page(page_index)
-            except EmptyPage:
-                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
-            serializer = self.serializer_class(queryset, many=True)
-            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data, lang)}))
-        except InvestError as err:
-            return JSONResponse(InvestErrorResponse(err))
-        except Exception:
-            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
-
-
-    @loginTokenIsAvailable()
-    def create(self, request, *args, **kwargs):
-        try:
-            data = request.data
-            data['createuser'] = request.user.id
-            with transaction.atomic():
-                instanceSerializer = self.serializer_class(data=data)
-                if instanceSerializer.is_valid():
-                    instance = instanceSerializer.save()
-                else:
-                    raise InvestError(code=20071, msg='参数错误：%s' % instanceSerializer.errors)
-                data['startDate'] = instance.startDate.strftime('%m/%d/%Y %H:%M:%S')
-                XML_body = self.getXMLBody(webEX_siteName, webEX_webExID, webEX_password, data)
-                url = 'https://investarget.webex.com.cn/WBXService/XMLService'
-                s = requests.post(url=url, data=XML_body.encode("utf-8"))
-                if s.status_code == 200:
-                    res = ET.fromstring(s.text)
-                    meetingkey = next(res.iter('{http://www.webex.com/schemas/2002/06/service/meeting}meetingkey')).text
-                    serv_host = next(res.iter('{http://www.webex.com/schemas/2002/06/service}host')).text
-                    serv_attendee = next(res.iter('{http://www.webex.com/schemas/2002/06/service}attendee')).text
-                    meetGuestToken = next(res.iter('{http://www.webex.com/schemas/2002/06/service/meeting}guestToken')).text
-                    meetingData = {'meetingKey': meetingkey, 'url_host': serv_host, 'url_attendee': serv_attendee,
-                              'guestToken': meetGuestToken}
-                    newInstanceSerializer = self.serializer_class(instance, data=meetingData)
-                    if newInstanceSerializer.is_valid():
-                        newInstanceSerializer.save()
-                else:
-                    raise InvestError(8006, msg=s.text)
-            return JSONResponse(SuccessResponse(instanceSerializer.data))
-        except InvestError as err:
-            return JSONResponse(InvestErrorResponse(err))
-        except Exception:
-            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
-
-    def getXMLBody(self, webEX_siteName, webEX_webExID, webEX_password, data):
-        meetingPassword = data.get('password', 'Aa123456')  # 会议密码
-        title = data.get('title', 'Test Meeting')  # 会议名称
-        agenda = data.get('agenda', 'Test')  # 会议议程
-        startDate = data.get('startDate', '5/30/2019 10:00:00')  # 会议开始时间（格式：11/30/2015 10:00:00）
-        duration = data.get('duration', '60')  # 会议持续时间（单位：分钟）
-        XML_body = """
-                            <?xml version="1.0" encoding="UTF-8"?>
-                            <serv:message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-                                <header>
-                                    <securityContext>
-                                        <siteName>{siteName}</siteName>
-                                        <webExID>{webExID}</webExID>
-                                        <password>{password}</password>
-                                    </securityContext>
-                                </header>
-                                <body>
-                                    <bodyContent xsi:type="java:com.webex.service.binding.meeting.CreateMeeting">
-                                        <accessControl>
-                                            <meetingPassword>{meetingPassword}</meetingPassword>
-                                        </accessControl>
-                                        <metaData>
-                                            <confName>{title}</confName>
-                                            <agenda>{agenda}</agenda>
-                                        </metaData>
-                                        <schedule>
-                                            <startDate>{startDate}</startDate>
-                                            <duration>{duration}</duration>
-                                        </schedule>
-                                    </bodyContent>
-                                </body>
-                            </serv:message>
-                        """.format(siteName=webEX_siteName, webExID=webEX_webExID, password=webEX_password,
-                                   meetingPassword=meetingPassword, title=title, agenda=agenda,
-                                   startDate=startDate, duration=duration)
-        return XML_body
-
-
-    @loginTokenIsAvailable()
-    def retrieve(self, request, *args, **kwargs):
-        try:
-            lang = request.GET.get('lang')
-            instance = self.get_object()
-            serializer = self.serializer_class(instance)
-            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data, lang)))
-        except InvestError as err:
-            return JSONResponse(InvestErrorResponse(err))
-        except Exception:
-            catchexcption(request)
-            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
-    @loginTokenIsAvailable()
-    def update(self, request, *args, **kwargs):
-        try:
-            lang = request.GET.get('lang')
-            instance = self.get_object()
-            data = request.data
-            with transaction.atomic():
-                instanceSerializer = self.serializer_class(instance, data=data)
-                if instanceSerializer.is_valid():
-                    instanceSerializer.save()
-                else:
-                    raise InvestError(code=20071, msg='参数错误：%s' % instanceSerializer.errors)
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(instanceSerializer.data, lang)))
-        except InvestError as err:
-            return JSONResponse(InvestErrorResponse(err))
-        except Exception:
-            catchexcption(request)
-            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
-    @loginTokenIsAvailable()
-    def destroy(self, request, *args, **kwargs):
-        try:
-            lang = request.GET.get('lang')
-            instance = self.get_object()
-            with transaction.atomic():
-                instance.is_deleted = True
-                instance.deleteduser = request.user
-                instance.deletedtime = datetime.datetime.now()
-                instance.save()
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data, lang)))
+                if instance.meeting and instance.manager:
+                    webexUser_qs = webexUser.objects.filter(is_deleted=False, meeting=instance.meeting, user=instance.manager)
+                    webexUser_qs.update(is_deleted=True, deletedtime=datetime.datetime.now(), deleteduser=request.user)
+                return JSONResponse(SuccessResponse(ScheduleCreateSerializer(instance).data))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
@@ -422,7 +629,7 @@ class WebEXUserView(viewsets.ModelViewSet):
     serializer_class = WebEXUserSerializer
 
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['msg.manageMeeting', 'msg.getMeeting'])
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size', 10)
@@ -446,26 +653,26 @@ class WebEXUserView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['msg.manageMeeting', 'msg.createMeeting'])
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
-            lang = request.GET.get('lang')
-            data['createuser'] = request.user.id
+            map(lambda x: x.update({'createuser': request.user.id if not x.get('createuser') else x['createuser']}), data)
             with transaction.atomic():
-                instanceSerializer = self.serializer_class(data=data)
+                instanceSerializer = self.serializer_class(data=data, many=True)
                 if instanceSerializer.is_valid():
-                    instanceSerializer.save()
+                    instances = instanceSerializer.save()
                 else:
-                    raise InvestError(code=20071, msg='参数错误：%s' % instanceSerializer.errors)
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(instanceSerializer.data, lang)))
+                    raise InvestError(code=20071, msg=instanceSerializer.errors)
+                utils.sendMessage.sendmessage_WebEXMeetingMessage(instances)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(instanceSerializer.data)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['msg.manageMeeting', 'msg.getMeeting'])
     def retrieve(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
@@ -478,26 +685,7 @@ class WebEXUserView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
-    def update(self, request, *args, **kwargs):
-        try:
-            lang = request.GET.get('lang')
-            instance = self.get_object()
-            data = request.data
-            with transaction.atomic():
-                instanceSerializer = self.serializer_class(instance, data=data)
-                if instanceSerializer.is_valid():
-                    newinstance = instanceSerializer.save()
-                else:
-                    raise InvestError(code=20071, msg='参数错误：%s' % instanceSerializer.errors)
-                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(instanceSerializer.data, lang)))
-        except InvestError as err:
-            return JSONResponse(InvestErrorResponse(err))
-        except Exception:
-            catchexcption(request)
-            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['msg.manageMeeting'])
     def destroy(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')

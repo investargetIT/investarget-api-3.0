@@ -392,6 +392,16 @@ class TagContrastTable(models.Model):
         return self.cat_name
 
 
+class IndustryGroup(models.Model):
+    '''
+    行业组
+    '''
+    id = models.AutoField(primary_key=True)
+    nameC = models.CharField(max_length=32, blank=True, null=True)
+    nameE = models.CharField(max_length=32, blank=True, null=True)
+    is_deleted = models.BooleanField(blank=True, default=False)
+
+
 class templatesign(models.Model):
     """
     模板标识sign

@@ -11,8 +11,8 @@ msg_detail = views.WebMessageView.as_view({
 })
 
 schedule_list = views.ScheduleView.as_view({
-        'get':'list',
-        'post':'create',
+        'get': 'list',
+        'post': 'create',
 })
 
 schedule_detail = views.ScheduleView.as_view({
@@ -23,8 +23,12 @@ schedule_detail = views.ScheduleView.as_view({
 
 
 webexMeeting_list = views.WebEXMeetingView.as_view({
-        'get':'list',
-        'post':'create',
+        'get': 'list',
+        'post': 'create',
+})
+
+webexMeeting_check = views.WebEXMeetingView.as_view({
+        'get': 'checkMeeingDateAvailable',
 })
 
 webexMeeting_detail = views.WebEXMeetingView.as_view({
@@ -35,13 +39,13 @@ webexMeeting_detail = views.WebEXMeetingView.as_view({
 
 
 webexuser_list = views.WebEXUserView.as_view({
-        'get':'list',
-        'post':'create',
+        'get': 'list',
+        'post': 'create',
 })
 
 webexuser_detail = views.WebEXUserView.as_view({
         'get': 'retrieve',
-        'put': 'update',
+        # 'put': 'update',
         'delete': 'destroy',
 })
 
@@ -54,6 +58,7 @@ urlpatterns = [
         url(r'^schedule/(?P<pk>\d+)/$', schedule_detail, name='schedule-detail'),
         url(r'^webex/meeting/$', webexMeeting_list, name='webexMeeting-list'),
         url(r'^webex/meeting/(?P<pk>\d+)/$', webexMeeting_detail, name='webexMeeting-detail'),
+        url(r'^webex/meeting/check/$', webexMeeting_check, name='webexMeeting_check'),
         url(r'^webex/user/$', webexuser_list, name='webexuser-list'),
         url(r'^webex/user/(?P<pk>\d+)/$', webexuser_detail, name='webexuser-detail'),
 

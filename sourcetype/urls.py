@@ -110,6 +110,11 @@ Orgtitletable = views.OrgtitletableView.as_view({
         # 'post':'create',
 })
 
+
+IndustryGroup = views.IndustryGroupView.as_view({
+        'get': 'list',
+})
+
 AndroidVersion = views.AndroidAppVersionView.as_view({
         'get': 'list',
         'post':'create',
@@ -162,6 +167,8 @@ urlpatterns = [
     url(r'^character$', character,name='charactersource',),
 
     url(r'^orgtitletable$', Orgtitletable,name='Orgtitletablesource',),
+
+    url(r'^industryGroup$', IndustryGroup,name='IndustryGroupSource',),
 
     url(r'^android$', AndroidVersion,name='AndroidVersion',),
 

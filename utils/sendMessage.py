@@ -826,6 +826,55 @@ def sendmessage_orgBDExpireMessage(receiver, types, content):
         sendmessage_orgBDExpireMessageThread().start()
 
 
+def sendmessage_WebEXMeetingMessage(webEXUsers):
+    """
+    :param webEXUsers: Iterable object. like list、 queryset
+    """
+    class sendmessage_WebEXMeetingMessageThread(threading.Thread):
+
+        def run(self):
+            for webexuser in webEXUsers:
+                name, email, role, meeting = webexuser.name, webexuser.email, webexuser.meetingRole, webexuser.meeting
+                if sendEmail and checkEmailTrue(email):
+                    try:
+                        if role == True:
+                            projectsign = 'N7ygf2'
+                            vars = {'name': name, 'title': meeting.title, 'data': meeting.agenda,
+                                    'time': meeting.startDate.strftime('%Y-%m-%d %H:%M'), 'duration': meeting.duration,
+                                    'meetingkey': meeting.meetingKey, 'hostkey': meeting.hostKey,
+                                    'password': meeting.password,}
+                        else:
+                            projectsign = 'Bk4EY4'
+                            vars = {'name': name, 'title': meeting.title, 'data': meeting.agenda,
+                                    'time': meeting.startDate.strftime('%Y-%m-%d %H:%M'), 'duration': meeting.duration,
+                                    'meetingkey': meeting.meetingKey, 'password': meeting.password, }
+                        xsendEmail(email, projectsign, vars)
+                    except Exception:
+                        logexcption()
+
+    sendmessage_WebEXMeetingMessageThread().start()
+
+def sendmessage_WebEXMeetingCancelMessage(webEXUsers):
+    """
+    :param webEXUsers: Iterable object. like list、 queryset
+    """
+    class sendmessage_WebEXMeetingCancelMessageThread(threading.Thread):
+
+        def run(self):
+            for webexuser in webEXUsers:
+                name, email, role, meeting = webexuser.name, webexuser.email, webexuser.meetingRole, webexuser.meeting
+                if sendEmail and checkEmailTrue(email):
+                    try:
+                        if not role:
+                            projectsign = '0PXbw'
+                            vars = {'name': name, 'title': meeting.title, 'data': meeting.agenda,
+                                        'time': meeting.startDate.strftime('%Y-%m-%d %H:%M'), 'duration': meeting.duration}
+                            xsendEmail(email, projectsign, vars)
+                    except Exception:
+                        logexcption()
+
+    sendmessage_WebEXMeetingCancelMessageThread().start()
+
 # 判断是否发送消息
 def checkReceiverToSendMsg(receiver):
     if receiver is not None:
