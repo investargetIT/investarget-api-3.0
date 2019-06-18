@@ -11,7 +11,7 @@ from django.db import models
 # Create your models here.
 from org.models import organization
 from proj.models import project
-from sourcetype.models import BDStatus, OrgArea, Country, OrgBdResponse, DataSource
+from sourcetype.models import BDStatus, OrgArea, Country, OrgBdResponse, DataSource, CurrencyType
 from sourcetype.models import TitleType
 from timeline.models import timeline, timelineremark, timelineTransationStatu
 from usersys.models import MyUser, UserRemarks
@@ -49,6 +49,10 @@ class ProjectBD(MyModel):
     source = models.TextField(blank=True,null=True,help_text='来源')
     source_type = models.IntegerField(blank=True,null=True,choices=bd_sourcetype)
     manager = MyForeignKey(MyUser,blank=True,null=True,help_text='负责人',related_name='user_projBDs')
+    contractors = MyForeignKey(MyUser, blank=True, null=True, help_text='签约负责人', related_name='contractors_projBDs')
+    financeAmount = models.BigIntegerField(blank=True, null=True, help_text='融资金额')
+    financeCurrency = MyForeignKey(CurrencyType, default=1, null=True, blank=True, help_text='融资金额货币类型')
+    expirationtime = models.DateTimeField(blank=True, null=True, help_text='BD过期时间')
     bd_status = MyForeignKey(BDStatus,blank=True,null=True,help_text='bd状态')
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_ProjectBD')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_ProjectBD')
