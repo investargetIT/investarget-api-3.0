@@ -24,7 +24,6 @@ schedule_detail = views.ScheduleView.as_view({
 
 webexMeeting_list = views.WebEXMeetingView.as_view({
         'get': 'list',
-        'get': 'checkMeeingDateAvailable',
         'post': 'create',
 })
 
