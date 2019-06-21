@@ -1803,7 +1803,13 @@ def checkRequestSessionToken(request):
     获取sessionToken
     """
     try:
-        checkSessionToken(request)
+        session_key = request.COOKIES.get('sid', None)
+        session = SessionStore(session_key)
+        session_data = session.load()
+        if session_data.get('stoken', None):
+            pass
+        else:
+            raise InvestError(3008)
         return JSONResponse(SuccessResponse({}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
