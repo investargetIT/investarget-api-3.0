@@ -1780,9 +1780,9 @@ def getSessionToken(request):
     try:
         session_key = request.COOKIES.get('sid', None)
         if not session_key:
-            request.session['stoken'] = True
-            request.session.save()
-            session = request.session
+            session = SessionStore(request.session.session_key)
+            session['stoken'] = True
+            session.save()
         else:
             session = SessionStore(session_key)
             session['stoken'] = True
