@@ -35,7 +35,7 @@ from utils.sendMessage import sendmessage_userauditstatuchange, sendmessage_user
     sendmessage_usermakefriends
 from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable, \
     catchexcption, cache_delete_key, returnDictChangeToLanguage, returnListChangeToLanguage, SuccessResponse, \
-    InvestErrorResponse, ExceptionResponse, add_perm, mySortQuery, checkRequestToken
+    InvestErrorResponse, ExceptionResponse, add_perm, mySortQuery, checkRequestToken, checkSessionToken
 from django_filters import FilterSet
 
 
@@ -1795,6 +1795,23 @@ def getSessionToken(request):
     except Exception:
         catchexcption(request)
         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+@api_view(['GET'])
+@checkRequestToken()
+def checkRequestSessionToken(request):
+    """
+    获取sessionToken
+    """
+    try:
+        checkSessionToken(request)
+        return JSONResponse(SuccessResponse({}))
+    except InvestError as err:
+        return JSONResponse(InvestErrorResponse(err))
+    except Exception:
+        catchexcption(request)
+        return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
 
 
 @api_view(['POST'])
