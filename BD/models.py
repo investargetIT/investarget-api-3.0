@@ -11,7 +11,7 @@ from django.db import models
 # Create your models here.
 from org.models import organization
 from proj.models import project
-from sourcetype.models import BDStatus, OrgArea, Country, OrgBdResponse, DataSource, CurrencyType
+from sourcetype.models import BDStatus, OrgArea, Country, OrgBdResponse, DataSource, CurrencyType, IndustryGroup
 from sourcetype.models import TitleType
 from timeline.models import timeline, timelineremark, timelineTransationStatu
 from usersys.models import MyUser, UserRemarks
@@ -53,6 +53,7 @@ class ProjectBD(MyModel):
     financeAmount = models.BigIntegerField(blank=True, null=True, help_text='融资金额')
     financeCurrency = MyForeignKey(CurrencyType, default=1, null=True, blank=True, help_text='融资金额货币类型')
     expirationtime = models.DateTimeField(blank=True, null=True, help_text='BD过期时间')
+    indGroup = MyForeignKey(IndustryGroup, null=True, blank=True, help_text='所属行业组')
     bd_status = MyForeignKey(BDStatus,blank=True,null=True,help_text='bd状态')
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_ProjectBD')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_ProjectBD')

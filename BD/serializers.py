@@ -35,6 +35,7 @@ class ProjectBDSerializer(serializers.ModelSerializer):
     usertitle = titleTypeSerializer()
     bd_status = BDStatusSerializer()
     manager = UserCommenSerializer()
+    contractors = UserCommenSerializer()
 
     class Meta:
         model = ProjectBD

@@ -262,7 +262,7 @@ class UserListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MyUser
-        fields = ('id','groups','tags','country', 'department', 'usernameC', 'usernameE', 'mobile', 'mobiletrue',
+        fields = ('id','groups','tags','country', 'department', 'usernameC', 'usernameE', 'mobile', 'mobiletrue', 'indGroup',
                   'email', 'title', 'userstatus', 'org', 'trader_relation', 'photourl','is_active', 'hasIM', 'wechat')
 
     def get_mobiletrue(self, obj):
@@ -310,7 +310,7 @@ class UserListCommenSerializer(serializers.ModelSerializer):
     class Meta:
         model = MyUser
         fields = ('id', 'usernameC', 'usernameE', 'tags', 'userstatus', 'photourl', 'title', 'onjob', 'mobile',
-                  'mobiletrue', 'email', 'is_active', 'org')
+                  'mobiletrue', 'email', 'is_active', 'org', 'indGroup')
 
 
     def get_photourl(self, obj):

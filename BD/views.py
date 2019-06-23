@@ -29,6 +29,8 @@ from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorRespon
 class ProjectBDFilter(FilterSet):
     com_name = RelationFilter(filterstr='com_name',lookup_method='icontains')
     location = RelationFilter(filterstr='location', lookup_method='in')
+    contractors = RelationFilter(filterstr='contractors', lookup_method='in')
+    indGroup = RelationFilter(filterstr='indGroup', lookup_method='in')
     country = RelationFilter(filterstr='country', lookup_method='in')
     username = RelationFilter(filterstr='username', lookup_method='icontains')
     usermobile = RelationFilter(filterstr='usermobile', lookup_method='contains')
@@ -40,7 +42,7 @@ class ProjectBDFilter(FilterSet):
     etime = RelationFilter(filterstr='createdtime', lookup_method='lt')
     class Meta:
         model = ProjectBD
-        fields = ('com_name','location','username','usermobile','source','manager','bd_status','source_type', 'stime', 'etime')
+        fields = ('com_name','location', 'contractors', 'indGroup', 'username','usermobile','source','manager','bd_status','source_type', 'stime', 'etime')
 
 
 class ProjectBDView(viewsets.ModelViewSet):
