@@ -35,7 +35,7 @@ from utils.sendMessage import sendmessage_userauditstatuchange, sendmessage_user
     sendmessage_usermakefriends
 from utils.util import read_from_cache, write_to_cache, loginTokenIsAvailable, \
     catchexcption, cache_delete_key, returnDictChangeToLanguage, returnListChangeToLanguage, SuccessResponse, \
-    InvestErrorResponse, ExceptionResponse, add_perm, mySortQuery, checkRequestToken
+    InvestErrorResponse, ExceptionResponse, add_perm, mySortQuery, checkRequestToken, checkSessionToken
 from django_filters import FilterSet
 
 
@@ -1780,9 +1780,9 @@ def getSessionToken(request):
     try:
         session_key = request.COOKIES.get('sid', None)
         if not session_key:
-            request.session['stoken'] = True
-            request.session.save()
-            session = request.session
+            session = SessionStore(request.session.session_key)
+            session['stoken'] = True
+            session.save()
         else:
             session = SessionStore(session_key)
             session['stoken'] = True
@@ -1790,6 +1790,27 @@ def getSessionToken(request):
         res = JSONResponse(SuccessResponse({}))
         res.set_cookie('sid', session.session_key, httponly=True)
         return res
+    except InvestError as err:
+        return JSONResponse(InvestErrorResponse(err))
+    except Exception:
+        catchexcption(request)
+        return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+@api_view(['GET'])
+@checkRequestToken()
+def checkRequestSessionToken(request):
+    """
+    获取sessionToken
+    """
+    try:
+        session_key = request.COOKIES.get('sid', None)
+        session = SessionStore(session_key)
+        session_data = session.load()
+        if session_data.get('stoken', None):
+            pass
+        else:
+            raise InvestError(3008)
+        return JSONResponse(SuccessResponse({}))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
     except Exception:
