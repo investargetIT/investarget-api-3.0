@@ -42,6 +42,7 @@ from django_filters import FilterSet
 class UserFilter(FilterSet):
     groups = RelationFilter(filterstr='groups', lookup_method='in')
     org = RelationFilter(filterstr='org',lookup_method='in')
+    indGroup = RelationFilter(filterstr='indGroup', lookup_method='in')
     onjob = RelationFilter(filterstr='onjob')
     title = RelationFilter(filterstr='title', lookup_method='in')
     orgarea = RelationFilter(filterstr='orgarea', lookup_method='in')
@@ -53,7 +54,7 @@ class UserFilter(FilterSet):
     investor = RelationFilter(filterstr='trader_relations__investoruser', lookup_method='in',relationName='trader_relations__is_deleted')
     class Meta:
         model = MyUser
-        fields = ('onjob', 'groups','org','tags','userstatus','currency','orgtransactionphases','orgarea','usercode','title','trader','investor','usernameC')
+        fields = ('onjob', 'groups', 'indGroup', 'org','tags','userstatus','currency','orgtransactionphases','orgarea','usercode','title','trader','investor','usernameC')
 
 
 class UserView(viewsets.ModelViewSet):
@@ -1816,8 +1817,6 @@ def checkRequestSessionToken(request):
     except Exception:
         catchexcption(request)
         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
-
 
 
 @api_view(['POST'])

@@ -15,8 +15,8 @@ from django.db import models
 from django.db.models import Q
 
 from APIlog.models import userinfoupdatelog
-from sourcetype.models import AuditStatus, ClientType, TitleType,School,Specialty,Tag, DataSource, Country, OrgArea, \
-    FamiliarLevel
+from sourcetype.models import AuditStatus, ClientType, TitleType, School, Specialty, Tag, DataSource, Country, OrgArea, \
+    FamiliarLevel, IndustryGroup
 from utils.customClass import InvestError, MyForeignKey, MyModel
 from utils.somedef import makeAvatar
 
@@ -102,6 +102,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin,MyModel):
     tags = models.ManyToManyField(Tag, through='userTags', through_fields=('user', 'tag'), blank=True,related_name='tag_users')
     email = models.EmailField(help_text='邮箱', max_length=128,db_index=True,blank=True,null=True)
     title = MyForeignKey(TitleType,blank=True,null=True,related_name='title_users')
+    indGroup = MyForeignKey(IndustryGroup, null=True, blank=True, help_text='所属行业组')
     gender = models.BooleanField(blank=True,default=0,help_text=('0=男，1=女'))
     onjob = models.BooleanField(blank=True, default=True, help_text='是否在职')
     remark = models.TextField(help_text='用户个人备注',blank=True,null=True)

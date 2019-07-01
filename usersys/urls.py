@@ -157,6 +157,5 @@ urlpatterns = [
     url(r'^remark/(?P<pk>\d+)/$', userremark_detail, name='userremark-detail'),
     url(r'^session/$', views.getSessionToken),
     url(r'^checksession/$', views.checkRequestSessionToken),
-
     # url(r'^test/$',views.test)
 ]

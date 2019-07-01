@@ -4,7 +4,7 @@ from rest_framework import serializers
 from BD.models import ProjectBDComments, ProjectBD, OrgBDComments, OrgBD, MeetingBD
 from org.serializer import OrgCommonSerializer
 from proj.serializer import ProjSimpleSerializer
-from sourcetype.serializer import BDStatusSerializer, orgAreaSerializer, tagSerializer
+from sourcetype.serializer import BDStatusSerializer, orgAreaSerializer, tagSerializer, currencyTypeSerializer
 from sourcetype.serializer import titleTypeSerializer
 from third.views.qiniufile import getUrlWithBucketAndKey
 from usersys.serializer import UserCommenSerializer, UserRemarkSimpleSerializer, UserAttachmentSerializer, \
@@ -35,6 +35,8 @@ class ProjectBDSerializer(serializers.ModelSerializer):
     usertitle = titleTypeSerializer()
     bd_status = BDStatusSerializer()
     manager = UserCommenSerializer()
+    contractors = UserCommenSerializer()
+    financeCurrency = currencyTypeSerializer()
 
     class Meta:
         model = ProjectBD
