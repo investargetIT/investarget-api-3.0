@@ -527,7 +527,9 @@ class ScheduleView(viewsets.ModelViewSet):
             with transaction.atomic():
                 for i in range(0, len(data)):
                     if data[i]['type'] == 4 and not data[i].get('meeting'):
-                        if not request.user.has_perm('msg.createMeeting') or not request.user.has_perm('msg.manageMeeting'):
+                        if request.user.has_perm('msg.createMeeting') or request.user.has_perm('msg.manageMeeting'):
+                            pass
+                        else:
                             raise InvestError(2009, msg='没有新建视频会议权限')
                         data[i]['startDate'] = data[i]['scheduledtime']
                         meetingInstance = createWebEXMeeting(data[i])
