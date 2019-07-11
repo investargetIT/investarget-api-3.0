@@ -87,7 +87,7 @@ class ProjectBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageProjectBD'):
                 pass
             elif request.user.has_perm('BD.user_getProjectBD'):
-                pass
+                queryset = queryset.filter(Q(manager=request.user) | Q(contractors=request.user))
             else:
                 raise InvestError(2009)
             countres = queryset.values_list('manager').annotate(Count('manager'))
@@ -140,10 +140,12 @@ class ProjectBDView(viewsets.ModelViewSet):
             comments = data.get('comments',None)
             data['createuser'] = request.user.id
             data['datasource'] = request.user.datasource.id
+            data['manager'] = data['manager'] if data.get('manager') else request.user.id
+            data['contractors'] = data['contractors'] if data.get('contractors') else request.user.id
             if request.user.has_perm('BD.manageProjectBD'):
                 pass
             elif request.user.has_perm('BD.user_addProjectBD'):
-                data['manager'] = request.user.id
+                pass
             else:
                 raise InvestError(2009)
             with transaction.atomic():
