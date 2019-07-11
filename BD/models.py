@@ -105,6 +105,7 @@ class ProjectBDComments(MyModel):
         self.datasource = self.projectBD.datasource
         if self.event_date is None:
             self.event_date = datetime.datetime.now()
+        self.projectBD.save()
         return super(ProjectBDComments, self).save(*args, **kwargs)
 
 
