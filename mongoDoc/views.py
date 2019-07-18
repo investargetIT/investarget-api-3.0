@@ -306,7 +306,7 @@ class ProjectDataView(viewsets.ModelViewSet):
             com_addr = request.GET.get('com_addr')
             finance_date = request.GET.get('finance_date')
             if finance_date:
-                comid_QS = MergeFinanceData.objects.all().filter(date__startswith=finance_date).only('com_id')
+                comid_QS = MergeFinanceData.objects.all().filter(date__startswith=finance_date).values_list('com_id')
                 queryset = queryset.filter(com_id__in=comid_QS)
             if com_addr:
                 com_addr = com_addr.split(',')
