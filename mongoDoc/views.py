@@ -304,6 +304,10 @@ class ProjectDataView(viewsets.ModelViewSet):
             page_index = request.GET.get('page_index', 1)  # 从第一页开始
             queryset = self.filterqueryset(request, self.queryset)
             com_addr = request.GET.get('com_addr')
+            finance_date = request.GET.get('finance_date')
+            if finance_date:
+                comid_QS = MergeFinanceData.objects.all().filter(date__startswith=finance_date).only('com_id')
+                queryset = queryset.filter(com_id__in=comid_QS)
             if com_addr:
                 com_addr = com_addr.split(',')
                 if '其他' in com_addr:
