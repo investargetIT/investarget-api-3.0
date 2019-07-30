@@ -87,7 +87,7 @@ class ProjectBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageProjectBD') or request.user.has_perm('usersys.as_trader'):
                 pass
             elif request.user.has_perm('BD.user_getProjectBD'):
-                queryset = queryset.filter(Q(manager=request.user) | Q(contractors=request.user))
+                queryset = queryset.filter(Q(manager=request.user) | Q(contractors=request.user) | Q(createuser=request.user))
             else:
                 raise InvestError(2009)
             countres = queryset.values_list('manager').annotate(Count('manager'))
@@ -175,7 +175,7 @@ class ProjectBDView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user.has_perm('BD.manageProjectBD'):
                 pass
-            elif request.user.has_perm('BD.user_manageProjectBD', instance):
+            elif request.user in [instance.manager, instance.contractors, instance.createuser]:
                 pass
             else:
                 raise InvestError(2009)
@@ -193,13 +193,11 @@ class ProjectBDView(viewsets.ModelViewSet):
             data = request.data
             lang = request.GET.get('lang')
             instance = self.get_object()
-            oldmanager = instance.manager
             data.pop('createuser', None)
             data.pop('datasource', None)
             if request.user.has_perm('BD.manageProjectBD'):
                 pass
-            elif request.user.has_perm('BD.user_manageProjectBD', instance):
-                # data = {'bd_status': data.get('bd_status', instance.bd_status_id)}
+            elif request.user in [instance.manager, instance.contractors, instance.createuser]:
                 pass
             else:
                 raise InvestError(2009)
@@ -207,10 +205,6 @@ class ProjectBDView(viewsets.ModelViewSet):
                 projectBD = ProjectBDCreateSerializer(instance,data=data)
                 if projectBD.is_valid():
                     newprojectBD = projectBD.save()
-                    oldmanager_id = data.get('manager', None)
-                    if oldmanager_id and oldmanager_id != oldmanager.id:
-                        add_perm('BD.user_manageProjectBD', newprojectBD.manager, newprojectBD)
-                        rem_perm('BD.user_manageProjectBD', oldmanager, newprojectBD)
                 else:
                     raise InvestError(4009, msg='项目BD修改失败——%s' % projectBD.errors)
                 return JSONResponse(
@@ -228,7 +222,7 @@ class ProjectBDView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user.has_perm('BD.manageProjectBD'):
                 pass
-            elif request.user.id == instance.createuser_id:
+            elif request.user in [instance.manager, instance.contractors, instance.createuser]:
                 pass
             else:
                 raise InvestError(2009)
@@ -308,7 +302,7 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
             bdinstance = ProjectBD.objects.get(id=int(data['projectBD']))
             if request.user.has_perm('BD.manageProjectBD'):
                 pass
-            elif request.user.has_perm('BD.user_manageProjectBD', bdinstance):
+            elif request.user in [bdinstance.manager, bdinstance.contractors, bdinstance.createuser]:
                 pass
             else:
                 raise InvestError(2009)
