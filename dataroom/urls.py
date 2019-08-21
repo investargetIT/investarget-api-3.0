@@ -39,6 +39,19 @@ user_dataroomone =  views.User_DataroomfileView.as_view({
 })
 
 
+user_dataroom_temp = views.User_Dataroom_TemplateView.as_view({
+        'get': 'list',
+        'post': 'create',
+})
+
+user_dataroomone_temp =  views.User_Dataroom_TemplateView.as_view({
+        'get':'retrieve',
+        'post':'userTempToUser',
+        'put':'update',
+        'delete':'destroy',
+})
+
+
 checkZip = views.DataroomView.as_view({
     'get':'checkZipStatus'
 })
@@ -54,6 +67,8 @@ urlpatterns = [
     url(r'^file/$', dataroomfile,name='dataroom-fileordirectory'),
     url(r'^user/$', user_dataroom,name='user_dataroom-list',),
     url(r'^user/(?P<pk>\d+)/$', user_dataroomone,name='user_dataroom-detail'),
+    url(r'^temp/$', user_dataroom_temp, name='user_dataroom_temp-list', ),
+    url(r'^temp/(?P<pk>\d+)/$', user_dataroomone_temp, name='user_dataroom_temp-detail'),
     url(r'^checkzip/(?P<pk>\d+)/$', checkZip,name='dataroom-checkZip'),
     url(r'^downzip/(?P<pk>\d+)/$', downZip,name='dataroom-downZip'),
 ]

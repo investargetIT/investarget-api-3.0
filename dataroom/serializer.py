@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from dataroom.models import dataroom, dataroomdirectoryorfile, dataroom_User_file
+from dataroom.models import dataroom, dataroomdirectoryorfile, dataroom_User_file, dataroom_User_template
 from proj.serializer import ProjCommonSerializer
 from third.views.qiniufile import getUrlWithBucketAndKey
 from usersys.serializer import UserInfoSerializer
@@ -59,3 +59,21 @@ class User_DataroomfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = dataroom_User_file
         fields = ('id', 'dataroom', 'user', 'files', 'trader')
+
+class User_DataroomfileFileIdsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = dataroom_User_file
+        fields = ('id', 'dataroom', 'user', 'files')
+
+class User_DataroomTemplateCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = dataroom_User_template
+        fields = '__all__'
+
+class User_DataroomTemplateSerializer(serializers.ModelSerializer):
+    dataroomUserfile = User_DataroomfileFileIdsSerializer()
+
+    class Meta:
+        model = dataroom_User_template
+        fields = ('id', 'dataroom', 'user', 'dataroomUserfile')
+

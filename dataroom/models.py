@@ -123,3 +123,26 @@ class dataroom_User_file(MyModel):
             self.user.is_active = True
             self.user.save()
         super(dataroom_User_file, self).save(force_insert, force_update, using, update_fields)
+
+class dataroom_User_template(MyModel):
+        dataroom = MyForeignKey(dataroom, blank=True, null=True, related_name='dataroom_userTemp')
+        user = MyForeignKey(MyUser, blank=True, null=True, related_name='user_dataroomTemp', help_text='投资人')
+        dataroomUserfile = MyForeignKey(dataroom_User_file, blank=True, null=True, related_name='user_dataroomTempFiles', help_text='用户可见文件列表')
+        deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_userdataroomTemp')
+        createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_userdataroomTemp')
+        datasource = MyForeignKey(DataSource, blank=True, null=True, help_text='数据源')
+
+        class Meta:
+            db_table = 'dataroom_User_template'
+
+        def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+            try:
+                dataroom_User_template.objects.exclude(pk=self.pk).get(is_deleted=False, user=self.user, dataroom=self.dataroom)
+            except dataroom_User_template.DoesNotExist:
+                pass
+            else:
+                raise InvestError(code=2004, msg='用户已存在一个相同dataroom的模板了')
+            if self.user != self.dataroomUserfile.user:
+                raise InvestError(code=2004, msg='用户与模板不匹配')
+            super(dataroom_User_template, self).save(force_insert, force_update, using, update_fields)
+
