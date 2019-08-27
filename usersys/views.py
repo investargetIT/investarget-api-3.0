@@ -155,7 +155,13 @@ class UserView(viewsets.ModelViewSet):
                     if request.user.has_perm('usersys.admin_deleteuser') or request.user.has_perm('usersys.user_deleteuser',
                                                                                              instance):
                         actionlist['delete'] = True
-                instancedata = serializerclass(instance).data
+                if serializerclass != UserListSerializer and request.user.has_perm('usersys.as_trader'):
+                    if UserRelation.objects.filter(investoruser=instance, traderuser__onjob=True, is_deleted=False).exists():
+                        instancedata = UserListCommenSerializer(instance).data
+                    else:
+                        instancedata = UserListSerializer(instance).data
+                else:
+                    instancedata = serializerclass(instance).data
                 instancedata['action'] = actionlist
                 responselist.append(instancedata)
             return JSONResponse(
