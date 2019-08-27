@@ -155,7 +155,14 @@ class UserView(viewsets.ModelViewSet):
                     if request.user.has_perm('usersys.admin_deleteuser') or request.user.has_perm('usersys.user_deleteuser',
                                                                                              instance):
                         actionlist['delete'] = True
-                instancedata = serializerclass(instance).data
+                if serializerclass != UserListSerializer and request.user.has_perm('usersys.as_trader'):
+                    if (not UserRelation.objects.filter(investoruser=instance, traderuser__onjob=True, is_deleted=False).exists()) and \
+                            UserRelation.objects.filter(investoruser=instance, is_deleted=False).exists():
+                        instancedata = UserListSerializer(instance).data     # 显示
+                    else:
+                        instancedata = UserListCommenSerializer(instance).data  # 隐藏
+                else:
+                    instancedata = serializerclass(instance).data
                 instancedata['action'] = actionlist
                 responselist.append(instancedata)
             return JSONResponse(
@@ -338,12 +345,20 @@ class UserView(viewsets.ModelViewSet):
                     userserializer = UserSerializer
                 elif UserRelation.objects.filter(investoruser=request.user, traderuser=user, is_deleted=False).exists():
                     userserializer = UserSerializer
+<<<<<<< HEAD
                 elif request.user.has_perm('usersys.as_trader') and UserRelation.objects.filter(investoruser=user, is_deleted=False).exists():
                     relation_qs = UserRelation.objects.filter(investoruser=user, is_deleted=False)
                     if relation_qs.count() == 1 and relation_qs.first().trader.onjob == False:
                         userserializer = UserSerializer
                     else:
                         userserializer = UserCommenSerializer
+=======
+                elif request.user.has_perm('usersys.as_trader'):
+                    if UserRelation.objects.filter(investoruser=user, traderuser__onjob=True, is_deleted=False).exists():
+                        userserializer = UserCommenSerializer
+                    else:
+                        userserializer = UserSerializer
+>>>>>>> issue
                 else:
                     userserializer = UserCommenSerializer
             serializer = userserializer(user)
