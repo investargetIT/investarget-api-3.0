@@ -339,7 +339,7 @@ class UserView(viewsets.ModelViewSet):
                 elif UserRelation.objects.filter(investoruser=request.user, traderuser=user, is_deleted=False).exists():
                     userserializer = UserSerializer
                 elif request.user.has_perm('usersys.as_trader'):
-                    if UserRelation.objects.filter(investoruser=user, trader__onjob=True, is_deleted=False).exists():
+                    if UserRelation.objects.filter(investoruser=user, traderuser__onjob=True, is_deleted=False).exists():
                         userserializer = UserCommenSerializer
                     else:
                         userserializer = UserSerializer
