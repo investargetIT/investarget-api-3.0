@@ -156,10 +156,11 @@ class UserView(viewsets.ModelViewSet):
                                                                                              instance):
                         actionlist['delete'] = True
                 if serializerclass != UserListSerializer and request.user.has_perm('usersys.as_trader'):
-                    if UserRelation.objects.filter(investoruser=instance, traderuser__onjob=True, is_deleted=False).exists():
-                        instancedata = UserListCommenSerializer(instance).data
+                    if (not UserRelation.objects.filter(investoruser=instance, traderuser__onjob=True, is_deleted=False).exists()) and \
+                            UserRelation.objects.filter(investoruser=instance, is_deleted=False).exists():
+                        instancedata = UserListSerializer(instance).data     # 显示
                     else:
-                        instancedata = UserListSerializer(instance).data
+                        instancedata = UserListCommenSerializer(instance).data  # 隐藏
                 else:
                     instancedata = serializerclass(instance).data
                 instancedata['action'] = actionlist
