@@ -84,7 +84,7 @@ class ProjectBDView(viewsets.ModelViewSet):
             page_index = request.GET.get('page_index', 1)
             lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
-            if request.user.has_perm('BD.manageProjectBD') or request.user.has_perm('usersys.as_trader'):
+            if request.user.has_perm('BD.manageProjectBD'):
                 pass
             elif request.user.has_perm('BD.user_getProjectBD'):
                 queryset = queryset.filter(Q(manager=request.user) | Q(contractors=request.user) | Q(createuser=request.user))
