@@ -202,7 +202,7 @@ def sendmessage_favoriteproject(model,receiver, sender=None):
                         except Exception:
                             logexcption()
 
-    if checkReceiverToSendMsg(receiver):
+    if checkReceiverToSendMsg(receiver) and receiver.datasource_id != 3:
         sendmessage_favoriteprojectThread(model, receiver, sender).start()
 
 def sendmessage_traderadd(model,receiver,types,sender=None):
@@ -267,7 +267,7 @@ def sendmessage_traderadd(model,receiver,types,sender=None):
                     except Exception:
                         logexcption()
 
-    if checkReceiverToSendMsg(receiver):
+    if checkReceiverToSendMsg(receiver) and receiver.datasource_id != 3:
         sendmessage_traderchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
@@ -287,10 +287,13 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
             threading.Thread.__init__(self)
 
         def run(self):
-            types = self.types
             receiver = self.receiver
             model = self.model
             sender = self.sender
+            if model.datasource_id == 3:
+                types = ['sms']
+            else:
+                types = self.types
             if isinstance(model, MyUser):
                 lang = 'cn'
                 datasourcename = model.datasource.nameC
@@ -336,7 +339,10 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                     try:
                         if model.userstatus.id == 2:
                             destination = receiver.mobile
-                            projectsign = 'EXIDv1'
+                            if model.datasource_id == 3:
+                                projectsign = 'sDp8d3'
+                            else:
+                                projectsign = 'EXIDv1'
                             vars = {'user': model.usernameC}
                             xsendSms(destination, projectsign, vars)
                     except Exception:
@@ -405,7 +411,7 @@ def sendmessage_userregister(model,receiver,types,sender=None):
                     except Exception:
                         logexcption()
 
-    if checkReceiverToSendMsg(receiver):
+    if checkReceiverToSendMsg(receiver)  and receiver.datasource_id != 3:
         sendmessage_userregisterThread(model,receiver,types,sender).start()
 
 
@@ -472,67 +478,8 @@ def sendmessage_timelineauditstatuchange(model,receiver,types,sender=None):
                     except Exception:
                         logexcption()
 
-    if checkReceiverToSendMsg(receiver):
+    if checkReceiverToSendMsg(receiver) and receiver.datasource_id != 3:
         sendmessage_timelineauditstatuchangeThread(model,receiver,types,sender).start()
-
-def sendmessage_dataroomfileupdate(model,receiver,types,sender=None):
-    """
-    :param model: dataroom_User_file type
-    :param receiver: myuser type
-    :param types: list
-    :param sender: myuser type
-    :return: None
-    """
-    class sendmessage_dataroomfileupdateThread(threading.Thread):
-        def __init__(self, model, receiver, types, sender=None):
-            self.model = model
-            self.receiver = receiver
-            self.types = types
-            self.sender = sender
-            threading.Thread.__init__(self)
-
-        def run(self):
-            types = self.types
-            receiver = self.receiver
-            model = self.model
-            sender = self.sender
-            # if isinstance(model, dataroom_User_file):
-            #     if 'app' in types and sendAppmsg:
-            #         try:
-            #             content = 'DataRoom有文件更新，点击查看详情'
-            #             receiver_alias = receiver.id
-            #             bdage = 1
-            #             n_extras = {}
-            #             pushnotification(content, receiver_alias, bdage, n_extras)
-            #         except Exception:
-            #             logexcption()
-            #     if 'email' in types and sendEmail and checkEmailTrue(receiver.email):
-            #         try:
-            #             destination = receiver.email
-            #             projectsign = 'umZlP3'
-            #             vars = {'projectC': getProjTitleWithSuperLink(model.dataroom.proj), 'projectE': getProjTitleWithSuperLink(model.dataroom.proj, 'en')}
-            #             xsendEmail(destination, projectsign, vars)
-            #         except Exception:
-            #             logexcption()
-            #     if 'sms' in types and sendSms:
-            #         try:
-            #             destination = receiver.mobile
-            #             projectsign = 'huvrW4'
-            #             vars = {'project': model.dataroom.proj.projtitleC}
-            #             xsendSms(destination, projectsign, vars)
-            #         except Exception:
-            #             logexcption()
-            #     if 'webmsg' in types and sendWebmsg:
-            #         try:
-            #             content = '您的项目%s，DataRoom有文件更新，请登录后查看'%model.dataroom.proj.projtitleC
-            #             title = 'DataRoom有文件更新，点击查看详情'
-            #             messagetype = 7
-            #             saveMessage(content, messagetype, title, receiver, sender,modeltype='dataroom_User_file',sourceid=model.id)
-            #         except Exception:
-            #             logexcption()
-
-    if checkReceiverToSendMsg(receiver):
-        sendmessage_dataroomfileupdateThread(model,receiver,types,sender).start()
 
 
 def sendmessage_dataroomuseradd(model,receiver,types,sender=None):
@@ -562,7 +509,10 @@ def sendmessage_dataroomuseradd(model,receiver,types,sender=None):
                 if 'email' in types and sendEmail and checkEmailTrue(receiver.email):
                     try:
                         destination = receiver.email
-                        projectsign = msgdic['email_sign']
+                        if receiver.datasource_id == 3:
+                            projectsign = 'yMgMP'
+                        else:
+                            projectsign = 'umZlP3'
                         vars = {'name': receiver.usernameC, 'projectC': getDataroomTitleWithSuperLink(model.dataroom, 'cn'), 'projectE': getDataroomTitleWithSuperLink(model.dataroom, 'en')}
                         xsendEmail(destination, projectsign, vars)
                     except Exception:
@@ -619,7 +569,7 @@ def sendmessage_projectpublish(model, receiver, types, sender=None):
                     except Exception:
                         logexcption()
 
-    if checkReceiverToSendMsg(receiver):
+    if checkReceiverToSendMsg(receiver) and receiver.datasource_id != 3:
         sendmessage_projectpublishThread(model,receiver,types,sender).start()
 
 def sendmessage_usermakefriends(model,receiver,types,sender=None):
@@ -666,7 +616,7 @@ def sendmessage_usermakefriends(model,receiver,types,sender=None):
                     except Exception:
                         logexcption()
 
-    if checkReceiverToSendMsg(receiver):
+    if checkReceiverToSendMsg(receiver) and receiver.datasource_id != 3:
         sendmessage_usermakefriendsThread(model,receiver,types,sender).start()
 
 def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
@@ -677,7 +627,7 @@ def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
     :param sender: myuser type
     :return: None
     """
-    if checkReceiverToSendMsg(receiver):
+    if checkReceiverToSendMsg(receiver) and receiver.datasource_id != 3:
         if isinstance(model, timelineTransationStatu):
             lang = 'cn'
             if receiver.country:
@@ -711,7 +661,7 @@ def sendmessage_schedulemsg(model,receiver,types,sender=None):
     :param sender: myuser type
     :return: None
     """
-    if checkReceiverToSendMsg(receiver):
+    if checkReceiverToSendMsg(receiver) and receiver.datasource_id != 3:
         if isinstance(model, schedule):
             lang = 'cn'
             if receiver.country:
@@ -798,7 +748,7 @@ def sendmessage_orgBDMessage(model,receiver,types,sender=None):
                 except Exception:
                     logexcption()
 
-    if checkReceiverToSendMsg(receiver):
+    if checkReceiverToSendMsg(receiver) and receiver.datasource_id != 3:
         sendmessage_orgBDMessageThread(model,receiver,types,sender).start()
 
 def sendmessage_orgBDExpireMessage(receiver, types, content):
@@ -822,7 +772,7 @@ def sendmessage_orgBDExpireMessage(receiver, types, content):
                 except Exception:
                     logexcption()
 
-    if checkReceiverToSendMsg(receiver):
+    if checkReceiverToSendMsg(receiver) and receiver.datasource_id != 3:
         sendmessage_orgBDExpireMessageThread().start()
 
 
@@ -879,6 +829,6 @@ def sendmessage_WebEXMeetingCancelMessage(webEXUsers):
 def checkReceiverToSendMsg(receiver):
     if receiver is not None:
         if isinstance(receiver, MyUser):
-            if getattr(receiver, 'datasource_id') == 1 and receiver.is_active:
+            if getattr(receiver, 'datasource_id') in [1, 3] and receiver.is_active:
                 return True
     return False
