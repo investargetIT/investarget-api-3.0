@@ -346,10 +346,10 @@ class UserView(viewsets.ModelViewSet):
                 elif UserRelation.objects.filter(investoruser=request.user, traderuser=user, is_deleted=False).exists():
                     userserializer = UserSerializer
                 elif request.user.has_perm('usersys.as_trader'):
-                    if UserRelation.objects.filter(investoruser=user, traderuser__onjob=True, is_deleted=False).exists():
-                        userserializer = UserCommenSerializer
+                    if not UserRelation.objects.filter(investoruser=user, traderuser__onjob=True, is_deleted=False).exists() and UserRelation.objects.filter(investoruser=user, is_deleted=False).exists():
+                        userserializer = UserSerializer  # 显示
                     else:
-                        userserializer = UserSerializer
+                        userserializer = UserCommenSerializer  # 隐藏
                 else:
                     userserializer = UserCommenSerializer
             serializer = userserializer(user)
@@ -648,12 +648,12 @@ class UserView(viewsets.ModelViewSet):
             totalcount = read_from_cache(total_redisKey)
             if not totalcount:
                 totalcount = self.get_queryset().count()
-                write_to_cache(total_redisKey, totalcount)
+                write_to_cache(total_redisKey, totalcount, 3600)
             new_redisKey = 'user_newcount_%s' % request.user.datasource_id
             newcount = read_from_cache(new_redisKey)
             if not newcount:
                 newcount = self.get_queryset().filter(createdtime__gte=datetime.datetime.now() - datetime.timedelta(days=1)).count()
-                write_to_cache(new_redisKey, newcount)
+                write_to_cache(new_redisKey, newcount, 3600)
             result = {'total': totalcount, 'new': newcount}
             return JSONResponse(SuccessResponse(result))
         except InvestError as err:
