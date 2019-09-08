@@ -43,9 +43,12 @@ class ProjectBDSerializer(serializers.ModelSerializer):
         exclude = ('deleteduser', 'deletedtime', 'datasource', 'is_deleted')
 
     def get_BDComments(self, obj):
-        qs = obj.ProjectBD_comments.filter(is_deleted=False).order_by('-createdtime')
-        if qs.exists():
-            return ProjectBDCommentsSerializer(qs,many=True).data
+        user_id = self.context.get('user_id')
+        manage = self.context.get('manage')
+        if manage or user_id in [obj.manager, obj.contractors]:
+            qs = obj.ProjectBD_comments.filter(is_deleted=False).order_by('-createdtime')
+            if qs.exists():
+                return ProjectBDCommentsSerializer(qs, many=True).data
         return None
 
 
