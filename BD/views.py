@@ -84,7 +84,7 @@ class ProjectBDView(viewsets.ModelViewSet):
             page_index = request.GET.get('page_index', 1)
             lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
-            if request.user.has_perm('BD.manageProjectBD'):
+            if request.user.has_perm('BD.manageProjectBD') or request.user.has_perm('usersys.as_trader'):
                 pass
             elif request.user.has_perm('BD.user_getProjectBD'):
                 queryset = queryset.filter(Q(manager=request.user) | Q(contractors=request.user) | Q(createuser=request.user))
@@ -103,7 +103,7 @@ class ProjectBDView(viewsets.ModelViewSet):
                 queryset = queryset.page(page_index)
             except EmptyPage:
                 return JSONResponse(SuccessResponse({'count': 0, 'data': [], 'manager_count':countlist}))
-            serializer = ProjectBDSerializer(queryset, many=True)
+            serializer = ProjectBDSerializer(queryset, many=True, context={'user_id': request.user.id, 'manage': request.user.has_perm('BD.manageProjectBD')})
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang),'manager_count':countlist}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -277,7 +277,7 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageProjectBD'):
                 pass
             elif request.user.has_perm('BD.user_getProjectBD'):
-                queryset = queryset.filter(projectBD__in=request.user.user_projBDs.all())
+                queryset = queryset.filter(Q(projectBD__in=request.user.user_projBDs.all()) | Q(projectBD__in=request.user.contractors_projBDs.all()) )
             else:
                 raise InvestError(2009)
             queryset = queryset.order_by('-createdtime')
@@ -328,7 +328,7 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user.has_perm('BD.manageProjectBD'):
                 pass
-            elif request.user.id == instance.createuser_id:
+            elif request.user in [instance.createuser, instance.projectBD.manager, instance.projectBD.contractors]:
                 pass
             else:
                 raise InvestError(2009)
@@ -356,7 +356,7 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user.has_perm('BD.manageProjectBD'):
                 pass
-            elif request.user.id == instance.createuser_id:
+            elif request.user in [instance.createuser, instance.projectBD.manager, instance.projectBD.contractors]:
                 pass
             else:
                 raise InvestError(2009)
