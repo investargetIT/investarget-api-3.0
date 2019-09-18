@@ -9,10 +9,12 @@ from django.db.models import Q
 from django.http import StreamingHttpResponse
 from rest_framework import filters, viewsets
 
-from dataroom.models import dataroom, dataroomdirectoryorfile, publicdirectorytemplate, dataroom_User_file
+from dataroom.models import dataroom, dataroomdirectoryorfile, publicdirectorytemplate, dataroom_User_file, \
+    dataroom_User_template
 from dataroom.serializer import DataroomSerializer, DataroomCreateSerializer, DataroomdirectoryorfileCreateSerializer, \
     DataroomdirectoryorfileSerializer, DataroomdirectoryorfileUpdateSerializer, User_DataroomfileSerializer, \
-    User_DataroomSerializer, User_DataroomfileCreateSerializer
+    User_DataroomSerializer, User_DataroomfileCreateSerializer, User_DataroomTemplateSerializer, \
+    User_DataroomTemplateCreateSerializer
 from invest.settings import APILOG_PATH
 from proj.models import project
 from third.views.qiniufile import deleteqiniufile, downloadFileToPath
@@ -675,8 +677,6 @@ class User_DataroomfileView(viewsets.ModelViewSet):
                     user_dataroomserializer.save()
                 else:
                     raise InvestError(code=20071, msg='data有误_%s' % user_dataroomserializer.errors)
-                # sendmessage_dataroomfileupdate(user_dataroom, user_dataroom.user,
-                #                                ['sms', 'email', 'webmsg', 'app'], sender=request.user)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(user_dataroomserializer.data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -758,3 +758,164 @@ def deleteInstance(instance, deleteuser):
         instance.deleteduser = deleteuser
         instance.deletedtime = datetime.datetime.now()
         instance.save()
+
+
+class User_Dataroom_TemplateView(viewsets.ModelViewSet):
+    """
+           list: 用户dataroom文件模板列表
+           create: 新建用户dataroom文件模板
+           retrieve: 查看用户dataroom文件模板
+           update: 编辑用户dataroom文件模板
+           userTempToUser: 将模板应用到用户
+           destroy: 删除用户dataroom文件模板
+        """
+    filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
+    queryset = dataroom_User_template.objects.all().filter(is_deleted=False, dataroom__isClose=False, dataroom__is_deleted=False)
+    filter_fields = ('dataroom', 'user')
+    serializer_class = User_DataroomTemplateSerializer
+    Model = dataroom_User_template
+
+    def get_object(self, pk=None):
+        if pk:
+            try:
+                obj = self.queryset.get(id=pk, is_deleted=False)
+            except self.Model.DoesNotExist:
+                raise InvestError(code=7002, msg='dataroom_User_template with this "%s" is not exist' % pk)
+        else:
+            try:
+                obj = self.queryset.get(id=self.kwargs['pk'], is_deleted=False)
+            except self.Model.DoesNotExist:
+                raise InvestError(code=7002,msg='dataroom_User_template with this （"%s"） is not exist' % self.kwargs['pk'])
+        if obj.datasource != self.request.user.datasource:
+            raise InvestError(code=8888)
+        return obj
+
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang', 'cn')
+            user = request.GET.get('user',None)
+            if request.user.has_perm('dataroom.admin_getdataroom'):
+                filters = {'datasource':request.user.datasource}
+                queryset = self.filter_queryset(self.get_queryset()).filter(**filters)
+            else:
+                if user:
+                    if user != request.user.id:
+                        raise InvestError(2009)
+                queryset = self.filter_queryset(self.get_queryset()).filter(Q(datasource=request.user.datasource, user=request.user) | Q(dataroom__proj__takeUser=request.user) | Q(dataroom__proj__makeUser=request.user))
+            count = queryset.count()
+            serializer = self.serializer_class(queryset, many=True)
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable()
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            if request.user.has_perm('dataroom.admin_getdataroom'):
+                pass
+            elif request.user in (instance.dataroom.proj.takeUser, instance.dataroom.proj.makeUser):
+                pass
+            else:
+                raise InvestError(code=2009)
+            serializer = self.serializer_class(instance)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            dataroomid = data['dataroom']
+            dataroominstance = dataroom.objects.get(is_deleted=False, id=dataroomid, datasource=request.user.datasource)
+            if request.user in [dataroominstance.proj.takeUser, dataroominstance.proj.makeUser]:
+                pass
+            elif request.user.has_perm('dataroom.admin_adddataroom'):
+                pass
+            else:
+                raise InvestError(2009)
+            with transaction.atomic():
+                data['datasource'] = request.user.datasource_id
+                data['createuser'] = request.user.id
+                user_dataroomserializer = User_DataroomTemplateCreateSerializer(data=data)
+                if user_dataroomserializer.is_valid():
+                    user_dataroomserializer.save()
+                else:
+                    raise InvestError(code=20071, msg='data有误_%s' % user_dataroomserializer.errors)
+                return JSONResponse(SuccessResponse(user_dataroomserializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def userTempToUser(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            user_id = data['user']
+            user_dataroom_temp = self.get_object()
+            try:           # 文件模板应用到用户文件
+                user_dataroom = dataroom_User_file.objects.get(is_deleted=False, user_id=user_id, dataroom=user_dataroom_temp.dataroom)
+            except dataroom_User_file.DoesNotExist:
+                raise InvestError(20071, msg='用户不在模板dataroom中，请先将用户添加至dataroom中。')
+            else:
+                user_dataroom.files = user_dataroom_temp.dataroomUserfile.files.all()
+                user_dataroom.save()
+            return JSONResponse(SuccessResponse(User_DataroomfileSerializer(user_dataroom).data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            lang = request.GET.get('lang')
+            user_dataroom_temp = self.get_object()
+            if request.user.has_perm('dataroom.admin_changedataroom'):
+                pass
+            elif request.user in [user_dataroom_temp.dataroom.proj.takeUser, user_dataroom_temp.dataroom.proj.makeUser]:
+                pass
+            else:
+                raise InvestError(2009)
+            with transaction.atomic():
+                user_dataroomtempserializer = User_DataroomTemplateCreateSerializer(user_dataroom_temp, data=data)
+                if user_dataroomtempserializer.is_valid():
+                    user_dataroomtempserializer.save()
+                else:
+                    raise InvestError(code=20071, msg='data有误_%s' % user_dataroomtempserializer.errors)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(user_dataroomtempserializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable(['dataroom.admin_deletedataroom'])
+    def destroy(self, request, *args, **kwargs):
+        try:
+            user_dataroom_temp = self.get_object()
+            with transaction.atomic():
+                user_dataroom_temp.delete()
+                return JSONResponse(SuccessResponse({'isDeleted':True}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
