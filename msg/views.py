@@ -1,4 +1,5 @@
 #coding=utf-8
+import os
 import traceback
 
 import datetime
@@ -11,12 +12,15 @@ from django.db import transaction
 from django.db.models import Q
 from rest_framework import filters
 from rest_framework import viewsets
+from rest_framework.decorators import api_view
 
+from invest.settings import APILOG_PATH
 from msg.models import message, schedule, webexUser, webexMeeting
 from msg.serializer import MsgSerializer, ScheduleSerializer, ScheduleCreateSerializer, WebEXUserSerializer, \
     WebEXMeetingSerializer, ScheduleMeetingSerializer
 from third.thirdconfig import webEX_siteName, webEX_webExID, webEX_password
-from utils.customClass import InvestError, JSONResponse
+from third.views.submail import sendEmailWithAttachmentFile
+from utils.customClass import InvestError, JSONResponse, MyCalendar, add_CalendarEvent
 import utils.sendMessage
 from utils.util import logexcption, loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
     catchexcption, returnListChangeToLanguage, returnDictChangeToLanguage, mySortQuery, checkSessionToken
@@ -703,3 +707,37 @@ class WebEXUserView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+@api_view(['POST'])
+def sendIcsFileEmail(request):
+    try:
+        data = request.data
+        destination = data.get('destination')
+        html = data.get('html')
+        subject = data.get('subject')
+        icsFilePath = getICSFile(data)
+        response = sendEmailWithAttachmentFile(destination, subject, html, icsFilePath)
+        os.remove(icsFilePath)
+        return JSONResponse(SuccessResponse(response))
+    except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+    except Exception:
+        catchexcption(request)
+        return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+def getICSFile(data):
+    path = APILOG_PATH['icsFilePath']
+    calendar_name = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    startDate = datetime.datetime.strptime(data.get('startDate'), "%Y-%m-%dT%H:%M:%S")
+    endDate = datetime.datetime.strptime(data.get('endDate'), "%Y-%m-%dT%H:%M:%S")
+    if startDate >= endDate:
+        raise InvestError(2007, msg='开始时间不能早于结束时间')
+    summary = data.get('summary', '事件标题')
+    description = data.get('description', '事件描述')
+    location = data.get('location', '未知')
+    calendar = MyCalendar(calendar_name)
+    add_CalendarEvent(calendar, summary, startDate, endDate, description, location)
+    calendar.save_as_ics_file(path)
+    return os.path.join(path, '{}.ics'.format(calendar_name)).decode('utf-8')

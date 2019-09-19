@@ -61,5 +61,5 @@ urlpatterns = [
         url(r'^webex/meeting/check/$', webexMeeting_check, name='webexMeeting_check'),
         url(r'^webex/user/$', webexuser_list, name='webexuser-list'),
         url(r'^webex/user/(?P<pk>\d+)/$', webexuser_detail, name='webexuser-detail'),
-
+        url(r'^icsmail$', views.sendIcsFileEmail, name='sendIcsFileEmail'),
 ]

@@ -1,5 +1,6 @@
 #coding=utf-8
 import datetime
+import io
 
 import operator
 from django.db import models
@@ -185,7 +186,100 @@ class MyUploadProgressRecorder(UploadProgressRecorder):
                                         key)
         os.remove(record_file_path)
 
-class MyManyToManyField(models.ManyToManyField):
-    # def set_attributes_from_rel(self):
-    #     pass
-    pass
+
+class CalendarEvent:
+    """
+    事件对象
+    """
+
+    def __init__(self, kwargs):
+        self.event_data = kwargs
+
+    def __turn_to_string__(self):
+        self.event_text = "BEGIN:VEVENT\n"
+        for item, data in self.event_data.items():
+            item = str(item).replace("_", "-")
+            if item not in ["ORGANIZER", "DTSTART", "DTEND", "ATTENDEE"]:
+                self.event_text += "%s:%s\n" % (item, data)
+            else:
+                self.event_text += "%s;%s\n" % (item, data)
+        self.event_text += "END:VEVENT\n"
+        return self.event_text
+
+
+class MyCalendar:
+    """
+    日历对象
+    """
+
+    def __init__(self, calendar_name="My Calendar"):
+        self.__events__ = {}
+        self.__event_id__ = 0
+        self.calendar_name = calendar_name
+
+    def add_event(self, **kwargs):
+        event = CalendarEvent(kwargs)
+        event_id = self.__event_id__
+        self.__events__[self.__event_id__] = event
+        self.__event_id__ += 1
+        return event_id
+
+    def modify_event(self, event_id, **kwargs):
+        for item, data in kwargs.items():
+            self.__events__[event_id].event_data[item] = data
+
+    def remove_event(self, event_id):
+        self.__events__.pop(event_id)
+
+    def get_ics_text(self):
+        self.__calendar_text__ = """BEGIN:VCALENDAR\nPRODID:-//Microsoft Corporation//Outlook 10.0 MIMEDIR//EN\nVERSION:2.0\nMETHOD:REQUEST\nBEGIN:VTIMEZONE\nTZID:China Time\nBEGIN:STANDARD\nTZOFFSETFROM:+0800\nTZOFFSETTO:+0800\nTZNAME:Standard Time\nEND:STANDARD\nEND:VTIMEZONE\n"""
+        for key, value in self.__events__.items():
+            self.__calendar_text__ += value.__turn_to_string__()
+        self.__calendar_text__ += "END:VCALENDAR"
+        return self.__calendar_text__
+
+    def save_as_ics_file(self, path=None):
+        if path:
+            savePath = os.path.join(path, "%s.ics" % self.calendar_name)
+        else:
+            savePath = "%s.ics" % self.calendar_name
+        ics_text = self.get_ics_text().decode('utf-8')
+        io.open(savePath, "w", encoding="utf-8").write(ics_text)  # 使用utf8编码生成ics文件，否则日历软件打开是乱码
+
+    def open_ics_file(self):
+        os.system("%s.ics" % self.calendar_name)
+
+
+def add_CalendarEvent(cal, SUMMARY, DTSTART, DTEND, DESCRIPTION, LOCATION):
+    """
+    向Calendar日历对象添加事件的方法
+    :param cal: calender日历实例
+    :param SUMMARY: 事件名
+    :param DTSTART: 事件开始时间
+    :param DTEND: 时间结束时间
+    :param DESCRIPTION: 备注
+    :param LOCATION: 时间地点
+    :return:
+    """
+    time_format = "TZID=\"China Time\":{date.year}{date.month:0>2d}{date.day:0>2d}T{date.hour:0>2d}{date.minute:0>2d}00"
+    dt_start = time_format.format(date=DTSTART)
+    dt_end = time_format.format(date=DTEND)
+    create_time = datetime.datetime.today().strftime("%Y%m%dT%H%M%SZ")
+    attend = ";ROLE=REQ-PARTICIPANT;RSVP=FALSE:MAILTO:summer.xia@investarget.com"
+    organizer="CN=\"\":MAILTO:"
+    cal.add_event(
+        SUMMARY=SUMMARY,
+        DTSTART=dt_start,
+        ATTENDEE=attend,
+        ORGANIZER=organizer,
+        DTEND=dt_end,
+        DTSTAMP=create_time,
+        UID="{}-1397@investarget.com".format(create_time),
+        SEQUENCE="0",
+        CREATED=create_time,
+        DESCRIPTION=DESCRIPTION,
+        LAST_MODIFIED=create_time,
+        LOCATION=LOCATION,
+        TRANSP="OPAQUE"
+    )
+
