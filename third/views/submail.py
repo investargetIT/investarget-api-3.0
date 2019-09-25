@@ -20,36 +20,27 @@ from utils.util import SuccessResponse, catchexcption, ExceptionResponse, Invest
 
 
 
-# @api_view(['POST'])
-# def sendEmail(request):
-#     try:
-#         destination = request.data.get('destination')
-#         projectsign = 'evsM7'
-#         varsdict = {'NameC':'c','NameE':'e'}
-#         response = xsendEmail(destination,projectsign,varsdict)
-#         if response.get('status'):
-#             pass
-#         else:
-#             raise InvestError(code=3002,msg=response)
-#         return JSONResponse(SuccessResponse(response))
-#     except InvestError as err:
-#             return JSONResponse(InvestErrorResponse(err))
-#     except Exception:
-#         catchexcption(request)
-#         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-def sendEmail(destination,subject,text,attachmentpath=None):
+def sendEmailWithAttachmentFile(destination, subject, html, attachmentpath):
     data = {'appid':MAIL_CONFIGS['appid'],
-            'to':destination,
+            'to': destination,
             'subject':subject,
-            'text':text,
-            'from':MAIL_CONFIGS['from'],
-            'signature':MAIL_CONFIGS['appkey'],
-            }
+            'html': html,
+            # '''<html>
+            #                             <body>
+            #                                 <h1>@var(name)，您好</h1>
+            #                             </body>
+            #                         </html>'''
+            # 'vars': "{'name': '李某某'}",
+            # 'vars': '{"name": "李某某"}',
+            'from': MAIL_CONFIGS['from'],
+            'from_name': MAIL_CONFIGS['from_name'],
+            'reply': MAIL_CONFIGS['reply'],
+            'signature': MAIL_CONFIGS['appkey']}
     files = None
     if attachmentpath:
         files = {'attachments': open(attachmentpath)}
-    res = requests.post('https://api.mysubmail.com/mail/send.json',data,files=files).content
+    res = requests.post('https://api.mysubmail.com/mail/send.json', data, files=files).content
     return res
 
 
@@ -108,16 +99,6 @@ def xsendEmail(destination,projectsign,vars=None):
     '''
     if vars:
         submail.vars = vars
-    # submail.add_var('NameC', 'c')
-    # submail.add_var('NameE', 'e')
-
-    '''
-    Optional para
-    submail email link content filter
-    @Multi-para
-    '''
-    # submail.add_link('developer', 'http://submail.cn/chs/developer')
-    # submail.add_link('store', 'http://submail.cn/chs/store')
 
     '''
     Optional para
