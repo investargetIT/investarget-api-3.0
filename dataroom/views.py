@@ -237,7 +237,8 @@ class DataroomView(viewsets.ModelViewSet):
                 response = JSONResponse(SuccessResponse({'code': 8005, 'msg': '压缩文件已备好'}))
             else:
                 if os.path.exists(direcpath):
-                    response = JSONResponse(SuccessResponse({'code': 8004, 'msg': '压缩中'}))
+                    seconds = getRemainingTime(rootpath, file_qs)
+                    response = JSONResponse(SuccessResponse({'code': 8004, 'msg': '压缩中', 'seconds': seconds}))
                 else:
                     watermarkcontent = request.GET.get('water', None)
                     watermarkcontent = str(watermarkcontent).split(',')
@@ -293,6 +294,21 @@ class DataroomView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+def getRemainingTime(rootpath, file_qs):
+    downloadSpeed = 2 * 1024 * 1024   # bytes/s
+    times = 0
+    for file_obj in file_qs:
+        path = getPathWithFile(file_obj, rootpath)
+        filesize = file_obj.size if file_obj.size else 10 * 1024 * 1024   # 若文件大小丢失，则默认为 10 MB （10*1024*1024 bytes）
+        if os.path.exists(path):
+            times = times + 0.2
+            if filesize > os.path.getsize(path):
+                times = times + (filesize - os.path.getsize(path)) / downloadSpeed
+        else:
+            times = times + filesize / downloadSpeed
+    times = times + 2
+    return times
 
 def startMakeDataroomZip(directory_qs, file_qs, path, watermarkcontent=None):
     class downloadAllDataroomFile(threading.Thread):
