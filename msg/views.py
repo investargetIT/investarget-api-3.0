@@ -23,7 +23,8 @@ from third.views.submail import sendEmailWithAttachmentFile
 from utils.customClass import InvestError, JSONResponse, MyCalendar, add_CalendarEvent
 import utils.sendMessage
 from utils.util import logexcption, loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
-    catchexcption, returnListChangeToLanguage, returnDictChangeToLanguage, mySortQuery, checkSessionToken
+    catchexcption, returnListChangeToLanguage, returnDictChangeToLanguage, mySortQuery, checkSessionToken, \
+    checkRequestToken
 import xml.etree.cElementTree as ET
 
 def saveMessage(content,type,title,receiver,sender=None,modeltype=None,sourceid=None):
@@ -710,6 +711,7 @@ class WebEXUserView(viewsets.ModelViewSet):
 
 
 @api_view(['POST'])
+@checkRequestToken()
 def sendIcsFileEmail(request):
     try:
         data = request.data
