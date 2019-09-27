@@ -584,8 +584,6 @@ def getmenulist(user):
         return WebMenuSerializer(allmenuobj.filter(id__in=[6,30]),many=True).data
     if user.has_perm('usersys.admin_getuser'):
         qslist.append(allmenuobj.filter(id__in=[5]))
-    if user.has_perm('usersys.as_investor') and not user.is_superuser:
-        qslist.append(allmenuobj.filter(id__in=[13]))
     if not user.has_perm('usersys.as_investor') or user.is_superuser:
         qslist.append(allmenuobj.filter(id__in=[27, 28, 33]))
     if user.has_perm('usersys.as_trader') and not user.is_superuser:
@@ -608,6 +606,6 @@ def getmenulist(user):
         qslist.append(allmenuobj.filter(id__in=[31]))
     if user.has_perm('org.export_org'):
         qslist.append(allmenuobj.filter(id__in=[28, 32]))
-    qslist.append(allmenuobj.filter(id__in=[1, 4, 6, 7, 8, 10, 11, 14, 15, 16, 18, 20, 21, 24, 25, 26, 30]))
+    qslist.append(allmenuobj.filter(id__in=[1, 6, 7, 8, 10, 11, 14, 15, 16, 18, 20, 21, 24, 25, 26, 30]))
     qsres = reduce(lambda x,y:x|y,qslist).distinct().filter(is_deleted=False).order_by('index')
     return WebMenuSerializer(qsres,many=True).data
