@@ -213,7 +213,7 @@ class DataroomView(viewsets.ModelViewSet):
             instance = self.get_object()
             deleteExpireDir(APILOG_PATH['dataroomFilePath'])
             dataroominstance = self.get_object()
-            files = request.data.get('files')
+            files = request.GET.get('files')
             userid = int(request.GET.get('user', request.user.id))
             if userid != request.user.id:
                 if request.user.has_perm('dataroom.admin_getdataroom') or request.user.id in [dataroominstance.proj.takeUser_id, dataroominstance.proj.makeUser_id]:
@@ -231,6 +231,7 @@ class DataroomView(viewsets.ModelViewSet):
                     else:
                         raise InvestError(2009, msg='没有权限查看该dataroom')
             if files:
+                files = files.split(',')
                 file_qs = file_qs.filter(id__in=files)
             if not file_qs.exists():
                 raise InvestError(20071, msg='没有可见文件')
