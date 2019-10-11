@@ -304,17 +304,16 @@ class DataroomView(viewsets.ModelViewSet):
 
 def getRemainingTime(rootpath, file_qs):
     downloadSpeed = 2 * 1024 * 1024   # bytes/s
-    times = 0
+    filesizes = 0
     for file_obj in file_qs:
         path = getPathWithFile(file_obj, rootpath)
         filesize = file_obj.size if file_obj.size else 10 * 1024 * 1024   # 若文件大小丢失，则默认为 10 MB （10*1024*1024 bytes）
         if os.path.exists(path):
-            times = times + 0.2
             if filesize > os.path.getsize(path):
-                times = times + (filesize - os.path.getsize(path)) / downloadSpeed
+                filesizes = filesizes + (filesize - os.path.getsize(path))
         else:
-            times = times + filesize / downloadSpeed
-    times = times + 2
+            filesizes = filesizes + filesize
+    times = filesizes / downloadSpeed + 2
     return times
 
 def startMakeDataroomZip(directory_qs, file_qs, path, watermarkcontent=None):
