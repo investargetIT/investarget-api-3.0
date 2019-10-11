@@ -238,19 +238,20 @@ class DataroomView(viewsets.ModelViewSet):
             direcpath = APILOG_PATH['dataroomFilePath'] + '/' + path
             direcpath = direcpath.replace('.zip', '')
             if os.path.exists(rootpath):
-                response = JSONResponse(SuccessResponse({'code': 8005, 'msg': '压缩文件已备好'}))
+                response = JSONResponse(SuccessResponse({'code': 8005, 'msg': '压缩文件已备好', 'seconds': 0}))
             else:
                 if os.path.exists(direcpath):
                     seconds = getRemainingTime(rootpath, file_qs)
                     response = JSONResponse(SuccessResponse({'code': 8004, 'msg': '压缩中', 'seconds': seconds}))
                 else:
+                    seconds = getRemainingTime(rootpath, file_qs)
                     watermarkcontent = request.GET.get('water', None)
                     watermarkcontent = str(watermarkcontent).split(',')
                     directory_qs = instance.dataroom_directories.all().filter(is_deleted=False, isFile=False)
                     rootpath = APILOG_PATH['dataroomFilePath'] + '/' + 'dataroom_%s%s' % (
                     str(instance.id), '_%s' % userid if userid else '')
                     startMakeDataroomZip(directory_qs, file_qs, rootpath, watermarkcontent)
-                    response = JSONResponse(SuccessResponse({'code': 8002, 'msg': '文件不存在'}))
+                    response = JSONResponse(SuccessResponse({'code': 8002, 'msg': '文件不存在', 'seconds': seconds}))
             return response
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
