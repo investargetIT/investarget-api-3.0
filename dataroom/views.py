@@ -341,7 +341,7 @@ def startMakeDataroomZip(directory_qs, file_qs, path, watermarkcontent=None):
                     if filetype in ['pdf', u'pdf']:
                         filepaths.append(path)
                 else:
-                    logexcption(msg='下载文件失败，保存路径：%s' % savepath)
+                    logexcption(msg='下载文件失败，保存路径：%s' % path)
             if len(filepaths) > 0:
                 addWaterMarkToPdfFiles(filepaths, watermarkcontent)
 
