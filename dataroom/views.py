@@ -328,24 +328,23 @@ def startMakeDataroomZip(directory_qs, file_qs, path, watermarkcontent=None):
             self.downloadFiles(self.file_qs)
             self.zipDirectory()
 
-        def downloadFiles(self, files, times=1):
-            if times <= 10:
-                if os.path.exists(self.path):
-                    shutil.rmtree(self.path)
-                makeDirWithdirectoryobjs(self.directory_qs, self.path)
-                filepaths = []
-                for file_obj in files:
-                    path = getPathWithFile(file_obj, self.path)
-                    savepath = downloadFileToPath(key=file_obj.realfilekey, bucket=file_obj.bucket, path=path)
-                    if savepath:
-                        filetype = path.split('.')[-1]
-                        if filetype in ['pdf', u'pdf']:
-                            filepaths.append(path)
-                if len(filepaths) > 0:
-                    try:
-                        addWaterMarkToPdfFiles(filepaths, watermarkcontent)
-                    except Exception:
-                        self.downloadFiles(files, times + 1)
+        def downloadFiles(self, files):
+            if os.path.exists(self.path):
+                shutil.rmtree(self.path)
+            makeDirWithdirectoryobjs(self.directory_qs, self.path)
+            filepaths = []
+            for file_obj in files:
+                path = getPathWithFile(file_obj, self.path)
+                savepath = downloadFileToPath(key=file_obj.realfilekey, bucket=file_obj.bucket, path=path)
+                if savepath:
+                    filetype = path.split('.')[-1]
+                    if filetype in ['pdf', u'pdf']:
+                        filepaths.append(path)
+                else:
+                    logexcption(msg='下载文件失败，保存路径：%s' % savepath)
+            if len(filepaths) > 0:
+                addWaterMarkToPdfFiles(filepaths, watermarkcontent)
+
 
         def zipDirectory(self):
             import zipfile
