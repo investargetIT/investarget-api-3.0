@@ -23,19 +23,6 @@ bd_sourcetype = (
     (1,'其他')
 )
 
-timelineStatusContrast = {
-    '1': 1,
-    '2': 2,
-    '3': 3,
-    '7': 4,
-    '8': 5,
-    '9': 6,
-    '10': 7,
-    '11': 8,
-    '12': 9,
-    '13': 10,
-    '14': 11,
-}
 
 class ProjectBD(MyModel):
     country = MyForeignKey(Country, blank=True, null=True, help_text='项目国家')
@@ -145,39 +132,21 @@ class OrgBD(MyModel):
         self.datasource = self.manager.datasource
         if not self.manager.onjob and not self.is_deleted:
             raise InvestError(2024)
-        if self.bduser and not self.is_deleted:
-            if self.pk:
-                bds = OrgBD.objects.exclude(pk=self.pk).filter(is_deleted=False, proj=self.proj,
-                                                               datasource=self.datasource, bduser=self.bduser, manager=self.manager)
+        if not self.is_deleted:
+            if self.bduser:
+                bds = OrgBD.objects.exclude(pk=self.pk).filter(is_deleted=False, proj=self.proj, datasource=self.datasource, bduser=self.bduser, manager=self.manager)
+                if bds.exists():
+                    raise InvestError(5006, msg='该用户已存在一条BD记录了')
             else:
-                bds = OrgBD.objects.filter(is_deleted=False, proj=self.proj,
-                                           datasource=self.datasource, bduser=self.bduser, manager=self.manager)
+                bds = OrgBD.objects.exclude(pk=self.pk).filter(is_deleted=False, proj=self.proj, datasource=self.datasource, bduser=self.bduser, manager=self.manager, org=self.org)
             if bds.exists():
-                raise InvestError(5006, msg='该用户已存在一条BD记录了')
+                raise InvestError(5006, msg='该机构已存在一条空BD记录了')
         if self.response:
             self.isSolved = True
         if self.is_deleted is False:
             if self.proj:
                 if self.proj.projstatus < 4:
                     raise InvestError(5003,msg='项目尚未终审发布')
-        timelinestatu_id = timelineStatusContrast.get(str(self.response_id))
-        if self.pk and not self.is_deleted and self.bduser and timelinestatu_id:
-            if not (self.id and self.response == OrgBD.objects.get(id=self.id).response):
-                try:
-                    timeline_qs = timeline.objects.filter(is_deleted=0, investor=self.bduser, proj=self.proj, trader=self.manager)
-                    if not timeline_qs.exists():
-                        timelineistance = timeline(investor=self.bduser, trader=self.manager, proj=self.proj, createuser=self.manager, datasource=self.datasource)
-                        timelineistance.save()
-                        timelineTransationStatu(timeline=timelineistance, transationStatus_id=timelinestatu_id, isActive=True, alertCycle=7).save()
-                    else:
-                        if timelineTransationStatu.objects.filter(timeline=timeline_qs.first(), is_deleted=0).exists():
-                            timelineTransationStatu.objects.filter(timeline=timeline_qs.first(), is_deleted=0).filter(isActive=True)\
-                                .update(transationStatus_id=timelinestatu_id)
-                        else:
-                            timelineTransationStatu(timeline=timeline_qs.first(), transationStatus_id=timelinestatu_id,
-                                                    isActive=True,alertCycle=7).save()
-                except Exception:
-                    logexcption(msg='同步创建时间轴失败，OrgBD_id-%s ' % self.id)
         return super(OrgBD, self).save(*args, **kwargs)
 
 class OrgBDComments(MyModel):
@@ -199,12 +168,6 @@ class OrgBDComments(MyModel):
             self.orgBD.isSolved = True
             self.orgBD.save(update_fields=['isSolved'])
         if not self.pk:
-            try:
-                timeline_qs = timeline.objects.filter(is_deleted=0, investor=self.orgBD.bduser, proj=self.orgBD.proj, trader=self.orgBD.manager)
-                if timeline_qs.exists():
-                    timelineremark(timeline=timeline_qs.first(), remark=self.comments, createuser=self.createuser, datasource=self.datasource).save()
-            except Exception:
-                logexcption(msg='同步备注到时间轴失败，OrgBD_id-%s ' % self.orgBD.id)
             try:
                 if self.orgBD.bduser:
                     remark = '项目名称：%s \n\r备注信息：%s' % (self.orgBD.proj.projtitleC if self.orgBD.proj else '', self.comments if self.comments else '')
