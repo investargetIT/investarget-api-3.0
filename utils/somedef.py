@@ -130,11 +130,10 @@ def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
         return
     # Get our files ready
     for path in pdfpaths:
+        now = datetime.datetime.now()
         try:
-            now = datetime.datetime.now()
             print('覆盖水印pdf--%s--源文件%s' % (now, path))
             out_path = path.split('.')[0] + '-out' + '.pdf'
-
             input_file = PdfReader(path)
             for page in input_file.pages:
                 PageMerge(page).add(watermark, prepend=False).render()
@@ -147,7 +146,6 @@ def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
             f = open(filepath, 'a')
             f.writelines(now.strftime('%H:%M:%S') + '\n' + traceback.format_exc() + '\n\n')
             f.close()
-            raise err
     if os.path.exists(watermarkpath):
         os.remove(watermarkpath)
     return

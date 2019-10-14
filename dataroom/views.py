@@ -210,9 +210,9 @@ class DataroomView(viewsets.ModelViewSet):
     @loginTokenIsAvailable(['dataroom.downloadDataroom'])
     def checkZipStatus(self, request, *args, **kwargs):
         try:
-            instance = self.get_object()
             deleteExpireDir(APILOG_PATH['dataroomFilePath'])
             dataroominstance = self.get_object()
+            files = request.GET.get('files')
             userid = int(request.GET.get('user', request.user.id))
             if userid != request.user.id:
                 if request.user.has_perm('dataroom.admin_getdataroom') or request.user.id in [dataroominstance.proj.takeUser_id, dataroominstance.proj.makeUser_id]:
@@ -221,33 +221,36 @@ class DataroomView(viewsets.ModelViewSet):
                     raise InvestError(2009, msg='非管理员权限')
             else:
                 if request.user.has_perm('dataroom.admin_getdataroom') or request.user.id in [dataroominstance.proj.takeUser_id, dataroominstance.proj.makeUser_id]:
-                    file_qs = instance.dataroom_directories.all().filter(is_deleted=False, isFile=True)
+                    file_qs = dataroominstance.dataroom_directories.all().filter(is_deleted=False, isFile=True)
                 else:
                     if dataroom_User_file.objects.filter(dataroom=dataroominstance, trader_id=userid, is_deleted=False).exists():
-                        file_qs = instance.dataroom_directories.all().filter(is_deleted=False, isFile=True)
+                        file_qs = dataroominstance.dataroom_directories.all().filter(is_deleted=False, isFile=True)
                     elif dataroom_User_file.objects.filter(dataroom=dataroominstance, user_id=userid, is_deleted=False).exists():
                         file_qs = dataroom_User_file.objects.get(dataroom=dataroominstance, user_id=userid, is_deleted=False).files.all()
                     else:
                         raise InvestError(2009, msg='没有权限查看该dataroom')
+            if files:
+                files = files.split(',')
+                file_qs = file_qs.filter(id__in=files)
+                path = 'dataroom_%s%s_part' % (dataroominstance.id, ('_%s' % userid) if userid else '') + '.zip'  # 压缩文件名称
+            else:
+                path = 'dataroom_%s%s' % (dataroominstance.id, ('_%s' % userid) if userid else '') + '.zip'  # 压缩文件名称
             if not file_qs.exists():
-                raise InvestError(20071, msg='当前dataroom没有可见文件')
-            path = 'dataroom_%s%s' % (dataroominstance.id, ('_%s' % userid) if userid else '') + '.zip'
-            rootpath = APILOG_PATH['dataroomFilePath'] + '/' + path
-            direcpath = APILOG_PATH['dataroomFilePath'] + '/' + path
-            direcpath = direcpath.replace('.zip', '')
-            if os.path.exists(rootpath):
-                response = JSONResponse(SuccessResponse({'code': 8005, 'msg': '压缩文件已备好'}))
+                raise InvestError(20071, msg='没有可见文件')
+            zipfilepath = APILOG_PATH['dataroomFilePath'] + '/' + path  # 压缩文件路径
+            direcpath = zipfilepath.replace('.zip', '')  # 文件夹路径
+            if os.path.exists(zipfilepath):
+                response = JSONResponse(SuccessResponse({'code': 8005, 'msg': '压缩文件已备好', 'seconds': 0}))
             else:
                 if os.path.exists(direcpath):
-                    response = JSONResponse(SuccessResponse({'code': 8004, 'msg': '压缩中'}))
+                    seconds = getRemainingTime(direcpath, file_qs)
+                    response = JSONResponse(SuccessResponse({'code': 8004, 'msg': '压缩中', 'seconds': seconds}))
                 else:
-                    watermarkcontent = request.GET.get('water', None)
-                    watermarkcontent = str(watermarkcontent).split(',')
-                    directory_qs = instance.dataroom_directories.all().filter(is_deleted=False, isFile=False)
-                    rootpath = APILOG_PATH['dataroomFilePath'] + '/' + 'dataroom_%s%s' % (
-                    str(instance.id), '_%s' % userid if userid else '')
-                    startMakeDataroomZip(directory_qs, file_qs, rootpath, watermarkcontent)
-                    response = JSONResponse(SuccessResponse({'code': 8002, 'msg': '文件不存在'}))
+                    seconds = getRemainingTime(direcpath, file_qs)
+                    watermarkcontent = str(request.GET.get('water', '')).split(',')
+                    directory_qs = dataroominstance.dataroom_directories.all().filter(is_deleted=False, isFile=False)
+                    startMakeDataroomZip(directory_qs, file_qs, direcpath, watermarkcontent)
+                    response = JSONResponse(SuccessResponse({'code': 8002, 'msg': '文件不存在', 'seconds': seconds}))
             return response
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -260,6 +263,7 @@ class DataroomView(viewsets.ModelViewSet):
             userid = request.GET.get('user')
             user = checkrequesttoken(request.GET.get('token',None))
             request.user = user
+            ispart = request.GET.get('part')
             dataroominstance = self.get_object()
             if not user.has_perm('dataroom.downloadDataroom'):
                 raise InvestError(2009)
@@ -270,7 +274,10 @@ class DataroomView(viewsets.ModelViewSet):
                     pass
                 else:
                     raise InvestError(2009, msg='非管理员权限')
-            path = 'dataroom_%s%s' % (dataroominstance.id, ('_%s' % userid) if userid else '') + '.zip'
+            if ispart in ['1', 1, u'1']:
+                path = 'dataroom_%s%s_part' % (dataroominstance.id, ('_%s' % userid) if userid else '') + '.zip'
+            else:
+                path = 'dataroom_%s%s' % (dataroominstance.id, ('_%s' % userid) if userid else '') + '.zip'
             zipFilepath = APILOG_PATH['dataroomFilePath'] + '/' + path
             direcpath = zipFilepath.replace('.zip','')
             if os.path.exists(zipFilepath):
@@ -280,7 +287,7 @@ class DataroomView(viewsets.ModelViewSet):
                 response['Content-Length'] = zipFileSize
                 response['Content-Type'] = 'application/octet-stream'
                 response["content-disposition"] = 'attachment;filename=%s' % path
-                if zipFileSize < 10 * 1024 * 1024:
+                if (zipFileSize < 30 * 1024 * 1024) or ispart in ['1', 1, u'1']:
                     os.remove(zipFilepath)            # 删除压缩包
                     if os.path.exists(direcpath):  # 删除源文件
                         shutil.rmtree(direcpath)
@@ -296,6 +303,20 @@ class DataroomView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+def getRemainingTime(rootpath, file_qs):
+    downloadSpeed = 2 * 1024 * 1024   # bytes/s
+    filesizes = 0
+    for file_obj in file_qs:
+        path = getPathWithFile(file_obj, rootpath)
+        filesize = file_obj.size if file_obj.size else 10 * 1024 * 1024   # 若文件大小丢失，则默认为 10 MB （10*1024*1024 bytes）
+        if os.path.exists(path):
+            if filesize > os.path.getsize(path):
+                filesizes = filesizes + (filesize - os.path.getsize(path))
+        else:
+            filesizes = filesizes + filesize
+    times = filesizes / downloadSpeed + 2
+    return times
+
 def startMakeDataroomZip(directory_qs, file_qs, path, watermarkcontent=None):
     class downloadAllDataroomFile(threading.Thread):
         def __init__(self, directory_qs, file_qs, path):
@@ -308,24 +329,23 @@ def startMakeDataroomZip(directory_qs, file_qs, path, watermarkcontent=None):
             self.downloadFiles(self.file_qs)
             self.zipDirectory()
 
-        def downloadFiles(self, files, times=1):
-            if times <= 10:
-                if os.path.exists(self.path):
-                    shutil.rmtree(self.path)
-                makeDirWithdirectoryobjs(self.directory_qs, self.path)
-                filepaths = []
-                for file_obj in files:
-                    path = getPathWithFile(file_obj, self.path)
-                    savepath = downloadFileToPath(key=file_obj.realfilekey, bucket=file_obj.bucket, path=path)
-                    if savepath:
-                        filetype = path.split('.')[-1]
-                        if filetype in ['pdf', u'pdf']:
-                            filepaths.append(path)
-                if len(filepaths) > 0:
-                    try:
-                        addWaterMarkToPdfFiles(filepaths, watermarkcontent)
-                    except Exception:
-                        self.downloadFiles(files, times + 1)
+        def downloadFiles(self, files):
+            if os.path.exists(self.path):
+                shutil.rmtree(self.path)
+            makeDirWithdirectoryobjs(self.directory_qs, self.path)
+            filepaths = []
+            for file_obj in files:
+                path = getPathWithFile(file_obj, self.path)
+                savepath = downloadFileToPath(key=file_obj.realfilekey, bucket=file_obj.bucket, path=path)
+                if savepath:
+                    filetype = path.split('.')[-1]
+                    if filetype in ['pdf', u'pdf']:
+                        filepaths.append(path)
+                else:
+                    logexcption(msg='下载文件失败，保存路径：%s' % path)
+            if len(filepaths) > 0:
+                addWaterMarkToPdfFiles(filepaths, watermarkcontent)
+
 
         def zipDirectory(self):
             import zipfile
