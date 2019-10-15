@@ -287,7 +287,7 @@ class DataroomView(viewsets.ModelViewSet):
                 response['Content-Length'] = zipFileSize
                 response['Content-Type'] = 'application/octet-stream'
                 response["content-disposition"] = 'attachment;filename=%s' % path
-                if (zipFileSize < 30 * 1024 * 1024) or ispart in ['1', 1, u'1']:
+                if (zipFileSize < 10 * 1024 * 1024) or ispart in ['1', 1, u'1']:
                     os.remove(zipFilepath)            # 删除压缩包
                     if os.path.exists(direcpath):  # 删除源文件
                         shutil.rmtree(direcpath)
