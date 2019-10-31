@@ -15,6 +15,7 @@ from BD.serializers import ProjectBDSerializer, ProjectBDCreateSerializer, Proje
     ProjectBDCommentsSerializer, OrgBDCommentsSerializer, OrgBDCommentsCreateSerializer, OrgBDCreateSerializer, \
     OrgBDSerializer, MeetingBDSerializer, MeetingBDCreateSerializer
 from invest.settings import cli_domain
+from msg.views import deleteMessage
 from proj.models import project
 from third.views.qiniufile import deleteqiniufile
 from timeline.models import timeline
@@ -427,6 +428,15 @@ class OrgBDView(viewsets.ModelViewSet):
             raise InvestError(code=8890)
         return queryset
 
+    def get_object(self):
+        try:
+            obj = self.queryset.get(id=self.kwargs['pk'])
+        except OrgBD.DoesNotExist:
+            raise InvestError(code=5008)
+        if obj.datasource != self.request.user.datasource:
+            raise InvestError(code=8888)
+        return obj
+
     @loginTokenIsAvailable()
     def countBDProjectOrg(self, request, *args, **kwargs):
         try:
@@ -727,6 +737,7 @@ class OrgBDView(viewsets.ModelViewSet):
                 instance.save()
                 instance.OrgBD_comments.filter(is_deleted=False).update(is_deleted=True, deleteduser=request.user,
                                                                         deletedtime=datetime.datetime.now())
+                deleteMessage(type=11, sourceid=instance.id)
             cache_delete_key(self.redis_key)
             cache_delete_patternKey(key='/bd/orgbd*')
             return JSONResponse(SuccessResponse({'isDeleted': True,}))
