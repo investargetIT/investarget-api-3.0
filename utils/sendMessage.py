@@ -1,6 +1,5 @@
 #coding=utf-8
 import threading
-
 from dataroom.models import dataroom_User_file
 from msg.models import schedule
 from proj.models import project, favoriteProject
