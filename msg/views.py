@@ -54,6 +54,8 @@ def saveMessage(content,type,title,receiver,sender=None,modeltype=None,sourceid=
         logexcption()
         return err.message
 
+def deleteMessage(type, sourceid):
+    message.objects.filter(is_deleted=False, type=type, sourceid=sourceid).update(is_deleted=True, deletedtime=datetime.datetime.now())
 
 class WebMessageView(viewsets.ModelViewSet):
     """
@@ -109,6 +111,23 @@ class WebMessageView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            if request.user in [instance.sender, instance.receiver]:
+                pass
+            else:
+                raise InvestError(2009, msg='没有删除权限')
+            instance.is_deleted = True
+            instance.deletedtime = datetime.datetime.now()
+            instance.save()
+            return JSONResponse(SuccessResponse({'is_deleted': True}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 class WebEXMeetingView(viewsets.ModelViewSet):
     """
