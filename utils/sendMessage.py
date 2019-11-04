@@ -516,6 +516,14 @@ def sendmessage_dataroomuseradd(model,receiver,types,sender=None):
                         xsendEmail(destination, projectsign, vars)
                     except Exception:
                         logexcption()
+                if 'webmsg' in types and sendWebmsg:  # 发送通知以后，将站内信发送给该DataRoom项目的承做
+                    try:
+                        msg_content = '已向用户【%s】发送了项目【%s】的dataroom邮件通知' % (receiver.usernameC, model.dataroom.proj.projtitleC)
+                        msg_title = '发送dataroom邮件通知记录'
+                        msg_receiver = model.dataroom.proj.takeUser
+                        saveMessage(msg_content, 12, msg_title, msg_receiver, sender, modeltype='dataroomEmailMsg', sourceid=model.id)
+                    except Exception:
+                        logexcption()
 
     if checkReceiverToSendMsg(receiver):
         sendmessage_dataroomuseraddThread(model,receiver,types,sender).start()
