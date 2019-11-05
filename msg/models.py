@@ -9,7 +9,7 @@ from django.db import models
 from django.db.models import CASCADE, F
 
 from proj.models import project
-from sourcetype.models import MessageType, DataSource, Country, OrgArea
+from sourcetype.models import DataSource, Country, OrgArea
 from usersys.models import MyUser
 
 #站内信
@@ -23,7 +23,7 @@ scheduleChoice = (
 
 class message(MyModel):
     content = models.TextField(verbose_name='站内信详细内容',blank=True,null=True)
-    type = models.IntegerField(MessageType,blank=True,default=1,help_text='消息类型')
+    type = models.IntegerField(blank=True,default=1,help_text='消息类型')
     messagetitle = models.CharField(max_length=128,verbose_name='消息标题',blank=True,null=True)
     sender = MyForeignKey(MyUser,blank=True,null=True,related_name='usersend_msgs')
     receiver = MyForeignKey(MyUser,related_name='userreceive_msgs',blank=True,null=True,on_delete=CASCADE)

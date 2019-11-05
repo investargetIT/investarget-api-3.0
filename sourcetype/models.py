@@ -117,19 +117,6 @@ class FavoriteType(models.Model):
         return self.nameC
 
 
-class MessageType(models.Model):
-    '''
-    站内信类型
-    '''
-    id = models.AutoField(primary_key=True)
-    nameC = models.CharField(max_length=20,blank=True,null=True)
-    nameE = models.CharField(max_length=128,blank=True,null=True)
-    is_deleted = models.BooleanField(blank=True, default=False)
-
-    def __str__(self):
-        return self.nameC
-
-
 class ClientType(models.Model):
     '''
     用户登录端类型
