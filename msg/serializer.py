@@ -1,18 +1,38 @@
 #coding=utf-8
 import datetime
+
+from django.shortcuts import render_to_response
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
+from dataroom.models import dataroom_User_file
 from msg.models import message, schedule, webexUser, webexMeeting
 from proj.serializer import ProjCommonSerializer
 from sourcetype.serializer import countrySerializer, orgAreaSerializer
 from third.thirdconfig import webEX_webExID, webEX_password
 from usersys.serializer import UserCommenSerializer,UserInfoSerializer
 
+
 class MsgSerializer(serializers.ModelSerializer):
+    html = serializers.SerializerMethodField()
+
     class Meta:
         model = message
         fields = '__all__'
+
+    def get_html(self, objc):
+        if objc.type == 12:
+            dataroom_user_file = dataroom_User_file.objects.get(id=objc.sourceid)
+            vars = {'name': dataroom_user_file.user.usernameC,
+                    'user_url': '%s/app/user/%s' % (dataroom_user_file.datasource.domain, objc.receiver.id),
+                    'projectC': dataroom_user_file.dataroom.proj.projtitleC,
+                    'projectE': dataroom_user_file.dataroom.proj.projtitleE,
+                    'dataroom_url': '%s/app/dataroom/detail?id=%s&isClose=false&projectID=%s' % (
+                        dataroom_user_file.datasource.domain, dataroom_user_file.dataroom.id, dataroom_user_file.dataroom.proj.id)}
+            html = render_to_response('dataroomEmail_template_cn.html', vars).content
+        else:
+            html = None
+        return html
 
 
 class WebEXMeetingSerializer(serializers.ModelSerializer):

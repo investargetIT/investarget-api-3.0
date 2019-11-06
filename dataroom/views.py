@@ -668,7 +668,7 @@ class User_DataroomfileView(viewsets.ModelViewSet):
                 pass
             else:
                 raise InvestError(2009)
-            sendmessage_dataroomuseradd(user_dataroom, user_dataroom.user, ['email'], sender=request.user)
+            sendmessage_dataroomuseradd(user_dataroom, user_dataroom.user, ['email', 'webmsg'], sender=request.user)
             return JSONResponse(SuccessResponse(True))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))

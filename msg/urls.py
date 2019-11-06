@@ -7,7 +7,9 @@ msg_list = views.WebMessageView.as_view({
         'get': 'list',
 })
 msg_detail = views.WebMessageView.as_view({
+        'get': 'retrieve',
         'post': 'update',
+        'delete': 'destroy',
 })
 
 schedule_list = views.ScheduleView.as_view({

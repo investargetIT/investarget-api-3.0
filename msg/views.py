@@ -112,10 +112,28 @@ class WebMessageView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable()
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            if instance.receiver.id == request.user.id or request.user.is_superuser:
+                pass
+            else:
+                raise InvestError(2009)
+            with transaction.atomic():
+                msgserializer = MsgSerializer(instance)
+                return JSONResponse(SuccessResponse(msgserializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
-            if request.user in [instance.sender, instance.receiver]:
+            if instance.receiver.id == request.user.id or request.user.is_superuser:
                 pass
             else:
                 raise InvestError(2009, msg='没有删除权限')
