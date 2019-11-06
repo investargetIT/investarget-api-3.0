@@ -14,25 +14,25 @@ from usersys.serializer import UserCommenSerializer,UserInfoSerializer
 
 
 class MsgSerializer(serializers.ModelSerializer):
-    content = serializers.SerializerMethodField()
+    html = serializers.SerializerMethodField()
 
     class Meta:
         model = message
         fields = '__all__'
 
-    def get_content(self, objc):
+    def get_html(self, objc):
         if objc.type == 12:
-            dataroom = dataroom_User_file.objects.get(id=objc.sourceid).dataroom
-            vars = {'name': objc.receiver.usernameC,
-                    'user_url': '%s/app/user/%s' % (dataroom.datasource.domain, objc.receiver.id),
-                    'projectC': dataroom.proj.projtitleC,
-                    'projectE': dataroom.proj.projtitleE,
+            dataroom_user_file = dataroom_User_file.objects.get(id=objc.sourceid)
+            vars = {'name': dataroom_user_file.user.usernameC,
+                    'user_url': '%s/app/user/%s' % (dataroom_user_file.datasource.domain, objc.receiver.id),
+                    'projectC': dataroom_user_file.dataroom.proj.projtitleC,
+                    'projectE': dataroom_user_file.dataroom.proj.projtitleE,
                     'dataroom_url': '%s/app/dataroom/detail?id=%s&isClose=false&projectID=%s' % (
-                    dataroom.datasource.domain, dataroom.id, dataroom.proj.id)}
-            content = render_to_response('dataroomEmail_template_cn.html', vars).content
+                        dataroom_user_file.datasource.domain, dataroom_user_file.dataroom.id, dataroom_user_file.dataroom.proj.id)}
+            html = render_to_response('dataroomEmail_template_cn.html', vars).content
         else:
-            content = objc.content
-        return content
+            html = None
+        return html
 
 
 class WebEXMeetingSerializer(serializers.ModelSerializer):
