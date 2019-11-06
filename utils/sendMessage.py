@@ -521,15 +521,9 @@ def sendmessage_dataroomuseradd(model,receiver,types,sender=None):
                         logexcption()
                 if 'webmsg' in types and sendWebmsg:  # 发送通知以后，将站内信发送给该DataRoom项目的承做
                     try:
-                        vars = {'name': receiver.usernameC,
-                                'user_url': '%s/app/user/%s' % (getbase_domain(model.dataroom.datasource), receiver.id),
-                                'projectC': model.dataroom.proj.projtitleC,
-                                'projectE': model.dataroom.proj.projtitleE,
-                                'project_url': '%s/app/dataroom/detail?id=%s&isClose=false&projectID=%s' % (getbase_domain(model.dataroom.datasource), model.dataroom.id, model.dataroom.proj.id)}
-                        msg_content = render_to_response('dataroomEmail_template_cn.html', vars).content
                         msg_content = '已向用户【%s】发送了项目【%s】的dataroom邮件通知' % (receiver.usernameC, model.dataroom.proj.projtitleC)
                         msg_title = '发送dataroom邮件通知记录'
-                        msg_receiver = model.dataroom.proj.takeUser
+                        msg_receiver = model.dataroom.proj.makeUser
                         saveMessage(msg_content, 12, msg_title, msg_receiver, sender, modeltype='dataroomEmailMsg', sourceid=model.id)
                     except Exception:
                         logexcption()
