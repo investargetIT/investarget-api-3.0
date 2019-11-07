@@ -22,7 +22,10 @@ class MsgSerializer(serializers.ModelSerializer):
 
     def get_html(self, objc):
         if objc.type == 12:
-            dataroom_user_file = dataroom_User_file.objects.get(id=objc.sourceid)
+            try:
+                dataroom_user_file = dataroom_User_file.objects.get(id=objc.sourceid)
+            except Exception:
+                return None
             vars = {'name': dataroom_user_file.user.usernameC,
                     'user_url': '%s/app/user/%s' % (dataroom_user_file.datasource.domain, objc.receiver.id),
                     'projectC': dataroom_user_file.dataroom.proj.projtitleC,
