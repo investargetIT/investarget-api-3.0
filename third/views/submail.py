@@ -11,12 +11,32 @@ from SUBMAIL_PYTHON_SDK_MAIL_AND_MESSAGE_WITH_ADDRESSBOOK.message_xsend import M
 from rest_framework.decorators import api_view, throttle_classes
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 from third.models import MobileAuthCode
-from third.thirdconfig import MAIL_CONFIGS, MESSAGE_CONFIGS, INTERNATIONALMESSAGE_CONFIGS, SMSCODE_projectsign, \
-    SUBHOOK_KEY
+from third.thirdconfig import MAIL_CONFIGS, MESSAGE_CONFIGS, INTERNATIONALMESSAGE_CONFIGS, SUBHOOK_KEY
 from utils.customClass import JSONResponse, InvestError
 from utils.util import SuccessResponse, catchexcption, ExceptionResponse, InvestErrorResponse, checkIPAddressCanPass
 
 
+'''
+submail短信验证码模板
+'''
+SMSCODE_projectsign = {
+    '1':{
+        'in':'WzSYg',
+        'out':'sk5Nu3'
+        },
+    '2':{
+        'in':'tybmL4',
+        'out':None
+        },
+    '3':{
+        'in':'l58fI',
+        'out':None
+        },
+    '4':{
+        'in':'cWzJx',
+        'out':None
+        },
+    }
 
 
 
@@ -26,13 +46,6 @@ def sendEmailWithAttachmentFile(destination, subject, html, attachmentpath):
             'to': destination,
             'subject':subject,
             'html': html,
-            # '''<html>
-            #                             <body>
-            #                                 <h1>@var(name)，您好</h1>
-            #                             </body>
-            #                         </html>'''
-            # 'vars': "{'name': '李某某'}",
-            # 'vars': '{"name": "李某某"}',
             'from': MAIL_CONFIGS['from'],
             'from_name': MAIL_CONFIGS['from_name'],
             'reply': MAIL_CONFIGS['reply'],
@@ -135,13 +148,13 @@ def sendSmscode(request):
         mobilecode.save()
         varsdict = {'code': mobilecode.code, 'time': '30'}
         if areacode in [u'86', '86', 86, None]:
-            projectsign = SMSCODE_projectsign[str(source)]['in']
+            projectsign = SMSCODE_projectsign.get(str(source), {}).get('in')
             if projectsign:
                 response = xsendSms(destination, projectsign, varsdict)
             else:
                 raise InvestError(30011, msg='没有建立相应短信模板')
         else:
-            projectsign = SMSCODE_projectsign[str(source)]['out']
+            projectsign = SMSCODE_projectsign.get(str(source), {}).get('out')
             if projectsign:
                 response = xsendInternationalsms('+%s'%areacode + destination, projectsign, varsdict)
             else:

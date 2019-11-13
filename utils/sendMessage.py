@@ -204,7 +204,7 @@ def sendmessage_favoriteproject(model,receiver, sender=None):
                         except Exception:
                             logexcption()
 
-    if checkReceiverToSendMsg(receiver) and receiver.datasource_id != 3:
+    if checkReceiverToSendMsg(receiver) and receiver.datasource_id not in [3, 4]:
         sendmessage_favoriteprojectThread(model, receiver, sender).start()
 
 def sendmessage_traderadd(model,receiver,types,sender=None):
@@ -269,7 +269,7 @@ def sendmessage_traderadd(model,receiver,types,sender=None):
                     except Exception:
                         logexcption()
 
-    if checkReceiverToSendMsg(receiver) and receiver.datasource_id != 3:
+    if checkReceiverToSendMsg(receiver) and receiver.datasource_id not in [3, 4]:
         sendmessage_traderchangeThread(model,receiver,types,sender).start()
 
 def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
@@ -343,6 +343,8 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                             destination = receiver.mobile
                             if model.datasource_id == 3:
                                 projectsign = 'sDp8d3'
+                            elif model.datasource_id == 4:
+                                projectsign = 'votun1'
                             else:
                                 projectsign = 'EXIDv1'
                             vars = {'user': model.usernameC}
@@ -413,7 +415,7 @@ def sendmessage_userregister(model,receiver,types,sender=None):
                     except Exception:
                         logexcption()
 
-    if checkReceiverToSendMsg(receiver)  and receiver.datasource_id != 3:
+    if checkReceiverToSendMsg(receiver)  and receiver.datasource_id not in [3, 4]:
         sendmessage_userregisterThread(model,receiver,types,sender).start()
 
 
@@ -480,7 +482,7 @@ def sendmessage_timelineauditstatuchange(model,receiver,types,sender=None):
                     except Exception:
                         logexcption()
 
-    if checkReceiverToSendMsg(receiver) and receiver.datasource_id != 3:
+    if checkReceiverToSendMsg(receiver) and receiver.datasource_id not in [3, 4]:
         sendmessage_timelineauditstatuchangeThread(model,receiver,types,sender).start()
 
 
@@ -513,6 +515,8 @@ def sendmessage_dataroomuseradd(model,receiver,types,sender=None):
                         destination = receiver.email
                         if receiver.datasource_id == 3:
                             projectsign = 'yMgMP'
+                        elif receiver.datasource_id == 4:
+                            projectsign = 'aJbDc1'
                         else:
                             projectsign = 'umZlP3'
                         vars = {'name': receiver.usernameC, 'projectC': getDataroomTitleWithSuperLink(model.dataroom, 'cn'), 'projectE': getDataroomTitleWithSuperLink(model.dataroom, 'en')}
@@ -579,7 +583,7 @@ def sendmessage_projectpublish(model, receiver, types, sender=None):
                     except Exception:
                         logexcption()
 
-    if checkReceiverToSendMsg(receiver) and receiver.datasource_id != 3:
+    if checkReceiverToSendMsg(receiver) and receiver.datasource_id not in [3, 4]:
         sendmessage_projectpublishThread(model,receiver,types,sender).start()
 
 def sendmessage_usermakefriends(model,receiver,types,sender=None):
@@ -626,7 +630,7 @@ def sendmessage_usermakefriends(model,receiver,types,sender=None):
                     except Exception:
                         logexcption()
 
-    if checkReceiverToSendMsg(receiver) and receiver.datasource_id != 3:
+    if checkReceiverToSendMsg(receiver) and receiver.datasource_id not in [3, 4]:
         sendmessage_usermakefriendsThread(model,receiver,types,sender).start()
 
 def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
@@ -637,7 +641,7 @@ def sendmessage_timelinealertcycleexpire(model,receiver,types,sender=None):
     :param sender: myuser type
     :return: None
     """
-    if checkReceiverToSendMsg(receiver) and receiver.datasource_id != 3:
+    if checkReceiverToSendMsg(receiver) and receiver.datasource_id not in [3, 4]:
         if isinstance(model, timelineTransationStatu):
             lang = 'cn'
             if receiver.country:
@@ -671,7 +675,7 @@ def sendmessage_schedulemsg(model,receiver,types,sender=None):
     :param sender: myuser type
     :return: None
     """
-    if checkReceiverToSendMsg(receiver) and receiver.datasource_id != 3:
+    if checkReceiverToSendMsg(receiver) and receiver.datasource_id not in [3, 4]:
         if isinstance(model, schedule):
             lang = 'cn'
             if receiver.country:
@@ -758,7 +762,7 @@ def sendmessage_orgBDMessage(model,receiver,types,sender=None):
                 except Exception:
                     logexcption()
 
-    if checkReceiverToSendMsg(receiver) and receiver.datasource_id != 3:
+    if checkReceiverToSendMsg(receiver) and receiver.datasource_id not in [3, 4]:
         sendmessage_orgBDMessageThread(model,receiver,types,sender).start()
 
 def sendmessage_orgBDExpireMessage(receiver, types, content):
@@ -782,7 +786,7 @@ def sendmessage_orgBDExpireMessage(receiver, types, content):
                 except Exception:
                     logexcption()
 
-    if checkReceiverToSendMsg(receiver) and receiver.datasource_id != 3:
+    if checkReceiverToSendMsg(receiver) and receiver.datasource_id not in [3, 4]:
         sendmessage_orgBDExpireMessageThread().start()
 
 
@@ -839,6 +843,6 @@ def sendmessage_WebEXMeetingCancelMessage(webEXUsers):
 def checkReceiverToSendMsg(receiver):
     if receiver is not None:
         if isinstance(receiver, MyUser):
-            if getattr(receiver, 'datasource_id') in [1, 3] and receiver.is_active:
+            if getattr(receiver, 'datasource_id') in [1, 3, 4] and receiver.is_active:
                 return True
     return False
