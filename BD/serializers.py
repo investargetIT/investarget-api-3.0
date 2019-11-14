@@ -1,7 +1,7 @@
 from django.db.models import Q
 from rest_framework import serializers
 
-from BD.models import ProjectBDComments, ProjectBD, OrgBDComments, OrgBD, MeetingBD
+from BD.models import ProjectBDComments, ProjectBD, OrgBDComments, OrgBD, MeetingBD, OrgBDBlack
 from org.serializer import OrgCommonSerializer
 from proj.serializer import ProjSimpleSerializer
 from sourcetype.serializer import BDStatusSerializer, orgAreaSerializer, tagSerializer, currencyTypeSerializer
@@ -135,6 +135,22 @@ class OrgBDSerializer(serializers.ModelSerializer):
             if obj.proj.makeUser:
                 return obj.proj.makeUser_id
         return None
+
+
+class OrgBDBlackSerializer(serializers.ModelSerializer):
+    org = OrgCommonSerializer()
+    proj = ProjSimpleSerializer()
+    createuser = UserCommenSerializer()
+
+    class Meta:
+        model = OrgBDBlack
+        exclude = ('deleteduser', 'deletedtime', 'datasource', 'is_deleted')
+
+
+class OrgBDBlackCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrgBDBlack
+        fields = '__all__'
 
 
 class MeetingBDCreateSerializer(serializers.ModelSerializer):

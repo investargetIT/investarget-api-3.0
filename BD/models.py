@@ -177,6 +177,34 @@ class OrgBDComments(MyModel):
         return super(OrgBDComments, self).save(*args, **kwargs)
 
 
+class OrgBDBlack(MyModel):
+    proj = MyForeignKey(project, blank=True, null=True, help_text='黑名单针对的机构BD项目', related_name='proj_OrgBdBlacks')
+    org = MyForeignKey(organization, blank=True, null=True, help_text='黑名单机构', related_name='org_OrgBdBlacks')
+    reason = models.TextField(blank=True, null=True, help_text='加入黑名单原因')
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_OrgBdBlacks')
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_OrgBdBlacks')
+    datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
+
+    class Meta:
+        permissions = (
+            ('manageOrgBDBlack', '管理-机构BD黑名单'),
+            ('getOrgBDBlack', u'查看-机构BD黑名单'),
+            ('addOrgBDBlack', u'新增-机构BD黑名单'),
+            ('delOrgBDBlack', u'删除-机构BD黑名单'),
+        )
+
+    def save(self, *args, **kwargs):
+        if self.org is None or self.proj is None:
+            raise InvestError(2007,msg='org/proj can`t be null')
+        self.datasource = self.createuser.datasource
+        if not self.reason:
+            raise InvestError(2007, msg='加入原因 不能为空')
+        if not self.is_deleted:
+            if OrgBDBlack.objects.exclude(pk=self.pk).filter(is_deleted=False, org=self.org, proj=self.proj).exists():
+                raise InvestError(2007, msg='该机构已经在黑名单中了')
+        return super(OrgBDBlack, self).save(*args, **kwargs)
+
+
 class MeetingBD(MyModel):
     org = MyForeignKey(organization, blank=True, null=True, help_text='BD机构', related_name='org_meetBDs')
     proj = MyForeignKey(project, blank=True, null=True, help_text='项目名称', related_name='proj_meetBDs')

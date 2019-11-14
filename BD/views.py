@@ -10,10 +10,10 @@ import datetime
 import json
 from django.core.serializers.json import DjangoJSONEncoder
 from rest_framework import filters, viewsets
-from BD.models import ProjectBD, ProjectBDComments, OrgBDComments, OrgBD, MeetingBD, MeetBDShareToken
+from BD.models import ProjectBD, ProjectBDComments, OrgBDComments, OrgBD, MeetingBD, MeetBDShareToken, OrgBDBlack
 from BD.serializers import ProjectBDSerializer, ProjectBDCreateSerializer, ProjectBDCommentsCreateSerializer, \
     ProjectBDCommentsSerializer, OrgBDCommentsSerializer, OrgBDCommentsCreateSerializer, OrgBDCreateSerializer, \
-    OrgBDSerializer, MeetingBDSerializer, MeetingBDCreateSerializer
+    OrgBDSerializer, MeetingBDSerializer, MeetingBDCreateSerializer, OrgBDBlackSerializer, OrgBDBlackCreateSerializer
 from invest.settings import cli_domain
 from msg.views import deleteMessage
 from proj.models import project
@@ -590,6 +590,8 @@ class OrgBDView(viewsets.ModelViewSet):
                         raise InvestError(2009)
                 else:
                     raise InvestError(2009)
+            if self.checkOrgIsInBlackList(data['org'], data['proj']):
+                raise InvestError(2007, msg='该机构在黑名单中，无法新增机构BD')
             with transaction.atomic():
                 orgBD = OrgBDCreateSerializer(data=data)
                 if orgBD.is_valid():
@@ -617,6 +619,15 @@ class OrgBDView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    def checkOrgIsInBlackList(self, org_id, proj_id):
+        if org_id and proj_id:
+            if OrgBDBlack.objects.filter(is_deleted=False, org=org_id, proj=proj_id).exists():
+                return True
+            else:
+                return False
+        else:
+            raise InvestError(2007, msg='org/proj 不能是空' )
 
     @loginTokenIsAvailable()
     def retrieve(self, request, *args, **kwargs):
@@ -741,6 +752,123 @@ class OrgBDView(viewsets.ModelViewSet):
             cache_delete_key(self.redis_key)
             cache_delete_patternKey(key='/bd/orgbd*')
             return JSONResponse(SuccessResponse({'isDeleted': True,}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+
+class OrgBDBlackView(viewsets.ModelViewSet):
+    """
+    list: 获取机构BD黑名单
+    create: 增加机构BD黑名单
+    update: 修改加入黑名单的原因
+    destroy: 删除机构BD黑名单
+    """
+    filter_backends = (filters.DjangoFilterBackend,)
+    queryset = OrgBDBlack.objects.filter(is_deleted=False)
+    filter_fields = ('proj', 'org', 'createuser')
+    serializer_class = OrgBDBlackCreateSerializer
+
+    def get_queryset(self):
+        assert self.queryset is not None, (
+            "'%s' should either include a `queryset` attribute, "
+            "or override the `get_queryset()` method."
+            % self.__class__.__name__
+        )
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource_id=self.request.user.datasource_id)
+            else:
+                queryset = queryset
+        else:
+            raise InvestError(code=8890)
+        return queryset
+
+
+
+    @loginTokenIsAvailable(['BD.manageOrgBDBlack', 'BD.getOrgBDBlack'])
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
+            queryset = self.filter_queryset(self.get_queryset())
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializers = OrgBDBlackSerializer(queryset, many=True)
+            return JSONResponse(
+                SuccessResponse({'count': count, 'data': returnListChangeToLanguage(serializers.data, lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable(['BD.manageOrgBDBlack', 'BD.addOrgBDBlack'])
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            lang = request.GET.get('lang')
+            data['createuser'] = request.user.id
+            data['datasource'] = request.user.datasource.id
+            with transaction.atomic():
+                instanceSerializer = OrgBDBlackCreateSerializer(data=data)
+                if instanceSerializer.is_valid():
+                    instance = instanceSerializer.save()
+                else:
+                    raise InvestError(5004, msg='新增机构BD黑名单失败--%s' % instanceSerializer.error_messages)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(OrgBDBlackSerializer(instance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            data.pop('createuser', None)
+            data.pop('org', None)
+            data.pop('proj', None)
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            if request.user.has_perm('BD.manageOrgBDBlack') or request.user == instance.createuser:
+                pass
+            else:
+                raise InvestError(2009)
+            with transaction.atomic():
+                newinstance = OrgBDBlackCreateSerializer(instance, data=data)
+                if newinstance.is_valid():
+                    newinstance.save()
+                else:
+                    raise InvestError(2009, msg='机构BD黑名单加入原因修改失败——%s' % newinstance.error_messages)
+                return JSONResponse(
+                    SuccessResponse(returnDictChangeToLanguage(OrgBDBlackSerializer(newinstance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable(['BD.manageOrgBDBlack', 'BD.delOrgBDBlack'])
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            with transaction.atomic():
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
+            return JSONResponse(SuccessResponse({'isDeleted': True, }))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
