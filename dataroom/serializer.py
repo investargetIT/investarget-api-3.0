@@ -41,6 +41,25 @@ class DataroomdirectoryorfileSerializer(serializers.ModelSerializer):
         else:
             return None
 
+class DataroomdirectoryorfilePathSerializer(serializers.ModelSerializer):
+    fileurl = serializers.SerializerMethodField()
+    filepath = serializers.SerializerMethodField()
+    class Meta:
+        model = dataroomdirectoryorfile
+        exclude = ('is_deleted', 'deleteduser', 'deletedtime', 'lastmodifyuser', 'lastmodifytime',)
+
+    def get_fileurl(self, obj):
+        if obj.bucket and obj.key:
+            return getUrlWithBucketAndKey(obj.bucket, obj.key)
+        else:
+            return None
+
+    def get_filepath(self, obj):
+        if obj.parent:
+            return self.get_filepath(obj.parent) + '/' + obj.filename
+        else:
+            return obj.filename
+
 class User_DataroomfileCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = dataroom_User_file

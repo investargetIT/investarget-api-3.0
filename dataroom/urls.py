@@ -26,6 +26,11 @@ dataroomfile = views.DataroomdirectoryorfileView.as_view({
 })
 
 
+dataroomfilepath = views.DataroomdirectoryorfileView.as_view({
+        'get': 'getFilePath',
+})
+
+
 user_dataroom = views.User_DataroomfileView.as_view({
         'get': 'list',
         'post': 'create',
@@ -65,6 +70,7 @@ urlpatterns = [
     url(r'^com/$', dataroom_com, name='dataroom_com-list', ),
     url(r'^(?P<pk>\d+)/$', dataroom_one,name='dataroom-detail'),
     url(r'^file/$', dataroomfile,name='dataroom-fileordirectory'),
+    url(r'^filepath/$', dataroomfilepath,name='dataroom-filepath'),
     url(r'^user/$', user_dataroom,name='user_dataroom-list',),
     url(r'^user/(?P<pk>\d+)/$', user_dataroomone,name='user_dataroom-detail'),
     url(r'^temp/$', user_dataroom_temp, name='user_dataroom_temp-list', ),
