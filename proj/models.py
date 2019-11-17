@@ -111,6 +111,8 @@ class project(MyModel):
             self.supportUser = self.createuser
         if self.code is None:
             self.code = 'P' + datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+        if not self.is_deleted and self.isHidden and self.isSendEmail:
+            raise InvestError(2007, msg='该项目为隐藏项目， 无法发送群发邮件')
         super(project,self).save(force_insert,force_update,using,update_fields)
 
     def checkProjInfo(self):
