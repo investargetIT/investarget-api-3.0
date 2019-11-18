@@ -8,7 +8,7 @@ from mongoDoc.models import MergeFinanceData
 from org.serializer import OrgCommonSerializer
 from sourcetype.serializer import tagSerializer, countrySerializer, titleTypeSerializer
 from third.views.qiniufile import getUrlWithBucketAndKey
-from utils.util import mobielrestr
+from utils.util import checkMobileTrue
 from .models import MyUser, UserRelation, UserFriendship, UnreachUser, UserRemarks, userAttachments, userEvents
 
 
@@ -99,7 +99,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MyUser
-        fields = ('usernameC', 'usernameE', 'org', 'department', 'mobile', 'mobiletrue', 'email', 'wechat', 'title',
+        fields = ('usernameC', 'usernameE', 'org', 'department', 'mobile', 'mobileAreaCode', 'mobiletrue', 'email', 'wechat', 'title',
                   'id', 'tags', 'userstatus', 'photourl', 'is_active', 'orgarea', 'country', 'onjob', 'hasIM')
         depth = 1
 
@@ -110,11 +110,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
         return None
 
     def get_mobiletrue(self, obj):
-        if obj.mobile:
-            an = re.search(mobielrestr, obj.mobile)
-            if an:
-                return True
-        return False
+        return checkMobileTrue(obj.mobile, obj.mobileAreaCode)
 
     def get_photourl(self, obj):
         if obj.photoKey:
@@ -262,15 +258,11 @@ class UserListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MyUser
-        fields = ('id','groups','tags','country', 'department', 'usernameC', 'usernameE', 'mobile', 'mobiletrue', 'indGroup',
+        fields = ('id','groups','tags','country', 'department', 'usernameC', 'usernameE', 'mobile', 'mobileAreaCode','mobiletrue', 'indGroup',
                   'email', 'title', 'userstatus', 'org', 'trader_relation', 'photourl','is_active', 'hasIM', 'wechat')
 
     def get_mobiletrue(self, obj):
-        if obj.mobile:
-            an = re.search(mobielrestr, obj.mobile)
-            if an:
-                return True
-        return False
+        return checkMobileTrue(obj.mobile, obj.mobileAreaCode)
 
     def get_trader_relation(self, obj):
         usertrader = obj.investor_relations.filter(relationtype=True, is_deleted=False)
@@ -309,7 +301,7 @@ class UserListCommenSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MyUser
-        fields = ('id', 'usernameC', 'usernameE', 'tags', 'userstatus', 'photourl', 'title', 'onjob', 'mobile',
+        fields = ('id', 'usernameC', 'usernameE', 'tags', 'userstatus', 'photourl', 'title', 'onjob', 'mobile', 'mobileAreaCode',
                   'mobiletrue', 'email', 'is_active', 'org', 'indGroup')
 
 
@@ -320,11 +312,7 @@ class UserListCommenSerializer(serializers.ModelSerializer):
             return None
 
     def get_mobiletrue(self, obj):
-        if obj.mobile:
-            an = re.search(mobielrestr, obj.mobile)
-            if an:
-                return True
-        return False
+        return checkMobileTrue(obj.mobile, obj.mobileAreaCode)
 
     def get_mobile(self, obj):
         if obj.mobile and obj.mobile not in ['', u'']:

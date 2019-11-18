@@ -29,7 +29,7 @@ from utils.customClass import InvestError, JSONResponse, RelationFilter, MySearc
 from utils.somedef import file_iterator
 from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser, add_perm, \
-    cache_delete_key, mySortQuery, deleteExpireDir, checkrequesttoken, mobielrestr, logexcption
+    cache_delete_key, mySortQuery, checkrequesttoken, logexcption, china_mobile, hongkong_mobile
 from django.db import transaction,models
 from django_filters import FilterSet
 
@@ -150,7 +150,7 @@ class OrganizationView(viewsets.ModelViewSet):
 
     def checkOrgUserContactInfoTruth(self, org, datasource):
         user_qs = org.org_users.all().filter(is_deleted=False, datasource=datasource)
-        count = user_qs.filter(Q(mobile__regex=mobielrestr)).count()
+        count = user_qs.filter(Q(mobile__regex=china_mobile, mobileAreaCode=86) | Q(mobile__regex=hongkong_mobile, mobileAreaCode=852)).count()
         return count
 
 
