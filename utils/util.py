@@ -1,5 +1,6 @@
 #coding=utf-8
 import os
+import re
 
 import shutil
 from django.core.cache import cache
@@ -15,7 +16,9 @@ from utils.customClass import JSONResponse, InvestError
 
 REDIS_TIMEOUT = 1 * 24 * 60 * 60
 
-mobielrestr = r'^(13[0-9]|14[579]|15[0-3,5-9]|17[0135678]|18[0-9])([0-9]{8})$'
+# mobielrestr = r'^(13[0-9]|14[579]|15[0-3,5-9]|17[0135678]|18[0-9])([0-9]{8})$'
+china_mobile = r'^((13[0-9])|(14[5,7,9])|(15[0-3,5-9])|(166)|(17[0,1,3,5,6,7,8])|(18[0-9])|(19[8,9]))([0-9]{8})$'
+hongkong_mobile = r'^(5|6|8|9)([0-9]{7})$'
 
 
 def SuccessResponse(data,msg=None):
@@ -337,4 +340,17 @@ def checkEmailTrue(email):
             if fillemail in email:
                 return False
         return True
+    return False
+
+
+def checkMobileTrue(mobile=None, mobileAreaCode=None):
+    if mobile:
+        if mobileAreaCode in ['86', 86, '+86', u'86', u'+86']:
+            res = re.search(china_mobile, mobile)
+            if res:
+                return True
+        elif mobileAreaCode in ['852', 852, '+852', u'852', u'+852']:
+            res = re.search(hongkong_mobile, mobile)
+            if res:
+                return True
     return False

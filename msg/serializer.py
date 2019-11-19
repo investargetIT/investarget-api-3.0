@@ -27,6 +27,7 @@ class MsgSerializer(serializers.ModelSerializer):
             except Exception:
                 return None
             vars = {'name': dataroom_user_file.user.usernameC,
+                    'cli_domain': dataroom_user_file.datasource.domain,
                     'user_url': '%s/app/user/%s' % (dataroom_user_file.datasource.domain, objc.receiver.id),
                     'projectC': dataroom_user_file.dataroom.proj.projtitleC,
                     'projectE': dataroom_user_file.dataroom.proj.projtitleE,
