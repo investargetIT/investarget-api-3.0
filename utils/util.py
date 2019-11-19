@@ -19,7 +19,7 @@ REDIS_TIMEOUT = 1 * 24 * 60 * 60
 # mobielrestr = r'^(13[0-9]|14[579]|15[0-3,5-9]|17[0135678]|18[0-9])([0-9]{8})$'
 china_mobile = r'^((13[0-9])|(14[5,7,9])|(15[0-3,5-9])|(166)|(17[0,1,3,5,6,7,8])|(18[0-9])|(19[8,9]))([0-9]{8})$'
 hongkong_mobile = r'^(5|6|8|9)([0-9]{7})$'
-
+hongkong_telephone = r'^^(2[1-9]|3[1,4-7,9])([0-9]{6})$'
 
 def SuccessResponse(data,msg=None):
     response = {'code':1000,'errormsg':msg,'result':data}
@@ -351,6 +351,9 @@ def checkMobileTrue(mobile=None, mobileAreaCode=None):
                 return True
         elif mobileAreaCode in ['852', 852, '+852', u'852', u'+852']:
             res = re.search(hongkong_mobile, mobile)
+            if res:
+                return True
+            res = re.search(hongkong_telephone, mobile)
             if res:
                 return True
     return False
