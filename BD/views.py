@@ -846,11 +846,11 @@ class OrgBDBlackView(viewsets.ModelViewSet):
             else:
                 raise InvestError(2009)
             with transaction.atomic():
-                newinstance = OrgBDBlackCreateSerializer(instance, data=data)
-                if newinstance.is_valid():
-                    newinstance.save()
+                newinstanceSeria = OrgBDBlackCreateSerializer(instance, data=data)
+                if newinstanceSeria.is_valid():
+                    newinstance = newinstanceSeria.save()
                 else:
-                    raise InvestError(2009, msg='机构BD黑名单加入原因修改失败——%s' % newinstance.error_messages)
+                    raise InvestError(2009, msg='机构BD黑名单加入原因修改失败——%s' % newinstanceSeria.errors)
                 return JSONResponse(
                     SuccessResponse(returnDictChangeToLanguage(OrgBDBlackSerializer(newinstance).data, lang)))
         except InvestError as err:
