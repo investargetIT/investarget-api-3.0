@@ -20,7 +20,7 @@ from proj.models import project
 from third.views.qiniufile import deleteqiniufile, downloadFileToPath
 from utils.customClass import InvestError, JSONResponse, RelationFilter
 from utils.sendMessage import sendmessage_dataroomuseradd
-from utils.somedef import file_iterator,  addWaterMarkToPdfFiles
+from utils.somedef import file_iterator, addWaterMarkToPdfFiles, encryptPdfFilesWithPassword
 from utils.util import returnListChangeToLanguage, loginTokenIsAvailable, \
     returnDictChangeToLanguage, catchexcption, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
     logexcption, checkrequesttoken, deleteExpireDir
@@ -214,6 +214,7 @@ class DataroomView(viewsets.ModelViewSet):
             dataroominstance = self.get_object()
             files = request.GET.get('files')
             userid = int(request.GET.get('user', request.user.id))
+            password = request.GET.get('password')
             if userid != request.user.id:
                 if request.user.has_perm('dataroom.admin_getdataroom') or request.user.id in [dataroominstance.proj.takeUser_id, dataroominstance.proj.makeUser_id]:
                     file_qs = dataroom_User_file.objects.get(dataroom=dataroominstance, user_id=userid).files.all()
@@ -249,7 +250,7 @@ class DataroomView(viewsets.ModelViewSet):
                     seconds = getRemainingTime(direcpath, file_qs)
                     watermarkcontent = str(request.GET.get('water', '')).split(',')
                     directory_qs = dataroominstance.dataroom_directories.all().filter(is_deleted=False, isFile=False)
-                    startMakeDataroomZip(directory_qs, file_qs, direcpath, watermarkcontent)
+                    startMakeDataroomZip(directory_qs, file_qs, direcpath, watermarkcontent, password)
                     response = JSONResponse(SuccessResponse({'code': 8002, 'msg': '文件不存在', 'seconds': seconds}))
             return response
         except InvestError as err:
@@ -317,7 +318,7 @@ def getRemainingTime(rootpath, file_qs):
     times = filesizes / downloadSpeed + 2
     return times
 
-def startMakeDataroomZip(directory_qs, file_qs, path, watermarkcontent=None):
+def startMakeDataroomZip(directory_qs, file_qs, path, watermarkcontent=None, password=None):
     class downloadAllDataroomFile(threading.Thread):
         def __init__(self, directory_qs, file_qs, path):
             self.directory_qs = directory_qs
@@ -345,7 +346,7 @@ def startMakeDataroomZip(directory_qs, file_qs, path, watermarkcontent=None):
                     logexcption(msg='下载文件失败，保存路径：%s' % path)
             if len(filepaths) > 0:
                 addWaterMarkToPdfFiles(filepaths, watermarkcontent)
-
+                encryptPdfFilesWithPassword(filepaths, password)
 
         def zipDirectory(self):
             import zipfile
