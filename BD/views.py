@@ -95,7 +95,7 @@ class ProjectBDView(viewsets.ModelViewSet):
             countlist = []
             for manager_count in countres:
                 countlist.append({'manager': manager_count[0], 'count': manager_count[1]})
-            sortfield = request.GET.get('sort', 'createdtime')
+            sortfield = request.GET.get('sort', 'bd_status__sort')
             desc = request.GET.get('desc', 1)
             queryset = mySortQuery(queryset, sortfield, desc)
             try:
