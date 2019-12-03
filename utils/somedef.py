@@ -154,7 +154,7 @@ def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
 def encryptPdfFilesWithPassword(filepaths, password):
     try:
         if password and len(filepaths) > 0:
-            jarPath = "my-app-1.0-SNAPSHOT-jar-with-dependencies.jar"
+            jarPath = os.path.join(os.getcwd(), "my-app-1.0-SNAPSHOT-jar-with-dependencies.jar")
             if not jpype.isJVMStarted():
                 jpype.startJVM(jpype.getDefaultJVMPath(), "-ea", "-Djava.class.path=" + jarPath)
             JDClass = jpype.JClass("com.mycompany.app.App")
@@ -176,15 +176,12 @@ def encryptPdfFilesWithPassword(filepaths, password):
                     f = open(filepath, 'a')
                     f.writelines(now.strftime('%H:%M:%S')+ '加密pdf失败（文件路径%s）'% input_filepath  + '\n' + traceback.format_exc() + '\n\n')
                     f.close()
-            if jpype.isJVMStarted():
-                jpype.shutdownJVM()
     except Exception as err:
         print('加密pdf失败')
         now = datetime.datetime.now()
         filepath = APILOG_PATH['excptionlogpath'] + '/' + now.strftime('%Y-%m-%d')
         f = open(filepath, 'a')
-        f.writelines(
-            now.strftime('%H:%M:%S') + '\n' + traceback.format_exc() + '\n\n')
+        f.writelines(now.strftime('%H:%M:%S') + '\n' + traceback.format_exc() + '\n\n')
         f.close()
 
 #文件分片
