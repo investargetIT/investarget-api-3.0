@@ -790,13 +790,17 @@ class OrgBDBlackView(viewsets.ModelViewSet):
 
 
 
-    @loginTokenIsAvailable(['BD.manageOrgBDBlack', 'BD.getOrgBDBlack'])
+    @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size', 10)
             page_index = request.GET.get('page_index', 1)
             lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
+            if request.user.has_perm('BD.manageOrgBDBlack') or request.user.has_perm('BD.getOrgBDBlack'):
+                queryset = queryset
+            else:
+                queryset = queryset.filter(Q(proj__takeUser=request.user) | Q(proj__makeUser=request.user))
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -812,13 +816,24 @@ class OrgBDBlackView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
-    @loginTokenIsAvailable(['BD.manageOrgBDBlack', 'BD.addOrgBDBlack'])
+    @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
         try:
             data = request.data
             lang = request.GET.get('lang')
             data['createuser'] = request.user.id
             data['datasource'] = request.user.datasource.id
+            projid = data.get('proj', None)
+            if projid:
+                projinstance = project.objects.get(id=projid, is_deleted=False, datasource=request.user.datasource)
+                if request.user.has_perm('BD.manageOrgBDBlack') or request.user.has_perm('BD.addOrgBDBlack'):
+                    pass
+                elif request.user in [projinstance.takeUser, projinstance.makeUser]:
+                    pass
+                else:
+                    raise InvestError(2009)
+            else:
+                raise InvestError(2007, msg='项目/机构不能为空')
             with transaction.atomic():
                 instanceSerializer = OrgBDBlackCreateSerializer(data=data)
                 if instanceSerializer.is_valid():
@@ -841,7 +856,8 @@ class OrgBDBlackView(viewsets.ModelViewSet):
             data.pop('proj', None)
             lang = request.GET.get('lang')
             instance = self.get_object()
-            if request.user.has_perm('BD.manageOrgBDBlack') or request.user == instance.createuser:
+            projinstance = instance.proj
+            if request.user.has_perm('BD.manageOrgBDBlack') or request.user in [projinstance.takeUser, projinstance.makeUser]:
                 pass
             else:
                 raise InvestError(2009)
@@ -859,10 +875,17 @@ class OrgBDBlackView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['BD.manageOrgBDBlack', 'BD.delOrgBDBlack'])
+    @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
+            projinstance = instance.proj
+            if request.user.has_perm('BD.manageOrgBDBlack') or request.user.has_perm('BD.delOrgBDBlack'):
+                pass
+            elif request.user in [projinstance.takeUser, projinstance.makeUser]:
+                pass
+            else:
+                raise InvestError(2009)
             with transaction.atomic():
                 instance.is_deleted = True
                 instance.deleteduser = request.user
