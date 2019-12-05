@@ -100,7 +100,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = MyUser
         fields = ('usernameC', 'usernameE', 'org', 'department', 'mobile', 'mobileAreaCode', 'mobiletrue', 'email', 'wechat', 'title',
-                  'id', 'tags', 'userstatus', 'photourl', 'is_active', 'orgarea', 'country', 'onjob', 'hasIM')
+                  'id', 'tags', 'userstatus', 'photourl', 'is_active', 'orgarea', 'country', 'onjob', 'hasIM', 'last_login')
         depth = 1
 
     def get_tags(self, obj):
