@@ -14,13 +14,13 @@ from dataroom.models import dataroom, dataroomdirectoryorfile, publicdirectoryte
 from dataroom.serializer import DataroomSerializer, DataroomCreateSerializer, DataroomdirectoryorfileCreateSerializer, \
     DataroomdirectoryorfileSerializer, DataroomdirectoryorfileUpdateSerializer, User_DataroomfileSerializer, \
     User_DataroomSerializer, User_DataroomfileCreateSerializer, User_DataroomTemplateSerializer, \
-    User_DataroomTemplateCreateSerializer
+    User_DataroomTemplateCreateSerializer, DataroomdirectoryorfilePathSerializer
 from invest.settings import APILOG_PATH
 from proj.models import project
 from third.views.qiniufile import deleteqiniufile, downloadFileToPath
 from utils.customClass import InvestError, JSONResponse, RelationFilter
 from utils.sendMessage import sendmessage_dataroomuseradd
-from utils.somedef import file_iterator,  addWaterMarkToPdfFiles
+from utils.somedef import file_iterator, addWaterMarkToPdfFiles, encryptPdfFilesWithPassword
 from utils.util import returnListChangeToLanguage, loginTokenIsAvailable, \
     returnDictChangeToLanguage, catchexcption, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
     logexcption, checkrequesttoken, deleteExpireDir
@@ -81,7 +81,7 @@ class DataroomView(viewsets.ModelViewSet):
             if request.user.has_perm('dataroom.admin_getdataroom'):
                 queryset = queryset
             else:
-                queryset = queryset.filter(Q(dataroom_users__in=request.user.user_datarooms.all()) | Q(dataroom_users__in=request.user.trader_datarooms.all()) | Q(proj__takeUser=request.user) | Q(proj__makeUser=request.user)).distinct()
+                queryset = queryset.filter(Q(dataroom_users__in=request.user.user_datarooms.all()) | Q(proj__takeUser=request.user) | Q(proj__makeUser=request.user)).distinct()
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -214,6 +214,7 @@ class DataroomView(viewsets.ModelViewSet):
             dataroominstance = self.get_object()
             files = request.GET.get('files')
             userid = int(request.GET.get('user', request.user.id))
+            password = request.GET.get('password')
             if userid != request.user.id:
                 if request.user.has_perm('dataroom.admin_getdataroom') or request.user.id in [dataroominstance.proj.takeUser_id, dataroominstance.proj.makeUser_id]:
                     file_qs = dataroom_User_file.objects.get(dataroom=dataroominstance, user_id=userid).files.all()
@@ -223,9 +224,7 @@ class DataroomView(viewsets.ModelViewSet):
                 if request.user.has_perm('dataroom.admin_getdataroom') or request.user.id in [dataroominstance.proj.takeUser_id, dataroominstance.proj.makeUser_id]:
                     file_qs = dataroominstance.dataroom_directories.all().filter(is_deleted=False, isFile=True)
                 else:
-                    if dataroom_User_file.objects.filter(dataroom=dataroominstance, trader_id=userid, is_deleted=False).exists():
-                        file_qs = dataroominstance.dataroom_directories.all().filter(is_deleted=False, isFile=True)
-                    elif dataroom_User_file.objects.filter(dataroom=dataroominstance, user_id=userid, is_deleted=False).exists():
+                    if dataroom_User_file.objects.filter(dataroom=dataroominstance, user_id=userid, is_deleted=False).exists():
                         file_qs = dataroom_User_file.objects.get(dataroom=dataroominstance, user_id=userid, is_deleted=False).files.all()
                     else:
                         raise InvestError(2009, msg='没有权限查看该dataroom')
@@ -249,7 +248,7 @@ class DataroomView(viewsets.ModelViewSet):
                     seconds = getRemainingTime(direcpath, file_qs)
                     watermarkcontent = str(request.GET.get('water', '')).split(',')
                     directory_qs = dataroominstance.dataroom_directories.all().filter(is_deleted=False, isFile=False)
-                    startMakeDataroomZip(directory_qs, file_qs, direcpath, watermarkcontent)
+                    startMakeDataroomZip(directory_qs, file_qs, direcpath, watermarkcontent, password)
                     response = JSONResponse(SuccessResponse({'code': 8002, 'msg': '文件不存在', 'seconds': seconds}))
             return response
         except InvestError as err:
@@ -317,7 +316,7 @@ def getRemainingTime(rootpath, file_qs):
     times = filesizes / downloadSpeed + 2
     return times
 
-def startMakeDataroomZip(directory_qs, file_qs, path, watermarkcontent=None):
+def startMakeDataroomZip(directory_qs, file_qs, path, watermarkcontent=None, password=None):
     class downloadAllDataroomFile(threading.Thread):
         def __init__(self, directory_qs, file_qs, path):
             self.directory_qs = directory_qs
@@ -345,7 +344,7 @@ def startMakeDataroomZip(directory_qs, file_qs, path, watermarkcontent=None):
                     logexcption(msg='下载文件失败，保存路径：%s' % path)
             if len(filepaths) > 0:
                 addWaterMarkToPdfFiles(filepaths, watermarkcontent)
-
+                encryptPdfFilesWithPassword(filepaths, password)
 
         def zipDirectory(self):
             import zipfile
@@ -391,10 +390,12 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
            create:新建dataroom文件或目录
            update:移动目录或文件到目标位置
            destroy:删除dataroom文件或目录
+           getFilePath: 获取文件路径
         """
-    filter_backends = (filters.DjangoFilterBackend,)
+    filter_backends = (filters.DjangoFilterBackend, filters.SearchFilter)
     queryset = dataroomdirectoryorfile.objects.all().filter(is_deleted=False)
     filter_fields = ('dataroom', 'parent','isFile')
+    search_fields = ('filename',)
     serializer_class = DataroomdirectoryorfileCreateSerializer
     Model = dataroomdirectoryorfile
 
@@ -425,8 +426,6 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
                 pass
             elif request.user in (dataroominstance.proj.takeUser, dataroominstance.proj.makeUser):
                 pass
-            elif dataroom_User_file.objects.filter(trader=request.user,dataroom=dataroominstance,is_deleted=False).exists():
-                pass
             elif dataroominstance.isCompanyFile and request.user.has_perm('dataroom.get_companydataroom'):
                 pass
             else:
@@ -440,6 +439,32 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def getFilePath(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang', None)
+            dataroomid = request.GET.get('dataroom', None)
+            if dataroomid is None:
+                raise InvestError(code=20072, msg='dataroom 不能空')
+            dataroominstance = dataroom.objects.get(id=dataroomid, is_deleted=False)
+            if request.user.has_perm('dataroom.admin_getdataroom') or request.user in (dataroominstance.proj.takeUser, dataroominstance.proj.makeUser) or (dataroominstance.isCompanyFile and request.user.has_perm('dataroom.get_companydataroom')):
+                queryset = self.get_queryset()
+            elif dataroom_User_file.objects.filter(user=request.user, dataroom=dataroomid).exists():
+                queryset = dataroom_User_file.objects.filter(user=request.user, dataroom_id=dataroomid).first().files.all()
+            else:
+                raise InvestError(2009)
+            queryset = self.filter_queryset(queryset)
+            count = queryset.count()
+            serializer = DataroomdirectoryorfilePathSerializer(queryset, many=True)
+            return JSONResponse(
+                SuccessResponse({'count': count, 'data': returnListChangeToLanguage(serializer.data, lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
 
     @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):
@@ -597,7 +622,7 @@ class User_DataroomfileView(viewsets.ModelViewSet):
                 if user:
                     if user != request.user.id:
                         raise InvestError(2009)
-                queryset = self.filter_queryset(self.get_queryset()).filter(Q(datasource=request.user.datasource,user=request.user) | Q(datasource=request.user.datasource,trader=request.user) | Q(dataroom__proj__takeUser=request.user) | Q(dataroom__proj__makeUser=request.user))
+                queryset = self.filter_queryset(self.get_queryset()).filter(Q(datasource=request.user.datasource,user=request.user) | Q(dataroom__proj__takeUser=request.user) | Q(dataroom__proj__makeUser=request.user))
             count = queryset.count()
             serializer = User_DataroomSerializer(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
@@ -607,7 +632,6 @@ class User_DataroomfileView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-
     @loginTokenIsAvailable()
     def retrieve(self, request, *args, **kwargs):
         try:
@@ -615,7 +639,7 @@ class User_DataroomfileView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user.has_perm('dataroom.admin_getdataroom'):
                 serializerclass = User_DataroomfileSerializer
-            elif request.user == instance.user or request.user == instance.trader:
+            elif request.user == instance.user:
                 serializerclass = User_DataroomfileSerializer
             elif request.user in (instance.dataroom.proj.takeUser, instance.dataroom.proj.makeUser):
                 serializerclass = User_DataroomfileSerializer
@@ -662,8 +686,6 @@ class User_DataroomfileView(viewsets.ModelViewSet):
             user_dataroom = self.get_object()
             if request.user.has_perm('dataroom.admin_adddataroom'):
                 pass
-            elif request.user == user_dataroom.trader:
-                pass
             elif request.user in [user_dataroom.dataroom.proj.takeUser, user_dataroom.dataroom.proj.makeUser]:
                 pass
             else:
@@ -684,8 +706,6 @@ class User_DataroomfileView(viewsets.ModelViewSet):
             user_dataroom = self.get_object()
             files = data.get('files', [])
             if request.user.has_perm('dataroom.admin_changedataroom'):
-                pass
-            elif request.user == user_dataroom.trader:
                 pass
             elif request.user in [user_dataroom.dataroom.proj.takeUser, user_dataroom.dataroom.proj.makeUser]:
                 pass

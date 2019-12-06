@@ -4,6 +4,7 @@ import os
 import datetime
 import traceback
 
+import jpype
 from PIL import Image, ImageDraw, ImageFont
 import random
 
@@ -149,6 +150,39 @@ def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
     if os.path.exists(watermarkpath):
         os.remove(watermarkpath)
     return
+
+def encryptPdfFilesWithPassword(filepaths, password):
+    try:
+        if password and len(filepaths) > 0:
+            jarPath = os.path.join(os.getcwd(), "my-app-1.0-SNAPSHOT-jar-with-dependencies.jar")
+            if not jpype.isJVMStarted():
+                jpype.startJVM(jpype.getDefaultJVMPath(), "-ea", "-Djava.class.path=" + jarPath)
+            JDClass = jpype.JClass("com.mycompany.app.App")
+            jd = JDClass()
+
+            for input_filepath in filepaths:
+                now = datetime.datetime.now()
+                try:
+                    print('加密pdf--%s--源文件%s' % (now, input_filepath))
+                    (filepath, tempfilename) = os.path.split(input_filepath)
+                    (filename, filetype) = os.path.splitext(tempfilename)
+                    out_path = os.path.join(filepath, filename + '-encryout.pdf')
+                    jd.addPassword(input_filepath, password, out_path)
+                    os.remove(input_filepath)
+                    os.rename(out_path, input_filepath)
+                except Exception as err:
+                    print('加密pdf--%s--源文件%s' % (now, input_filepath))
+                    filepath = APILOG_PATH['excptionlogpath'] + '/' + now.strftime('%Y-%m-%d')
+                    f = open(filepath, 'a')
+                    f.writelines(now.strftime('%H:%M:%S')+ '加密pdf失败（文件路径%s）'% input_filepath  + '\n' + traceback.format_exc() + '\n\n')
+                    f.close()
+    except Exception as err:
+        print('加密pdf失败')
+        now = datetime.datetime.now()
+        filepath = APILOG_PATH['excptionlogpath'] + '/' + now.strftime('%Y-%m-%d')
+        f = open(filepath, 'a')
+        f.writelines(now.strftime('%H:%M:%S') + '\n' + traceback.format_exc() + '\n\n')
+        f.close()
 
 #文件分片
 def file_iterator(fn, chunk_size=512):

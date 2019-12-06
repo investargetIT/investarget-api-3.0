@@ -99,7 +99,6 @@ class dataroom_User_file(MyModel):
     dataroom = MyForeignKey(dataroom, blank=True, null=True, related_name='dataroom_users')
     user = MyForeignKey(MyUser, blank=True, null=True, related_name='user_datarooms', help_text='投资人')
     files = models.ManyToManyField(dataroomdirectoryorfile, blank=True)
-    trader = MyForeignKey(MyUser, blank=True, null=True, help_text='交易师', related_name='trader_datarooms')
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_userdatarooms')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_userdatarooms')
     datasource = MyForeignKey(DataSource, blank=True, null=True, help_text='数据源')
@@ -108,8 +107,8 @@ class dataroom_User_file(MyModel):
         db_table = 'dataroom_user'
 
     def save(self, force_insert=False, force_update=False, using=None,update_fields=None):
-        if not self.trader or not self.user:
-            raise InvestError(2007, '投资人或交易师不能为空')
+        if not self.user:
+            raise InvestError(2007, '投资人不能为空')
         if self.pk is None:
             if self.dataroom.isClose or self.dataroom.is_deleted:
                 raise InvestError(7012,msg='dataroom已关闭/删除，无法添加用户')

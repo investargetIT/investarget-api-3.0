@@ -219,7 +219,7 @@ class UserView(viewsets.ModelViewSet):
                     else:
                         group = Group.objects.get(id=type, datasource=userdatasource)
                 except Exception:
-                    raise InvestError(code=2007,msg='type bust be an available name')
+                    raise InvestError(code=2007,msg='(type)用户类型不可用')
                 data['groups'] = [group.id]
                 orgname = data.pop('orgname', None)
                 if orgname:
@@ -290,7 +290,7 @@ class UserView(viewsets.ModelViewSet):
                             group = Group.objects.get(id=groupid[0])
                         except Exception:
                             catchexcption(request)
-                            raise InvestError(code=2007, msg='group bust be an available id')
+                            raise InvestError(code=2007, msg='(groups)用户类型不可用')
                         if not group.permissions.filter(codename='as_investor').exists():
                             raise InvestError(2009,msg='新增用户非投资人类型')
                         data['groups'] = [group.id]
@@ -384,7 +384,7 @@ class UserView(viewsets.ModelViewSet):
                                 try:
                                     groupinstance = Group.objects.get(id=groupid[0])
                                 except Exception:
-                                    raise InvestError(code=2007, msg='group bust be an available id')
+                                    raise InvestError(code=2007, msg='(groups)用户类型不可用')
                                 if groupinstance not in user.groups.all():
                                     if user.has_perm('usersys.as_trader'):
                                         if Permission.objects.get(codename='as_trader', content_type__app_label='usersys') not in groupinstance.permissions.all():
