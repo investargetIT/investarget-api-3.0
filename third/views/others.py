@@ -45,6 +45,33 @@ def getcurrencyreat(request):
         catchexcption(request)
         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+#获取手机号码归属地
+@api_view(['GET'])
+def getMobilePhoneAddress(request):
+    try:
+        tokenkey = request.META.get('HTTP_TOKEN')
+        checkrequesttoken(tokenkey)
+        mobile = request.GET.get('mobile', None)
+        if not mobile:
+            raise InvestError(20072, msg='mobile 不能为空')
+        response = requests.get('http://api.k780.com/?app=phone.get&phone=%s&appkey=18220&sign=9b97118c7cf61df11c736c79ce94dcf9&format=json' % mobile).content
+        response = json.loads(response)
+        if isinstance(response,dict):
+            success = response.get('success',False)
+            if success in ['1',True]:
+                result = response.get('result',{})
+            else:
+                raise InvestError(code=2007,msg=response.get('msg',None))
+        else:
+            raise InvestError(code=2007,msg=response)
+        return JSONResponse(SuccessResponse(result))
+    except InvestError as err:
+        return JSONResponse(InvestErrorResponse(err))
+    except Exception:
+        catchexcption(request)
+        return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
 #名片识别
 @api_view(['POST'])
 def ccupload(request):
