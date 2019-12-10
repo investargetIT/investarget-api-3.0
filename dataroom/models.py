@@ -126,6 +126,7 @@ class dataroom_User_file(MyModel):
 class dataroom_User_template(MyModel):
         dataroom = MyForeignKey(dataroom, blank=True, null=True, related_name='dataroom_userTemp')
         user = MyForeignKey(MyUser, blank=True, null=True, related_name='user_dataroomTemp', help_text='投资人')
+        password = models.CharField(max_length=64, blank=True, null=True, help_text='打包下载pdf编辑密码')
         dataroomUserfile = MyForeignKey(dataroom_User_file, blank=True, null=True, related_name='user_dataroomTempFiles', help_text='用户可见文件列表')
         deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_userdataroomTemp')
         createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_userdataroomTemp')
@@ -135,6 +136,8 @@ class dataroom_User_template(MyModel):
             db_table = 'dataroom_User_template'
 
         def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+            if not self.user:
+                raise InvestError(code=2004, msg='user 不能为空')
             try:
                 dataroom_User_template.objects.exclude(pk=self.pk).get(is_deleted=False, user=self.user, dataroom=self.dataroom)
             except dataroom_User_template.DoesNotExist:
