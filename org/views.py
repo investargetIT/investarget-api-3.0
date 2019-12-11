@@ -163,7 +163,7 @@ class OrganizationView(viewsets.ModelViewSet):
         if request.user.has_perm('org.admin_addorg'):
             pass
         elif request.user.has_perm('org.user_addorg'):
-            data['orgstatus'] = 1
+            pass
         else:
             raise InvestError(2009)
         try:
