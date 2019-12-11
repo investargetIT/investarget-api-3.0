@@ -839,7 +839,7 @@ class User_Dataroom_TemplateView(viewsets.ModelViewSet):
                 filters = {'datasource':request.user.datasource}
                 queryset = self.filter_queryset(self.get_queryset()).filter(**filters)
             else:
-                queryset = self.filter_queryset(self.get_queryset()).filter(Q(dataroom__proj__takeUser=request.user) | Q(dataroom__proj__makeUser=request.user))
+                queryset = self.filter_queryset(self.get_queryset()).filter(Q(datasource=request.user.datasource, user=request.user) | Q(dataroom__proj__takeUser=request.user) | Q(dataroom__proj__makeUser=request.user))
             count = queryset.count()
             serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
@@ -857,7 +857,7 @@ class User_Dataroom_TemplateView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user.has_perm('dataroom.admin_getdataroom'):
                 pass
-            elif request.user in (instance.dataroom.proj.takeUser, instance.dataroom.proj.makeUser):
+            elif request.user in (instance.dataroom.proj.takeUser, instance.dataroom.proj.makeUser, instance.user):
                 pass
             else:
                 raise InvestError(code=2009)
