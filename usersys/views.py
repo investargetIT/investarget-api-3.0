@@ -21,7 +21,7 @@ from third.views.qiniufile import deleteqiniufile
 from third.views.weixinlogin import get_openid
 from timeline.models import timeline
 from usersys.models import MyUser, UserRelation, userTags, UserFriendship, MyToken, UnreachUser, UserRemarks, \
-    userAttachments, userEvents, UserContrastThirdAccount
+    userAttachments, userEvents, UserContrastThirdAccount, registersourcechoice
 from usersys.serializer import UserSerializer, UserListSerializer, UserRelationSerializer, \
     CreatUserSerializer, UserCommenSerializer, UserRelationCreateSerializer, UserFriendshipSerializer, \
     UserFriendshipDetailSerializer, UserFriendshipUpdateSerializer, GroupSerializer, GroupDetailSerializer, \
@@ -623,6 +623,16 @@ class UserView(viewsets.ModelViewSet):
             else:
                 raise InvestError(20072)
             return JSONResponse(SuccessResponse({'result':result,'user':returnDictChangeToLanguage(user,lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def getUserRegisterSource(self, request, *args, **kwargs):
+        try:
+            return JSONResponse(SuccessResponse(registersourcechoice))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
