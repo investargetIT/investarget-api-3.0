@@ -93,5 +93,5 @@ class User_DataroomTemplateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = dataroom_User_template
-        fields = ('id', 'dataroom', 'user', 'dataroomUserfile')
+        fields = ('id', 'dataroom', 'user', 'dataroomUserfile', 'password')
 
