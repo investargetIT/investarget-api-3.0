@@ -308,7 +308,7 @@ class orgExportExcelTask(MyModel):
 
 class orgAttachments(MyModel):
     org = MyForeignKey(organization, related_name='org_orgAttachments', blank=True)
-    bucket = models.CharField(max_length=64, blank=True, default='image')
+    bucket = models.CharField(max_length=64, blank=True, null=True)
     key = models.CharField(max_length=128, blank=True, null=True, help_text='保存文件转换pdf后的key')
     realkey = models.CharField(max_length=128, blank=True, null=True, help_text='保存文件原始key')
     filename = models.CharField(max_length=128, blank=True, null=True)
