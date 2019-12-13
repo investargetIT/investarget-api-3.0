@@ -269,7 +269,6 @@ class UserView(viewsets.ModelViewSet):
             with transaction.atomic():
                 email = data.get('email')
                 mobile = data.get('mobile')
-                data['registersource'] = 5
                 data['is_active'] = False
                 if not email or not mobile:
                     raise InvestError(code=2007)
