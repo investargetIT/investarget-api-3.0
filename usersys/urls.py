@@ -22,6 +22,10 @@ getFalseMobile = views.UserView.as_view({
         'get': 'getAvaibleFalseMobileNumber',   #查看详情
 })
 
+getRegistSource = views.UserView.as_view({
+        'get': 'getUserRegisterSource',   # 获取注册来源
+})
+
 find_password = views.UserView.as_view({
         'post': 'findpassword',
 })
@@ -130,6 +134,7 @@ checkUserAccountExist = views.UserView.as_view({
 
 urlpatterns = [
     url(r'^$', user_list,name='user-list',),
+    url(r'^regsource$', getRegistSource, name='getRegistSource', ),
     url(r'^mobile$', getFalseMobile, name='getAvaibleFalseMobileNumber', ),
     url(r'^count$', getUserCount, name='getUserCount', ),
     url(r'^checkexists/$', checkUserAccountExist,name='user-checkUserAccountExist',),

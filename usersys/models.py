@@ -26,7 +26,10 @@ registersourcechoice = (
     (2,'android'),
     (3,'web'),
     (4,'wechat'),
-    (5,'unknown')
+    (5,'unknown'),
+    (6,'wxbot'),
+    (7,'excelImport'),
+    (8,'traderAdd')
 )
 
 class MyUserBackend(ModelBackend):
@@ -84,9 +87,9 @@ class MyUser(AbstractBaseUser, PermissionsMixin,MyModel):
     id = models.AutoField(primary_key=True)
     userlevel = models.PositiveSmallIntegerField(blank=True,default=0,help_text='用户服务级别')
     usercode = models.CharField(max_length=128,blank=True, unique=True)
-    photoBucket = models.CharField(max_length=32,blank=True,default='image')
+    photoBucket = models.CharField(max_length=32, blank=True, null=True)
     photoKey = models.CharField(max_length=128,blank=True,null=True)
-    cardBucket = models.CharField(max_length=32,blank=True,default='image')
+    cardBucket = models.CharField(max_length=32, blank=True, null=True)
     cardKey = models.CharField(max_length=128,blank=True,null=True)
     wechat = models.CharField(max_length=64,blank=True,null=True)
     country = MyForeignKey(Country,blank=True,null=True)
@@ -98,24 +101,24 @@ class MyUser(AbstractBaseUser, PermissionsMixin,MyModel):
     usernameE = models.CharField(help_text='name',max_length=128,db_index=True,blank=True,null=True)
     mobileAreaCode = models.CharField(max_length=10,blank=True,null=True,default='86')
     mobile = models.CharField(help_text='手机',max_length=32,db_index=True,blank=True,null=True)
-    description = models.TextField(help_text='简介',blank=True,default='description')
+    description = models.TextField(help_text='简介',blank=True, null=True, default='description')
     tags = models.ManyToManyField(Tag, through='userTags', through_fields=('user', 'tag'), blank=True,related_name='tag_users')
     email = models.EmailField(help_text='邮箱', max_length=128,db_index=True,blank=True,null=True)
     title = MyForeignKey(TitleType,blank=True,null=True,related_name='title_users')
     indGroup = MyForeignKey(IndustryGroup, null=True, blank=True, help_text='所属行业组')
-    gender = models.BooleanField(blank=True,default=0,help_text=('0=男，1=女'))
+    gender = models.BooleanField(blank=True, default=False, help_text=('False=男，True=女'))
     onjob = models.BooleanField(blank=True, default=True, help_text='是否在职')
     remark = models.TextField(help_text='用户个人备注',blank=True,null=True)
     school = MyForeignKey(School,help_text='院校',blank=True,null=True,related_name='school_users')
     specialty = MyForeignKey(Specialty,help_text='专业',blank=True,null=True,related_name='profession_users')
-    targetdemand = models.TextField(help_text='标的需求',blank=True,default='标的需求')
-    mergedynamic = models.TextField(help_text='并购动态', blank=True, default='并购动态')
-    ishasfundorplan = models.TextField(help_text='是否有产业基金或成立计划', blank=True, default='是否有产业基金或成立计划')
+    targetdemand = models.TextField(help_text='标的需求',blank=True, null=True, default='标的需求')
+    mergedynamic = models.TextField(help_text='并购动态', blank=True, null=True, default='并购动态')
+    ishasfundorplan = models.TextField(help_text='是否有产业基金或成立计划', blank=True, null=True, default='是否有产业基金或成立计划')
     registersource = models.SmallIntegerField(help_text='注册来源',choices=registersourcechoice,default=1)
     lastmodifyuser = MyForeignKey('self',help_text='修改者',blank=True,null=True,related_name='usermodify_users')
     is_staff = models.BooleanField(help_text='登录admin', default=False, blank=True,)
     hasIM = models.BooleanField(help_text='是否已注册环信聊天账号', default=False, blank=True)
-    page = models.SmallIntegerField(blank=True, default=10, help_text='分页条数')
+    page = models.SmallIntegerField(blank=True, default=10, null=True, help_text='分页条数')
     is_active = models.BooleanField(help_text='是否活跃', default=True, blank=True,)
     deleteduser = MyForeignKey('self',blank=True,null=True,related_name='userdelete_users')
     createuser = MyForeignKey('self',blank=True,null=True,related_name='usercreate_users')
@@ -307,7 +310,7 @@ class userTags(MyModel):
 
 class userAttachments(MyModel):
     user = MyForeignKey(MyUser,related_name='user_userAttachments', blank=True, on_delete=CASCADE)
-    bucket = models.CharField(max_length=64, blank=True, default='image')
+    bucket = models.CharField(max_length=64, blank=True, null=True)
     key = models.CharField(max_length=128, blank=True, null=True)
     filename = models.CharField(max_length=128, blank=True, null=True)
     deleteduser = MyForeignKey(MyUser,blank=True, null=True,related_name='userdelete_userAttachments')

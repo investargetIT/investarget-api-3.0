@@ -8,6 +8,7 @@ urlpatterns = [
     url(r'^qiniubigupload$', qiniufile.bigfileupload, name='qiniubig', ),
     url(r'^qiniucoverupload$', qiniufile.qiniu_coverupload, name='qiniucover', ),
     url(r'^currencyrate$', others.getcurrencyreat, name='getcurrencyrate', ),
+    url(r'^phoneAddress', others.getMobilePhoneAddress, name='getMobilePhoneAddress', ),
     url(r'^ccupload', others.ccupload, name='ccupload', ),
     url(r'^uploadToken$', qiniufile.qiniu_uploadtoken, name='getuploadtoken',),
     url(r'^downloadUrl$', qiniufile.qiniu_downloadurl, name='getdownloadurl',),
