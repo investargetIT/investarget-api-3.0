@@ -148,6 +148,7 @@ class ProjectView(viewsets.ModelViewSet):
                 else:
                     queryset = queryset.filter(Q(isHidden=False,projstatus_id__in=[4,6,7,8]))
                     serializerclass = ProjListSerializer_user
+            queryset = queryset.distinct()
             count = queryset.count()
             queryset = queryset.order_by('-createdtime')[int(skip_count):int(max_size)+int(skip_count)]
             responselist = []
