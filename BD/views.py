@@ -450,7 +450,7 @@ class OrgBDView(viewsets.ModelViewSet):
             sortfield = request.GET.get('sort', 'isimportant')
             if request.GET.get('desc', 1) in ('1', u'1', 1):
                 sortfield = '-' + sortfield
-            queryset = queryset.values('org','proj').annotate(orgcount=Count('org'),projcount=Count('proj'),created=Max('createdtime')).order_by(sortfield,'-created')
+            queryset = queryset.values('org','proj').annotate(orgcount=Count('org'),projcount=Count('proj')).order_by(sortfield)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
