@@ -143,11 +143,12 @@ class ProjectView(viewsets.ModelViewSet):
                     queryset = queryset
                     serializerclass = ProjListSerializer_admin
                 elif request.user.has_perm('usersys.as_trader') and request.user.userstatus_id == 2:
-                    queryset = queryset.filter(Q(isHidden=False) | Q(takeUser=request.user) | Q(makeUser=request.user) | Q(supportUser=request.user))
+                    queryset = queryset.filter(Q(isHidden=False) | Q(takeUser=request.user) | Q(makeUser=request.user) | Q(supportUser=request.user) | Q(isHidden=True, proj_orgBDs__manager=request.user, proj_orgBDs__is_deleted=False))
                     serializerclass = ProjListSerializer_admin
                 else:
                     queryset = queryset.filter(Q(isHidden=False,projstatus_id__in=[4,6,7,8]))
                     serializerclass = ProjListSerializer_user
+            queryset = queryset.distinct()
             count = queryset.count()
             queryset = queryset.order_by('-createdtime')[int(skip_count):int(max_size)+int(skip_count)]
             responselist = []

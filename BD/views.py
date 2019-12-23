@@ -447,10 +447,10 @@ class OrgBDView(viewsets.ModelViewSet):
             else:
                 raise InvestError(2009)
             queryset = self.filter_queryset(self.get_queryset())
-            sortfield = request.GET.get('sort', 'isimportant')
+            sortfield = request.GET.get('sort', 'orgimportant')
             if request.GET.get('desc', 1) in ('1', u'1', 1):
                 sortfield = '-' + sortfield
-            queryset = queryset.values('org','proj').annotate(orgcount=Count('org'),projcount=Count('proj'),created=Max('createdtime')).order_by(sortfield,'-created')
+            queryset = queryset.annotate(orgimportant=Max('isimportant')).values('org','proj','orgimportant').annotate(orgcount=Count('org'),projcount=Count('proj')).order_by(sortfield)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
