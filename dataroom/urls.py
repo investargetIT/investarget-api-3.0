@@ -43,6 +43,9 @@ user_dataroomone =  views.User_DataroomfileView.as_view({
         'delete':'destroy',
 })
 
+userUpdateFiles = views.User_DataroomfileView.as_view({
+        'get': 'getUserUpdateFiles',
+})
 
 user_dataroom_temp = views.User_Dataroom_TemplateView.as_view({
         'get': 'list',
@@ -72,6 +75,7 @@ urlpatterns = [
     url(r'^file/$', dataroomfile,name='dataroom-fileordirectory'),
     url(r'^filepath/$', dataroomfilepath,name='dataroom-filepath'),
     url(r'^user/$', user_dataroom,name='user_dataroom-list',),
+    url(r'^userfile/update/$', userUpdateFiles,name='userUpdateFiles-list',),
     url(r'^user/(?P<pk>\d+)/$', user_dataroomone,name='user_dataroom-detail'),
     url(r'^temp/$', user_dataroom_temp, name='user_dataroom_temp-list', ),
     url(r'^temp/(?P<pk>\d+)/$', user_dataroomone_temp, name='user_dataroom_temp-detail'),
