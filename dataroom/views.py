@@ -582,6 +582,7 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
 class User_DataroomfileView(viewsets.ModelViewSet):
     """
            list:用户可见dataroom列表
+           getUserUpdateFiles: 获取用户新增文件列表
            create:新建用户-dataroom关系
            retrieve:查看该dataroom用户可见文件列表
            update:编辑该dataroom用户可见文件列表
@@ -652,6 +653,40 @@ class User_DataroomfileView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable()
+    def getUserUpdateFiles(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            dataroom_id = request.GET.get('dataroom')
+            if not dataroom_id:
+                raise InvestError(code=2007, msg='dataroom不能为空')
+            user_id = request.GET.get('user', request.user.id)
+            qs = self.get_queryset().filter(dataroom_id=dataroom_id,user_id=user_id)
+            if qs.exists():
+                instance = qs.first()
+            else:
+                raise InvestError(code=2007, msg='dataroom用户不存在')
+            if instance.lastgettime:
+                files_queryset = instance.files.all().filter(lastmodifytime__gte=instance.lastgettime)
+            else:
+                files_queryset = instance.files.all()
+            if request.user.has_perm('dataroom.admin_getdataroom') or request.user in (instance.dataroom.proj.takeUser, instance.dataroom.proj.makeUser):
+                pass
+            elif request.user == instance.user:
+                instance.lastgettime = datetime.datetime.now()
+                instance.save()
+            else:
+                raise InvestError(code=2009)
+            serializer = DataroomdirectoryorfileSerializer(files_queryset, many=True)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
 
     @loginTokenIsAvailable()
     def create(self, request, *args, **kwargs):

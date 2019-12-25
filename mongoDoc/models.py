@@ -109,7 +109,7 @@ class ProjIndustryInfo(Document):     #工商信息
     indus_shareholder = ListField(null=True)  # 股权信息
     indus_foreign_invest = ListField(null=True)   # 公司对外投资信息
     indus_busi_info = ListField(null=True)    # 工商变更信息
-    date = DateTimeField()
+    date = DateTimeField(null=True)
     meta = {'collection': projIndustryInfoMongoTableName,
             'indexes': ['com_id',]
             }

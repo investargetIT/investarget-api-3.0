@@ -99,6 +99,7 @@ class dataroom_User_file(MyModel):
     dataroom = MyForeignKey(dataroom, blank=True, null=True, related_name='dataroom_users')
     user = MyForeignKey(MyUser, blank=True, null=True, related_name='user_datarooms', help_text='投资人')
     files = models.ManyToManyField(dataroomdirectoryorfile, blank=True)
+    lastgettime = models.DateTimeField(blank=True, null=True, help_text='最近获取日期')
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_userdatarooms')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_userdatarooms')
     datasource = MyForeignKey(DataSource, blank=True, null=True, help_text='数据源')
@@ -124,27 +125,29 @@ class dataroom_User_file(MyModel):
         super(dataroom_User_file, self).save(force_insert, force_update, using, update_fields)
 
 class dataroom_User_template(MyModel):
-        dataroom = MyForeignKey(dataroom, blank=True, null=True, related_name='dataroom_userTemp')
-        user = MyForeignKey(MyUser, blank=True, null=True, related_name='user_dataroomTemp', help_text='投资人')
-        password = models.CharField(max_length=64, blank=True, null=True, help_text='打包下载pdf编辑密码')
-        dataroomUserfile = MyForeignKey(dataroom_User_file, blank=True, null=True, related_name='user_dataroomTempFiles', help_text='用户可见文件列表')
-        deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_userdataroomTemp')
-        createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_userdataroomTemp')
-        datasource = MyForeignKey(DataSource, blank=True, null=True, help_text='数据源')
+    dataroom = MyForeignKey(dataroom, blank=True, null=True, related_name='dataroom_userTemp')
+    user = MyForeignKey(MyUser, blank=True, null=True, related_name='user_dataroomTemp', help_text='投资人')
+    password = models.CharField(max_length=64, blank=True, null=True, help_text='打包下载pdf编辑密码')
+    dataroomUserfile = MyForeignKey(dataroom_User_file, blank=True, null=True, related_name='user_dataroomTempFiles',
+                                    help_text='用户可见文件列表')
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_userdataroomTemp')
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_userdataroomTemp')
+    datasource = MyForeignKey(DataSource, blank=True, null=True, help_text='数据源')
 
-        class Meta:
-            db_table = 'dataroom_User_template'
+    class Meta:
+        db_table = 'dataroom_User_template'
 
-        def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
-            if not self.user:
-                raise InvestError(code=2004, msg='user 不能为空')
-            try:
-                dataroom_User_template.objects.exclude(pk=self.pk).get(is_deleted=False, user=self.user, dataroom=self.dataroom)
-            except dataroom_User_template.DoesNotExist:
-                pass
-            else:
-                raise InvestError(code=2004, msg='用户已存在一个相同dataroom的模板了')
-            if self.user != self.dataroomUserfile.user:
-                raise InvestError(code=2004, msg='用户与模板不匹配')
-            super(dataroom_User_template, self).save(force_insert, force_update, using, update_fields)
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        if not self.user:
+            raise InvestError(code=2004, msg='user 不能为空')
+        try:
+            dataroom_User_template.objects.exclude(pk=self.pk).get(is_deleted=False, user=self.user,
+                                                                   dataroom=self.dataroom)
+        except dataroom_User_template.DoesNotExist:
+            pass
+        else:
+            raise InvestError(code=2004, msg='用户已存在一个相同dataroom的模板了')
+        if self.user != self.dataroomUserfile.user:
+            raise InvestError(code=2004, msg='用户与模板不匹配')
+        super(dataroom_User_template, self).save(force_insert, force_update, using, update_fields)
 
