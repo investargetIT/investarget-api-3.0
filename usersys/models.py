@@ -168,9 +168,9 @@ class MyUser(AbstractBaseUser, PermissionsMixin,MyModel):
             raise InvestError(code=8888,msg='datasource有误')
         if self.pk and self.groups.exists() and self.groups.first().datasource != self.datasource:
             raise InvestError(code=8888,msg='group 与 user datasource不同')
-        if self.country:
-            if self.country.datasource != self.datasource:
-                raise InvestError(8888)
+        # if self.country:
+        #     if self.country.datasource != self.datasource:
+        #         raise InvestError(8888)
         try:
             if not self.mobileAreaCode:
                 self.mobileAreaCode = '86'

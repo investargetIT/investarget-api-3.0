@@ -194,7 +194,9 @@ class CountryView(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
-            source = request.META.get('HTTP_SOURCE',1)
+            source = int(request.META.get('HTTP_SOURCE', '1'))
+            if source > 2:
+                source = 1
             queryset = self.filter_queryset(self.get_queryset()).filter(datasource_id=source).order_by('-sortweight')
             serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data,lang)))
