@@ -60,9 +60,9 @@ class ProjectBD(MyModel):
             raise InvestError(2007,msg='manager can`t be null')
         if not self.datasource:
             raise InvestError(2007, msg='datasource can`t be null')
-        if self.country:
-            if self.country.datasource != self.datasource:
-                raise  InvestError(8888, msg='datasource 不匹配')
+        # if self.country:
+        #     if self.country.datasource != self.datasource:
+        #         raise  InvestError(8888, msg='datasource 不匹配')
         if self.bduser:
             self.username = self.bduser.usernameC
             self.usermobile = self.bduser.mobile
