@@ -536,6 +536,60 @@ def sendmessage_dataroomuseradd(model,receiver,types,sender=None):
         sendmessage_dataroomuseraddThread(model,receiver,types,sender).start()
 
 
+def sendmessage_dataroomuserfileupdate(model,receiver,types,sender=None):
+    """
+    :param model: dataroom_User_file type
+    :param receiver: myuser type
+    :param types: list
+    :param sender: myuser type
+    :return: None
+    """
+    class sendmessage_dataroomuserfileupdateThread(threading.Thread):
+        def __init__(self, model, receiver, types, sender=None):
+            self.model = model
+            self.receiver = receiver
+            self.types = types
+            self.sender = sender
+            threading.Thread.__init__(self)
+
+        def run(self):
+            types = self.types
+            receiver = self.receiver
+            model = self.model
+
+            if isinstance(model, dataroom_User_file):
+                if 'email' in types and sendEmail and checkEmailTrue(receiver.email):
+                    try:
+                        destination = receiver.email
+                        projectsign = 'oQGaH3'
+                        if model.lastgettime:
+                            files_queryset = model.files.all().filter(lastmodifytime__gte=model.lastgettime)
+                        else:
+                            files_queryset = model.files.all()
+                        filestr = ''
+                        dataroomUrl = getDataroomTitleWithSuperLink(model.dataroom, 'cn')
+                        if files_queryset.exists():
+                            for file in files_queryset:
+                                filestr = filestr + '<a href=\'%s\'>%s</a>' % (dataroomUrl, file.filename) + '<br>'
+                        vars = {'name': receiver.usernameC, 'projectC': dataroomUrl, 'file': filestr}
+                        xsendEmail(destination, projectsign, vars)
+                    except Exception:
+                        logexcption()
+                if 'webmsg' in types and sendWebmsg:  # 发送通知以后，将站内信发送给该DataRoom项目的承做
+                    try:
+                        msg_content = '已向用户【%s】发送了项目【%s】的dataroom文件更新邮件通知' % (receiver.usernameC, model.dataroom.proj.projtitleC)
+                        msg_title = '发送dataroom文件更新邮件通知记录'
+                        msg_receiver = model.dataroom.proj.makeUser
+                        # 13 区分dataroom邮件通知的12类型，站内信用到了12类型的消息
+                        saveMessage(msg_content, 13, msg_title, msg_receiver, sender, modeltype='dataroomFileUpdateEmailMsg', sourceid=model.id)
+                    except Exception:
+                        logexcption()
+
+    # if checkReceiverToSendMsg(receiver):
+    sendmessage_dataroomuserfileupdateThread(model,receiver,types,sender).start()
+
+
+
 def sendmessage_projectpublish(model, receiver, types, sender=None):
     """
         :param model: project type
