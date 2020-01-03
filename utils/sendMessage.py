@@ -567,11 +567,12 @@ def sendmessage_dataroomuserfileupdate(model,receiver,types,sender=None):
                         else:
                             files_queryset = model.files.all()
                         filestr = ''
-                        dataroomUrl = getDataroomTitleWithSuperLink(model.dataroom, 'cn')
+                        projectUrl = getDataroomTitleWithSuperLink(model.dataroom, 'cn')
+                        dataroomUrl = '%s/app/dataroom/detail?id=%s&isClose=false&projectID=%s'% (getbase_domain(model.datasource), model.dataroom.id, model.dataroom.proj.id)
                         if files_queryset.exists():
                             for file in files_queryset:
                                 filestr = filestr + '<a href=\'%s\'>%s</a>' % (dataroomUrl, file.filename) + '<br>'
-                        vars = {'name': receiver.usernameC, 'projectC': dataroomUrl, 'file': filestr}
+                        vars = {'name': receiver.usernameC, 'projectC': projectUrl, 'file': filestr}
                         xsendEmail(destination, projectsign, vars)
                     except Exception:
                         logexcption()
