@@ -77,13 +77,6 @@ MESSAGE_DICT = {
         'messagetype': '6',
     },
 
-    # 'dataroomfileupdate':{
-    #     "template_code": "SMS_33590296",
-    #     "title": "DataRoom文件更新通知,DataRoom updates notification",
-    #     "content": "您关注的{0}项目DataRoom有文件更新，请登录后查看详情。DataRoom for Project {1} that you are following has new updates, please log in for more details."
-    #
-    # },
-
     'dataroomuseradd':{
         'sms_sign': None,
         'email_sign': 'umZlP3',

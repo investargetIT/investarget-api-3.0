@@ -19,7 +19,7 @@ from invest.settings import APILOG_PATH
 from proj.models import project
 from third.views.qiniufile import deleteqiniufile, downloadFileToPath
 from utils.customClass import InvestError, JSONResponse, RelationFilter
-from utils.sendMessage import sendmessage_dataroomuseradd
+from utils.sendMessage import sendmessage_dataroomuseradd, sendmessage_dataroomuserfileupdate
 from utils.somedef import file_iterator, addWaterMarkToPdfFiles, encryptPdfFilesWithPassword
 from utils.util import returnListChangeToLanguage, loginTokenIsAvailable, \
     returnDictChangeToLanguage, catchexcption, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
@@ -587,6 +587,7 @@ class User_DataroomfileView(viewsets.ModelViewSet):
            retrieve:查看该dataroom用户可见文件列表
            update:编辑该dataroom用户可见文件列表
            sendEmailNotifaction:发送邮件通知
+           sendFileUpdateEmailNotifaction:发送文件更新邮件通知
            destroy:减少用户可见dataroom
         """
     filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
@@ -732,6 +733,25 @@ class User_DataroomfileView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def sendFileUpdateEmailNotifaction(self, request, *args, **kwargs):
+        try:
+            user_dataroom = self.get_object()
+            if request.user.has_perm('dataroom.admin_adddataroom'):
+                pass
+            elif request.user in [user_dataroom.dataroom.proj.takeUser, user_dataroom.dataroom.proj.makeUser]:
+                pass
+            else:
+                raise InvestError(2009)
+            sendmessage_dataroomuserfileupdate(user_dataroom, user_dataroom.user, ['email', 'webmsg'], sender=request.user)
+            return JSONResponse(SuccessResponse(True))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
 
     @loginTokenIsAvailable()
     def update(self, request, *args, **kwargs):
