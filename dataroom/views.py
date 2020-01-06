@@ -1,7 +1,7 @@
 #coding=utf-8
 import threading
 import traceback
-
+import sys
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction
 from django.db.models import F
@@ -28,6 +28,8 @@ import datetime
 from django_filters import FilterSet
 import os
 import shutil
+reload(sys)
+sys.setdefaultencoding("utf-8")
 
 class DataroomFilter(FilterSet):
     supportuser = RelationFilter(filterstr='proj__supportUser',lookup_method='in')
