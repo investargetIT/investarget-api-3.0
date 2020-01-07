@@ -1238,11 +1238,9 @@ class UserRelationView(viewsets.ModelViewSet):
             countlist = []
             for manager_count in countres:
                 countlist.append({'familiar': manager_count[0], 'count': manager_count[1]})
-            sort = request.GET.get('sort', 1)
-            if sort in ['True', 'true', True, 1, 'Yes', 'yes', 'YES', 'TRUE']:
-                queryset = queryset.order_by('createdtime')
-            else:
-                queryset = queryset.order_by('-createdtime')
+            sortfield = request.GET.get('sort', 'createdtime')
+            desc = request.GET.get('desc', 0)
+            queryset = mySortQuery(queryset, sortfield, desc)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
