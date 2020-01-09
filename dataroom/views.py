@@ -10,11 +10,12 @@ from django.http import StreamingHttpResponse
 from rest_framework import filters, viewsets
 
 from dataroom.models import dataroom, dataroomdirectoryorfile, publicdirectorytemplate, dataroom_User_file, \
-    dataroom_User_template
+    dataroom_User_template, dataroomUserSeeFiles
 from dataroom.serializer import DataroomSerializer, DataroomCreateSerializer, DataroomdirectoryorfileCreateSerializer, \
     DataroomdirectoryorfileSerializer, DataroomdirectoryorfileUpdateSerializer, User_DataroomfileSerializer, \
     User_DataroomSerializer, User_DataroomfileCreateSerializer, User_DataroomTemplateSerializer, \
-    User_DataroomTemplateCreateSerializer, DataroomdirectoryorfilePathSerializer
+    User_DataroomTemplateCreateSerializer, DataroomdirectoryorfilePathSerializer, User_DataroomSeefilesSerializer, \
+    User_DataroomSeefilesCreateSerializer
 from invest.settings import APILOG_PATH
 from proj.models import project
 from third.views.qiniufile import deleteqiniufile, downloadFileToPath
@@ -198,6 +199,7 @@ class DataroomView(viewsets.ModelViewSet):
                 for fileOrDirectory in instance.dataroom_directories.all():
                     deleteInstance(fileOrDirectory, request.user)
                 instance.dataroom_users.all().update(is_deleted=True)
+                instance.dataroom_userTemp.all().update(is_deleted=True)
                 instance.is_deleted = True
                 instance.deleteduser = request.user
                 instance.deletedtime = datetime.datetime.now()
@@ -209,7 +211,7 @@ class DataroomView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['dataroom.downloadDataroom'])
+    @loginTokenIsAvailable()
     def checkZipStatus(self, request, *args, **kwargs):
         try:
             deleteExpireDir(APILOG_PATH['dataroomFilePath'])
@@ -219,7 +221,8 @@ class DataroomView(viewsets.ModelViewSet):
             password = request.GET.get('password')
             if userid != request.user.id:
                 if request.user.has_perm('dataroom.admin_getdataroom') or request.user.id in [dataroominstance.proj.takeUser_id, dataroominstance.proj.makeUser_id]:
-                    file_qs = dataroom_User_file.objects.get(dataroom=dataroominstance, user_id=userid).files.all()
+                    seefiles = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile__dataroom=dataroominstance, dataroomUserfile__user_id=userid)
+                    file_qs = dataroomdirectoryorfile.objects.filter(id__in=seefiles.values_list('file_id'))
                 else:
                     raise InvestError(2009, msg='非管理员权限')
             else:
@@ -227,7 +230,10 @@ class DataroomView(viewsets.ModelViewSet):
                     file_qs = dataroominstance.dataroom_directories.all().filter(is_deleted=False, isFile=True)
                 else:
                     if dataroom_User_file.objects.filter(dataroom=dataroominstance, user_id=userid, is_deleted=False).exists():
-                        file_qs = dataroom_User_file.objects.get(dataroom=dataroominstance, user_id=userid, is_deleted=False).files.all()
+                        seefiles = dataroomUserSeeFiles.objects.filter(is_deleted=False,
+                                                                       dataroomUserfile__dataroom=dataroominstance,
+                                                                       dataroomUserfile__user_id=userid)
+                        file_qs = dataroomdirectoryorfile.objects.filter(id__in=seefiles.values_list('file_id'))
                     else:
                         raise InvestError(2009, msg='没有权限查看该dataroom')
             if files:
@@ -453,7 +459,7 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             if request.user.has_perm('dataroom.admin_getdataroom') or request.user in (dataroominstance.proj.takeUser, dataroominstance.proj.makeUser) or (dataroominstance.isCompanyFile and request.user.has_perm('dataroom.get_companydataroom')):
                 queryset = self.get_queryset()
             elif dataroom_User_file.objects.filter(user=request.user, dataroom=dataroomid).exists():
-                queryset = dataroom_User_file.objects.filter(user=request.user, dataroom_id=dataroomid).first().files.all()
+                queryset = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile__dataroom=dataroominstance, dataroomUserfile__user=request.user)
             else:
                 raise InvestError(2009)
             queryset = self.filter_queryset(queryset)
@@ -583,7 +589,7 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
 
 class User_DataroomfileView(viewsets.ModelViewSet):
     """
-           list:用户可见dataroom列表
+           list:用户dataroom列表
            getUserUpdateFiles: 获取用户新增文件列表
            create:新建用户-dataroom关系
            retrieve:查看该dataroom用户可见文件列表
@@ -672,9 +678,9 @@ class User_DataroomfileView(viewsets.ModelViewSet):
             else:
                 raise InvestError(code=2007, msg='dataroom用户不存在')
             if instance.lastgettime:
-                files_queryset = instance.files.all().filter(lastmodifytime__gte=instance.lastgettime)
+                files_queryset = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile=instance, addTime__gte=instance.lastgettime)
             else:
-                files_queryset = instance.files.all()
+                files_queryset = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile=instance)
             if request.user.has_perm('dataroom.admin_getdataroom') or request.user in (instance.dataroom.proj.takeUser, instance.dataroom.proj.makeUser):
                 pass
             elif request.user == instance.user:
@@ -682,7 +688,8 @@ class User_DataroomfileView(viewsets.ModelViewSet):
                 instance.save()
             else:
                 raise InvestError(code=2009)
-            serializer = DataroomdirectoryorfilePathSerializer(files_queryset, many=True)
+            files = dataroomdirectoryorfile.objects.filter(id__in=files_queryset.values_list('id'))
+            serializer = DataroomdirectoryorfilePathSerializer(files, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -786,13 +793,125 @@ class User_DataroomfileView(viewsets.ModelViewSet):
         try:
             user_dataroom = self.get_object()
             with transaction.atomic():
-                user_dataroom.delete()
+                user_dataroom.deletedtime = datetime.datetime.now()
+                user_dataroom.deleteduser = request.user
+                user_dataroom.is_deleted = True
+                user_dataroom.save()
+                user_dataroom.dataroomuser_seeFiles.all().update(is_deleted=True, deleteduser=request.user, deletedtime=datetime.datetime.now())
+                user_dataroom.user_dataroomTempFiles.all().update(is_deleted=True, deleteduser=request.user,
+                                                                 deletedtime=datetime.datetime.now())
                 return JSONResponse(SuccessResponse({'isDeleted':True}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+class DataroomUserSeeFilesFilter(FilterSet):
+    dataroom = RelationFilter(filterstr='dataroomUserfile__dataroom')
+    user = RelationFilter(filterstr='dataroomUserfile__user')
+    file = RelationFilter(filterstr='file', lookup_method='in')
+    class Meta:
+        model = dataroomUserSeeFiles
+        fields = ('dataroom', 'user', 'file')
+
+class User_DataroomSeefilesView(viewsets.ModelViewSet):
+    """
+           list:用户dataroom可见文件列表
+           create:新建用户可见文件
+           destroy:删除用户某可见文件
+        """
+    filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
+    queryset = dataroomUserSeeFiles.objects.all().filter(is_deleted=False, dataroomUserfile__is_deleted=False)
+    filter_class = DataroomUserSeeFilesFilter
+    serializer_class = User_DataroomSeefilesSerializer
+    Model = dataroom_User_file
+
+    def get_object(self,pk=None):
+        if pk:
+            try:
+                obj = self.queryset.get(id=pk, is_deleted=False)
+            except self.Model.DoesNotExist:
+                raise InvestError(code=7002, msg='用户没有该可见文件（%s）' % pk)
+        else:
+            try:
+                obj = self.queryset.get(id=self.kwargs['pk'], is_deleted=False)
+            except self.Model.DoesNotExist:
+                raise InvestError(code=7002, msg='用户没有该可见文件（%s）' % self.kwargs['pk'])
+        if obj.datasource != self.request.user.datasource:
+            raise InvestError(code=8888)
+        return obj
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang', 'cn')
+            dataroomid = request.GET.get('dataroom')
+            if not dataroomid:
+                raise InvestError(2007, msg='dataroom 参数不能为空')
+            dataroominstance = dataroom.objects.get(is_deleted=False, id=dataroomid, datasource=request.user.datasource)
+            if request.user.has_perm('dataroom.admin_getdataroom') or request.user in [dataroominstance.proj.takeUser, dataroominstance.proj.makeUser]:
+                queryset = self.filter_queryset(self.get_queryset())
+            else:
+                queryset = self.filter_queryset(self.get_queryset()).filter(dataroomUserfile__user=request.user, dataroomUserfile__dataroom=dataroominstance)
+            count = queryset.count()
+            serializer = self.serializer_class(queryset, many=True)
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            dataroomid = data['dataroom']
+            dataroominstance = dataroom.objects.get(is_deleted=False, id=dataroomid, datasource=request.user.datasource)
+            if request.user in [dataroominstance.proj.takeUser, dataroominstance.proj.makeUser]:
+                pass
+            elif request.user.has_perm('dataroom.admin_adddataroom'):
+                pass
+            else:
+                raise InvestError(2009)
+            with transaction.atomic():
+                data['createuser'] = request.user.id
+                data['addTime'] = datetime.datetime.now()
+                user_dataroomserializer = User_DataroomSeefilesCreateSerializer(data=data)
+                if user_dataroomserializer.is_valid():
+                    user_dataroomserializer.save()
+                else:
+                    raise InvestError(code=20071, msg='data有误_%s' % user_dataroomserializer.errors)
+                return JSONResponse(SuccessResponse(user_dataroomserializer.data))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable(['dataroom.admin_deletedataroom'])
+    def destroy(self, request, *args, **kwargs):
+        try:
+            user_seefile = self.get_object()
+            if request.user in [user_seefile.dataroomUserfile.dataroom.proj.takeUser, user_seefile.dataroomUserfile.dataroom.proj.makeUser]:
+                pass
+            elif request.user.has_perm('dataroom.admin_adddataroom'):
+                pass
+            else:
+                raise InvestError(2009)
+            with transaction.atomic():
+                user_seefile.is_deleted = True
+                user_seefile.deleteduser = request.user
+                user_seefile.save()
+                return JSONResponse(SuccessResponse({'isDeleted':True}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
 
 
 # dataroom 公共函数
@@ -972,8 +1091,18 @@ class User_Dataroom_TemplateView(viewsets.ModelViewSet):
             except dataroom_User_file.DoesNotExist:
                 raise InvestError(20071, msg='用户不在模板dataroom中，请先将用户添加至dataroom中。')
             else:
-                user_dataroom.files = user_dataroom_temp.dataroomUserfile.files.all()
-                user_dataroom.save()
+                oldFiles = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile=user_dataroom)
+                allFiles = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile=user_dataroom_temp.dataroomUserfile)
+                addFiles = allFiles.exclude(file__in=oldFiles.values_list('file'))
+                removeFiles = oldFiles.exclude(file__in=allFiles.values_list('file'))
+                addTime = datetime.datetime.now()
+                for seefile in addFiles:
+                    dataroomUserSeeFiles(dataroomUserfile=user_dataroom, file=seefile.file, addTime=addTime, createuser=request.user).save()
+                for seefile in removeFiles:
+                    seefile.is_deleted = True
+                    seefile.deleteduser = request.user
+                    seefile.deletedtime = addTime
+                    seefile.save()
             return JSONResponse(SuccessResponse(User_DataroomfileSerializer(user_dataroom).data))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))

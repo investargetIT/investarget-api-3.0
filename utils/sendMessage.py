@@ -563,15 +563,15 @@ def sendmessage_dataroomuserfileupdate(model,receiver,types,sender=None):
                         destination = receiver.email
                         projectsign = 'oQGaH3'
                         if model.lastgettime:
-                            files_queryset = model.files.all().filter(lastmodifytime__gte=model.lastgettime)
+                            seefiles_queryset = model.dataroomuser_seeFiles.all().filter(is_deleted=False, addTime__gte=model.lastgettime)
                         else:
-                            files_queryset = model.files.all()
+                            seefiles_queryset = model.dataroomuser_seeFiles.all()
                         filestr = ''
                         projectUrl = getDataroomTitleWithSuperLink(model.dataroom, 'cn')
                         dataroomUrl = '%s/app/dataroom/detail?id=%s&isClose=false&projectID=%s'% (getbase_domain(model.datasource), model.dataroom.id, model.dataroom.proj.id)
-                        if files_queryset.exists():
-                            for file in files_queryset:
-                                filestr = filestr + '<a href=\'%s\'>%s</a>' % (dataroomUrl, file.filename) + '<br>'
+                        if seefiles_queryset.exists():
+                            for seefile in seefiles_queryset:
+                                filestr = filestr + '<a href=\'%s\'>%s</a>' % (dataroomUrl, seefile.file.filename) + '<br>'
                         vars = {'name': receiver.usernameC, 'projectC': projectUrl, 'file': filestr}
                         xsendEmail(destination, projectsign, vars)
                     except Exception:

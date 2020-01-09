@@ -43,6 +43,16 @@ user_dataroomone =  views.User_DataroomfileView.as_view({
         'delete':'destroy',
 })
 
+user_dataroomFile = views.User_DataroomSeefilesView.as_view({
+        'get': 'list',
+        'post': 'create',
+})
+
+user_dataroomFileOne =  views.User_DataroomSeefilesView.as_view({
+        'delete':'destroy',
+})
+
+
 userUpdateFiles = views.User_DataroomfileView.as_view({
         'get': 'getUserUpdateFiles',
 })
@@ -79,6 +89,8 @@ urlpatterns = [
     url(r'^file/$', dataroomfile,name='dataroom-fileordirectory'),
     url(r'^filepath/$', dataroomfilepath,name='dataroom-filepath'),
     url(r'^user/$', user_dataroom,name='user_dataroom-list',),
+    url(r'^userfile/$', user_dataroomFile,name='user_dataroomFile-list',),
+    url(r'^userfile/(?P<pk>\d+)/$', user_dataroomFileOne,name='user_dataroomFile',),
     url(r'^userfile/update/$', userUpdateFiles,name='userUpdateFiles-list',),
     url(r'^userfile/update/(?P<pk>\d+)/$', userFileUpdateEmail,name='sendUserFileUpdateEmail',),
     url(r'^user/(?P<pk>\d+)/$', user_dataroomone,name='user_dataroom-detail'),
