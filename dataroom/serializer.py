@@ -114,7 +114,7 @@ class User_DataroomSeefilesSerializer(serializers.ModelSerializer):
     file = DataroomdirectoryorfileSerializer()
     class Meta:
         model = dataroomUserSeeFiles
-        fields = ('id', 'file')
+        fields = ('id', 'file', 'addTime')
 
 class User_DataroomTemplateSerializer(serializers.ModelSerializer):
     dataroomUserfile = User_DataroomfileFileIdsSerializer()

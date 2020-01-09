@@ -891,7 +891,7 @@ class User_DataroomSeefilesView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
-    @loginTokenIsAvailable(['dataroom.admin_deletedataroom'])
+    @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
         try:
             user_seefile = self.get_object()
