@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from dataroom.models import dataroom, dataroomdirectoryorfile, dataroom_User_file, dataroom_User_template
+from dataroom.models import dataroom, dataroomdirectoryorfile, dataroom_User_file, dataroom_User_template, \
+    dataroomUserSeeFiles
 from proj.serializer import ProjCommonSerializer
 from third.views.qiniufile import getUrlWithBucketAndKey
 from usersys.serializer import UserInfoSerializer
@@ -73,20 +74,47 @@ class User_DataroomSerializer(serializers.ModelSerializer):
         fields = ('id', 'dataroom', 'user')
 
 class User_DataroomfileSerializer(serializers.ModelSerializer):
-    files = DataroomdirectoryorfileSerializer(many=True)
+    files = serializers.SerializerMethodField()
+
     class Meta:
         model = dataroom_User_file
         fields = ('id', 'dataroom', 'user', 'files')
 
+    def get_files(self, obj):
+        seefiles = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile=obj)
+        if seefiles.exists():
+            files = dataroomdirectoryorfile.objects.filter(id__in=seefiles.values_list('file_id'))
+            return DataroomdirectoryorfileSerializer(files, many=True).data
+        else:
+            return None
+
 class User_DataroomfileFileIdsSerializer(serializers.ModelSerializer):
+    files = serializers.SerializerMethodField()
     class Meta:
         model = dataroom_User_file
         fields = ('id', 'dataroom', 'user', 'files')
+    def get_files(self, obj):
+        seefiles = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile=obj)
+        if seefiles.exists():
+            return seefiles.values_list('file_id', flat=True)
+        else:
+            return None
 
 class User_DataroomTemplateCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = dataroom_User_template
         fields = '__all__'
+
+class User_DataroomSeefilesCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = dataroomUserSeeFiles
+        fields = '__all__'
+
+class User_DataroomSeefilesSerializer(serializers.ModelSerializer):
+    file = DataroomdirectoryorfileSerializer()
+    class Meta:
+        model = dataroomUserSeeFiles
+        fields = ('id', 'file')
 
 class User_DataroomTemplateSerializer(serializers.ModelSerializer):
     dataroomUserfile = User_DataroomfileFileIdsSerializer()

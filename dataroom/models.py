@@ -124,6 +124,33 @@ class dataroom_User_file(MyModel):
             self.user.save()
         super(dataroom_User_file, self).save(force_insert, force_update, using, update_fields)
 
+
+class dataroomUserSeeFiles(MyModel):
+    file = MyForeignKey(dataroomdirectoryorfile, blank=True, null=True, related_name='file_userSeeFile')
+    dataroomUserfile = MyForeignKey(dataroom_User_file, blank=True, null=True, related_name='dataroomuser_seeFiles', help_text='用户dataroom记录')
+    addTime = models.DateTimeField(blank=True, null=True)
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_userdataroomseefiles')
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_userdataroomseefiles')
+    datasource = MyForeignKey(DataSource, blank=True, null=True, help_text='数据源')
+
+    class Meta:
+        db_table = 'dataroom_user_seefiles'
+
+    def save(self, force_insert=False, force_update=False, using=None,update_fields=None):
+        if not self.file:
+            raise InvestError(2007, '文件不能为空')
+        self.datasource = self.file.datasource
+        if self.pk is None:
+            if self.dataroomUserfile.dataroom.isClose or self.dataroomUserfile.dataroom.is_deleted:
+                raise InvestError(7012,msg='dataroom已关闭/删除，无法添加可见用户')
+            try:
+                dataroomUserSeeFiles.objects.get(is_deleted=False, file=self.file, dataroomUserfile=self.dataroomUserfile)
+            except dataroomUserSeeFiles.DoesNotExist:
+                pass
+            else:
+                raise InvestError(code=2004, msg='用户已存在一个相同的可见文件了')
+        super(dataroomUserSeeFiles, self).save(force_insert, force_update, using, update_fields)
+
 class dataroom_User_template(MyModel):
     dataroom = MyForeignKey(dataroom, blank=True, null=True, related_name='dataroom_userTemp')
     user = MyForeignKey(MyUser, blank=True, null=True, related_name='user_dataroomTemp', help_text='投资人')
