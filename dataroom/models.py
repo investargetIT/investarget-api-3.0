@@ -139,6 +139,7 @@ class dataroomUserSeeFiles(MyModel):
     def save(self, force_insert=False, force_update=False, using=None,update_fields=None):
         if not self.file:
             raise InvestError(2007, '文件不能为空')
+        self.datasource = self.file.datasource
         if self.pk is None:
             if self.dataroomUserfile.dataroom.isClose or self.dataroomUserfile.dataroom.is_deleted:
                 raise InvestError(7012,msg='dataroom已关闭/删除，无法添加可见用户')
