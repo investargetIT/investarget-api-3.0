@@ -563,7 +563,7 @@ def sendmessage_dataroomuserfileupdate(model,receiver,types,sender=None):
                         destination = receiver.email
                         projectsign = 'oQGaH3'
                         if model.lastgettime:
-                            seefiles_queryset = model.dataroomuser_seeFiles.all().filter(is_deleted=False, addTime__gte=model.lastgettime)
+                            seefiles_queryset = model.dataroomuser_seeFiles.all().filter(is_deleted=False, createdtime__gte=model.lastgettime)
                         else:
                             seefiles_queryset = model.dataroomuser_seeFiles.all()
                         filestr = ''

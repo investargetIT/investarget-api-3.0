@@ -678,7 +678,7 @@ class User_DataroomfileView(viewsets.ModelViewSet):
             else:
                 raise InvestError(code=2007, msg='dataroom用户不存在')
             if instance.lastgettime:
-                files_queryset = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile=instance, addTime__gte=instance.lastgettime)
+                files_queryset = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile=instance, createdtime__gte=instance.lastgettime)
             else:
                 files_queryset = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile=instance)
             if request.user.has_perm('dataroom.admin_getdataroom') or request.user in (instance.dataroom.proj.takeUser, instance.dataroom.proj.makeUser):
@@ -877,7 +877,6 @@ class User_DataroomSeefilesView(viewsets.ModelViewSet):
                 raise InvestError(2009)
             with transaction.atomic():
                 data['createuser'] = request.user.id
-                data['addTime'] = datetime.datetime.now()
                 user_dataroomserializer = User_DataroomSeefilesCreateSerializer(data=data)
                 if user_dataroomserializer.is_valid():
                     user_dataroomserializer.save()
@@ -1095,13 +1094,13 @@ class User_Dataroom_TemplateView(viewsets.ModelViewSet):
                 allFiles = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile=user_dataroom_temp.dataroomUserfile)
                 addFiles = allFiles.exclude(file__in=oldFiles.values_list('file'))
                 removeFiles = oldFiles.exclude(file__in=allFiles.values_list('file'))
-                addTime = datetime.datetime.now()
+                deleteTime = datetime.datetime.now()
                 for seefile in addFiles:
-                    dataroomUserSeeFiles(dataroomUserfile=user_dataroom, file=seefile.file, addTime=addTime, createuser=request.user).save()
+                    dataroomUserSeeFiles(dataroomUserfile=user_dataroom, file=seefile.file, createuser=request.user).save()
                 for seefile in removeFiles:
                     seefile.is_deleted = True
                     seefile.deleteduser = request.user
-                    seefile.deletedtime = addTime
+                    seefile.deletedtime = deleteTime
                     seefile.save()
             return JSONResponse(SuccessResponse(User_DataroomfileSerializer(user_dataroom).data))
         except InvestError as err:
