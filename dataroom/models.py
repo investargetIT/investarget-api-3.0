@@ -128,7 +128,6 @@ class dataroom_User_file(MyModel):
 class dataroomUserSeeFiles(MyModel):
     file = MyForeignKey(dataroomdirectoryorfile, blank=True, null=True, related_name='file_userSeeFile')
     dataroomUserfile = MyForeignKey(dataroom_User_file, blank=True, null=True, related_name='dataroomuser_seeFiles', help_text='用户dataroom记录')
-    addTime = models.DateTimeField(blank=True, null=True)
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_userdataroomseefiles')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_userdataroomseefiles')
     datasource = MyForeignKey(DataSource, blank=True, null=True, help_text='数据源')
