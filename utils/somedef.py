@@ -162,15 +162,17 @@ def encryptPdfFilesWithPassword(filepaths, password):
 
             for input_filepath in filepaths:
                 now = datetime.datetime.now()
+                print('加密pdf--%s--源文件%s' % (now, input_filepath))
+                (filepath, tempfilename) = os.path.split(input_filepath)
+                (filename, filetype) = os.path.splitext(tempfilename)
+                out_path = os.path.join(filepath, filename + '-encryout.pdf')
                 try:
-                    print('加密pdf--%s--源文件%s' % (now, input_filepath))
-                    (filepath, tempfilename) = os.path.split(input_filepath)
-                    (filename, filetype) = os.path.splitext(tempfilename)
-                    out_path = os.path.join(filepath, filename + '-encryout.pdf')
                     jd.addPassword(input_filepath, password, out_path)
                     os.remove(input_filepath)
                     os.rename(out_path, input_filepath)
                 except Exception as err:
+                    if os.path.exists(out_path) and os.path.exists(input_filepath):
+                        os.remove(out_path)
                     print('加密pdf--%s--源文件%s' % (now, input_filepath))
                     filepath = APILOG_PATH['excptionlogpath'] + '/' + now.strftime('%Y-%m-%d')
                     f = open(filepath, 'a')
