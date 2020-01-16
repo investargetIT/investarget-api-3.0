@@ -565,7 +565,7 @@ def sendmessage_dataroomuserfileupdate(model,receiver,types,sender=None):
                         if model.lastgettime:
                             seefiles_queryset = model.dataroomuser_seeFiles.all().filter(is_deleted=False, createdtime__gte=model.lastgettime)
                         else:
-                            seefiles_queryset = model.dataroomuser_seeFiles.all()
+                            seefiles_queryset = model.dataroomuser_seeFiles.all().filter(is_deleted=False)
                         filestr = ''
                         projectUrl = getDataroomTitleWithSuperLink(model.dataroom, 'cn')
                         dataroomUrl = '%s/app/dataroom/detail?id=%s&isClose=false&projectID=%s'% (getbase_domain(model.datasource), model.dataroom.id, model.dataroom.proj.id)
