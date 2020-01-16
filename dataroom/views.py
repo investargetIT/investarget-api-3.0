@@ -688,7 +688,7 @@ class User_DataroomfileView(viewsets.ModelViewSet):
                 instance.save()
             else:
                 raise InvestError(code=2009)
-            files = dataroomdirectoryorfile.objects.filter(id__in=files_queryset.values_list('id'))
+            files = dataroomdirectoryorfile.objects.filter(id__in=files_queryset.values_list('file_id'))
             serializer = DataroomdirectoryorfilePathSerializer(files, many=True)
             return JSONResponse(SuccessResponse(returnListChangeToLanguage(serializer.data, lang)))
         except InvestError as err:
