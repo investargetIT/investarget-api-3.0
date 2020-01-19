@@ -17,6 +17,7 @@ import datetime
 from rest_framework.decorators import detail_route
 
 from APIlog.views import viewprojlog
+from dataroom.models import dataroom_User_file
 from dataroom.views import pulishProjectCreateDataroom
 from invest.settings import PROJECTPDF_URLPATH, APILOG_PATH
 from proj.models import project, finance, projectTags, projectIndustries, projectTransactionType, favoriteProject, \
@@ -146,7 +147,7 @@ class ProjectView(viewsets.ModelViewSet):
                     queryset = queryset.filter(Q(isHidden=False) | Q(takeUser=request.user) | Q(makeUser=request.user) | Q(supportUser=request.user) | Q(isHidden=True, proj_orgBDs__manager=request.user, proj_orgBDs__is_deleted=False))
                     serializerclass = ProjListSerializer_admin
                 else:
-                    queryset = queryset.filter(Q(isHidden=False,projstatus_id__in=[4,6,7,8]))
+                    queryset = queryset.filter(Q(isHidden=False,projstatus_id__in=[4,6,7,8]) | Q(isHidden=True, proj_datarooms__is_deleted=False, proj_datarooms__dataroom_users__user=request.user, proj_datarooms__dataroom_users__is_deleted=False))
                     serializerclass = ProjListSerializer_user
             queryset = queryset.distinct()
             count = queryset.count()
@@ -286,6 +287,8 @@ class ProjectView(viewsets.ModelViewSet):
                         'proj.admin_getproj'):
                     pass
                 elif request.user.has_perm('usersys.as_trader') and request.user.userstatus_id == 2:
+                    pass
+                elif dataroom_User_file.objects.filter(user=request.user, is_deleted=False).exists():
                     pass
                 else:
                     raise InvestError(code=4004, msg='没有权限查看隐藏项目')
