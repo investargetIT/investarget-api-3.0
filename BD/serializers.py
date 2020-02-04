@@ -7,6 +7,7 @@ from proj.serializer import ProjSimpleSerializer
 from sourcetype.serializer import BDStatusSerializer, orgAreaSerializer, tagSerializer, currencyTypeSerializer
 from sourcetype.serializer import titleTypeSerializer
 from third.views.qiniufile import getUrlWithBucketAndKey
+from usersys.models import MyUser
 from usersys.serializer import UserCommenSerializer, UserRemarkSimpleSerializer, UserAttachmentSerializer, \
     UserSimpleSerializer
 
@@ -40,12 +41,12 @@ class ProjectBDCreateSerializer(serializers.ModelSerializer):
 
 
 class ProjectBDSerializer(serializers.ModelSerializer):
-    relateManagers = serializers.SerializerMethodField()
+
     BDComments = serializers.SerializerMethodField()
     location = orgAreaSerializer()
     usertitle = titleTypeSerializer()
     bd_status = BDStatusSerializer()
-    manager = UserCommenSerializer()
+    manager = serializers.SerializerMethodField()
     contractors = UserCommenSerializer()
     financeCurrency = currencyTypeSerializer()
 
@@ -53,11 +54,11 @@ class ProjectBDSerializer(serializers.ModelSerializer):
         model = ProjectBD
         exclude = ('deleteduser', 'deletedtime', 'datasource', 'is_deleted')
 
-    def get_relateManagers(self, obj):
-        qs = obj.ProjectBD_managers.filter(is_deleted=False).order_by('-createdtime')
+    def get_manager(self, obj):
+        qs = obj.ProjectBD_managers.filter(is_deleted=False).values_list('manager_id', flat=True)
         if qs.exists():
-            return ProjectBDManagersSerializer(qs, many=True).data
-        return None
+            return UserCommenSerializer(MyUser.objects.filter(Q(id__in=qs)|Q(id=obj.manager_id)), many=True).data
+        return [UserCommenSerializer(obj.manager).data] if obj.manager else None
 
     def get_BDComments(self, obj):
         user_id = self.context.get('user_id')
