@@ -13,7 +13,6 @@ from org.models import organization
 from proj.models import project
 from sourcetype.models import BDStatus, OrgArea, Country, OrgBdResponse, DataSource, CurrencyType, IndustryGroup
 from sourcetype.models import TitleType
-from timeline.models import timeline, timelineremark, timelineTransationStatu
 from usersys.models import MyUser, UserRemarks
 from utils.customClass import MyForeignKey, InvestError, MyModel
 from utils.util import logexcption
@@ -38,6 +37,7 @@ class ProjectBD(MyModel):
     manager = MyForeignKey(MyUser,blank=True,null=True,help_text='负责人',related_name='user_projBDs')
     contractors = MyForeignKey(MyUser, blank=True, null=True, help_text='签约负责人', related_name='contractors_projBDs')
     financeAmount = models.BigIntegerField(blank=True, null=True, help_text='融资金额')
+    isimportant = models.BooleanField(blank=True, default=False, help_text='是否重点BD')
     financeCurrency = MyForeignKey(CurrencyType, default=1, null=True, blank=True, help_text='融资金额货币类型')
     expirationtime = models.DateTimeField(blank=True, null=True, help_text='BD过期时间')
     indGroup = MyForeignKey(IndustryGroup, null=True, blank=True, help_text='所属行业组')
@@ -60,9 +60,6 @@ class ProjectBD(MyModel):
             raise InvestError(2007,msg='manager can`t be null')
         if not self.datasource:
             raise InvestError(2007, msg='datasource can`t be null')
-        # if self.country:
-        #     if self.country.datasource != self.datasource:
-        #         raise  InvestError(8888, msg='datasource 不匹配')
         if self.bduser:
             self.username = self.bduser.usernameC
             self.usermobile = self.bduser.mobile
@@ -76,6 +73,25 @@ class ProjectBD(MyModel):
             raise InvestError(2024)
         return super(ProjectBD, self).save(*args, **kwargs)
 
+
+class ProjectBDManagers(MyModel):
+    manager = MyForeignKey(MyUser, blank=True, default=False, help_text='负责人', related_name='managers_ProjectBD')
+    projectBD = MyForeignKey(ProjectBD,blank=True, null=True, help_text='bd项目', related_name='ProjectBD_managers')
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_ProjectBDManagers')
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_ProjectBDManagers')
+    datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
+
+
+    def save(self, *args, **kwargs):
+        if self.projectBD is None:
+            raise InvestError(2007,msg='projectBD can`t be null')
+        if not self.is_deleted:
+            if self.projectBD.manager == self.manager:
+                raise InvestError(2007, msg='主负责人已存在')
+            if ProjectBDManagers.objects.exclude(pk=self.pk).filter(is_deleted=False, manager=self.manager, projectBD=self.projectBD).exists():
+                raise InvestError(2007, msg='负责人已存在')
+        self.datasource = self.projectBD.datasource
+        return super(ProjectBDManagers, self).save(*args, **kwargs)
 
 class ProjectBDComments(MyModel):
     comments = models.TextField(blank=True, default=False, help_text='内容')

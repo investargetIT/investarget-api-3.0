@@ -1,7 +1,7 @@
 from django.db.models import Q
 from rest_framework import serializers
 
-from BD.models import ProjectBDComments, ProjectBD, OrgBDComments, OrgBD, MeetingBD, OrgBDBlack
+from BD.models import ProjectBDComments, ProjectBD, OrgBDComments, OrgBD, MeetingBD, OrgBDBlack, ProjectBDManagers
 from org.serializer import OrgCommonSerializer
 from proj.serializer import ProjSimpleSerializer
 from sourcetype.serializer import BDStatusSerializer, orgAreaSerializer, tagSerializer, currencyTypeSerializer
@@ -22,6 +22,16 @@ class ProjectBDCommentsSerializer(serializers.ModelSerializer):
         model = ProjectBDComments
         fields = ('comments', 'id', 'createdtime', 'projectBD', 'createuser')
 
+class ProjectBDManagersCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjectBDManagers
+        fields = '__all__'
+
+class ProjectBDManagersSerializer(serializers.ModelSerializer):
+    manager = UserCommenSerializer()
+    class Meta:
+        model = ProjectBDManagers
+        fields = ('manager', 'id', 'createdtime', 'projectBD', 'createuser')
 
 class ProjectBDCreateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -30,6 +40,7 @@ class ProjectBDCreateSerializer(serializers.ModelSerializer):
 
 
 class ProjectBDSerializer(serializers.ModelSerializer):
+    relateManagers = serializers.SerializerMethodField()
     BDComments = serializers.SerializerMethodField()
     location = orgAreaSerializer()
     usertitle = titleTypeSerializer()
@@ -41,6 +52,12 @@ class ProjectBDSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectBD
         exclude = ('deleteduser', 'deletedtime', 'datasource', 'is_deleted')
+
+    def get_relateManagers(self, obj):
+        qs = obj.ProjectBD_managers.filter(is_deleted=False).order_by('-createdtime')
+        if qs.exists():
+            return ProjectBDManagersSerializer(qs, many=True).data
+        return None
 
     def get_BDComments(self, obj):
         user_id = self.context.get('user_id')

@@ -10,10 +10,12 @@ import datetime
 import json
 from django.core.serializers.json import DjangoJSONEncoder
 from rest_framework import filters, viewsets
-from BD.models import ProjectBD, ProjectBDComments, OrgBDComments, OrgBD, MeetingBD, MeetBDShareToken, OrgBDBlack
+from BD.models import ProjectBD, ProjectBDComments, OrgBDComments, OrgBD, MeetingBD, MeetBDShareToken, OrgBDBlack, \
+    ProjectBDManagers
 from BD.serializers import ProjectBDSerializer, ProjectBDCreateSerializer, ProjectBDCommentsCreateSerializer, \
     ProjectBDCommentsSerializer, OrgBDCommentsSerializer, OrgBDCommentsCreateSerializer, OrgBDCreateSerializer, \
-    OrgBDSerializer, MeetingBDSerializer, MeetingBDCreateSerializer, OrgBDBlackSerializer, OrgBDBlackCreateSerializer
+    OrgBDSerializer, MeetingBDSerializer, MeetingBDCreateSerializer, OrgBDBlackSerializer, OrgBDBlackCreateSerializer, \
+    ProjectBDManagersCreateSerializer
 from invest.settings import cli_domain
 from msg.views import deleteMessage
 from proj.models import project
@@ -30,6 +32,7 @@ from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorRespon
 class ProjectBDFilter(FilterSet):
     com_name = RelationFilter(filterstr='com_name',lookup_method='icontains')
     location = RelationFilter(filterstr='location', lookup_method='in')
+    isimportant = RelationFilter(filterstr='isimportant')
     contractors = RelationFilter(filterstr='contractors', lookup_method='in')
     indGroup = RelationFilter(filterstr='indGroup', lookup_method='in')
     country = RelationFilter(filterstr='country', lookup_method='in')
@@ -37,6 +40,7 @@ class ProjectBDFilter(FilterSet):
     usermobile = RelationFilter(filterstr='usermobile', lookup_method='contains')
     source = RelationFilter(filterstr='source',lookup_method='icontains')
     manager = RelationFilter(filterstr='manager',lookup_method='in')
+    relateManager = RelationFilter(filterstr='ProjectBD_managers__manager', lookup_method='in')
     bd_status = RelationFilter(filterstr='bd_status', lookup_method='in')
     source_type = RelationFilter(filterstr='source_type', lookup_method='in')
     stime = RelationFilter(filterstr='createdtime', lookup_method='gt')
@@ -88,7 +92,7 @@ class ProjectBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageProjectBD') or request.user.has_perm('usersys.as_trader'):
                 pass
             elif request.user.has_perm('BD.user_getProjectBD'):
-                queryset = queryset.filter(Q(manager=request.user) | Q(contractors=request.user) | Q(createuser=request.user))
+                queryset = queryset.filter(Q(manager=request.user) | Q(contractors=request.user) | Q(createuser=request.user) | Q(ProjectBD_managers__manager=request.user)).distinct()
             else:
                 raise InvestError(2009)
             countres = queryset.values_list('manager').annotate(Count('manager'))
@@ -139,6 +143,7 @@ class ProjectBDView(viewsets.ModelViewSet):
             data = request.data
             lang = request.GET.get('lang')
             comments = data.get('comments',None)
+            relateManagers = data.get('relateManagers', None)
             data['createuser'] = request.user.id
             data['datasource'] = request.user.datasource.id
             data['manager'] = data['manager'] if data.get('manager') else request.user.id
@@ -157,6 +162,11 @@ class ProjectBDView(viewsets.ModelViewSet):
                         add_perm('BD.user_manageProjectBD', newprojectBD.manager, newprojectBD)
                 else:
                     raise InvestError(4009,msg='项目BD创建失败——%s'%projectBD.errors)
+                if isinstance(relateManagers, list):
+                    for relate_manager in relateManagers:
+                        instance = ProjectBDManagersCreateSerializer(data={'projectBD': newprojectBD.id, 'manager':relate_manager, 'createuser':request.user.id})
+                        if instance.is_valid():
+                            instance.save()
                 if comments:
                     data['projectBD'] = newprojectBD.id
                     commentinstance = ProjectBDCommentsCreateSerializer(data=data)
@@ -177,6 +187,8 @@ class ProjectBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageProjectBD'):
                 pass
             elif request.user in [instance.manager, instance.contractors, instance.createuser]:
+                pass
+            elif instance.ProjectBD_managers.filter(manager=request.user, is_deleted=False).exists():
                 pass
             else:
                 raise InvestError(2009)
@@ -199,6 +211,8 @@ class ProjectBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageProjectBD'):
                 pass
             elif request.user in [instance.manager, instance.contractors, instance.createuser]:
+                pass
+            elif instance.ProjectBD_managers.filter(manager=request.user, is_deleted=False).exists():
                 pass
             else:
                 raise InvestError(2009)
@@ -225,6 +239,8 @@ class ProjectBDView(viewsets.ModelViewSet):
                 pass
             elif request.user in [instance.manager, instance.contractors, instance.createuser]:
                 pass
+            elif instance.ProjectBD_managers.filter(manager=request.user, is_deleted=False).exists():
+                pass
             else:
                 raise InvestError(2009)
             with transaction.atomic():
@@ -232,8 +248,84 @@ class ProjectBDView(viewsets.ModelViewSet):
                 instance.deleteduser = request.user
                 instance.deletedtime = datetime.datetime.now()
                 instance.save()
+                instance.ProjectBD_managers.filter(is_deleted=False).update(is_deleted=True, deleteduser=request.user, deletedtime=datetime.datetime.now())
                 instance.ProjectBD_comments.filter(is_deleted=False).update(is_deleted=True, deleteduser=request.user, deletedtime=datetime.datetime.now())
             return JSONResponse(SuccessResponse({'isDeleted': True,}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+class ProjectBDManagersView(viewsets.ModelViewSet):
+    """
+    create:增加项目BDmanagers
+    destroy:删除项目BDmanagers
+    """
+    filter_backends = (filters.DjangoFilterBackend,)
+    queryset = ProjectBDManagers.objects.filter(is_deleted=False)
+    filter_fields = ('projectBD', 'manager')
+    serializer_class = ProjectBDManagersCreateSerializer
+
+    def get_object(self):
+        queryset = self.filter_queryset(self.get_queryset())
+        lookup_url_kwarg = 'pk'
+        assert lookup_url_kwarg in self.kwargs, (
+                'Expected view %s to be called with a URL keyword argument '
+                'named "%s". Fix your URL conf' %
+                (self.__class__.__name__, lookup_url_kwarg)
+        )
+        try:
+            obj = queryset.get(id=self.kwargs[lookup_url_kwarg])
+        except ProjectBDManagers.DoesNotExist:
+            raise InvestError(code=8892)
+        return obj
+
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            if request.user.has_perm('BD.manageProjectBD'):
+                pass
+            elif request.user.has_perm('BD.user_addProjectBD'):
+                pass
+            else:
+                raise InvestError(2009)
+            lang = request.GET.get('lang')
+            data['createuser'] = request.user.id
+            data['datasource'] = request.user.datasource.id
+            with transaction.atomic():
+                instance = ProjectBDManagersCreateSerializer(data=data)
+                if instance.is_valid():
+                    instance.save()
+                else:
+                    raise InvestError(4009, msg='创建项目BDcomments失败--%s' % instance.error_messages)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(instance.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            if request.user.has_perm('BD.manageProjectBD'):
+                pass
+            elif request.user.has_perm('BD.user_addProjectBD'):
+                pass
+            else:
+                raise InvestError(2009)
+            with transaction.atomic():
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
+            return JSONResponse(SuccessResponse({'isDeleted': True, }))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
