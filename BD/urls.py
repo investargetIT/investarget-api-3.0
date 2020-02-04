@@ -14,6 +14,15 @@ projbd_detail = views.ProjectBDView.as_view({
         'put': 'update',
         'delete': 'destroy'
 })
+
+projbdmanagers_create = views.ProjectBDManagersView.as_view({
+        'post': 'create'
+})
+projbdmanagers_delete = views.ProjectBDManagersView.as_view({
+        'delete': 'destroy'
+})
+
+
 projdbcomment_list = views.ProjectBDCommentsView.as_view({
         'get': 'list',
         'post': 'create'
@@ -97,6 +106,9 @@ urlpatterns = [
         url(r'^projbd/$', projbd_list, name='projbd_list'),
         url(r'^projbd/count/$', projbd_count, name='projbd_count'),
         url(r'^projbd/(?P<pk>\d+)/$', projbd_detail, name='projbd_detail'),
+        url(r'^projbd/relatemanager/$', projbdmanagers_create, name='projbdmanagers_create'),
+        url(r'^projbd/relatemanager/(?P<pk>\d+)/$', projbdmanagers_delete, name='projbdmanagers_delete'),
+        url(r'^projbd/$', projbd_list, name='projbd_list'),
         url(r'^projbd/comment/$', projdbcomment_list, name='projdbcomment_list'),
         url(r'^projbd/comment/(?P<pk>\d+)/$', projbdcomment_detail, name='projbdcomment_detail'),
         url(r'^orgbd/$', orgbd_list, name='orgbd_list'),
