@@ -55,10 +55,10 @@ class ProjectBDSerializer(serializers.ModelSerializer):
         exclude = ('deleteduser', 'deletedtime', 'datasource', 'is_deleted')
 
     def get_manager(self, obj):
-        qs = obj.ProjectBD_managers.filter(is_deleted=False).values_list('manager_id', flat=True)
+        qs = obj.ProjectBD_managers.filter(is_deleted=False)
         if qs.exists():
-            return UserCommenSerializer(MyUser.objects.filter(Q(id__in=qs)|Q(id=obj.manager_id)), many=True).data
-        return [UserCommenSerializer(obj.manager).data] if obj.manager else None
+            return {'main': UserCommenSerializer(obj.manager).data,'normal': ProjectBDManagersSerializer(qs, many=True).data}
+        return {'main': UserCommenSerializer(obj.manager).data,'normal': None}
 
     def get_BDComments(self, obj):
         user_id = self.context.get('user_id')
