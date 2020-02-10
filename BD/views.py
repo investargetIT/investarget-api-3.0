@@ -99,9 +99,11 @@ class ProjectBDView(viewsets.ModelViewSet):
             countlist = []
             for manager_count in countres:
                 countlist.append({'manager': manager_count[0], 'count': manager_count[1]})
-            sortfield = request.GET.get('sort', 'createdtime')
+            sortfield = request.GET.get('sort', 'lastmodifytime')
             desc = request.GET.get('desc', 1)
-            queryset = mySortQuery(queryset, sortfield, desc)
+            if desc in ('1', u'1', 1):
+                sortfield = '-' + sortfield
+            queryset = queryset.order_by(sortfield, '-lastmodifytime')
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
