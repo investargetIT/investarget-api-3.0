@@ -103,7 +103,7 @@ class ProjectBDView(viewsets.ModelViewSet):
             desc = request.GET.get('desc', 1)
             if desc in ('1', u'1', 1):
                 sortfield = '-' + sortfield
-            queryset = queryset.order_by(sortfield, '-lastmodifytime')
+            queryset = queryset.order_by('-isimportant', sortfield, '-lastmodifytime')
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
