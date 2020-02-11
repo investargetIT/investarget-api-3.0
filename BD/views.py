@@ -1083,6 +1083,32 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            data = request.data
+            if request.user.has_perm('BD.manageOrgBD'):
+                pass
+            elif request.user.id == instance.createuser_id:
+                pass
+            else:
+                raise InvestError(2009)
+            lang = request.GET.get('lang')
+            with transaction.atomic():
+                commentinstance = OrgBDCommentsCreateSerializer(instance, data=data)
+                if commentinstance.is_valid():
+                    newcommentinstance = commentinstance.save()
+                    cache_delete_patternKey(key='/bd/orgbd*')
+                else:
+                    raise InvestError(5004, msg='修改机构BDcomments失败--%s' % commentinstance.error_messages)
+                return JSONResponse(
+                    SuccessResponse(returnDictChangeToLanguage(OrgBDCommentsSerializer(newcommentinstance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):

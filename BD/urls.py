@@ -68,6 +68,7 @@ orgbdcomment_list = views.OrgBDCommentsView.as_view({
         'post': 'create'
 })
 orgbdcomment_detail = views.OrgBDCommentsView.as_view({
+        'put': 'update',
         'delete': 'destroy'
 })
 

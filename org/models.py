@@ -83,8 +83,7 @@ class organization(MyModel):
         )
 
 
-    def save(self, force_insert=False, force_update=False, using=None,
-             update_fields=None):
+    def save(self, *args, **kwargs):
         if not self.orgnameC and not self.orgnameE:
             raise InvestError(2007,msg='机构名称不能为空')
         if self.orgnameC and not self.orgnameE:
@@ -112,7 +111,7 @@ class organization(MyModel):
             if self.orgfullname:
                 if organization.objects.filter(is_deleted=False,orgfullname=self.orgfullname).exists():
                     raise InvestError(code=5001,msg='同名机构已存在，无法新增')
-        super(organization,self).save(force_insert,force_update,using,update_fields)
+        super(organization,self).save(*args, **kwargs)
 
 class orgTags(MyModel):
     org = MyForeignKey(organization,related_name='org_orgtags')
@@ -152,11 +151,10 @@ class orgContact(MyModel):
     class Meta:
         db_table = "org_contact"
 
-    def save(self, force_insert=False, force_update=False, using=None,
-             update_fields=None):
+    def save(self,  *args, **kwargs):
         if not self.org:
             raise InvestError(code=2007,msg='机构不能为空')
-        super(orgContact,self).save(force_insert,force_update,using,update_fields)
+        super(orgContact,self).save(*args, **kwargs)
 
 
 class orgManageFund(MyModel):
@@ -172,11 +170,10 @@ class orgManageFund(MyModel):
     class Meta:
         db_table = "org_managefund"
 
-    def save(self, force_insert=False, force_update=False, using=None,
-             update_fields=None):
+    def save(self,  *args, **kwargs):
         if not self.org or not self.fund:
             raise InvestError(code=2007,msg='机构/基金不能为空')
-        super(orgManageFund,self).save(force_insert,force_update,using,update_fields)
+        super(orgManageFund,self).save(*args, **kwargs)
 
 
 class orgInvestEvent(MyModel):
@@ -189,19 +186,13 @@ class orgInvestEvent(MyModel):
     investDate = models.DateTimeField(blank=True, null=True, help_text='投资日期')
     investType = models.CharField(max_length=64, blank=True,null=True,help_text='投资性质（轮次）')
     investSize = models.CharField(max_length=32, blank=True, null=True, help_text='投资金额')
-    # currentValuatuion = models.BigIntegerField(blank=True, null=True, help_text='当前估值')
-    # valueCCY = models.CharField(max_length=16, blank=True, null=True, help_text='货币类型')
-    # quitMode = models.CharField(max_length=32, blank=True, null=True, help_text='退出方式')
-    # quitDate = models.DateTimeField(blank=True, null=True, help_text='退出日期')
-    # isLead = models.NullBooleanField(blank=True, null=True, help_text='是否领投')
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_orginvestevent')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_orginvestevent')
 
     class Meta:
         db_table = "org_investevent"
 
-    def save(self, force_insert=False, force_update=False, using=None,
-             update_fields=None):
+    def save(self,  *args, **kwargs):
         if not self.org or not self.comshortname:
             raise InvestError(code=2007,msg='机构/企业不能为空')
         if self.pk:
@@ -210,7 +201,7 @@ class orgInvestEvent(MyModel):
         else:
             if orgInvestEvent.objects.filter(is_deleted=False,comshortname=self.comshortname,investDate=self.investDate, org=self.org).exists():
                 raise InvestError(code=5007,msg='相同投资事件已存在，无法新增')
-        super(orgInvestEvent,self).save(force_insert,force_update,using,update_fields)
+        super(orgInvestEvent,self).save(*args, **kwargs)
 
 
 class orgCooperativeRelationship(MyModel):
@@ -224,17 +215,10 @@ class orgCooperativeRelationship(MyModel):
     class Meta:
         db_table = "org_cooperativerelationship"
 
-    def save(self, force_insert=False, force_update=False, using=None,
-             update_fields=None):
+    def save(self,  *args, **kwargs):
         if not self.org or not self.cooperativeOrg or not self.comshortname:
             raise InvestError(code=2007, msg='机构/合作机构/企业不能为空')
-        # if self.pk:
-        #     if orgCooperativeRelationship.objects.exclude(pk=self.pk).filter(Q(is_deleted=False,comshortname=self.comshortname,investDate=self.investDate), Q(org=self.org,cooperativeOrg=self.cooperativeOrg)| Q(org=self.cooperativeOrg,cooperativeOrg=self.org)).exists():
-        #         raise InvestError(code=5007,msg='相同合作关系已存在,无法修改')
-        # else:
-        #     if orgCooperativeRelationship.objects.filter(Q(is_deleted=False,comshortname=self.comshortname,investDate=self.investDate), Q(org=self.org,cooperativeOrg=self.cooperativeOrg)| Q(org=self.cooperativeOrg,cooperativeOrg=self.org)).exists():
-        #         raise InvestError(code=5007,msg='相同合作关系已存在，无法新增')
-        super(orgCooperativeRelationship,self).save(force_insert,force_update,using,update_fields)
+        super(orgCooperativeRelationship,self).save(*args, **kwargs)
 
 
 class orgBuyout(MyModel):
@@ -248,11 +232,10 @@ class orgBuyout(MyModel):
 
     class Meta:
         db_table = "org_buyout"
-    def save(self, force_insert=False, force_update=False, using=None,
-             update_fields=None):
+    def save(self, *args, **kwargs):
         if not self.org:
             raise InvestError(code=2007, msg='机构不能为空')
-        super(orgBuyout,self).save(force_insert,force_update,using,update_fields)
+        super(orgBuyout,self).save(*args, **kwargs)
 
 class orgRemarks(MyModel):
     id = models.AutoField(primary_key=True)
@@ -275,10 +258,10 @@ class orgRemarks(MyModel):
             ('user_addorgremark', '用户增加机构备注'),
             ('user_deleteorgremark','用户删除机构备注（obj级别）'),
         )
-    def save(self, force_insert=False, force_update=False, using=None,
-             update_fields=None):
+    def save(self, *args, **kwargs):
         self.datasource = self.createuser.datasource
-        super(orgRemarks,self).save(force_insert,force_update,using,update_fields)
+        kwargs['automodifytime'] = False
+        super(orgRemarks,self).save(*args, **kwargs)
 
 taskstatuschoice = (
     (1, '已失败'),
@@ -296,13 +279,12 @@ class orgExportExcelTask(MyModel):
     completetime = models.DateTimeField(blank=True, null=True, help_text='完成时间')
     No = models.IntegerField(blank=True, null=True, help_text='排序')
 
-    def save(self, force_insert=False, force_update=False, using=None,
-             update_fields=None):
+    def save(self,  *args, **kwargs):
         if not self.orglist or not self.filename:
             raise InvestError(code=2007, msg='orglist, filename 不能为空')
         if '/' in self.filename or u'/' in self.filename:
             raise InvestError(code=2007, msg='filename 不能包含\'/\'')
-        super(orgExportExcelTask, self).save(force_insert, force_update, using, update_fields)
+        super(orgExportExcelTask, self).save(*args, **kwargs)
 
 
 
