@@ -163,6 +163,7 @@ class OrgBD(MyModel):
             if self.proj:
                 if self.proj.projstatus < 4:
                     raise InvestError(5003,msg='项目尚未终审发布')
+        kwargs['automodifytime'] = False
         return super(OrgBD, self).save(*args, **kwargs)
 
 class OrgBDComments(MyModel):
@@ -190,6 +191,7 @@ class OrgBDComments(MyModel):
                     UserRemarks(user=self.orgBD.bduser, remark=remark, createuser=self.createuser, datasource=self.datasource).save()
             except Exception:
                 logexcption(msg='同步备注到用户失败，OrgBD_id-%s ' % self.orgBD.id)
+        kwargs['automodifytime'] = False
         return super(OrgBDComments, self).save(*args, **kwargs)
 
 
