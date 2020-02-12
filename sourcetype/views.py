@@ -589,7 +589,7 @@ def getmenulist(user):
     if not user.has_perm('usersys.as_investor') or user.is_superuser:
         qslist.append(allmenuobj.filter(id__in=[27, 28, 33]))
     if user.has_perm('usersys.as_trader') and not user.is_superuser:
-        qslist.append(allmenuobj.filter(id__in=[12]))
+        qslist.append(allmenuobj.filter(id__in=[12, 34]))
     if user.has_perm('emailmanage.getemailmanage'):
         qslist.append(allmenuobj.filter(id__in=[3]))
     if user.has_perm('BD.user_getProjectBD') or user.has_perm('BD.manageProjectBD'): # 项目bd管理
@@ -601,7 +601,7 @@ def getmenulist(user):
     if user.has_perm('APILog.manage_userinfolog'):#日志查询
         qslist.append(allmenuobj.filter(id__in=[9]))
     if user.is_superuser:
-        qslist.append(allmenuobj.filter(id__in=[17]))
+        qslist.append(allmenuobj.filter(id__in=[17, 34]))
     if user.has_perm('proj.admin_addproj') or user.has_perm('proj.user_addproj'):
         qslist.append(allmenuobj.filter(id__in=[19]))
     if user.has_perm('dataroom.get_companydataroom'):
