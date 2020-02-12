@@ -330,6 +330,16 @@ class OrganizationView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
+class orgRemarksFilter(FilterSet):
+    id = RelationFilter(filterstr='id', lookup_method='in')
+    org = RelationFilter(filterstr='org', lookup_method='in')
+    createuser = RelationFilter(filterstr='createuser',lookup_method='in')
+    stimeM = RelationFilter(filterstr='lastmodifytime', lookup_method='gte')
+    etimeM = RelationFilter(filterstr='lastmodifytime', lookup_method='lt')
+    class Meta:
+        model = orgRemarks
+        fields = ('id','org','createuser', 'stimeM', 'etimeM')
+
 class OrgRemarkView(viewsets.ModelViewSet):
     """
     list:获取机构备注列表

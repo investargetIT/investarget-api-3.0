@@ -1,7 +1,8 @@
 from django.db.models import Q
 from rest_framework import serializers
 
-from BD.models import ProjectBDComments, ProjectBD, OrgBDComments, OrgBD, MeetingBD, OrgBDBlack, ProjectBDManagers
+from BD.models import ProjectBDComments, ProjectBD, OrgBDComments, OrgBD, MeetingBD, OrgBDBlack, ProjectBDManagers, \
+    WorkReport, WorkReportProjInfo
 from org.serializer import OrgCommonSerializer
 from proj.serializer import ProjSimpleSerializer
 from sourcetype.serializer import BDStatusSerializer, orgAreaSerializer, tagSerializer, currencyTypeSerializer
@@ -193,3 +194,32 @@ class MeetingBDSerializer(serializers.ModelSerializer):
             return getUrlWithBucketAndKey(obj.attachmentbucket, obj.attachment)
         else:
             return None
+
+
+
+class WorkReportCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkReport
+        fields = '__all__'
+
+
+class WorkReportSerializer(serializers.ModelSerializer):
+    user = UserSimpleSerializer()
+
+    class Meta:
+        model = WorkReport
+        exclude = ('deleteduser', 'deletedtime', 'datasource', 'is_deleted', 'createuser')
+
+
+class WorkReportProjInfoCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkReportProjInfo
+        fields = '__all__'
+
+
+class WorkReportProjInfoSerializer(serializers.ModelSerializer):
+    proj = ProjSimpleSerializer()
+
+    class Meta:
+        model = WorkReportProjInfo
+        exclude = ('deleteduser', 'deletedtime', 'datasource', 'is_deleted', 'createuser')
