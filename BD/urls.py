@@ -103,6 +103,26 @@ deleteAttachment = views.MeetingBDView.as_view({
 
 })
 
+
+workreport_list = views.WorkReportView.as_view({
+        'get': 'list',
+        'post': 'create'
+})
+workreport_detail = views.WorkReportView.as_view({
+        'get': 'retrieve',
+        'put': 'update',
+        'delete': 'destroy'
+})
+
+workreportproj_list = views.WorkReportProjInfoView.as_view({
+        'get': 'list',
+        'post': 'create'
+})
+workreportproj_detail = views.WorkReportProjInfoView.as_view({
+        'put': 'update',
+        'delete': 'destroy'
+})
+
 urlpatterns = [
         url(r'^projbd/$', projbd_list, name='projbd_list'),
         url(r'^projbd/count/$', projbd_count, name='projbd_count'),
@@ -127,4 +147,9 @@ urlpatterns = [
         url(r'^meetbd/share/$', meetbd_share, name='meetbd_share'),
         url(r'^meetbd/(?P<pk>\d+)/$', meetbd_detail, name='meetbd_detail'),
         url(r'^meetbd/delatt/(?P<pk>\d+)/$', deleteAttachment, name='deleteAttachment'),
+
+        url(r'^workreport/$', workreport_list, name='workreport_list'),
+        url(r'^workreport/(?P<pk>\d+)/$', workreport_detail, name='workreport_detail'),
+        url(r'^workreport/proj/$', workreportproj_list, name='workreportproj_list'),
+        url(r'^workreport/proj/(?P<pk>\d+)/$', workreportproj_detail, name='workreportproj_detail'),
 ]

@@ -9,6 +9,8 @@ import os
 from django.db import models
 
 # Create your models here.
+from django.db.models import Q
+
 from org.models import organization
 from proj.models import project
 from sourcetype.models import BDStatus, OrgArea, Country, OrgBdResponse, DataSource, CurrencyType, IndustryGroup
@@ -177,7 +179,7 @@ class OrgBDComments(MyModel):
     def save(self, *args, **kwargs):
 
         if self.orgBD is None:
-            raise InvestError(2007,msg='orgBD can`t be null')
+            raise InvestError(20071, msg='orgBD can`t be null')
         self.datasource = self.orgBD.datasource
         if self.event_date is None:
             self.event_date = datetime.datetime.now()
@@ -213,13 +215,13 @@ class OrgBDBlack(MyModel):
 
     def save(self, *args, **kwargs):
         if self.org is None or self.proj is None:
-            raise InvestError(2007,msg='org/proj can`t be null')
+            raise InvestError(20071, msg='org/proj can`t be null')
         self.datasource = self.createuser.datasource
         if not self.reason:
-            raise InvestError(2007, msg='加入原因 不能为空')
+            raise InvestError(20071, msg='加入原因 不能为空')
         if not self.is_deleted:
             if OrgBDBlack.objects.exclude(pk=self.pk).filter(is_deleted=False, org=self.org, proj=self.proj).exists():
-                raise InvestError(2007, msg='该机构已经在黑名单中了')
+                raise InvestError(20071, msg='该机构已经在黑名单中了')
         return super(OrgBDBlack, self).save(*args, **kwargs)
 
 
@@ -283,3 +285,60 @@ class MeetBDShareToken(models.Model):
 
     def generate_key(self):
         return binascii.hexlify(os.urandom(25)).decode()
+
+
+
+class WorkReport(MyModel):
+    user = MyForeignKey(MyUser, blank=True, related_name='user_workreport', help_text='工作报表归属人')
+    indGroup = MyForeignKey(IndustryGroup, blank=True, null=True, help_text='所属行业组')
+    postType = models.CharField(max_length=32, blank=True, null=True, help_text='岗位类型')
+    marketMsg = models.TextField(blank=True, null=True, help_text='市场信息和项目信息汇报')
+    others = models.TextField(blank=True, null=True, help_text='其他事项/工作建议')
+    startTime = models.DateTimeField(blank=True, null=True, help_text='报表统计起始时间')
+    endTime = models.DateTimeField(blank=True, null=True, help_text='报表统计结束时间')
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_workreport')
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_workreport')
+    lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_workreport')
+    datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
+
+    class Meta:
+        db_table = 'user_workreport'
+
+    def save(self, *args, **kwargs):
+        self.indGroup = self.user.indGroup
+        if self.startTime >= self.endTime:
+            raise InvestError(20071, msg='起始时间有误')
+        return super(WorkReport, self).save(*args, **kwargs)
+
+
+class WorkReportProjInfo(MyModel):
+    report = MyForeignKey(WorkReport, blank=True, null=True, related_name='report_projinfo', help_text='工作报表归属人')
+    proj = MyForeignKey(project, blank=True, null=True, related_name='proj_reportinfo', help_text='平台项目')
+    projTitle = models.TextField(blank=True, null=True, help_text='非平台项目')
+    thisPlan = models.TextField(blank=True, null=True, help_text='本周计划')
+    nextPlan = models.TextField(blank=True, null=True, help_text='下周计划')
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_workreportproj')
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_workreportproj')
+    lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_workreportproj')
+    datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
+
+    class Meta:
+        db_table = 'user_reportprojinfo'
+        permissions = (
+            ('admin_getWorkReport', u'管理员级查看用户工作报表'),
+
+        )
+
+    def save(self, *args, **kwargs):
+        if not self.is_deleted:
+            if not self.proj and not self.projTitle:
+                raise InvestError(20071, msg='项目不能为空')
+            if self.proj:
+                self.projTitle = None
+                filters = Q(proj=self.proj)
+            else:
+                self.proj = None
+                filters = Q(projTitle=self.projTitle)
+            if WorkReportProjInfo.objects.exclude(pk=self.pk).filter(Q(is_deleted=False, report=self.report), filters).exists():
+                raise InvestError(20071, msg='该项目已经在报表中了')
+        return super(WorkReportProjInfo, self).save(*args, **kwargs)
