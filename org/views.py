@@ -350,7 +350,7 @@ class OrgRemarkView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = orgRemarks.objects.filter(is_deleted=False)
-    filter_fields = ('id','org','createuser')
+    filter_class = orgRemarksFilter
     serializer_class = OrgRemarkDetailSerializer
 
 
