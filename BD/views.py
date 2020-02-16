@@ -1440,7 +1440,7 @@ class WorkReportFilter(FilterSet):
     user = RelationFilter(filterstr='user',lookup_method='in')
     indGroup = RelationFilter(filterstr='indGroup', lookup_method='in')
     startTime = RelationFilter(filterstr='startTime', lookup_method='gte')
-    endTime = RelationFilter(filterstr='endTime', lookup_method='lt')
+    endTime = RelationFilter(filterstr='endTime', lookup_method='lte')
     class Meta:
         model = WorkReport
         fields = ('user','indGroup', 'startTime', 'endTime')
