@@ -463,10 +463,16 @@ class UserView(viewsets.ModelViewSet):
                         pass
                     else:
                         raise InvestError(code=2009)
-                    for link in ['investor_relations','trader_relations','investor_timelines','supportor_timelines','trader_timelines','usersupport_projs','usertake_projs',
-                                 'usermake_projs','user_usertags', 'user_remarks','userreceive_msgs','usersend_msgs','user_datarooms', 'user_userAttachments', 'user_userEvents'
-                                 'usercreate_ProjectBD','usercreate_ProjectBDComments','usercreate_schedule','user_beschedule', 'user_orgBDs', 'user_dataroomTemp', 'user_datarooms']:
-                        if link in ['investor_relations','trader_relations','investor_timelines','supportor_timelines','trader_timelines','user_userEvents','user_userAttachments','user_dataroomTemp', 'user_datarooms']:
+                    for link in ['investor_relations', 'trader_relations', 'investor_timelines',
+                                     'supportor_timelines', 'trader_timelines', 'usersupport_projs', 'usertake_projs',
+                                     'manager_beschedule', 'user_webexUser', 'user_dataroomTemp',
+                                     'usermake_projs', 'user_usertags', 'user_remarks', 'userreceive_msgs',
+                                     'usersend_msgs', 'user_datarooms', 'user_userAttachments', 'user_userEvents',
+                                     'contractors_projBDs', 'user_MeetBDs', 'user_favorite', 'user_sharetoken',
+                                     'trader_favorite', 'user_MeetBDsharetoken', 'user_beschedule', 'user_orgBDs']:
+                        if link in ['usermake_projs', 'usertake_projs', 'usersupport_projs', 'investor_relations', 'trader_relations', 'investor_timelines',
+                                    'supportor_timelines', 'trader_timelines', 'user_userEvents', 'user_orgBDs', 'user_MeetBDs',
+                                    'user_userAttachments', 'user_dataroomTemp', 'user_datarooms', 'contractors_projBDs']:
                             manager = getattr(instance, link, None)
                             if not manager:
                                 continue
