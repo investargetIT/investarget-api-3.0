@@ -284,8 +284,8 @@ class OrganizationView(viewsets.ModelViewSet):
             with transaction.atomic():
                 for link in ['org_users','org_orgTransactionPhases','org_remarks','org_unreachuser','org_orgBDs','org_orgInvestEvent'
                              'org_orgManageFund','fund_fundManager','org_orgcontact','org_cooperativeRelationship','cooperativeorg_Relationship'
-                             'org_buyout','buyoutorg_buyoutorg']:
-                    if link in ['org_users', 'org_orgBDs']:
+                             'org_buyout','buyoutorg_buyoutorg','org_OrgBdBlacks','org_meetBDs']:
+                    if link in ['org_users', 'org_orgBDs', 'org_meetBDs']:
                         manager = getattr(instance, link, None)
                         if not manager:
                             continue
