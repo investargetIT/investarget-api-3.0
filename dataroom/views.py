@@ -579,6 +579,7 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
                             raise InvestError(2009, msg='非承揽承做无法删除文件')
                     else:
                         raise InvestError(2009, msg='没有删除文件的权限')
+                    instance.file_userSeeFile.all().update(is_deleted=True)
                     deleteInstance(instance, request.user)
                 return JSONResponse(SuccessResponse(filelist))
         except InvestError as err:
