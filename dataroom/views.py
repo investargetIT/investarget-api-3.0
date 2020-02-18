@@ -197,6 +197,7 @@ class DataroomView(viewsets.ModelViewSet):
             with transaction.atomic():
                 instance.dataroom_directories.all().update(is_deleted=True, deletedtime=datetime.datetime.now())
                 for fileOrDirectory in instance.dataroom_directories.all():
+                    fileOrDirectory.file_userSeeFile.all().update(is_deleted=True)
                     deleteInstance(fileOrDirectory, request.user)
                 instance.dataroom_users.all().update(is_deleted=True)
                 instance.dataroom_userTemp.all().update(is_deleted=True)
@@ -797,9 +798,8 @@ class User_DataroomfileView(viewsets.ModelViewSet):
                 user_dataroom.deleteduser = request.user
                 user_dataroom.is_deleted = True
                 user_dataroom.save()
-                user_dataroom.dataroomuser_seeFiles.all().update(is_deleted=True, deleteduser=request.user, deletedtime=datetime.datetime.now())
-                user_dataroom.user_dataroomTempFiles.all().update(is_deleted=True, deleteduser=request.user,
-                                                                 deletedtime=datetime.datetime.now())
+                user_dataroom.dataroomuser_seeFiles.all().filter(is_deleted=False).update(is_deleted=True, deleteduser=request.user, deletedtime=datetime.datetime.now())
+                user_dataroom.user_dataroomTempFiles.all().filter(is_deleted=False).update(is_deleted=True, deleteduser=request.user, deletedtime=datetime.datetime.now())
                 return JSONResponse(SuccessResponse({'isDeleted':True}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
