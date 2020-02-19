@@ -997,6 +997,8 @@ class OrgBDBlackView(viewsets.ModelViewSet):
 
 class OrgBDCommentsFilter(FilterSet):
     orgBD = RelationFilter(filterstr='orgBD',lookup_method='in')
+    stime = RelationFilter(filterstr='createdtime', lookup_method='gte')
+    etime = RelationFilter(filterstr='createdtime', lookup_method='lt')
     stimeM = RelationFilter(filterstr='lastmodifytime', lookup_method='gte')
     etimeM = RelationFilter(filterstr='lastmodifytime', lookup_method='lt')
     class Meta:
