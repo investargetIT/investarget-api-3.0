@@ -10,8 +10,8 @@ from django.db import models
 
 # Create your models here.
 
-from sourcetype.models import FavoriteType, ProjectStatus,CurrencyType,Tag,Country,TransactionType,Industry, DataSource, \
-    CharacterType, Service, TitleType, BDStatus
+from sourcetype.models import FavoriteType, ProjectStatus, CurrencyType, Tag, Country, TransactionType, Industry, \
+    DataSource, CharacterType, Service,   IndustryGroup
 from usersys.models import MyUser
 import sys
 
@@ -23,6 +23,7 @@ sys.setdefaultencoding('utf-8')
 
 class project(MyModel):
     id = models.AutoField(primary_key=True)
+    indGroup = MyForeignKey(IndustryGroup, null=True, blank=True, help_text='项目所属行业组')
     projtitleC = models.CharField(max_length=128,db_index=True,default='标题')
     projtitleE = models.CharField(max_length=256,blank=True,null=True,db_index=True)
     projstatus = MyForeignKey(ProjectStatus,help_text='项目状态',default=2)
@@ -32,8 +33,6 @@ class project(MyModel):
     p_introducteC = models.TextField(blank=True, null=True, default='项目介绍')
     p_introducteE = models.TextField(blank=True, null=True, default='project introduction')
     isoverseasproject = models.BooleanField(blank=True,default=True,help_text='是否是海外项目')
-    ismarketplace = models.BooleanField(blank=True,default=False,help_text='是否是marketplace')
-    linkpdfkey = models.TextField(blank=True,null=True,help_text='marketplace链接pdf文件')
     supportUser = MyForeignKey(MyUser,blank=True,null=True,related_name='usersupport_projs',help_text='项目方(上传方)')
     takeUser = MyForeignKey(MyUser,blank=True,null=True,related_name='usertake_projs',help_text='承揽人')
     makeUser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermake_projs', help_text='承做人')
@@ -116,12 +115,9 @@ class project(MyModel):
         super(project,self).save(force_insert,force_update,using,update_fields)
 
     def checkProjInfo(self):
-        if self.ismarketplace:
-            fieldlist = ['contactPerson', 'email', 'phoneNumber']
-        else:
-            fieldlist = ['contactPerson', 'financeAmount', 'financeAmount_USD', 'email', 'phoneNumber']
+        fieldlist = ['contactPerson', 'financeAmount', 'financeAmount_USD', 'email', 'phoneNumber']
         for aa in fieldlist:
-            if getattr(self,aa) is None:
+            if getattr(self, aa) is None:
                 raise InvestError(4007,msg='项目信息未完善—%s'%aa)
 
 class projServices(MyModel):

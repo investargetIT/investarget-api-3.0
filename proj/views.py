@@ -43,7 +43,9 @@ class ProjectFilter(FilterSet):
     supportUser = RelationFilter(filterstr='supportUser',lookup_method='in')
     ids = RelationFilter(filterstr='id', lookup_method='in')
     createuser = RelationFilter(filterstr='createuser', lookup_method='in')
-    ismarketplace = RelationFilter(filterstr='ismarketplace', lookup_method='exact')
+    indGroup = RelationFilter(filterstr='indGroup', lookup_method='in')
+    takeUser = RelationFilter(filterstr='takeUser', lookup_method='in')
+    makeUser = RelationFilter(filterstr='makeUser', lookup_method='in')
     isoverseasproject = RelationFilter(filterstr='isoverseasproject', lookup_method='in')
     industries = RelationFilter(filterstr='industries',lookup_method='in',relationName='project_industries__is_deleted')
     tags = RelationFilter(filterstr='tags',lookup_method='in',relationName='project_tags__is_deleted')
@@ -57,7 +59,7 @@ class ProjectFilter(FilterSet):
     grossProfit_T = RelationFilter(filterstr='proj_finances__grossProfit', lookup_method='lte')
     class Meta:
         model = project
-        fields = ('ids', 'bdm', 'createuser','service','supportUser','ismarketplace','isoverseasproject','industries','tags','projstatus','country','netIncome_USD_F','netIncome_USD_T','grossProfit_F','grossProfit_T')
+        fields = ('ids', 'bdm', 'indGroup', 'takeUser', 'makeUser', 'createuser','service','supportUser','isoverseasproject','industries','tags','projstatus','country','netIncome_USD_F','netIncome_USD_T','grossProfit_F','grossProfit_T')
 
 
 class ProjectView(viewsets.ModelViewSet):
@@ -346,8 +348,8 @@ class ProjectView(viewsets.ModelViewSet):
             financedata = projdata.pop('finance', None)
             servicedata = projdata.pop('service', None)
             sendmsg = False
-            if projdata.get('projstatus', None) and projdata.get('projstatus', None) != pro.projstatus_id:
-                if projdata.get('projstatus', None) == 4:
+            if projdata.get('projstatus') and projdata.get('projstatus') != pro.projstatus_id:
+                if projdata['projstatus'] == 4:
                     sendmsg = True
                     projdata['publishDate'] = datetime.datetime.now()
             keylist = projdata.keys()
@@ -430,7 +432,7 @@ class ProjectView(viewsets.ModelViewSet):
                     cache_delete_key(self.redis_key + '_%s' % pro.id)
                 else:
                     raise InvestError(code=4001,msg='data有误_%s' %  proj.errors)
-                if sendmsg and not pro.ismarketplace:
+                if sendmsg:
                     sendmessage_projectpublish(pro, pro.supportUser,['email', 'webmsg'],sender=request.user)
                     if pro.takeUser != pro.supportUser:
                         sendmessage_projectpublish(pro, pro.takeUser, ['email', 'webmsg'], sender=request.user)
