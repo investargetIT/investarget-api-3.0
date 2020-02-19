@@ -134,7 +134,7 @@ class MyModel(models.Model):
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None, automodifytime=True):
-        if self.pk is None:
+        if self.createdtime is None:
             self.createdtime = datetime.datetime.now()
         if automodifytime or not self.lastmodifytime:
             self.lastmodifytime = datetime.datetime.now()
