@@ -133,10 +133,11 @@ class MyModel(models.Model):
         abstract = True
 
     def save(self, force_insert=False, force_update=False, using=None,
-             update_fields=None):
-        if self.pk is None:
+             update_fields=None, automodifytime=True):
+        if self.createdtime is None:
             self.createdtime = datetime.datetime.now()
-        self.lastmodifytime = datetime.datetime.now()
+        if automodifytime or not self.lastmodifytime:
+            self.lastmodifytime = datetime.datetime.now()
         super(MyModel,self).save(force_insert, force_update, using, update_fields)
 
 class MyForeignKey(models.ForeignKey):

@@ -9,7 +9,7 @@ from usersys.serializer import UserCommenSerializer
 class ProjSimpleSerializer(serializers.ModelSerializer):
     class Meta:
         model = project
-        fields = ('id','projtitleC','projtitleE','financeAmount','financeAmount_USD','country','projstatus','isHidden','ismarketplace')
+        fields = ('id','projtitleC','projtitleE','financeAmount','financeAmount_USD','country','projstatus','isHidden')
 
 
 class ProjIndustrySerializer(serializers.ModelSerializer):
@@ -107,7 +107,7 @@ class ProjCommonSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = project
-        fields = ('id','industries','projtitleC','projtitleE','tags', 'currency', 'financeAmount','financeAmount_USD','country','projstatus','isHidden','ismarketplace','supportUser')
+        fields = ('id','industries','projtitleC','projtitleE','tags', 'currency', 'financeAmount','financeAmount_USD','country','projstatus','isHidden','supportUser')
         depth = 1
 
     def get_tags(self, obj):
@@ -156,7 +156,7 @@ class ProjListSerializer_admin(serializers.ModelSerializer):
 
     class Meta:
         model = project
-        fields = ('id','industries','projtitleC','projtitleE', 'currency','transactionType','tags','financeAmount','financeAmount_USD','country','projstatus','isHidden','ismarketplace')
+        fields = ('id','industries','projtitleC','projtitleE', 'currency','transactionType','tags','financeAmount','financeAmount_USD','country','projstatus','isHidden')
         depth = 1
 
     def get_tags(self, obj):
@@ -188,7 +188,7 @@ class ProjListSerializer_user(serializers.ModelSerializer):
     class Meta:
         model = project
         depth = 1
-        fields = ('id','industries','projtitleC','projtitleE','tags', 'currency', 'transactionType','financeAmount','financeAmount_USD','country','projstatus', 'ismarketplace')
+        fields = ('id','industries','projtitleC','projtitleE','tags', 'currency', 'transactionType','financeAmount','financeAmount_USD','country','projstatus')
 
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_projects__is_deleted=False)
@@ -264,8 +264,6 @@ class ProjDetailSerializer_admin_withsecretinfo(serializers.ModelSerializer):
         return None
 
     def get_linkpdfurl(self, obj):
-        if obj.linkpdfkey and obj.ismarketplace:
-            return getUrlWithBucketAndKey('file',obj.linkpdfkey)
         return None
 
 
@@ -325,8 +323,6 @@ class ProjDetailSerializer_user_withsecretinfo(serializers.ModelSerializer):
         return None
 
     def get_linkpdfurl(self, obj):
-        if obj.linkpdfkey and obj.ismarketplace:
-            return getUrlWithBucketAndKey('file',obj.linkpdfkey)
         return None
 
 class ProjDetailSerializer_admin_withoutsecretinfo(serializers.ModelSerializer):
@@ -381,8 +377,6 @@ class ProjDetailSerializer_admin_withoutsecretinfo(serializers.ModelSerializer):
             return ProjAttachmentSerializer(usertrader, many=True).data
         return None
     def get_linkpdfurl(self, obj):
-        if obj.linkpdfkey and obj.ismarketplace:
-            return getUrlWithBucketAndKey('file',obj.linkpdfkey)
         return None
 
 
@@ -439,8 +433,6 @@ class ProjDetailSerializer_user_withoutsecretinfo(serializers.ModelSerializer):
         return None
 
     def get_linkpdfurl(self, obj):
-        if obj.linkpdfkey and obj.ismarketplace:
-            return getUrlWithBucketAndKey('file',obj.linkpdfkey)
         return None
 
 
@@ -499,6 +491,4 @@ class ProjDetailSerializer_all(serializers.ModelSerializer):
         return None
 
     def get_linkpdfurl(self, obj):
-        if obj.linkpdfkey and obj.ismarketplace:
-            return getUrlWithBucketAndKey('file',obj.linkpdfkey)
         return None

@@ -330,6 +330,18 @@ class OrganizationView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
+class orgRemarksFilter(FilterSet):
+    id = RelationFilter(filterstr='id', lookup_method='in')
+    org = RelationFilter(filterstr='org', lookup_method='in')
+    createuser = RelationFilter(filterstr='createuser',lookup_method='in')
+    stime = RelationFilter(filterstr='createdtime', lookup_method='gte')
+    etime = RelationFilter(filterstr='createdtime', lookup_method='lt')
+    stimeM = RelationFilter(filterstr='lastmodifytime', lookup_method='gte')
+    etimeM = RelationFilter(filterstr='lastmodifytime', lookup_method='lt')
+    class Meta:
+        model = orgRemarks
+        fields = ('id','org','createuser', 'stimeM', 'etimeM')
+
 class OrgRemarkView(viewsets.ModelViewSet):
     """
     list:获取机构备注列表
@@ -340,7 +352,7 @@ class OrgRemarkView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = orgRemarks.objects.filter(is_deleted=False)
-    filter_fields = ('id','org','createuser')
+    filter_class = orgRemarksFilter
     serializer_class = OrgRemarkDetailSerializer
 
 

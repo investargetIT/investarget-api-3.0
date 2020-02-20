@@ -11,11 +11,12 @@ import json
 from django.core.serializers.json import DjangoJSONEncoder
 from rest_framework import filters, viewsets
 from BD.models import ProjectBD, ProjectBDComments, OrgBDComments, OrgBD, MeetingBD, MeetBDShareToken, OrgBDBlack, \
-    ProjectBDManagers
+    ProjectBDManagers, WorkReport, WorkReportProjInfo
 from BD.serializers import ProjectBDSerializer, ProjectBDCreateSerializer, ProjectBDCommentsCreateSerializer, \
     ProjectBDCommentsSerializer, OrgBDCommentsSerializer, OrgBDCommentsCreateSerializer, OrgBDCreateSerializer, \
     OrgBDSerializer, MeetingBDSerializer, MeetingBDCreateSerializer, OrgBDBlackSerializer, OrgBDBlackCreateSerializer, \
-    ProjectBDManagersCreateSerializer
+    ProjectBDManagersCreateSerializer, WorkReportCreateSerializer, WorkReportSerializer, WorkReportProjInfoCreateSerializer, \
+    WorkReportProjInfoSerializer
 from invest.settings import cli_domain
 from msg.views import deleteMessage
 from proj.models import project
@@ -476,11 +477,13 @@ class OrgBDFilter(FilterSet):
     isSolved = RelationFilter(filterstr='isSolved')
     isRead = RelationFilter(filterstr='isRead')
     isimportant = RelationFilter(filterstr='isimportant')
-    stime = RelationFilter(filterstr='createdtime', lookup_method='gt')
+    stime = RelationFilter(filterstr='createdtime', lookup_method='gte')
     etime = RelationFilter(filterstr='createdtime', lookup_method='lt')
+    stimeM = RelationFilter(filterstr='lastmodifytime', lookup_method='gte')
+    etimeM = RelationFilter(filterstr='lastmodifytime', lookup_method='lt')
     class Meta:
         model = OrgBD
-        fields = ('manager', 'org', 'proj', 'stime', 'etime', 'response', 'isimportant', 'isSolved', 'isRead')
+        fields = ('manager', 'org', 'proj', 'stime', 'etime', 'stimeM', 'etimeM', 'response', 'isimportant', 'isSolved', 'isRead')
 
 
 class OrgBDView(viewsets.ModelViewSet):
@@ -992,6 +995,15 @@ class OrgBDBlackView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+class OrgBDCommentsFilter(FilterSet):
+    orgBD = RelationFilter(filterstr='orgBD',lookup_method='in')
+    stime = RelationFilter(filterstr='createdtime', lookup_method='gte')
+    etime = RelationFilter(filterstr='createdtime', lookup_method='lt')
+    stimeM = RelationFilter(filterstr='lastmodifytime', lookup_method='gte')
+    etimeM = RelationFilter(filterstr='lastmodifytime', lookup_method='lt')
+    class Meta:
+        model = OrgBDComments
+        fields = ('orgBD', 'stimeM', 'etimeM')
 
 class OrgBDCommentsView(viewsets.ModelViewSet):
     """
@@ -1001,7 +1013,7 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = OrgBDComments.objects.filter(is_deleted=False)
-    filter_fields = ('orgBD',)
+    filter_class = OrgBDCommentsFilter
     serializer_class = OrgBDCommentsSerializer
 
     def get_queryset(self):
@@ -1083,6 +1095,32 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            data = request.data
+            if request.user.has_perm('BD.manageOrgBD'):
+                pass
+            elif request.user.id == instance.createuser_id:
+                pass
+            else:
+                raise InvestError(2009)
+            lang = request.GET.get('lang')
+            with transaction.atomic():
+                commentinstance = OrgBDCommentsCreateSerializer(instance, data=data)
+                if commentinstance.is_valid():
+                    newcommentinstance = commentinstance.save()
+                    cache_delete_patternKey(key='/bd/orgbd*')
+                else:
+                    raise InvestError(5004, msg='修改机构BDcomments失败--%s' % commentinstance.error_messages)
+                return JSONResponse(
+                    SuccessResponse(returnDictChangeToLanguage(OrgBDCommentsSerializer(newcommentinstance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
     @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
@@ -1110,7 +1148,7 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
 class MeetBDFilter(FilterSet):
     username = RelationFilter(filterstr='username', lookup_method='icontains')
     usermobile = RelationFilter(filterstr='usermobile', lookup_method='contains')
-    manager = RelationFilter(filterstr='manager',lookup_method='in')
+    manager = RelationFilter(filterstr='manager', lookup_method='in')
     class Meta:
         model = MeetingBD
         fields = ('username','usermobile','manager')
@@ -1399,3 +1437,282 @@ def sendExpiredOrgBDEmail():
         aaa = {'orgbd_qs': projlist, 'cli_domain' : cli_domain}
         html = render_to_response('OrgBDMail_template_cn.html', aaa).content
         sendmessage_orgBDExpireMessage(receiver, ['email'], html)
+
+class WorkReportFilter(FilterSet):
+    user = RelationFilter(filterstr='user',lookup_method='in')
+    indGroup = RelationFilter(filterstr='indGroup', lookup_method='in')
+    startTime = RelationFilter(filterstr='startTime', lookup_method='gte')
+    endTime = RelationFilter(filterstr='endTime', lookup_method='lte')
+    class Meta:
+        model = WorkReport
+        fields = ('user','indGroup', 'startTime', 'endTime')
+
+
+class WorkReportView(viewsets.ModelViewSet):
+    """
+    list: 获取用户工作报表
+    create: 增加用户工作报表
+    retrieve: 查看报表
+    update: 修改用户工作报表
+    destroy: 删除用户工作报表
+    """
+    filter_backends = (filters.DjangoFilterBackend,)
+    queryset = WorkReport.objects.filter(is_deleted=False)
+    filter_class = WorkReportFilter
+    serializer_class = WorkReportSerializer
+
+    def get_queryset(self):
+        assert self.queryset is not None, (
+            "'%s' should either include a `queryset` attribute, "
+            "or override the `get_queryset()` method."
+            % self.__class__.__name__
+        )
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource_id=self.request.user.datasource_id)
+            else:
+                queryset = queryset
+        else:
+            raise InvestError(code=8890)
+        return queryset
+
+
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
+            queryset = self.filter_queryset(self.get_queryset())
+            if request.user.has_perm('BD.admin_getWorkReport'):
+                queryset = queryset
+            else:
+                queryset = queryset.filter(user=request.user)
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializers = self.serializer_class(queryset, many=True)
+            return JSONResponse(
+                SuccessResponse({'count': count, 'data': returnListChangeToLanguage(serializers.data, lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            lang = request.GET.get('lang')
+            if data.get('user') != request.user.id and not request.user.is_superuser:
+                raise InvestError(2009, msg='没有权限给别人建立工作报表')
+            data['createuser'] = request.user.id
+            data['datasource'] = request.user.datasource.id
+            with transaction.atomic():
+                instanceSerializer = WorkReportCreateSerializer(data=data)
+                if instanceSerializer.is_valid():
+                    instance = instanceSerializer.save()
+                else:
+                    raise InvestError(20071, msg='新增用户工作报表失败--%s' % instanceSerializer.error_messages)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            if request.user.has_perm('BD.admin_getWorkReport') or request.user == instance.user:
+                pass
+            else:
+                raise InvestError(2009)
+            serializer = self.serializer_class(instance)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            data.pop('user')
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            if request.user != instance.user and not request.user.is_superuser:
+                raise InvestError(2009, msg='没有权限修改该工作报表')
+            with transaction.atomic():
+                newinstanceSeria = WorkReportCreateSerializer(instance, data=data)
+                if newinstanceSeria.is_valid():
+                    newinstance = newinstanceSeria.save()
+                else:
+                    raise InvestError(2009, msg='用户工作报表修改失败——%s' % newinstanceSeria.errors)
+                return JSONResponse(
+                    SuccessResponse(returnDictChangeToLanguage(self.serializer_class(newinstance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            if request.user != instance.user and not request.user.is_superuser:
+                raise InvestError(2009, msg='没有权限修改该工作报表')
+            with transaction.atomic():
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
+            return JSONResponse(SuccessResponse({'isDeleted': True, }))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+class WorkReportProjInfoFilter(FilterSet):
+    report = RelationFilter(filterstr='report',lookup_method='in')
+    proj = RelationFilter(filterstr='proj', lookup_method='in')
+    projTitle = RelationFilter(filterstr='projTitle', lookup_method='icontains')
+    user = RelationFilter(filterstr='report__user', lookup_method='in')
+    indGroup = RelationFilter(filterstr='report__indGroup', lookup_method='in')
+    class Meta:
+        model = WorkReportProjInfo
+        fields = ('report', 'proj', 'user', 'indGroup')
+
+
+class WorkReportProjInfoView(viewsets.ModelViewSet):
+    """
+    list: 获取用户工作报表项目工作信息
+    create: 增加用户工作报表项目工作信息
+    update: 修改用户工作报表项目工作信息
+    destroy: 删除用户工作报表项目工作信息
+    """
+    filter_backends = (filters.DjangoFilterBackend,)
+    queryset = WorkReportProjInfo.objects.filter(is_deleted=False)
+    filter_class = WorkReportProjInfoFilter
+    serializer_class = WorkReportProjInfoSerializer
+
+    def get_queryset(self):
+        assert self.queryset is not None, (
+            "'%s' should either include a `queryset` attribute, "
+            "or override the `get_queryset()` method."
+            % self.__class__.__name__
+        )
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource_id=self.request.user.datasource_id)
+            else:
+                queryset = queryset
+        else:
+            raise InvestError(code=8890)
+        return queryset
+
+
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
+            queryset = self.filter_queryset(self.get_queryset())
+            if request.user.has_perm('BD.admin_getWorkReport'):
+                queryset = queryset
+            else:
+                queryset = queryset.filter(report__user=request.user)
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializers = self.serializer_class(queryset, many=True)
+            return JSONResponse(
+                SuccessResponse({'count': count, 'data': returnListChangeToLanguage(serializers.data, lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            lang = request.GET.get('lang')
+            data['createuser'] = request.user.id
+            data['datasource'] = request.user.datasource.id
+            reportInstance = WorkReport.objects.get(id=data['report'])
+            if request.user != reportInstance.user and not request.user.is_superuser:
+                raise InvestError(2009, msg='没有权限增加项目计划')
+            with transaction.atomic():
+                instanceSerializer = WorkReportProjInfoCreateSerializer(data=data)
+                if instanceSerializer.is_valid():
+                    instance = instanceSerializer.save()
+                else:
+                    raise InvestError(20071, msg='新增用户工作报表项目计划失败--%s' % instanceSerializer.error_messages)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            if request.user != instance.report.user and not request.user.is_superuser:
+                raise InvestError(2009, msg='没有权限增加项目计划')
+            with transaction.atomic():
+                newinstanceSeria = WorkReportProjInfoCreateSerializer(instance, data=data)
+                if newinstanceSeria.is_valid():
+                    newinstance = newinstanceSeria.save()
+                else:
+                    raise InvestError(2009, msg='用户工作报表项目计划修改失败——%s' % newinstanceSeria.errors)
+                return JSONResponse(
+                    SuccessResponse(returnDictChangeToLanguage(self.serializer_class(newinstance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            if request.user != instance.report.user and not request.user.is_superuser:
+                raise InvestError(2009, msg='没有权限删除项目计划')
+            with transaction.atomic():
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
+            return JSONResponse(SuccessResponse({'isDeleted': True, }))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
