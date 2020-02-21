@@ -95,8 +95,7 @@ class project(MyModel):
             ('user_getproj','用户查看项目(obj级别)'),
             ('get_secretinfo','查看项目保密信息')
         )
-    def save(self, force_insert=False, force_update=False, using=None,
-             update_fields=None):
+    def save(self, *args, **kwargs):
         if not self.datasource or not self.createuser or self.datasource != self.createuser.datasource:
             raise InvestError(code=8888,msg='项目datasource不合法')
         if self.pk:
@@ -112,7 +111,7 @@ class project(MyModel):
             self.code = 'P' + datetime.datetime.now().strftime('%Y%m%d%H%M%S')
         if not self.is_deleted and self.isHidden and self.isSendEmail:
             raise InvestError(2007, msg='该项目为隐藏项目， 无法发送群发邮件')
-        super(project,self).save(force_insert,force_update,using,update_fields)
+        super(project,self).save(*args, **kwargs)
 
     def checkProjInfo(self):
         fieldlist = ['contactPerson', 'financeAmount', 'financeAmount_USD', 'email', 'phoneNumber']
@@ -151,11 +150,10 @@ class finance(MyModel):
 
     class Meta:
         db_table = 'projectFinance'
-    def save(self, force_insert=False, force_update=False, using=None,
-             update_fields=None):
+    def save(self, *args, **kwargs):
         if not self.datasource or self.datasource != self.proj.datasource:
             raise InvestError(code=8888,msg='项目财务信息datasource不合法')
-        super(finance,self).save(force_insert,force_update,using,update_fields)
+        super(finance,self).save(*args, **kwargs)
 
 class attachment(MyModel):
     proj = MyForeignKey(project,related_name='proj_attachment',blank=True,null=True)
@@ -228,8 +226,7 @@ class favoriteProject(MyModel):
     datasource = MyForeignKey(DataSource, help_text='数据源')
 
     #只用于create和delete，没有update
-    def save(self, force_insert=False, force_update=False, using=None,
-             update_fields=None):
+    def save(self, *args, **kwargs):
         if self.proj.projstatus_id < 4:
             raise InvestError(5003,msg='项目尚未终审发布')
         if not self.datasource or self.datasource != self.proj.datasource:
@@ -238,7 +235,7 @@ class favoriteProject(MyModel):
             # deletedata = {'is_deleted':True,'deleteduser':self.createuser.id,'deletedtime':datetime.datetime.now()}
             favoriteProject.objects.filter(proj=self.proj,user=self.user,trader=self.trader,favoritetype=self.favoritetype,is_deleted=False,
                                               datasource=self.datasource,createuser=self.createuser).update(is_deleted=True,deleteduser=self.createuser,deletedtime=datetime.datetime.now())
-        super(favoriteProject,self).save(force_insert,force_update,using,update_fields)
+        super(favoriteProject,self).save(*args, **kwargs)
     class Meta:
         ordering = ('proj',)
         db_table = 'project_favorites'

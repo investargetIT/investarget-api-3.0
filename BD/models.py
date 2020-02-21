@@ -309,7 +309,7 @@ class WorkReport(MyModel):
             self.indGroup = self.user.indGroup
             if self.startTime >= self.endTime:
                 raise InvestError(20071, msg='起始时间有误')
-            QS = WorkReport.objects.exclude(pk=self.pk).filter(is_deleted=False, startTime__gte=self.startTime, endTime__lte=self.endTime)
+            QS = WorkReport.objects.exclude(pk=self.pk).filter(is_deleted=False, user=self.user, startTime__gte=self.startTime, endTime__lte=self.endTime)
             if QS.exists():
                 raise InvestError(20071, msg='该时间段已存在一份周报了')
         return super(WorkReport, self).save(*args, **kwargs)
