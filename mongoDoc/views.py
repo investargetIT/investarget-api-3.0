@@ -219,7 +219,7 @@ class MergeFinanceDataView(viewsets.ModelViewSet):
         return countDic
 
     def eventCountByRound(self):
-        timelist = ['2010','2011','2012','2013','2014','2015','2016','2017','2018','2019']
+        timelist = ['2010','2011','2012','2013','2014','2015','2016','2017','2018','2019','2020']
         countList = read_from_cache('countEventByRound')
         if not countList:
             countList = {}
