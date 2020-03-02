@@ -40,15 +40,13 @@ class ProjectBDFilter(FilterSet):
     username = RelationFilter(filterstr='username', lookup_method='icontains')
     usermobile = RelationFilter(filterstr='usermobile', lookup_method='contains')
     source = RelationFilter(filterstr='source',lookup_method='icontains')
-    manager = RelationFilter(filterstr='manager',lookup_method='in')
-    relateManager = RelationFilter(filterstr='ProjectBD_managers__manager', lookup_method='in')
     bd_status = RelationFilter(filterstr='bd_status', lookup_method='in')
     source_type = RelationFilter(filterstr='source_type', lookup_method='in')
     stime = RelationFilter(filterstr='createdtime', lookup_method='gt')
     etime = RelationFilter(filterstr='createdtime', lookup_method='lt')
     class Meta:
         model = ProjectBD
-        fields = ('com_name','location', 'contractors', 'indGroup', 'username','usermobile','source','manager','bd_status','source_type', 'stime', 'etime')
+        fields = ('com_name','location', 'contractors', 'indGroup', 'username','usermobile','source', 'bd_status','source_type', 'stime', 'etime')
 
 
 class ProjectBDView(viewsets.ModelViewSet):
@@ -90,6 +88,13 @@ class ProjectBDView(viewsets.ModelViewSet):
             page_index = request.GET.get('page_index', 1)
             lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
+            if request.GET.get('manager') and request.GET.get('relateManager'):
+                queryset = queryset.filter(Q(manager__in=request.GET['manager'].split(',')) | Q(ProjectBD_managers__manager__in=request.GET['relateManager'].split(',')))
+            else:
+                if request.GET.get('manager'):
+                    queryset = queryset.filter(manager__in=request.GET['manager'].split(','))
+                if request.GET.get('relateManager'):
+                    queryset = queryset.filter(ProjectBD_managers__manager__in=request.GET['relateManager'].split(','))
             if request.user.has_perm('BD.manageProjectBD') or request.user.has_perm('usersys.as_trader'):
                 pass
             elif request.user.has_perm('BD.user_getProjectBD'):
