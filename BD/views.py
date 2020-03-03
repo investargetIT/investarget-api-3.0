@@ -475,6 +475,7 @@ class OrgBDFilter(FilterSet):
     org = RelationFilter(filterstr='org', lookup_method='in')
     response = RelationFilter(filterstr='response', lookup_method='in')
     proj = RelationFilter(filterstr='proj', lookup_method='in')
+    bduser = RelationFilter(filterstr='bduser', lookup_method='in')
     isSolved = RelationFilter(filterstr='isSolved')
     isRead = RelationFilter(filterstr='isRead')
     isimportant = RelationFilter(filterstr='isimportant')
@@ -484,7 +485,7 @@ class OrgBDFilter(FilterSet):
     etimeM = RelationFilter(filterstr='lastmodifytime', lookup_method='lt')
     class Meta:
         model = OrgBD
-        fields = ('manager', 'org', 'proj', 'stime', 'etime', 'stimeM', 'etimeM', 'response', 'isimportant', 'isSolved', 'isRead')
+        fields = ('manager', 'org', 'proj', 'stime', 'etime', 'stimeM', 'etimeM', 'response', 'isimportant', 'isSolved', 'isRead', 'bduser')
 
 
 class OrgBDView(viewsets.ModelViewSet):
