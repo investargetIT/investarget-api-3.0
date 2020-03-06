@@ -836,7 +836,7 @@ class OrgBDView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
-            elif request.user.id == instance.createuser_id:
+            elif request.user in [instance.createuser, instance.manager]:
                 pass
             else:
                 raise InvestError(2009)

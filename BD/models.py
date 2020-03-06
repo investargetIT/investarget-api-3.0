@@ -177,15 +177,15 @@ class OrgBDComments(MyModel):
     datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
 
     def save(self, *args, **kwargs):
-
         if self.orgBD is None:
             raise InvestError(20071, msg='orgBD can`t be null')
         self.datasource = self.orgBD.datasource
         if self.event_date is None:
             self.event_date = datetime.datetime.now()
-        if self.orgBD and not self.orgBD.isSolved:
+        if self.orgBD and not self.orgBD.is_deleted:
             self.orgBD.isSolved = True
-            self.orgBD.save(update_fields=['isSolved'])
+            self.orgBD.lastmodifytime = datetime.datetime.now()
+            self.orgBD.save(update_fields=['isSolved', 'lastmodifytime'])
         if not self.pk:
             try:
                 if self.orgBD.bduser:
