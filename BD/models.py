@@ -184,7 +184,7 @@ class OrgBDComments(MyModel):
             self.event_date = datetime.datetime.now()
         if self.orgBD and not self.orgBD.is_deleted:
             self.orgBD.isSolved = True
-            self.orgBD.lastmodifytime = self.lastmodifytime
+            self.orgBD.lastmodifytime = self.lastmodifytime if self.lastmodifytime else datetime.datetime.now()
             self.orgBD.save(update_fields=['isSolved', 'lastmodifytime'])
         if not self.pk:
             try:
