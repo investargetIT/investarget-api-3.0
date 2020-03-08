@@ -1005,7 +1005,7 @@ class OrgBDCommentsFilter(FilterSet):
     etimeM = RelationFilter(filterstr='lastmodifytime', lookup_method='lt')
     class Meta:
         model = OrgBDComments
-        fields = ('orgBD', 'stimeM', 'etimeM')
+        fields = ('orgBD', 'stime', 'etime', 'stimeM', 'etimeM')
 
 class OrgBDCommentsView(viewsets.ModelViewSet):
     """

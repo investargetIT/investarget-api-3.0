@@ -340,7 +340,7 @@ class orgRemarksFilter(FilterSet):
     etimeM = RelationFilter(filterstr='lastmodifytime', lookup_method='lt')
     class Meta:
         model = orgRemarks
-        fields = ('id','org','createuser', 'stimeM', 'etimeM')
+        fields = ('id','org','createuser', 'stime', 'etime', 'stimeM', 'etimeM')
 
 class OrgRemarkView(viewsets.ModelViewSet):
     """
