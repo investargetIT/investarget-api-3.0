@@ -683,7 +683,7 @@ class OrgBDView(viewsets.ModelViewSet):
                     projinstance = project.objects.get(id=proj, is_deleted=False, datasource=request.user.datasource)
                     if request.user.has_perm('BD.user_addOrgBD'):
                         pass
-                    elif request.user in [projinstance.takeUser, projinstance.makeUser]:
+                    elif projinstance.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                         pass
                     else:
                         raise InvestError(2009)
@@ -788,7 +788,7 @@ class OrgBDView(viewsets.ModelViewSet):
                         'isimportant': bool(data.get('isimportant', instance.isimportant)),
                         'lastmodifyuser': request.user.id}
             elif instance.proj:
-                if request.user in [instance.proj.takeUser, instance.proj.makeUser]:
+                if instance.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                     data = {'response': data.get('response', instance.response_id),
                             'isimportant': bool(data.get('isimportant', instance.isimportant)),
                             'lastmodifyuser': request.user.id}
@@ -899,7 +899,7 @@ class OrgBDBlackView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBDBlack') or request.user.has_perm('BD.getOrgBDBlack'):
                 queryset = queryset
             else:
-                queryset = queryset.filter(Q(proj__takeUser=request.user) | Q(proj__makeUser=request.user))
+                queryset = queryset.filter(Q(proj__proj_traders__user=request.user, proj__proj_traders__is_deleted=False))
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -927,7 +927,7 @@ class OrgBDBlackView(viewsets.ModelViewSet):
                 projinstance = project.objects.get(id=projid, is_deleted=False, datasource=request.user.datasource)
                 if request.user.has_perm('BD.manageOrgBDBlack') or request.user.has_perm('BD.addOrgBDBlack'):
                     pass
-                elif request.user in [projinstance.takeUser, projinstance.makeUser]:
+                elif projinstance.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                     pass
                 else:
                     raise InvestError(2009)
@@ -956,7 +956,7 @@ class OrgBDBlackView(viewsets.ModelViewSet):
             lang = request.GET.get('lang')
             instance = self.get_object()
             projinstance = instance.proj
-            if request.user.has_perm('BD.manageOrgBDBlack') or request.user in [projinstance.takeUser, projinstance.makeUser]:
+            if request.user.has_perm('BD.manageOrgBDBlack') or projinstance.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                 pass
             else:
                 raise InvestError(2009)
@@ -981,7 +981,7 @@ class OrgBDBlackView(viewsets.ModelViewSet):
             projinstance = instance.proj
             if request.user.has_perm('BD.manageOrgBDBlack') or request.user.has_perm('BD.delOrgBDBlack'):
                 pass
-            elif request.user in [projinstance.takeUser, projinstance.makeUser]:
+            elif projinstance.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                 pass
             else:
                 raise InvestError(2009)
@@ -1076,7 +1076,7 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
             elif request.user.has_perm('BD.user_manageOrgBD', bdinstance):
                 pass
             elif bdinstance.proj:
-                if request.user in [bdinstance.proj.takeUser, bdinstance.proj.makeUser]:
+                if bdinstance.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                     pass
             else:
                 raise InvestError(2009)
@@ -1234,7 +1234,7 @@ class MeetingBDView(viewsets.ModelViewSet):
                     projinstance = project.objects.get(id=proj, is_deleted=False, datasource=request.user.datasource)
                     if request.user.has_perm('BD.user_addMeetBD'):
                         pass
-                    elif request.user in [projinstance.takeUser, projinstance.makeUser]:
+                    elif projinstance.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                         pass
                     else:
                         raise InvestError(2009)
@@ -1265,7 +1265,7 @@ class MeetingBDView(viewsets.ModelViewSet):
             elif request.user.has_perm('BD.user_manageMeetBD', instance):
                 pass
             elif request.user.has_perm('BD.user_getMeetBD'):
-                if request.user not in [instance.proj.takeUser, instance.proj.makeUser]:
+                if not instance.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                     raise InvestError(2009)
             else:
                 raise InvestError(2009)
@@ -1293,7 +1293,7 @@ class MeetingBDView(viewsets.ModelViewSet):
                 #         'attachment': data.get('attachment', instance.attachment),
                 #         'attachmentbucket': data.get('attachmentbucket', instance.attachmentbucket),}
                 pass
-            elif request.user in [instance.proj.takeUser, instance.proj.makeUser]:
+            elif instance.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                 pass
             else:
                 raise InvestError(2009)
@@ -1324,7 +1324,7 @@ class MeetingBDView(viewsets.ModelViewSet):
                 pass
             elif request.user.has_perm('BD.user_manageMeetBD', instance):
                 pass
-            elif request.user in [instance.proj.takeUser, instance.proj.makeUser]:
+            elif instance.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                 pass
             else:
                 raise InvestError(2009)
