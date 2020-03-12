@@ -135,6 +135,10 @@ class projTraders(MyModel):
             self.datasource = self.user.datasource
         if self.user.datasource != self.proj.datasource:
             raise InvestError(code=8888,msg='项目用户datasource不合法')
+        if not self.is_deleted:
+            traders = projTraders.objects.exclude(pk=self.pk).filter(is_deleted=False, proj=self.proj, user=self.user, type=self.type)
+            if traders.exists():
+                raise InvestError(2007, msg='该交易师已存在一条相同记录了')
         super(projTraders, self).save(*args, **kwargs)
 
 class projServices(MyModel):
