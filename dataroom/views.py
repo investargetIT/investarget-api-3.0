@@ -1091,8 +1091,8 @@ class User_Dataroom_TemplateView(viewsets.ModelViewSet):
             except dataroom_User_file.DoesNotExist:
                 raise InvestError(20071, msg='用户不在模板dataroom中，请先将用户添加至dataroom中。')
             else:
-                oldFiles = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile=user_dataroom)
-                allFiles = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile=user_dataroom_temp.dataroomUserfile)
+                oldFiles = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile=user_dataroom, file__isnull=False)
+                allFiles = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile=user_dataroom_temp.dataroomUserfile, file__isnull=False)
                 addFiles = allFiles.exclude(file__in=oldFiles.values_list('file'))
                 removeFiles = oldFiles.exclude(file__in=allFiles.values_list('file'))
                 deleteTime = datetime.datetime.now()
