@@ -89,7 +89,7 @@ class TimelineView(viewsets.ModelViewSet):
             if request.user.has_perm('timeline.admin_getline'):
                 pass
             else:
-                queryset = queryset.filter(Q(proj__takeUser=request.user) | Q(proj__makeUser=request.user) | Q(investor=request.user) | Q(trader=request.user) | Q(createuser=request.user))
+                queryset = queryset.filter(Q(proj__proj_traders_user=request.user, proj__proj_traders_is_deleted=False) | Q(investor=request.user) | Q(trader=request.user) | Q(createuser=request.user))
             sortfield = request.GET.get('sort', 'createdtime')
             desc = request.GET.get('desc', 1)
             queryset = mySortQuery(queryset, sortfield, desc)
@@ -102,9 +102,12 @@ class TimelineView(viewsets.ModelViewSet):
             responselist = []
             for instance in queryset:
                 actionlist = {'get': True, 'change': False, 'delete': False}
-                if request.user.has_perm('timeline.admin_changeline') or request.user.has_perm('timeline.user_changeline', instance) or request.user in [instance.proj.takeUser, instance.proj.makeUser, instance.trader]:
+                if instance.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                     actionlist['change'] = True
-                if request.user.has_perm('timeline.admin_deleteline') or request.user.has_perm('timeline.user_deleteline', instance) or request.user in [instance.proj.takeUser, instance.proj.makeUser, instance.trader]:
+                    actionlist['delete'] = True
+                if request.user.has_perm('timeline.admin_changeline') or request.user.has_perm('timeline.user_changeline', instance) or request.user == instance.trader:
+                    actionlist['change'] = True
+                if request.user.has_perm('timeline.admin_deleteline') or request.user.has_perm('timeline.user_deleteline', instance) or request.user == instance.trader:
                     actionlist['delete'] = True
                 instancedata = TimeLineListSerializer_admin(instance).data
                 instancedata['action'] = actionlist
@@ -182,15 +185,6 @@ class TimelineView(viewsets.ModelViewSet):
                             raise InvestError(code=20071, msg=timelinestatu.errors)
                 else:
                     raise InvestError(code=20071,msg=timelineserializer.errors)
-                userlist = [newtimeline.investor, newtimeline.trader, newtimeline.createuser, newtimeline.proj.makeUser, newtimeline.proj.takeUser,
-                            newtimeline.proj.supportUser]
-                userlist = set(userlist)
-                for user in userlist:
-                     add_perm('timeline.user_getline', user, newtimeline)
-                add_perm('timeline.user_changeline', newtimeline.trader, newtimeline)
-                add_perm('timeline.user_deleteline', newtimeline.trader, newtimeline)
-                add_perm('timeline.user_changeline', newtimeline.createuser, newtimeline)
-                add_perm('timeline.user_deleteline', newtimeline.createuser, newtimeline)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(TimeLineSerializer(newtimeline).data, lang)))
         except InvestError as err:
                 return JSONResponse(InvestErrorResponse(err))
@@ -205,7 +199,7 @@ class TimelineView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user.has_perm('timeline.admin_getline'):
                 serializerclass = TimeLineSerializer
-            elif request.user.has_perm('timeline.user_getline',instance) or request.user in [instance.proj.takeUser, instance.proj.makeUser]:
+            elif request.user.has_perm('timeline.user_getline',instance) or instance.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                 serializerclass = TimeLineSerializer
             else:
                 raise InvestError(code=2009)
@@ -221,7 +215,7 @@ class TimelineView(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         try:
             timeline = self.get_object()
-            if request.user.has_perm('timeline.admin_changeline') or request.user.has_perm('timeline.user_changeline',timeline) or request.user in [timeline.proj.takeUser, timeline.proj.makeUser]:
+            if request.user.has_perm('timeline.admin_changeline') or request.user.has_perm('timeline.user_changeline',timeline) or timeline.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                 pass
             else:
                 raise InvestError(2009,msg='没有相应权限')
@@ -271,8 +265,8 @@ class TimelineView(viewsets.ModelViewSet):
                     else:
                         raise InvestError(code=20071, msg=timelineseria.errors)
                 cache_delete_key(self.redis_key + '_%s' % timeline.id)
-                if sendmessage:
-                    sendmessage_timelineauditstatuchange(newactivetimelinestatu, timeline.proj.takeUser, ['app', 'email', 'webmsg'], sender=request.user)
+                # if sendmessage:
+                #     sendmessage_timelineauditstatuchange(newactivetimelinestatu, timeline.proj.takeUser, ['app', 'email', 'webmsg'], sender=request.user)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(TimeLineSerializer(timeline).data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -293,7 +287,7 @@ class TimelineView(viewsets.ModelViewSet):
                 for timelineid in timelineidlist:
                     instance = self.get_object(timelineid)
                     if not (request.user.has_perm('timeline.admin_deleteline') or request.user.has_perm(
-                            'timeline.user_deleteline', instance)  or request.user in [instance.proj.takeUser, instance.proj.makeUser]):
+                            'timeline.user_deleteline', instance)  or instance.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists()):
                         raise InvestError(2009, msg='没有相应权限')
                     for link in ['timeline_transationStatus','timeline_remarks']:
                         if link in []:
@@ -408,7 +402,7 @@ class TimeLineRemarkView(viewsets.ModelViewSet):
                 timelineid = request.GET.get('timeline', None)
                 if timelineid:
                     timelineobj = self.get_timeline(timelineid)
-                    if request.user in [timelineobj.proj.takeUser, timelineobj.proj.makeUser]:
+                    if timelineobj.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                         queryset = queryset
                 else:
                     queryset = queryset.filter(createuser_id=request.user.id)
@@ -444,7 +438,7 @@ class TimeLineRemarkView(viewsets.ModelViewSet):
             line = self.get_timeline(timelineid)
             if request.user.has_perm('timeline.admin_addlineremark'):
                 pass
-            elif request.user.has_perm('timeline.user_getline', line) or request.user in [line.proj.takeUser, line.proj.makeUser]:
+            elif request.user.has_perm('timeline.user_getline', line) or line.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                 pass
             else:
                 raise InvestError(code=2009)

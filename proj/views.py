@@ -8,7 +8,6 @@ from django.core.paginator import Paginator, EmptyPage
 from django.db import models,transaction
 from django.db.models import Q,QuerySet
 from django.core.exceptions import FieldDoesNotExist
-from django.http import HttpResponse
 from django.http import StreamingHttpResponse
 from django.shortcuts import render
 from rest_framework import filters, viewsets
@@ -21,13 +20,13 @@ from dataroom.models import dataroom_User_file
 from dataroom.views import pulishProjectCreateDataroom
 from invest.settings import PROJECTPDF_URLPATH, APILOG_PATH
 from proj.models import project, finance, projectTags, projectIndustries, projectTransactionType, favoriteProject, \
-    ShareToken, attachment, projServices
+    ShareToken, attachment, projServices, projTraders
 from proj.serializer import ProjSerializer, FinanceSerializer, ProjCreatSerializer, \
     ProjCommonSerializer, FinanceChangeSerializer, FinanceCreateSerializer, FavoriteSerializer, \
     FavoriteCreateSerializer, ProjAttachmentSerializer, ProjListSerializer_admin , ProjListSerializer_user, \
     ProjDetailSerializer_admin_withoutsecretinfo, ProjDetailSerializer_admin_withsecretinfo, ProjDetailSerializer_user_withoutsecretinfo, \
     ProjDetailSerializer_user_withsecretinfo, ProjAttachmentCreateSerializer, ProjIndustryCreateSerializer, \
-    ProjDetailSerializer_all
+    ProjDetailSerializer_all, ProjTradersCreateSerializer, ProjTradersSerializer
 from sourcetype.models import Tag, TransactionType, DataSource, Service
 from third.views.qiniufile import deleteqiniufile
 from usersys.models import MyUser
@@ -35,7 +34,7 @@ from utils.somedef import addWaterMark, file_iterator
 from utils.sendMessage import sendmessage_favoriteproject, sendmessage_projectpublish
 from utils.util import catchexcption, read_from_cache, write_to_cache, loginTokenIsAvailable, returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser, \
-    setUserObjectPermission, cache_delete_key, checkrequesttoken, rem_perm, logexcption
+    setUserObjectPermission, cache_delete_key, checkrequesttoken, logexcption
 from utils.customClass import JSONResponse, InvestError, RelationFilter
 from django_filters import FilterSet
 
@@ -44,8 +43,8 @@ class ProjectFilter(FilterSet):
     ids = RelationFilter(filterstr='id', lookup_method='in')
     createuser = RelationFilter(filterstr='createuser', lookup_method='in')
     indGroup = RelationFilter(filterstr='indGroup', lookup_method='in')
-    takeUser = RelationFilter(filterstr='takeUser', lookup_method='in')
-    makeUser = RelationFilter(filterstr='makeUser', lookup_method='in')
+    user = RelationFilter(filterstr='proj_traders__user', relationName='proj_traders__is_deleted', lookup_method='in')
+    usertype = RelationFilter(filterstr='proj_traders__type', relationName='proj_traders__is_deleted', lookup_method='in')
     isoverseasproject = RelationFilter(filterstr='isoverseasproject', lookup_method='in')
     industries = RelationFilter(filterstr='industries',lookup_method='in',relationName='project_industries__is_deleted')
     tags = RelationFilter(filterstr='tags',lookup_method='in',relationName='project_tags__is_deleted')
@@ -59,7 +58,7 @@ class ProjectFilter(FilterSet):
     grossProfit_T = RelationFilter(filterstr='proj_finances__grossProfit', lookup_method='lte')
     class Meta:
         model = project
-        fields = ('ids', 'bdm', 'indGroup', 'takeUser', 'makeUser', 'createuser','service','supportUser','isoverseasproject','industries','tags','projstatus','country','netIncome_USD_F','netIncome_USD_T','grossProfit_F','grossProfit_T')
+        fields = ('ids', 'bdm', 'indGroup', 'user', 'usertype', 'createuser','service','supportUser','isoverseasproject','industries','tags','projstatus','country','netIncome_USD_F','netIncome_USD_T','grossProfit_F','grossProfit_T')
 
 
 class ProjectView(viewsets.ModelViewSet):
@@ -146,7 +145,7 @@ class ProjectView(viewsets.ModelViewSet):
                     queryset = queryset
                     serializerclass = ProjListSerializer_admin
                 elif request.user.has_perm('usersys.as_trader') and request.user.userstatus_id == 2:
-                    queryset = queryset.filter(Q(isHidden=False) | Q(takeUser=request.user) | Q(makeUser=request.user) | Q(supportUser=request.user) | Q(isHidden=True, proj_orgBDs__manager=request.user, proj_orgBDs__is_deleted=False))
+                    queryset = queryset.filter(Q(isHidden=False) | Q(proj_traders__user=request.user, proj_traders__is_deleted=False) | Q(supportUser=request.user) | Q(isHidden=True, proj_orgBDs__manager=request.user, proj_orgBDs__is_deleted=False))
                     serializerclass = ProjListSerializer_admin
                 else:
                     queryset = queryset.filter(Q(isHidden=False,projstatus_id__in=[4,6,7,8]) | Q(isHidden=True, proj_datarooms__is_deleted=False, proj_datarooms__dataroom_users__user=request.user, proj_datarooms__dataroom_users__is_deleted=False))
@@ -161,15 +160,20 @@ class ProjectView(viewsets.ModelViewSet):
                     pass
                 else:
                     actionlist['get'] = True
-                    if request.user.has_perm('proj.admin_changeproj') or request.user.has_perm('proj.user_changeproj', instance) or request.user in [instance.takeUser, instance.makeUser, instance.supportUser]:
+                    if instance.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
+                        actionlist['change'] = True
+                        actionlist['canAddOrgBD'] = True
+                        actionlist['canAddMeetBD'] = True
+                        actionlist['canAddDataroom'] = True
+                    if request.user.has_perm('proj.admin_changeproj') or request.user.has_perm('proj.user_changeproj', instance) or request.user == instance.supportUser:
                         actionlist['change'] = True
                     if request.user.has_perm('proj.admin_deleteproj') or request.user.has_perm('proj.user_deleteproj', instance):
                         actionlist['delete'] = True
-                    if request.user.has_perm('BD.manageOrgBD') or request.user in [instance.takeUser, instance.makeUser]:
+                    if request.user.has_perm('BD.manageOrgBD'):
                         actionlist['canAddOrgBD'] = True
-                    if request.user.has_perm('BD.manageMeetBD') or request.user in [instance.takeUser, instance.makeUser]:
+                    if request.user.has_perm('BD.manageMeetBD'):
                         actionlist['canAddMeetBD'] = True
-                    if request.user.has_perm('dataroom.admin_adddataroom') or request.user in [instance.takeUser, instance.makeUser]:
+                    if request.user.has_perm('dataroom.admin_adddataroom'):
                         actionlist['canAddDataroom'] = True
                 instancedata = serializerclass(instance).data
                 instancedata['action'] = actionlist
@@ -200,10 +204,26 @@ class ProjectView(viewsets.ModelViewSet):
             if len(editlist2) > 0:
                 if not request.user.has_perm('proj.admin_addproj'):
                     raise InvestError(2009, msg='没有权限edit%s' % editlist2)
+            takeUserData = projdata.pop('takeUser', None)
+            makeUserData = projdata.pop('makeUser', None)
             with transaction.atomic():
                 proj = ProjCreatSerializer(data=projdata)
                 if proj.is_valid():
                     pro = proj.save()
+                    if takeUserData:
+                        takeUserList = []
+                        if not isinstance(takeUserList,list):
+                            raise InvestError(2007, msg='takeUser must be a list')
+                        for takeUser_id in takeUserData:
+                            takeUserList.append(projTraders(proj=pro, user_id=takeUser_id, createuser=request.user, type=0))
+                        pro.project_tags.bulk_create(takeUserList)
+                    if makeUserData:
+                        makeUserList = []
+                        if not isinstance(makeUserList,list):
+                            raise InvestError(2007, msg='makeUser must be a list')
+                        for makeUser_id in makeUserData:
+                            makeUserList.append(projTraders(proj=pro, user_id=makeUser_id, createuser=request.user, type=1))
+                        pro.project_tags.bulk_create(makeUserList)
                     if tagsdata:
                         tagslist = []
                         if not isinstance(tagslist,list):
@@ -271,7 +291,7 @@ class ProjectView(viewsets.ModelViewSet):
             lang = request.GET.get('lang')
             clienttype = request.META.get('HTTP_CLIENTTYPE')
             instance = self.get_object()
-            if request.user in (instance.supportUser, instance.takeUser, instance.makeUser) or request.user.is_superuser:
+            if request.user == instance.supportUser or request.user.is_superuser or instance.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                 serializerclass = ProjDetailSerializer_all
             elif request.user.has_perm('proj.admin_getproj') :
                 if request.user.has_perm('proj.get_secretinfo'):
@@ -333,7 +353,7 @@ class ProjectView(viewsets.ModelViewSet):
             projdata = request.data
             if request.user.has_perm('proj.admin_changeproj'):
                 pass
-            elif request.user.has_perm('proj.user_changeproj',pro) or request.user in [pro.takeUser, pro.makeUser, pro.supportUser]:
+            elif request.user.has_perm('proj.user_changeproj',pro) or request.user == pro.supportUser or pro.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                 if projdata.get('projstatus', None) and projdata.get('projstatus', None) >= 4:
                     raise InvestError(2009,msg='只有管理员才能修改到该状态')
             else:
@@ -359,10 +379,38 @@ class ProjectView(viewsets.ModelViewSet):
             if len(editlist2) > 0:
                 if not request.user.has_perm('proj.admin_changeproj'):
                     raise  InvestError(2009,msg='没有权限修改%s'%editlist2)
+            takeUserData = projdata.pop('takeUser', None)
+            makeUserData = projdata.pop('makeUser', None)
             with transaction.atomic():
                 proj = ProjCreatSerializer(pro,data=projdata)
                 if proj.is_valid():
                     pro = proj.save()
+                    if takeUserData:
+                        if not isinstance(takeUserData,list):
+                            raise InvestError(2007, msg='takeUser must be a list')
+                        userExists_list = pro.proj_traders.filter(type=0, is_deleted=False).values_list('user_id', flat=True)
+                        addlist = [item for item in takeUserData if item not in userExists_list]
+                        removelist = [item for item in userExists_list if item not in takeUserData]
+                        pro.proj_traders.filter(user__in=removelist, type=0, is_deleted=False).update(is_deleted=True,
+                                                                                             deletedtime=datetime.datetime.now(),
+                                                                                             deleteduser=request.user)
+                        takeUserList = []
+                        for user_id in addlist:
+                            takeUserList.append(projTraders(proj=pro, user_id=user_id, createuser=request.user, type=0))
+                        pro.proj_traders.bulk_create(takeUserList)
+                    if makeUserData:
+                        if not isinstance(makeUserData,list):
+                            raise InvestError(2007, msg='makeUser must be a list')
+                        userExists_list = pro.proj_traders.filter(type=1, is_deleted=False).values_list('user_id', flat=True)
+                        addlist = [item for item in makeUserData if item not in userExists_list]
+                        removelist = [item for item in userExists_list if item not in makeUserData]
+                        pro.proj_traders.filter(user__in=removelist, type=1, is_deleted=False).update(is_deleted=True,
+                                                                                             deletedtime=datetime.datetime.now(),
+                                                                                             deleteduser=request.user)
+                        makeUserList = []
+                        for user_id in addlist:
+                            makeUserList.append(projTraders(proj=pro, user_id=user_id, createuser=request.user, type=1))
+                        pro.proj_traders.bulk_create(makeUserList)
                     if tagsdata:
                         taglist = Tag.objects.in_bulk(tagsdata)
                         addlist = [item for item in taglist if item not in pro.tags.all()]
@@ -434,10 +482,8 @@ class ProjectView(viewsets.ModelViewSet):
                     raise InvestError(code=4001,msg='data有误_%s' %  proj.errors)
                 if sendmsg:
                     sendmessage_projectpublish(pro, pro.supportUser,['email', 'webmsg'],sender=request.user)
-                    if pro.takeUser != pro.supportUser:
-                        sendmessage_projectpublish(pro, pro.takeUser, ['email', 'webmsg'], sender=request.user)
-                    if pro.makeUser != pro.supportUser and pro.makeUser != pro.takeUser:
-                        sendmessage_projectpublish(pro, pro.makeUser, ['email', 'webmsg'], sender=request.user)
+                    for proj_trader in pro.proj_traders.filter(type=0, is_deleted=False):
+                        sendmessage_projectpublish(pro, proj_trader.user, ['email', 'webmsg'], sender=request.user)
                     pulishProjectCreateDataroom(pro, request.user)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(ProjSerializer(pro).data,lang)))
         except InvestError as err:
@@ -452,10 +498,10 @@ class ProjectView(viewsets.ModelViewSet):
             pro = self.get_object()
             if request.user.has_perm('proj.admin_changeproj'):
                 pass
-            elif request.user.has_perm('proj.user_changeproj',pro) or request.user in [pro.takeUser, pro.makeUser, pro.supportUser]:
+            elif request.user.has_perm('proj.user_changeproj',pro) or request.user == pro.supportUser or pro.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                 pass
             else:
-                raise InvestError(code=2009,msg='非承揽承做或上传方无法修改项目')
+                raise InvestError(code=2009,msg='非承揽承做或上传方无法发送项目pdf邮件')
             if pro.projstatus_id == 4 and not pro.is_deleted:
                 propath = APILOG_PATH['wxgroupsendpdf'] + pro.projtitleC + '.pdf'
                 if not os.path.exists(propath):
@@ -476,7 +522,7 @@ class ProjectView(viewsets.ModelViewSet):
             lang = request.GET.get('lang')
             if request.user.has_perm('proj.admin_deleteproj'):
                 pass
-            elif request.user.has_perm('proj.user_deleteproj',instance) or request.user in [instance.takeUser, instance.makeUser, instance.supportUser]:
+            elif request.user.has_perm('proj.user_deleteproj',instance) or request.user == instance.supportUser or instance.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                 if instance.projstatus_id >= 4:
                     raise InvestError(2009, msg='没有权限，请联系管理员删除')
             else:
@@ -484,7 +530,7 @@ class ProjectView(viewsets.ModelViewSet):
             if instance.proj_datarooms.filter(is_deleted=False,proj=instance).exists():
                 raise InvestError(code=2010, msg=u'{} 上有关联数据'.format('proj_datarooms'))
             with transaction.atomic():
-                for link in ['proj_timelines', 'proj_finances', 'proj_attachment', 'project_tags', 'project_industries', 'project_TransactionTypes',
+                for link in ['proj_timelines', 'proj_finances', 'proj_attachment', 'project_tags', 'project_industries', 'project_TransactionTypes', 'proj_traders',
                              'proj_favorite', 'proj_sharetoken', 'proj_datarooms', 'proj_services', 'proj_schedule', 'proj_orgBDs','proj_meetBDs','proj_OrgBdBlacks']:
                     if link in ['proj_timelines', 'proj_datarooms']:
                         manager = getattr(instance, link, None)
@@ -558,7 +604,9 @@ class ProjectView(viewsets.ModelViewSet):
             if proj.isHidden:
                 if request.user.has_perm('proj.admin_getproj'):
                     pass
-                elif request.user in [proj.createuser,proj.takeUser,proj.makeUser,proj.supportUser]:
+                elif request.user in [proj.createuser, proj.supportUser]:
+                    pass
+                elif proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                     pass
                 else:
                     raise InvestError(2009,msg='隐藏项目，只有项目承揽承做及上传方可以获取相关项目信息')
@@ -575,7 +623,7 @@ class ProjectView(viewsets.ModelViewSet):
             pdfpath = APILOG_PATH['pdfpath_base'] + 'P' + datetime.datetime.now().strftime('%Y%m%d%H%M%S') + '.pdf'
             config = pdfkit.configuration(wkhtmltopdf=APILOG_PATH['wkhtmltopdf'])
             aaa = pdfkit.from_url(PROJECTPDF_URLPATH + str(proj.id)+'&lang=%s'%lang, pdfpath, configuration=config, options=options)
-            if request.user not in [proj.takeUser, proj.makeUser]:
+            if not proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                 username = request.user.usernameC
                 orgname = request.user.org.orgnameC if request.user.org else ''
                 if lang == 'en':
@@ -631,6 +679,143 @@ class ProjectView(viewsets.ModelViewSet):
             f.close()
         except Exception:
             logexcption()
+
+
+class ProjTradersView(viewsets.ModelViewSet):
+    """
+    list: 获取项目承揽承做
+    create: 增加项目承揽承做
+    update: 修改项目承揽承做
+    destroy: 删除项目承揽承做
+    """
+    filter_backends = (filters.DjangoFilterBackend,)
+    queryset = projTraders.objects.filter(is_deleted=False)
+    filter_fields = ('user', 'proj', 'type')
+    serializer_class = ProjTradersSerializer
+
+    def get_queryset(self):
+        assert self.queryset is not None, (
+            "'%s' should either include a `queryset` attribute, "
+            "or override the `get_queryset()` method."
+            % self.__class__.__name__
+        )
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource_id=self.request.user.datasource_id)
+            else:
+                queryset = queryset
+        else:
+            raise InvestError(code=8890)
+        return queryset
+
+    def get_proj(self, pk):
+        try:
+            obj = project.objects.get(id=pk, is_deleted=False)
+        except project.DoesNotExist:
+            raise InvestError(code=4002)
+        if obj.datasource != self.request.user.datasource:
+            raise InvestError(code=8888)
+        if obj.is_deleted:
+            raise InvestError(code=4002, msg='项目已删除')
+        return obj
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
+            queryset = self.filter_queryset(self.get_queryset())
+            if request.user.has_perm('proj.admin_getproj'):
+                queryset = queryset
+            else:
+                queryset = queryset.filter(Q(proj__supportUser=request.user) | Q(proj__createuser=request.user))
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializers = self.serializer_class(queryset, many=True)
+            return JSONResponse(
+                SuccessResponse({'count': count, 'data': returnListChangeToLanguage(serializers.data, lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            lang = request.GET.get('lang')
+            data['createuser'] = request.user.id
+            data['datasource'] = request.user.datasource.id
+            instance = self.get_proj(data['proj'])
+            if request.user.has_perm('proj.admin_changeproj') or request.user.has_perm('proj.admin_addproj'):
+                pass
+            elif request.user == instance.supportUser:
+                pass
+            else:
+                raise InvestError(code=2009,msg='没有权限增加承揽承做')
+            with transaction.atomic():
+                instanceSerializer = ProjTradersCreateSerializer(data=data)
+                if instanceSerializer.is_valid():
+                    instance = instanceSerializer.save()
+                else:
+                    raise InvestError(20071, msg='新增项目承揽承做失败--%s' % instanceSerializer.error_messages)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            if request.user.has_perm('proj.admin_changeproj') or request.user.has_perm('proj.admin_addproj'):
+                pass
+            else:
+                raise InvestError(code=2009,msg='没有权限修改承揽承做')
+            with transaction.atomic():
+                newinstanceSeria = ProjTradersCreateSerializer(instance, data=data)
+                if newinstanceSeria.is_valid():
+                    newinstance = newinstanceSeria.save()
+                else:
+                    raise InvestError(2009, msg='项目承揽承做修改失败——%s' % newinstanceSeria.errors)
+                return JSONResponse(
+                    SuccessResponse(returnDictChangeToLanguage(self.serializer_class(newinstance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            if request.user.has_perm('proj.admin_changeproj') or request.user.has_perm('proj.admin_addproj'):
+                pass
+            else:
+                raise InvestError(code=2009,msg='没有权限删除承揽承做')
+            with transaction.atomic():
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
+            return JSONResponse(SuccessResponse({'isDeleted': True, }))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
 class ProjAttachmentView(viewsets.ModelViewSet):
@@ -739,7 +924,9 @@ class ProjAttachmentView(viewsets.ModelViewSet):
                 pass
             elif request.user.has_perm('proj.user_changeproj',proj):
                 pass
-            elif request.user in [proj.createuser,proj.takeUser,proj.makeUser,proj.supportUser]:
+            elif request.user in [proj.createuser, proj.supportUser]:
+                pass
+            elif proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                 pass
             else:
                 raise InvestError(code=2009,msg='没有增加该项目附件的权限')
@@ -775,7 +962,9 @@ class ProjAttachmentView(viewsets.ModelViewSet):
                             pass
                         elif request.user.has_perm('proj.user_changeproj',projAttachment.proj):
                             pass
-                        elif request.user in [projAttachment.proj.createuser, projAttachment.proj.takeUser, projAttachment.proj.makeUser, projAttachment.proj.supportUser]:
+                        elif request.user in [projAttachment.proj.createuser, projAttachment.proj.supportUser]:
+                            pass
+                        elif projAttachment.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                             pass
                         else:
                             raise InvestError(code=2009)
@@ -810,8 +999,9 @@ class ProjAttachmentView(viewsets.ModelViewSet):
                     projattachment = self.get_object(projattachmentid)
                     if request.user.has_perm('proj.user_changeproj', projattachment.proj):
                         pass
-                    elif request.user in [projattachment.proj.createuser, projattachment.proj.takeUser,
-                                          projattachment.proj.makeUser, projattachment.proj.supportUser]:
+                    elif request.user in [projattachment.proj.createuser, projattachment.proj.supportUser]:
+                        pass
+                    elif projattachment.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                         pass
                     elif request.user.has_perm('proj.admin_changeproj'):
                         pass
@@ -913,9 +1103,11 @@ class ProjFinanceView(viewsets.ModelViewSet):
                 raise InvestError(2007, msg='proj 不能为空')
             queryset = self.filter_queryset(self.get_queryset())
             if not proj.financeIsPublic:
-                if request.user in (proj.supportUser, proj.takeUser, proj.makeUser) or request.user.is_superuser:
+                if request.user in [proj.supportUser, proj.createuser] or request.user.is_superuser:
                     pass
                 elif request.user.has_perm('proj.admin_getproj'):
+                    pass
+                elif proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                     pass
                 else:
                     return JSONResponse(SuccessResponse({'count':0,'data':[]}, msg='没有符合的结果'))
@@ -942,8 +1134,9 @@ class ProjFinanceView(viewsets.ModelViewSet):
                 pass
             elif request.user.has_perm('proj.user_changeproj',proj):
                 pass
-            elif request.user in [proj.createuser, proj.takeUser,
-                                  proj.makeUser, proj.supportUser]:
+            elif request.user in [proj.createuser, proj.supportUser]:
+                pass
+            elif proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                 pass
             else:
                 raise InvestError(code=2009,msg='没有增加该项目财务信息的权限')
@@ -983,7 +1176,9 @@ class ProjFinanceView(viewsets.ModelViewSet):
                             pass
                         elif request.user.has_perm('proj.user_changeproj',projfinance.proj):
                             pass
-                        elif request.user in [projfinance.proj.createuser, projfinance.proj.takeUser, projfinance.proj.makeUser, projfinance.proj.supportUser]:
+                        elif request.user in [projfinance.proj.createuser, projfinance.proj.supportUser]:
+                            pass
+                        elif projfinance.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                             pass
                         else:
                             raise InvestError(code=2009,msg='没有权限修改项目（%s）的相关信息'%projfinance.proj)
@@ -1018,8 +1213,9 @@ class ProjFinanceView(viewsets.ModelViewSet):
                     projfinance = self.get_object(projfinanceid)
                     if request.user.has_perm('proj.user_changeproj', projfinance.proj):
                         pass
-                    elif request.user in [projfinance.proj.createuser, projfinance.proj.takeUser,
-                                          projfinance.proj.makeUser, projfinance.proj.supportUser]:
+                    elif request.user in [projfinance.proj.createuser, projfinance.proj.supportUser]:
+                        pass
+                    elif projfinance.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                         pass
                     elif request.user.has_perm('proj.admin_changeproj'):
                         pass
