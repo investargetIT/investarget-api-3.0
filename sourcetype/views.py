@@ -589,7 +589,9 @@ def getmenulist(user):
     if not user.has_perm('usersys.as_investor') or user.is_superuser:
         qslist.append(allmenuobj.filter(id__in=[27, 28, 33]))
     if user.has_perm('usersys.as_trader') and not user.is_superuser:
-        qslist.append(allmenuobj.filter(id__in=[12, 34]))
+        qslist.append(allmenuobj.filter(id__in=[12]))
+    if user.has_perm('usersys.as_trader') and user.has_perm('usersys.user_adduser'):
+            qslist.append(allmenuobj.filter(id__in=[34]))
     if user.has_perm('emailmanage.getemailmanage'):
         qslist.append(allmenuobj.filter(id__in=[3]))
     if user.has_perm('BD.user_getProjectBD') or user.has_perm('BD.manageProjectBD'): # 项目bd管理
