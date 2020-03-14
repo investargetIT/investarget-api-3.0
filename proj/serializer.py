@@ -111,7 +111,7 @@ class ProjSerializer(serializers.ModelSerializer):
         depth = 1
 
     def get_projTraders(self, obj):
-        qs = obj.proj_traders.filter(is_deleted=False)
+        qs = obj.proj_traders.filter(is_deleted=False, user__isnull=False)
         if qs.exists():
             return ProjTradersSerializer(qs, many=True).data
         return None
@@ -250,7 +250,7 @@ class ProjDetailSerializer_admin_withsecretinfo(serializers.ModelSerializer):
         return None
 
     def get_projTraders(self, obj):
-        qs = obj.proj_traders.filter(is_deleted=False)
+        qs = obj.proj_traders.filter(is_deleted=False, user__isnull=False)
         if qs.exists():
             return ProjTradersSerializer(qs, many=True).data
         return None
@@ -314,7 +314,7 @@ class ProjDetailSerializer_user_withsecretinfo(serializers.ModelSerializer):
         return None
 
     def get_projTraders(self, obj):
-        qs = obj.proj_traders.filter(is_deleted=False)
+        qs = obj.proj_traders.filter(is_deleted=False, user__isnull=False)
         if qs.exists():
             return ProjTradersSerializer(qs, many=True).data
         return None
@@ -488,7 +488,7 @@ class ProjDetailSerializer_all(serializers.ModelSerializer):
         return None
 
     def get_projTraders(self, obj):
-        qs = obj.proj_traders.filter(is_deleted=False)
+        qs = obj.proj_traders.filter(is_deleted=False, user__isnull=False)
         if qs.exists():
             return ProjTradersSerializer(qs, many=True).data
         return None

@@ -634,7 +634,7 @@ class User_DataroomfileView(viewsets.ModelViewSet):
                 if user:
                     if user != request.user.id:
                         raise InvestError(2009)
-                queryset = self.filter_queryset(self.get_queryset()).filter(Q(datasource=request.user.datasource,user=request.user) | Q(dataroom__proj__proj_traders__user=request.user, dataroom__proj__proj_trader__is_deleted=False))
+                queryset = self.filter_queryset(self.get_queryset()).filter(Q(datasource=request.user.datasource,user=request.user) | Q(dataroom__proj__proj_traders__user=request.user, dataroom__proj__proj_traders__is_deleted=False))
             count = queryset.count()
             serializer = User_DataroomSerializer(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
@@ -1015,7 +1015,7 @@ class User_Dataroom_TemplateView(viewsets.ModelViewSet):
                 filters = {'datasource':request.user.datasource}
                 queryset = self.filter_queryset(self.get_queryset()).filter(**filters)
             else:
-                queryset = self.filter_queryset(self.get_queryset()).filter(Q(datasource=request.user.datasource, user=request.user) | Q(dataroom__proj__proj_traders_user=request.user, dataroom__proj__proj_traders_is_deleted=False))
+                queryset = self.filter_queryset(self.get_queryset()).filter(Q(datasource=request.user.datasource, user=request.user) | Q(dataroom__proj__proj_traders__user=request.user, dataroom__proj__proj_traders__is_deleted=False))
             count = queryset.count()
             serializer = self.serializer_class(queryset, many=True)
             return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
