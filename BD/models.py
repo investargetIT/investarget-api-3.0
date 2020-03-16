@@ -137,7 +137,6 @@ class OrgBD(MyModel):
             ('manageOrgBD', '管理机构BD'),
             ('user_getOrgBD', u'用户查看个人机构BD'),
             ('user_addOrgBD', u'用户新建机构BD'),
-            ('user_manageOrgBD', '用户管理个人机构BD（obj级别）'),
         )
 
     def save(self, *args, **kwargs):

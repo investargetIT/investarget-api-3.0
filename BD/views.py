@@ -700,9 +700,7 @@ class OrgBDView(viewsets.ModelViewSet):
                             today = datetime.date.today()
                             if len(self.queryset.filter(createdtime__year=today.year, createdtime__month=today.month,
                                                         createdtime__day=today.day, manager_id=neworgBD.manager, proj=neworgBD.proj)) == 1:
-                                sendmessage_orgBDMessage(neworgBD, receiver=neworgBD.manager,
-                                                         types=['app', 'webmsg', 'sms'], sender=request.user)
-                        add_perm('BD.user_manageOrgBD', neworgBD.manager, neworgBD)
+                                sendmessage_orgBDMessage(neworgBD, receiver=neworgBD.manager, types=['app', 'webmsg', 'sms'], sender=request.user)
                 else:
                     raise InvestError(5004,msg='机构BD创建失败——%s'%orgBD.error_messages)
                 if comments:
@@ -735,7 +733,7 @@ class OrgBDView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
-            elif request.user.has_perm('BD.user_manageOrgBD', instance):
+            elif request.user in [instance.createuser, instance.manager]:
                 pass
             else:
                 raise InvestError(2009)
@@ -778,12 +776,7 @@ class OrgBDView(viewsets.ModelViewSet):
             remark = data.get('remark', None)
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
-            elif request.user.id == instance.createuser_id:
-                data = {'response': data.get('response', instance.response_id),
-                        'isimportant': bool(data.get('isimportant', instance.isimportant)),
-                        'lastmodifyuser': request.user.id}
-
-            elif request.user.has_perm('BD.user_manageOrgBD', instance):
+            elif request.user in [instance.createuser, instance.manager]:
                 data = {'response': data.get('response', instance.response_id),
                         'isimportant': bool(data.get('isimportant', instance.isimportant)),
                         'lastmodifyuser': request.user.id}
@@ -816,8 +809,6 @@ class OrgBDView(viewsets.ModelViewSet):
                                                         createdtime__day=today.day, manager_id=neworgBD.manager, proj=neworgBD.proj)) == 1:
                                 sendmessage_orgBDMessage(neworgBD, receiver=neworgBD.manager,
                                                          types=['app', 'webmsg', 'sms'], sender=request.user)
-                        add_perm('BD.user_manageOrgBD', neworgBD.manager, neworgBD)
-                        rem_perm('BD.user_manageOrgBD', oldmanager, neworgBD)
                 else:
                     raise InvestError(5004, msg='机构BD修改失败——%s' % orgBD.error_messages)
                 cache_delete_key(self.redis_key)
@@ -1071,9 +1062,7 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
             bdinstance = OrgBD.objects.get(id=int(data['orgBD']))
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
-            elif request.user.id == bdinstance.createuser_id:
-                pass
-            elif request.user.has_perm('BD.user_manageOrgBD', bdinstance):
+            elif request.user in [bdinstance.createuser, bdinstance.manager]:
                 pass
             elif bdinstance.proj:
                 if bdinstance.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
