@@ -1649,10 +1649,11 @@ def makeExportOrgExcel():
                                                     invest_with_list = []
                                                     if hasattr(com_event.invsest_with, '__iter__'):
                                                         for invesdic in com_event.invsest_with:
-                                                            if isinstance(invesdic, dict):
-                                                                invest_with_list.append(invesdic.get('invst_name'))
-                                                            if isinstance(invesdic, unicode):
-                                                                invest_with_list.append(invesdic)
+                                                            if invesdic:
+                                                                if isinstance(invesdic, dict):
+                                                                    invest_with_list.append(invesdic.get('invst_name', ''))
+                                                                if isinstance(invesdic, unicode):
+                                                                    invest_with_list.append(invesdic)
                                                     invest_with_str = ','.join(invest_with_list)
                                                 else:
                                                     invest_with_str = com_event.merger_with
@@ -1686,6 +1687,7 @@ def makeExportOrgExcel():
                         self.deleteTask(exporttask)
                 except Exception:
                     logexcption()
+                    print(traceback.format_exc())
                     exporttask.status = 1
                     exporttask.save()
 
@@ -1722,3 +1724,4 @@ def makeExportOrgExcel():
         f.close()
         d = startdotaskthread()
         d.start()
+
