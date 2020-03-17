@@ -1622,37 +1622,23 @@ def makeExportOrgExcel():
                                     investorList = org.org_users.all().filter(is_deleted=False, datasource=taskdatasource)
                                     if isinstance(tagidlist, list) and len(tagidlist) > 0:
                                         investorList = investorList.filter(tags__in=tagidlist)
-                                    relation_qs = UserRelation.objects.filter(investoruser__in=investorList,
-                                                                              is_deleted=False).select_related(
-                                        'investoruser', 'traderuser')
-                                    relations = relation_qs.values('investoruser').annotate(count=Count('investoruser'),
-                                                                                            max=Max('familiar__score'))
-                                    for relationData in relations:
-                                        relationinstance = relation_qs.filter(investoruser_id=relationData['investoruser'], familiar__score=relationData['max']).first()
-                                        mobile = self.getStarMobile(relationinstance.investoruser.mobile)
-                                        email = self.getStarEmail(relationinstance.investoruser.email)
-                                        title = relationinstance.investoruser.title.nameC if relationinstance.investoruser.title else '暂无'
-                                        usertags = relationinstance.investoruser.tags.filter(tag_usertags__is_deleted=False)
+                                    relation_qs = UserRelation.objects.filter(investoruser__in=investorList, is_deleted=False)
+                                    for investor in investorList:
+                                        mobile = self.getStarMobile(investor.mobile)
+                                        email = self.getStarEmail(investor.email)
+                                        title = investor.title.nameC if investor.title else '暂无'
+                                        usertags = investor.tags.filter(tag_usertags__is_deleted=False)
                                         usertagnamelist = []
                                         for tag in usertags:
                                             usertagnamelist.append(tag.nameC)
                                         usertagstr = '、'.join(usertagnamelist) if len(usertagnamelist) > 0 else '暂无'
-                                        userData_list.append('投资人：%s,手机：%s,邮箱：%s,职位：%s,标签：%s--交易师：%s(%s)' % (
-                                                        relationinstance.investoruser.usernameC, mobile, email, title, usertagstr,
-                                                        relationinstance.traderuser.usernameC, relationinstance.familiar.score))
-                                    noRelationUser = investorList.exclude(id__in=relation_qs.values_list('investoruser'))
-                                    for noUser in noRelationUser:
-                                        mobile = self.getStarMobile(noUser.mobile)
-                                        email = self.getStarEmail(noUser.email)
-                                        title = noUser.title.nameC if noUser.title else '暂无'
-                                        usertags = noUser.tags.filter(
-                                            tag_usertags__is_deleted=False)
-                                        usertagnamelist = []
-                                        for tag in usertags:
-                                            usertagnamelist.append(tag.nameC)
-                                        usertagstr = '、'.join(usertagnamelist) if len(usertagnamelist) > 0 else '暂无'
-                                        userData_list.append('投资人：%s,手机：%s,邮箱：%s,职位：%s,标签：%s--交易师：%s' % (
-                                                        noUser.usernameC, mobile, email, title, usertagstr, '暂无'))
+                                        traderRelations = relation_qs.filter(investoruser_id=investor.id)
+                                        traderList = []
+                                        for relationinstance in traderRelations:
+                                            traderList.append('%s(%s)' % (relationinstance.traderuser.usernameC, relationinstance.familiar.score))
+                                        traderStr = '、'.join(traderList) if len(traderList) > 0 else '暂无'
+                                        userData_list.append('投资人：%s,手机：%s,邮箱：%s,职位：%s,标签：%s --交易师：%s' % (
+                                            investor.usernameC, mobile, email, title, usertagstr, traderStr))
                                     userDataStr = '\n\r'.join(userData_list)
                                     ws_org.write(ws_org_hang, 0, str(org.orgnameC), style)  # 简称
                                     ws_org.write(ws_org_hang, 1, str(org.orgfullname), style)  # 全称
