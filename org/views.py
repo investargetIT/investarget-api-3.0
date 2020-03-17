@@ -1636,7 +1636,7 @@ def makeExportOrgExcel():
                                         usertagnamelist = []
                                         for tag in usertags:
                                             usertagnamelist.append(tag.nameC)
-                                        usertagstr = '、'.join(usertagnamelist)
+                                        usertagstr = '、'.join(usertagnamelist) if len(usertagnamelist) > 0 else '暂无'
                                         userData_list.append('投资人：%s,手机：%s,邮箱：%s,职位：%s,标签：%s--交易师：%s(%s)' % (
                                                         relationinstance.investoruser.usernameC, mobile, email, title, usertagstr,
                                                         relationinstance.traderuser.usernameC, relationinstance.familiar.score))
@@ -1650,7 +1650,7 @@ def makeExportOrgExcel():
                                         usertagnamelist = []
                                         for tag in usertags:
                                             usertagnamelist.append(tag.nameC)
-                                        usertagstr = '、'.join(usertagnamelist)
+                                        usertagstr = '、'.join(usertagnamelist) if len(usertagnamelist) > 0 else '暂无'
                                         userData_list.append('投资人：%s,手机：%s,邮箱：%s,职位：%s,标签：%s--交易师：%s' % (
                                                         noUser.usernameC, mobile, email, title, usertagstr, '暂无'))
                                     userDataStr = '\n\r'.join(userData_list)
