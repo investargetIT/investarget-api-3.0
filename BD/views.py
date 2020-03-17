@@ -1093,7 +1093,7 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
             data = request.data
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
-            elif request.user.id == instance.createuser_id:
+            elif request.user in [instance.createuser, instance.orgBD.manager]:
                 pass
             else:
                 raise InvestError(2009)
