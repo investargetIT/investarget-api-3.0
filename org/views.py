@@ -1542,6 +1542,27 @@ def makeExportOrgExcel():
             else:
                 return None
 
+        def getStarMobile(self, mobile):
+            if mobile and mobile not in ['', u'']:
+                length = len(mobile)
+                if length > 4:
+                    center = str(mobile)[0: (length - 4) // 2] + '****' + str(mobile)[(length - 4) // 2 + 4:]
+                else:
+                    center = '****'
+                return center
+            else:
+                return None
+        def getStarEmail(self, email):
+            if email and email not in ['', u'']:
+                index = str(email).find('@')
+                if index >= 0:
+                    center = '****' + str(email)[index:]
+                else:
+                    center = '****'
+                return center
+            else:
+                return None
+
         def executeTask(self, task_qs):
             for exporttask in task_qs:
                 exporttask.status = 4
@@ -1574,7 +1595,7 @@ def makeExportOrgExcel():
                                 ws_org.write(0, 5, '投资事件', style)
                                 ws_org.col(5).width = 256 * 120
                                 ws_org.write(0, 6, '机构投资人', style)
-                                ws_org.col(6).width = 256 * 80
+                                ws_org.col(6).width = 256 * 100
                                 ws_org_hang = 1
 
                                 for org in org_qs:
@@ -1608,10 +1629,30 @@ def makeExportOrgExcel():
                                                                                             max=Max('familiar__score'))
                                     for relationData in relations:
                                         relationinstance = relation_qs.filter(investoruser_id=relationData['investoruser'], familiar__score=relationData['max']).first()
-                                        userData_list.append('投资人：%s, 交易师：%s' % (relationinstance.investoruser.usernameC, relationinstance.traderuser.usernameC))
+                                        mobile = self.getStarMobile(relationinstance.investoruser.mobile)
+                                        email = self.getStarEmail(relationinstance.investoruser.email)
+                                        title = relationinstance.investoruser.title.nameC if relationinstance.investoruser.title else '暂无'
+                                        usertags = relationinstance.investoruser.tags.filter(tag_usertags__is_deleted=False)
+                                        usertagnamelist = []
+                                        for tag in usertags:
+                                            usertagnamelist.append(tag.nameC)
+                                        usertagstr = '、'.join(usertagnamelist)
+                                        userData_list.append('投资人：%s,手机：%s,邮箱：%s,职位：%s,标签：%s--交易师：%s(%s)' % (
+                                                        relationinstance.investoruser.usernameC, mobile, email, title, usertagstr,
+                                                        relationinstance.traderuser.usernameC, relationinstance.familiar.score))
                                     noRelationUser = investorList.exclude(id__in=relation_qs.values_list('investoruser'))
                                     for noUser in noRelationUser:
-                                        userData_list.append('投资人：%s, 交易师：暂无' % noUser.usernameC)
+                                        mobile = self.getStarMobile(noUser.mobile)
+                                        email = self.getStarEmail(noUser.email)
+                                        title = noUser.title.nameC if noUser.title else '暂无'
+                                        usertags = noUser.tags.filter(
+                                            tag_usertags__is_deleted=False)
+                                        usertagnamelist = []
+                                        for tag in usertags:
+                                            usertagnamelist.append(tag.nameC)
+                                        usertagstr = '、'.join(usertagnamelist)
+                                        userData_list.append('投资人：%s,手机：%s,邮箱：%s,职位：%s,标签：%s--交易师：%s' % (
+                                                        noUser.usernameC, mobile, email, title, usertagstr, '暂无'))
                                     userDataStr = '\n\r'.join(userData_list)
                                     ws_org.write(ws_org_hang, 0, str(org.orgnameC), style)  # 简称
                                     ws_org.write(ws_org_hang, 1, str(org.orgfullname), style)  # 全称
