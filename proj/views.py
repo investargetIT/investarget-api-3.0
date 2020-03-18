@@ -215,14 +215,14 @@ class ProjectView(viewsets.ModelViewSet):
                         if not isinstance(takeUserList,list):
                             raise InvestError(2007, msg='takeUser must be a list')
                         for takeUser_id in takeUserData:
-                            takeUserList.append(projTraders(proj=pro, user_id=takeUser_id, createuser=request.user, type=0))
+                            takeUserList.append(projTraders(proj=pro, user_id=takeUser_id, createuser=request.user, type=0, createdtime=datetime.datetime.now()))
                         pro.project_tags.bulk_create(takeUserList)
                     if makeUserData:
                         makeUserList = []
                         if not isinstance(makeUserList,list):
                             raise InvestError(2007, msg='makeUser must be a list')
                         for makeUser_id in makeUserData:
-                            makeUserList.append(projTraders(proj=pro, user_id=makeUser_id, createuser=request.user, type=1))
+                            makeUserList.append(projTraders(proj=pro, user_id=makeUser_id, createuser=request.user, type=1, createdtime=datetime.datetime.now()))
                         pro.project_tags.bulk_create(makeUserList)
                     if tagsdata:
                         tagslist = []
@@ -396,7 +396,7 @@ class ProjectView(viewsets.ModelViewSet):
                                                                                              deleteduser=request.user)
                         takeUserList = []
                         for user_id in addlist:
-                            takeUserList.append(projTraders(proj=pro, user_id=user_id, createuser=request.user, type=0))
+                            takeUserList.append(projTraders(proj=pro, user_id=user_id, createuser=request.user, type=0, createdtime=datetime.datetime.now()))
                         pro.proj_traders.bulk_create(takeUserList)
                     if makeUserData:
                         if not isinstance(makeUserData,list):
@@ -409,7 +409,7 @@ class ProjectView(viewsets.ModelViewSet):
                                                                                              deleteduser=request.user)
                         makeUserList = []
                         for user_id in addlist:
-                            makeUserList.append(projTraders(proj=pro, user_id=user_id, createuser=request.user, type=1))
+                            makeUserList.append(projTraders(proj=pro, user_id=user_id, createuser=request.user, type=1, createdtime=datetime.datetime.now()))
                         pro.proj_traders.bulk_create(makeUserList)
                     if tagsdata:
                         taglist = Tag.objects.in_bulk(tagsdata)
