@@ -385,32 +385,38 @@ class ProjectView(viewsets.ModelViewSet):
                 proj = ProjCreatSerializer(pro,data=projdata)
                 if proj.is_valid():
                     pro = proj.save()
-                    if takeUserData:
+                    if takeUserData is not None:
                         if not isinstance(takeUserData,list):
                             raise InvestError(2007, msg='takeUser must be a list')
-                        userExists_list = pro.proj_traders.filter(type=0, is_deleted=False).values_list('user_id', flat=True)
-                        addlist = [item for item in takeUserData if item not in userExists_list]
-                        removelist = [item for item in userExists_list if item not in takeUserData]
-                        pro.proj_traders.filter(user__in=removelist, type=0, is_deleted=False).update(is_deleted=True,
-                                                                                             deletedtime=datetime.datetime.now(),
-                                                                                             deleteduser=request.user)
-                        takeUserList = []
-                        for user_id in addlist:
-                            takeUserList.append(projTraders(proj=pro, user_id=user_id, createuser=request.user, type=0, createdtime=datetime.datetime.now()))
-                        pro.proj_traders.bulk_create(takeUserList)
-                    if makeUserData:
+                        if len(takeUserData) == 0:
+                            pro.proj_traders.filter(type=0, is_deleted=False).update(is_deleted=True, deletedtime=datetime.datetime.now(), deleteduser=request.user)
+                        else:
+                            userExists_list = pro.proj_traders.filter(type=0, is_deleted=False).values_list('user_id', flat=True)
+                            addlist = [item for item in takeUserData if item not in userExists_list]
+                            removelist = [item for item in userExists_list if item not in takeUserData]
+                            pro.proj_traders.filter(user__in=removelist, type=0, is_deleted=False).update(is_deleted=True,
+                                                                                                 deletedtime=datetime.datetime.now(),
+                                                                                                 deleteduser=request.user)
+                            takeUserList = []
+                            for user_id in addlist:
+                                takeUserList.append(projTraders(proj=pro, user_id=user_id, createuser=request.user, type=0, createdtime=datetime.datetime.now()))
+                            pro.proj_traders.bulk_create(takeUserList)
+                    if makeUserData is not None:
                         if not isinstance(makeUserData,list):
                             raise InvestError(2007, msg='makeUser must be a list')
-                        userExists_list = pro.proj_traders.filter(type=1, is_deleted=False).values_list('user_id', flat=True)
-                        addlist = [item for item in makeUserData if item not in userExists_list]
-                        removelist = [item for item in userExists_list if item not in makeUserData]
-                        pro.proj_traders.filter(user__in=removelist, type=1, is_deleted=False).update(is_deleted=True,
-                                                                                             deletedtime=datetime.datetime.now(),
-                                                                                             deleteduser=request.user)
-                        makeUserList = []
-                        for user_id in addlist:
-                            makeUserList.append(projTraders(proj=pro, user_id=user_id, createuser=request.user, type=1, createdtime=datetime.datetime.now()))
-                        pro.proj_traders.bulk_create(makeUserList)
+                        if len(makeUserData) == 0:
+                            pro.proj_traders.filter(type=1, is_deleted=False).update(is_deleted=True, deletedtime=datetime.datetime.now(), deleteduser=request.user)
+                        else:
+                            userExists_list = pro.proj_traders.filter(type=1, is_deleted=False).values_list('user_id', flat=True)
+                            addlist = [item for item in makeUserData if item not in userExists_list]
+                            removelist = [item for item in userExists_list if item not in makeUserData]
+                            pro.proj_traders.filter(user__in=removelist, type=1, is_deleted=False).update(is_deleted=True,
+                                                                                                 deletedtime=datetime.datetime.now(),
+                                                                                                 deleteduser=request.user)
+                            makeUserList = []
+                            for user_id in addlist:
+                                makeUserList.append(projTraders(proj=pro, user_id=user_id, createuser=request.user, type=1, createdtime=datetime.datetime.now()))
+                            pro.proj_traders.bulk_create(makeUserList)
                     if tagsdata:
                         taglist = Tag.objects.in_bulk(tagsdata)
                         addlist = [item for item in taglist if item not in pro.tags.all()]
