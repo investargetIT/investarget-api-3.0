@@ -23,7 +23,7 @@ class MsgSerializer(serializers.ModelSerializer):
     def get_html(self, objc):
         if objc.type == 12:
             try:
-                dataroom_user_file = dataroom_User_file.objects.get(id=objc.sourceid)
+                dataroom_user_file = dataroom_User_file.objects.get(id=objc.sourceid, is_deleted=False, user__isnull=False)
             except Exception:
                 return None
             vars = {'name': dataroom_user_file.user.usernameC,

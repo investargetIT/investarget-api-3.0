@@ -40,15 +40,13 @@ class ProjectBDFilter(FilterSet):
     username = RelationFilter(filterstr='username', lookup_method='icontains')
     usermobile = RelationFilter(filterstr='usermobile', lookup_method='contains')
     source = RelationFilter(filterstr='source',lookup_method='icontains')
-    manager = RelationFilter(filterstr='manager',lookup_method='in')
-    relateManager = RelationFilter(filterstr='ProjectBD_managers__manager', lookup_method='in')
     bd_status = RelationFilter(filterstr='bd_status', lookup_method='in')
     source_type = RelationFilter(filterstr='source_type', lookup_method='in')
     stime = RelationFilter(filterstr='createdtime', lookup_method='gt')
     etime = RelationFilter(filterstr='createdtime', lookup_method='lt')
     class Meta:
         model = ProjectBD
-        fields = ('com_name','location', 'contractors', 'indGroup', 'username','usermobile','source','manager','bd_status','source_type', 'stime', 'etime')
+        fields = ('com_name','location', 'contractors', 'indGroup', 'username','usermobile','source', 'bd_status','source_type', 'stime', 'etime')
 
 
 class ProjectBDView(viewsets.ModelViewSet):
@@ -90,6 +88,9 @@ class ProjectBDView(viewsets.ModelViewSet):
             page_index = request.GET.get('page_index', 1)
             lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
+            if request.GET.get('manager'):
+                manager_list = request.GET['manager'].split(',')
+                queryset = queryset.filter(Q(manager__in=manager_list) | Q(ProjectBD_managers__manager__in=manager_list))
             if request.user.has_perm('BD.manageProjectBD') or request.user.has_perm('usersys.as_trader'):
                 pass
             elif request.user.has_perm('BD.user_getProjectBD'):
@@ -474,6 +475,7 @@ class OrgBDFilter(FilterSet):
     org = RelationFilter(filterstr='org', lookup_method='in')
     response = RelationFilter(filterstr='response', lookup_method='in')
     proj = RelationFilter(filterstr='proj', lookup_method='in')
+    bduser = RelationFilter(filterstr='bduser', lookup_method='in')
     isSolved = RelationFilter(filterstr='isSolved')
     isRead = RelationFilter(filterstr='isRead')
     isimportant = RelationFilter(filterstr='isimportant')
@@ -483,7 +485,7 @@ class OrgBDFilter(FilterSet):
     etimeM = RelationFilter(filterstr='lastmodifytime', lookup_method='lt')
     class Meta:
         model = OrgBD
-        fields = ('manager', 'org', 'proj', 'stime', 'etime', 'stimeM', 'etimeM', 'response', 'isimportant', 'isSolved', 'isRead')
+        fields = ('manager', 'org', 'proj', 'stime', 'etime', 'stimeM', 'etimeM', 'response', 'isimportant', 'isSolved', 'isRead', 'bduser')
 
 
 class OrgBDView(viewsets.ModelViewSet):
@@ -681,7 +683,7 @@ class OrgBDView(viewsets.ModelViewSet):
                     projinstance = project.objects.get(id=proj, is_deleted=False, datasource=request.user.datasource)
                     if request.user.has_perm('BD.user_addOrgBD'):
                         pass
-                    elif request.user in [projinstance.takeUser, projinstance.makeUser]:
+                    elif projinstance.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                         pass
                     else:
                         raise InvestError(2009)
@@ -698,9 +700,7 @@ class OrgBDView(viewsets.ModelViewSet):
                             today = datetime.date.today()
                             if len(self.queryset.filter(createdtime__year=today.year, createdtime__month=today.month,
                                                         createdtime__day=today.day, manager_id=neworgBD.manager, proj=neworgBD.proj)) == 1:
-                                sendmessage_orgBDMessage(neworgBD, receiver=neworgBD.manager,
-                                                         types=['app', 'webmsg', 'sms'], sender=request.user)
-                        add_perm('BD.user_manageOrgBD', neworgBD.manager, neworgBD)
+                                sendmessage_orgBDMessage(neworgBD, receiver=neworgBD.manager, types=['app', 'webmsg', 'sms'], sender=request.user)
                 else:
                     raise InvestError(5004,msg='机构BD创建失败——%s'%orgBD.error_messages)
                 if comments:
@@ -733,7 +733,7 @@ class OrgBDView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
-            elif request.user.has_perm('BD.user_manageOrgBD', instance):
+            elif request.user in [instance.createuser, instance.manager]:
                 pass
             else:
                 raise InvestError(2009)
@@ -776,17 +776,12 @@ class OrgBDView(viewsets.ModelViewSet):
             remark = data.get('remark', None)
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
-            elif request.user.id == instance.createuser_id:
-                data = {'response': data.get('response', instance.response_id),
-                        'isimportant': bool(data.get('isimportant', instance.isimportant)),
-                        'lastmodifyuser': request.user.id}
-
-            elif request.user.has_perm('BD.user_manageOrgBD', instance):
+            elif request.user in [instance.createuser, instance.manager]:
                 data = {'response': data.get('response', instance.response_id),
                         'isimportant': bool(data.get('isimportant', instance.isimportant)),
                         'lastmodifyuser': request.user.id}
             elif instance.proj:
-                if request.user in [instance.proj.takeUser, instance.proj.makeUser]:
+                if instance.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                     data = {'response': data.get('response', instance.response_id),
                             'isimportant': bool(data.get('isimportant', instance.isimportant)),
                             'lastmodifyuser': request.user.id}
@@ -814,8 +809,6 @@ class OrgBDView(viewsets.ModelViewSet):
                                                         createdtime__day=today.day, manager_id=neworgBD.manager, proj=neworgBD.proj)) == 1:
                                 sendmessage_orgBDMessage(neworgBD, receiver=neworgBD.manager,
                                                          types=['app', 'webmsg', 'sms'], sender=request.user)
-                        add_perm('BD.user_manageOrgBD', neworgBD.manager, neworgBD)
-                        rem_perm('BD.user_manageOrgBD', oldmanager, neworgBD)
                 else:
                     raise InvestError(5004, msg='机构BD修改失败——%s' % orgBD.error_messages)
                 cache_delete_key(self.redis_key)
@@ -834,7 +827,7 @@ class OrgBDView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
-            elif request.user.id == instance.createuser_id:
+            elif request.user in [instance.createuser, instance.manager]:
                 pass
             else:
                 raise InvestError(2009)
@@ -897,7 +890,7 @@ class OrgBDBlackView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBDBlack') or request.user.has_perm('BD.getOrgBDBlack'):
                 queryset = queryset
             else:
-                queryset = queryset.filter(Q(proj__takeUser=request.user) | Q(proj__makeUser=request.user))
+                queryset = queryset.filter(Q(proj__proj_traders__user=request.user, proj__proj_traders__is_deleted=False))
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -925,7 +918,7 @@ class OrgBDBlackView(viewsets.ModelViewSet):
                 projinstance = project.objects.get(id=projid, is_deleted=False, datasource=request.user.datasource)
                 if request.user.has_perm('BD.manageOrgBDBlack') or request.user.has_perm('BD.addOrgBDBlack'):
                     pass
-                elif request.user in [projinstance.takeUser, projinstance.makeUser]:
+                elif projinstance.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                     pass
                 else:
                     raise InvestError(2009)
@@ -954,7 +947,7 @@ class OrgBDBlackView(viewsets.ModelViewSet):
             lang = request.GET.get('lang')
             instance = self.get_object()
             projinstance = instance.proj
-            if request.user.has_perm('BD.manageOrgBDBlack') or request.user in [projinstance.takeUser, projinstance.makeUser]:
+            if request.user.has_perm('BD.manageOrgBDBlack') or projinstance.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                 pass
             else:
                 raise InvestError(2009)
@@ -979,7 +972,7 @@ class OrgBDBlackView(viewsets.ModelViewSet):
             projinstance = instance.proj
             if request.user.has_perm('BD.manageOrgBDBlack') or request.user.has_perm('BD.delOrgBDBlack'):
                 pass
-            elif request.user in [projinstance.takeUser, projinstance.makeUser]:
+            elif projinstance.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                 pass
             else:
                 raise InvestError(2009)
@@ -1003,7 +996,7 @@ class OrgBDCommentsFilter(FilterSet):
     etimeM = RelationFilter(filterstr='lastmodifytime', lookup_method='lt')
     class Meta:
         model = OrgBDComments
-        fields = ('orgBD', 'stimeM', 'etimeM')
+        fields = ('orgBD', 'stime', 'etime', 'stimeM', 'etimeM')
 
 class OrgBDCommentsView(viewsets.ModelViewSet):
     """
@@ -1069,12 +1062,10 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
             bdinstance = OrgBD.objects.get(id=int(data['orgBD']))
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
-            elif request.user.id == bdinstance.createuser_id:
-                pass
-            elif request.user.has_perm('BD.user_manageOrgBD', bdinstance):
+            elif request.user in [bdinstance.createuser, bdinstance.manager]:
                 pass
             elif bdinstance.proj:
-                if request.user in [bdinstance.proj.takeUser, bdinstance.proj.makeUser]:
+                if bdinstance.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                     pass
             else:
                 raise InvestError(2009)
@@ -1102,7 +1093,7 @@ class OrgBDCommentsView(viewsets.ModelViewSet):
             data = request.data
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
-            elif request.user.id == instance.createuser_id:
+            elif request.user in [instance.createuser, instance.orgBD.manager]:
                 pass
             else:
                 raise InvestError(2009)
@@ -1232,7 +1223,7 @@ class MeetingBDView(viewsets.ModelViewSet):
                     projinstance = project.objects.get(id=proj, is_deleted=False, datasource=request.user.datasource)
                     if request.user.has_perm('BD.user_addMeetBD'):
                         pass
-                    elif request.user in [projinstance.takeUser, projinstance.makeUser]:
+                    elif projinstance.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                         pass
                     else:
                         raise InvestError(2009)
@@ -1263,7 +1254,7 @@ class MeetingBDView(viewsets.ModelViewSet):
             elif request.user.has_perm('BD.user_manageMeetBD', instance):
                 pass
             elif request.user.has_perm('BD.user_getMeetBD'):
-                if request.user not in [instance.proj.takeUser, instance.proj.makeUser]:
+                if not instance.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                     raise InvestError(2009)
             else:
                 raise InvestError(2009)
@@ -1291,7 +1282,7 @@ class MeetingBDView(viewsets.ModelViewSet):
                 #         'attachment': data.get('attachment', instance.attachment),
                 #         'attachmentbucket': data.get('attachmentbucket', instance.attachmentbucket),}
                 pass
-            elif request.user in [instance.proj.takeUser, instance.proj.makeUser]:
+            elif instance.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                 pass
             else:
                 raise InvestError(2009)
@@ -1322,7 +1313,7 @@ class MeetingBDView(viewsets.ModelViewSet):
                 pass
             elif request.user.has_perm('BD.user_manageMeetBD', instance):
                 pass
-            elif request.user in [instance.proj.takeUser, instance.proj.makeUser]:
+            elif instance.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                 pass
             else:
                 raise InvestError(2009)

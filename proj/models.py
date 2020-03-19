@@ -119,6 +119,28 @@ class project(MyModel):
             if getattr(self, aa) is None:
                 raise InvestError(4007,msg='项目信息未完善—%s'%aa)
 
+class projTraders(MyModel):
+    proj = MyForeignKey(project, blank=True, null=True, related_name='proj_traders')
+    user = MyForeignKey(MyUser, blank=True, null=True, related_name='user_projects')
+    type = models.PositiveSmallIntegerField(blank=True, null=True, help_text='承揽0、承做1')
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_projTraders')
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_projTraders')
+    datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
+
+    class Meta:
+        db_table = "project_traders"
+
+    def save(self, *args, **kwargs):
+        if not self.datasource:
+            self.datasource = self.user.datasource
+        if self.user.datasource != self.proj.datasource:
+            raise InvestError(code=8888,msg='项目用户datasource不合法')
+        if not self.is_deleted:
+            traders = projTraders.objects.exclude(pk=self.pk).filter(is_deleted=False, proj=self.proj, user=self.user, type=self.type)
+            if traders.exists():
+                raise InvestError(2007, msg='该交易师已存在一条相同记录了')
+        super(projTraders, self).save(*args, **kwargs)
+
 class projServices(MyModel):
     id = models.AutoField(primary_key=True)
     proj = MyForeignKey(project,blank=True,null=True,related_name='proj_services')

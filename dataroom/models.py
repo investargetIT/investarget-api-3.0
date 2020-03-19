@@ -126,7 +126,7 @@ class dataroom_User_file(MyModel):
 
 
 class dataroomUserSeeFiles(MyModel):
-    file = MyForeignKey(dataroomdirectoryorfile, blank=True, null=True, related_name='file_userSeeFile')
+    file = MyForeignKey(dataroomdirectoryorfile, blank=True, null=True, related_name='file_userSeeFile', on_delete=models.CASCADE)
     dataroomUserfile = MyForeignKey(dataroom_User_file, blank=True, null=True, related_name='dataroomuser_seeFiles', help_text='用户dataroom记录')
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_userdataroomseefiles')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_userdataroomseefiles')
@@ -136,8 +136,6 @@ class dataroomUserSeeFiles(MyModel):
         db_table = 'dataroom_user_seefiles'
 
     def save(self, force_insert=False, force_update=False, using=None,update_fields=None):
-        if not self.file:
-            raise InvestError(2007, '文件不能为空')
         self.datasource = self.file.datasource
         if self.pk is None:
             if self.dataroomUserfile.dataroom.isClose or self.dataroomUserfile.dataroom.is_deleted:
@@ -148,6 +146,8 @@ class dataroomUserSeeFiles(MyModel):
                 pass
             else:
                 raise InvestError(code=2004, msg='用户已存在一个相同的可见文件了')
+        if not self.file:
+            self.is_deleted = True
         super(dataroomUserSeeFiles, self).save(force_insert, force_update, using, update_fields)
 
 class dataroom_User_template(MyModel):

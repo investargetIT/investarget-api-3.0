@@ -558,14 +558,15 @@ def sendmessage_dataroomuserfileupdate(model,receiver,types,sender=None):
             model = self.model
 
             if isinstance(model, dataroom_User_file):
+                if model.lastgettime:
+                    seefiles_queryset = model.dataroomuser_seeFiles.all().filter(is_deleted=False,
+                                                                                 createdtime__gte=model.lastgettime)
+                else:
+                    seefiles_queryset = model.dataroomuser_seeFiles.all().filter(is_deleted=False)
                 if 'email' in types and sendEmail and checkEmailTrue(receiver.email):
                     try:
                         destination = receiver.email
                         projectsign = 'oQGaH3'
-                        if model.lastgettime:
-                            seefiles_queryset = model.dataroomuser_seeFiles.all().filter(is_deleted=False, createdtime__gte=model.lastgettime)
-                        else:
-                            seefiles_queryset = model.dataroomuser_seeFiles.all().filter(is_deleted=False)
                         filestr = ''
                         projectUrl = getDataroomTitleWithSuperLink(model.dataroom, 'cn')
                         dataroomUrl = '%s/app/dataroom/detail?id=%s&isClose=false&projectID=%s'% (getbase_domain(model.datasource), model.dataroom.id, model.dataroom.proj.id)
@@ -578,7 +579,11 @@ def sendmessage_dataroomuserfileupdate(model,receiver,types,sender=None):
                         logexcption()
                 if 'webmsg' in types and sendWebmsg:  # 发送通知以后，将站内信发送给该DataRoom项目的承做
                     try:
-                        msg_content = '已向用户【%s】发送了项目【%s】的dataroom文件更新邮件通知' % (receiver.usernameC, model.dataroom.proj.projtitleC)
+                        filestr = '新增文件如下：' + '<br>'
+                        if seefiles_queryset.exists():
+                            for seefile in seefiles_queryset:
+                                filestr = filestr + seefile.file.filename + '<br>'
+                        msg_content = '已向用户【%s】发送了项目【%s】的dataroom文件更新邮件通知' % (receiver.usernameC, model.dataroom.proj.projtitleC) + '<br><br>' + filestr
                         msg_title = '发送dataroom文件更新邮件通知记录'
                         msg_receiver = model.dataroom.proj.makeUser
                         # 13 区分dataroom邮件通知的12类型，站内信用到了12类型的消息

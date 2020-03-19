@@ -340,7 +340,7 @@ class orgRemarksFilter(FilterSet):
     etimeM = RelationFilter(filterstr='lastmodifytime', lookup_method='lt')
     class Meta:
         model = orgRemarks
-        fields = ('id','org','createuser', 'stimeM', 'etimeM')
+        fields = ('id','org','createuser', 'stime', 'etime', 'stimeM', 'etimeM')
 
 class OrgRemarkView(viewsets.ModelViewSet):
     """
@@ -1542,6 +1542,27 @@ def makeExportOrgExcel():
             else:
                 return None
 
+        def getStarMobile(self, mobile):
+            if mobile and mobile not in ['', u'']:
+                length = len(mobile)
+                if length > 4:
+                    center = str(mobile)[0: (length - 4) // 2] + '****' + str(mobile)[(length - 4) // 2 + 4:]
+                else:
+                    center = '****'
+                return center
+            else:
+                return None
+        def getStarEmail(self, email):
+            if email and email not in ['', u'']:
+                index = str(email).find('@')
+                if index >= 0:
+                    center = '****' + str(email)[index:]
+                else:
+                    center = '****'
+                return center
+            else:
+                return None
+
         def executeTask(self, task_qs):
             for exporttask in task_qs:
                 exporttask.status = 4
@@ -1574,7 +1595,7 @@ def makeExportOrgExcel():
                                 ws_org.write(0, 5, '投资事件', style)
                                 ws_org.col(5).width = 256 * 120
                                 ws_org.write(0, 6, '机构投资人', style)
-                                ws_org.col(6).width = 256 * 80
+                                ws_org.col(6).width = 256 * 100
                                 ws_org_hang = 1
 
                                 for org in org_qs:
@@ -1601,17 +1622,23 @@ def makeExportOrgExcel():
                                     investorList = org.org_users.all().filter(is_deleted=False, datasource=taskdatasource)
                                     if isinstance(tagidlist, list) and len(tagidlist) > 0:
                                         investorList = investorList.filter(tags__in=tagidlist)
-                                    relation_qs = UserRelation.objects.filter(investoruser__in=investorList,
-                                                                              is_deleted=False).select_related(
-                                        'investoruser', 'traderuser')
-                                    relations = relation_qs.values('investoruser').annotate(count=Count('investoruser'),
-                                                                                            max=Max('familiar__score'))
-                                    for relationData in relations:
-                                        relationinstance = relation_qs.filter(investoruser_id=relationData['investoruser'], familiar__score=relationData['max']).first()
-                                        userData_list.append('投资人：%s, 交易师：%s' % (relationinstance.investoruser.usernameC, relationinstance.traderuser.usernameC))
-                                    noRelationUser = investorList.exclude(id__in=relation_qs.values_list('investoruser'))
-                                    for noUser in noRelationUser:
-                                        userData_list.append('投资人：%s, 交易师：暂无' % noUser.usernameC)
+                                    relation_qs = UserRelation.objects.filter(investoruser__in=investorList, is_deleted=False)
+                                    for investor in investorList:
+                                        mobile = self.getStarMobile(investor.mobile)
+                                        email = self.getStarEmail(investor.email)
+                                        title = investor.title.nameC if investor.title else '暂无'
+                                        usertags = investor.tags.filter(tag_usertags__is_deleted=False)
+                                        usertagnamelist = []
+                                        for tag in usertags:
+                                            usertagnamelist.append(tag.nameC)
+                                        usertagstr = '、'.join(usertagnamelist) if len(usertagnamelist) > 0 else '暂无'
+                                        traderRelations = relation_qs.filter(investoruser_id=investor.id)
+                                        traderList = []
+                                        for relationinstance in traderRelations:
+                                            traderList.append('%s(%s)' % (relationinstance.traderuser.usernameC, relationinstance.familiar.score))
+                                        traderStr = '、'.join(traderList) if len(traderList) > 0 else '暂无'
+                                        userData_list.append('投资人：%s,手机：%s,邮箱：%s,职位：%s,标签：%s --交易师：%s' % (
+                                            investor.usernameC, mobile, email, title, usertagstr, traderStr))
                                     userDataStr = '\n\r'.join(userData_list)
                                     ws_org.write(ws_org_hang, 0, str(org.orgnameC), style)  # 简称
                                     ws_org.write(ws_org_hang, 1, str(org.orgfullname), style)  # 全称
@@ -1649,10 +1676,11 @@ def makeExportOrgExcel():
                                                     invest_with_list = []
                                                     if hasattr(com_event.invsest_with, '__iter__'):
                                                         for invesdic in com_event.invsest_with:
-                                                            if isinstance(invesdic, dict):
-                                                                invest_with_list.append(invesdic.get('invst_name'))
-                                                            if isinstance(invesdic, unicode):
-                                                                invest_with_list.append(invesdic)
+                                                            if invesdic:
+                                                                if isinstance(invesdic, dict):
+                                                                    invest_with_list.append(invesdic.get('invst_name', ''))
+                                                                if isinstance(invesdic, unicode):
+                                                                    invest_with_list.append(invesdic)
                                                     invest_with_str = ','.join(invest_with_list)
                                                 else:
                                                     invest_with_str = com_event.merger_with
@@ -1686,6 +1714,7 @@ def makeExportOrgExcel():
                         self.deleteTask(exporttask)
                 except Exception:
                     logexcption()
+                    print(traceback.format_exc())
                     exporttask.status = 1
                     exporttask.save()
 
@@ -1722,3 +1751,4 @@ def makeExportOrgExcel():
         f.close()
         d = startdotaskthread()
         d.start()
+
