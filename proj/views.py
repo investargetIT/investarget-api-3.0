@@ -541,7 +541,7 @@ class ProjectView(viewsets.ModelViewSet):
             with transaction.atomic():
                 for link in ['proj_timelines', 'proj_finances', 'proj_attachment', 'project_tags', 'project_industries', 'project_TransactionTypes', 'proj_traders',
                              'proj_favorite', 'proj_sharetoken', 'proj_datarooms', 'proj_services', 'proj_schedule', 'proj_orgBDs','proj_meetBDs','proj_OrgBdBlacks']:
-                    if link in ['proj_timelines', 'proj_datarooms']:
+                    if link in ['proj_datarooms']:
                         manager = getattr(instance, link, None)
                         if not manager:
                             continue
