@@ -59,7 +59,7 @@ class DataroomView(viewsets.ModelViewSet):
         try:
             obj = dataroom.objects.get(id=self.kwargs[lookup_url_kwarg], is_deleted=False)
         except dataroom.DoesNotExist:
-            raise InvestError(code=6002,msg='timeline with this "%s" is not exist' % self.kwargs[lookup_url_kwarg])
+            raise InvestError(code=6002,msg='dataroom with this "%s" is not exist' % self.kwargs[lookup_url_kwarg])
         if obj.datasource != self.request.user.datasource:
             raise InvestError(code=8888)
         return obj
@@ -84,7 +84,7 @@ class DataroomView(viewsets.ModelViewSet):
             if request.user.has_perm('dataroom.admin_getdataroom'):
                 queryset = queryset
             else:
-                queryset = queryset.filter(Q(dataroom_users__in=request.user.user_datarooms.all()) | Q(proj__proj_traders__user=request.user, proj__proj_traders__is_deleted=False)).distinct()
+                queryset = queryset.filter(Q(dataroom_users__in=request.user.user_datarooms.filter(), dataroom_users__is_deleted=False) | Q(proj__proj_traders__user=request.user, proj__proj_traders__is_deleted=False)).distinct()
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
