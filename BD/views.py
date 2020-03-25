@@ -210,7 +210,6 @@ class ProjectBDView(viewsets.ModelViewSet):
             data = request.data
             lang = request.GET.get('lang')
             instance = self.get_object()
-            data.pop('createuser', None)
             data.pop('datasource', None)
             if request.user.has_perm('BD.manageProjectBD'):
                 pass
@@ -771,20 +770,15 @@ class OrgBDView(viewsets.ModelViewSet):
             lang = request.GET.get('lang')
             instance = self.get_object()
             oldmanager = instance.manager
-            data.pop('createuser', None)
             data.pop('datasource', None)
             remark = data.get('remark', None)
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
             elif request.user in [instance.createuser, instance.manager]:
-                data = {'response': data.get('response', instance.response_id),
-                        'isimportant': bool(data.get('isimportant', instance.isimportant)),
-                        'lastmodifyuser': request.user.id}
+                pass
             elif instance.proj:
                 if instance.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
-                    data = {'response': data.get('response', instance.response_id),
-                            'isimportant': bool(data.get('isimportant', instance.isimportant)),
-                            'lastmodifyuser': request.user.id}
+                    pass
             else:
                 raise InvestError(2009)
             with transaction.atomic():
@@ -1270,7 +1264,6 @@ class MeetingBDView(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         try:
             data = request.data
-            data.pop('createuser', None)
             data.pop('datasource', None)
             lang = request.GET.get('lang')
             instance = self.get_object()

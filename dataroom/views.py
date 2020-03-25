@@ -770,7 +770,6 @@ class User_DataroomfileView(viewsets.ModelViewSet):
             data = request.data
             lang = request.GET.get('lang')
             user_dataroom = self.get_object()
-            files = data.get('files', [])
             if request.user.has_perm('dataroom.admin_changedataroom'):
                 pass
             elif user_dataroom.dataroom.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
@@ -778,7 +777,7 @@ class User_DataroomfileView(viewsets.ModelViewSet):
             else:
                 raise InvestError(2009)
             with transaction.atomic():
-                user_dataroomserializer = User_DataroomfileCreateSerializer(user_dataroom, data={'files': files})
+                user_dataroomserializer = User_DataroomfileCreateSerializer(user_dataroom, data=data)
                 if user_dataroomserializer.is_valid():
                     user_dataroomserializer.save()
                 else:

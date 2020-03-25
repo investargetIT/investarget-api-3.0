@@ -98,7 +98,6 @@ class dataroomdirectoryorfile(MyModel):
 class dataroom_User_file(MyModel):
     dataroom = MyForeignKey(dataroom, blank=True, null=True, related_name='dataroom_users')
     user = MyForeignKey(MyUser, blank=True, null=True, related_name='user_datarooms', help_text='投资人')
-    files = models.ManyToManyField(dataroomdirectoryorfile, blank=True)
     lastgettime = models.DateTimeField(blank=True, null=True, help_text='最近获取日期')
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_userdatarooms')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_userdatarooms')
