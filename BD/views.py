@@ -37,6 +37,7 @@ class ProjectBDFilter(FilterSet):
     contractors = RelationFilter(filterstr='contractors', lookup_method='in')
     indGroup = RelationFilter(filterstr='indGroup', lookup_method='in')
     country = RelationFilter(filterstr='country', lookup_method='in')
+    bduser = RelationFilter(filterstr='bduser', lookup_method='in')
     username = RelationFilter(filterstr='username', lookup_method='icontains')
     usermobile = RelationFilter(filterstr='usermobile', lookup_method='contains')
     source = RelationFilter(filterstr='source',lookup_method='icontains')
@@ -46,7 +47,7 @@ class ProjectBDFilter(FilterSet):
     etime = RelationFilter(filterstr='createdtime', lookup_method='lt')
     class Meta:
         model = ProjectBD
-        fields = ('com_name','location', 'contractors', 'indGroup', 'username','usermobile','source', 'bd_status','source_type', 'stime', 'etime')
+        fields = ('com_name', 'location', 'contractors', 'isimportant', 'bduser', 'indGroup', 'country', 'username', 'usermobile', 'source', 'bd_status', 'source_type', 'stime', 'etime')
 
 
 class ProjectBDView(viewsets.ModelViewSet):
