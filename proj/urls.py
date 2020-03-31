@@ -17,6 +17,18 @@ sendWXGroupPdfURI = views.ProjectView.as_view({
         'post':'sendWXGroupPdf'
 })
 
+
+projTraders_list = views.ProjTradersView.as_view({
+        'get': 'list',
+        'post': 'create'
+})
+
+projTraders_detail = views.ProjTradersView.as_view({
+        'put': 'update',
+        'delete': 'destroy'
+})
+
+
 proj_finance = views.ProjFinanceView.as_view({
         'get': 'list',
         'post':'create',
@@ -55,6 +67,8 @@ getprojpdf = views.ProjectView.as_view({
 urlpatterns = [
         url(r'^$', proj_list , name='proj_list'),
         url(r'^(?P<pk>\d+)/$', proj_detail, name='proj_detail'),
+        url(r'^traders$', projTraders_list , name='projTraders_list'),
+        url(r'^traders/(?P<pk>\d+)/$', projTraders_detail, name='projTraders_detail'),
         url(r'^sendpdf/(?P<pk>\d+)/$', sendWXGroupPdfURI, name='sendWXGroupPdf'),
         url(r'^finance/$', proj_finance, name='proj_finance'),
         url(r'^attachment/$', proj_attachment, name='proj_attachment'),
