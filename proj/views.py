@@ -376,9 +376,7 @@ class ProjectView(viewsets.ModelViewSet):
                     sendmsg = True
                     projdata['publishDate'] = datetime.datetime.now()
             keylist = projdata.keys()
-            editlist2 = [key for key in keylist if key in ['takeUser', 'makeUser',]]
-            if projdata.pop('supportUser', None):
-                raise InvestError(2009, msg='上传人无法修改')
+            editlist2 = [key for key in keylist if key in ['takeUser', 'makeUser']]
             if len(editlist2) > 0:
                 if not request.user.has_perm('proj.admin_changeproj'):
                     raise  InvestError(2009,msg='没有权限修改%s'%editlist2)

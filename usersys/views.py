@@ -464,14 +464,14 @@ class UserView(viewsets.ModelViewSet):
                     else:
                         raise InvestError(code=2009)
                     for link in ['investor_relations', 'trader_relations', 'investor_timelines',
-                                     'trader_timelines', 'usersupport_projs', 'usertake_projs',
+                                     'trader_timelines', 'usersupport_projs',
                                      'manager_beschedule', 'user_webexUser', 'user_dataroomTemp',
-                                     'usermake_projs', 'user_usertags', 'user_remarks', 'userreceive_msgs',
+                                     'user_usertags', 'user_remarks', 'userreceive_msgs',
                                      'usersend_msgs', 'user_datarooms', 'user_userAttachments', 'user_userEvents',
                                      'contractors_projBDs', 'user_MeetBDs', 'user_favorite', 'user_sharetoken', 'user_projects',
                                      'trader_favorite', 'user_MeetBDsharetoken', 'user_beschedule', 'user_orgBDs']:
-                        if link in ['usermake_projs', 'usertake_projs', 'usersupport_projs', 'investor_relations', 'trader_relations',
-                                    'user_userEvents', 'user_orgBDs', 'user_MeetBDs', 'user_projects',
+                        if link in ['usersupport_projs', 'investor_relations', 'trader_relations',
+                                    'user_userEvents', 'user_orgBDs', 'user_MeetBDs', 'user_projects', 'user_remarks',
                                     'user_userAttachments', 'user_dataroomTemp', 'user_datarooms', 'contractors_projBDs']:
                             manager = getattr(instance, link, None)
                             if not manager:
@@ -869,7 +869,6 @@ class UserAttachmentView(viewsets.ModelViewSet):
             remark = self.get_object()
             lang = request.GET.get('lang')
             data = request.data
-            data.pop('createuser',None)
             data.pop('createdtime',None)
             with transaction.atomic():
                 serializer = UserAttachmentSerializer(remark, data=data)
@@ -978,8 +977,6 @@ class UserEventView(viewsets.ModelViewSet):
             remark = self.get_object()
             lang = request.GET.get('lang')
             data = request.data
-            data.pop('createuser',None)
-            data.pop('createdtime',None)
             industrytype = data.get('industrytype', None)
             Pindustrytype = data.get('Pindustrytype', None)
             user_id = data.get('user', None)
@@ -1276,15 +1273,13 @@ class UserRelationView(viewsets.ModelViewSet):
                 investoruser = MyUser.objects.get(id=data.get('investoruser', None))
             except MyUser.DoesNotExist:
                 raise InvestError(2007, msg='投资人不存在')
-            # if (datetime.datetime.now() - investoruser.createdtime) < datetime.timedelta(days=30) and self.queryset.filter(investoruser=investoruser, relationtype=True).exists():
-            #     raise InvestError(2025, msg='账号尚在保护期内，无法再次增加交易师，请在保护期结束后（剩余%s天）添加'%(datetime.timedelta(days=30) - (datetime.datetime.now() - investoruser.createdtime)).days)
             if request.user.has_perm('usersys.admin_adduserrelation'):
                 pass
             else:
                 if traderuser.id != request.user.id and investoruser.id != request.user.id:
                     projid = data.get('proj', None)
                     if projid:
-                        if traderuser.usermake_projs.all().filter(id=projid).exists():
+                        if traderuser.user_projects.all().filter(proj_id=projid).exists():
                             pass
                         else:
                             raise InvestError(2009, msg='非管理员权限，无法创建')
@@ -1337,7 +1332,7 @@ class UserRelationView(viewsets.ModelViewSet):
             lang = request.GET.get('lang')
             if request.user.has_perm('usersys.admin_getuserrelation'):
                 pass
-            elif request.user.has_perm('usersys.user_getuserrelation',userrelation):
+            elif request.user in [userrelation.traderuser, userrelation.investoruser]:
                 pass
             else:
                 raise InvestError(code=2009)
@@ -1362,8 +1357,7 @@ class UserRelationView(viewsets.ModelViewSet):
                     relation = self.get_object(relationdata['id'])
                     if request.user.has_perm('usersys.admin_changeuserrelation'):
                         pass
-                    elif request.user.has_perm('usersys.user_changeuserrelation', relation):
-                        relationdata['traderuser'] = request.user.id
+                    elif request.user in [relation.traderuser]:
                         relationdata.pop('relationtype', None)
                     else:
                         raise InvestError(code=2009,msg='没有权限')
@@ -1392,7 +1386,7 @@ class UserRelationView(viewsets.ModelViewSet):
                 relationlist = self.get_queryset().filter(id__in=relationidlist)
                 returnlist = []
                 for userrelation in relationlist:
-                    if request.user.has_perm('usersys.user_deleteuserrelation',userrelation):
+                    if request.user in [userrelation.traderuser]:
                         pass
                     elif request.user.has_perm('usersys.admin_deleteuserrelation'):
                         pass
@@ -1401,9 +1395,6 @@ class UserRelationView(viewsets.ModelViewSet):
                     timeline_qs = timeline.objects.filter(investor=userrelation.investoruser,trader=userrelation.traderuser,is_deleted=False,isClose=False)
                     if timeline_qs.exists():
                         raise InvestError(2010, msg='%s,%s有未关闭的timeline' % (userrelation.traderuser.usernameC, userrelation.investoruser.usernameC))
-                    # dataroom_qs = dataroom.objects.filter(investor=userrelation.investoruser,trader=userrelation.traderuser,is_deleted=False,isClose=False)
-                    # if dataroom_qs.exists():
-                    #     raise InvestError(2010, msg='%s,%s有未关闭的dataroom' % (userrelation.traderuser.usernameC, userrelation.investoruser.usernameC))
                     userrelation.is_deleted = True
                     userrelation.deleteduser = request.user
                     userrelation.deletedtime = datetime.datetime.now()
