@@ -123,6 +123,30 @@ workreportproj_detail = views.WorkReportProjInfoView.as_view({
         'delete': 'destroy'
 })
 
+
+okr_list = views.OKRView.as_view({
+        'get': 'list',
+        'post': 'create'
+})
+
+okr_detail = views.OKRView.as_view({
+        'get': 'retrieve',
+        'put': 'update',
+        'delete': 'destroy'
+})
+
+okrResult_list = views.OKRResultView.as_view({
+        'get': 'list',
+        'post': 'create'
+})
+
+okrResult_detail = views.OKRResultView.as_view({
+        'get': 'retrieve',
+        'put': 'update',
+        'delete': 'destroy'
+})
+
+
 urlpatterns = [
         url(r'^projbd/$', projbd_list, name='projbd_list'),
         url(r'^projbd/count/$', projbd_count, name='projbd_count'),
@@ -152,4 +176,9 @@ urlpatterns = [
         url(r'^workreport/(?P<pk>\d+)/$', workreport_detail, name='workreport_detail'),
         url(r'^workreport/proj/$', workreportproj_list, name='workreportproj_list'),
         url(r'^workreport/proj/(?P<pk>\d+)/$', workreportproj_detail, name='workreportproj_detail'),
+
+        url(r'^okr/$', okr_list, name='okr_list'),
+        url(r'^okr/(?P<pk>\d+)/$', okr_detail, name='okr_detail'),
+        url(r'^okr/krs/$', okrResult_list, name='okrResult_list'),
+        url(r'^okr/krs/(?P<pk>\d+)/$', okrResult_detail, name='okrResult_detail'),
 ]
