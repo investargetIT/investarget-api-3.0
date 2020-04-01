@@ -1135,9 +1135,14 @@ class MeetBDFilter(FilterSet):
     username = RelationFilter(filterstr='username', lookup_method='icontains')
     usermobile = RelationFilter(filterstr='usermobile', lookup_method='contains')
     manager = RelationFilter(filterstr='manager', lookup_method='in')
+    org = RelationFilter(filterstr='org', lookup_method='in')
+    proj = RelationFilter(filterstr='proj', lookup_method='in')
+    bduser = RelationFilter(filterstr='bduser', lookup_method='in')
+    country = RelationFilter(filterstr='country', lookup_method='in')
+
     class Meta:
         model = MeetingBD
-        fields = ('username','usermobile','manager')
+        fields = ('username', 'usermobile', 'manager', 'org', 'proj', 'bduser', 'country')
 
 
 class MeetingBDView(viewsets.ModelViewSet):
