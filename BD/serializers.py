@@ -102,7 +102,6 @@ class OrgBDSerializer(serializers.ModelSerializer):
     manager = UserSimpleSerializer()
     userinfo = serializers.SerializerMethodField()
     createuser = UserSimpleSerializer()
-    makeUser = serializers.SerializerMethodField()
 
     class Meta:
         model = OrgBD
@@ -148,12 +147,6 @@ class OrgBDSerializer(serializers.ModelSerializer):
                     info['mobile'] = obj.bduser.mobile
                     info['wechat'] = obj.bduser.wechat
         return info
-
-    def get_makeUser(self, obj):
-        if obj.proj:
-            if obj.proj.makeUser:
-                return obj.proj.makeUser_id
-        return None
 
 
 class OrgBDBlackSerializer(serializers.ModelSerializer):
