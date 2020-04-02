@@ -99,9 +99,9 @@ class project(MyModel):
     def save(self, *args, **kwargs):
         if not self.datasource or not self.createuser or self.datasource != self.createuser.datasource:
             raise InvestError(code=8888,msg='项目datasource不合法')
+        if self.lastProject and (self.lastProject == self.pk or self.lastProject.is_deleted):
+            raise InvestError(2007, msg='关联项目不能为自身或者已删除项目')
         if self.pk:
-            if self.lastProject and self.lastProject == self.pk:
-                raise InvestError(2007, msg='关联项目不能是自身')
             if self.is_deleted:
                 rem_perm('proj.user_getproj',self.createuser,self)
                 rem_perm('proj.user_changeproj', self.createuser, self)
