@@ -24,6 +24,7 @@ sys.setdefaultencoding('utf-8')
 class project(MyModel):
     id = models.AutoField(primary_key=True)
     indGroup = MyForeignKey(IndustryGroup, null=True, blank=True, help_text='项目所属行业组')
+    lastProject = MyForeignKey('self', blank=True, null=True, related_name='relate_projects')
     projtitleC = models.CharField(max_length=128,db_index=True,default='标题')
     projtitleE = models.CharField(max_length=256,blank=True,null=True,db_index=True)
     projstatus = MyForeignKey(ProjectStatus,help_text='项目状态',default=2)
@@ -99,6 +100,8 @@ class project(MyModel):
         if not self.datasource or not self.createuser or self.datasource != self.createuser.datasource:
             raise InvestError(code=8888,msg='项目datasource不合法')
         if self.pk:
+            if self.lastProject and self.lastProject == self.pk:
+                raise InvestError(2007, msg='关联项目不能是自身')
             if self.is_deleted:
                 rem_perm('proj.user_getproj',self.createuser,self)
                 rem_perm('proj.user_changeproj', self.createuser, self)
