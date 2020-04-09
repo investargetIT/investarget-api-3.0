@@ -10,6 +10,7 @@ from django.db.models import Q, FieldDoesNotExist, Max, Count
 from django.http import StreamingHttpResponse
 from elasticsearch import Elasticsearch
 from rest_framework import filters , viewsets
+from rest_framework.decorators import api_view
 
 from invest.settings import APILOG_PATH, HAYSTACK_CONNECTIONS
 from mongoDoc.models import ProjectData, MergeFinanceData
@@ -28,9 +29,11 @@ from third.views.qiniufile import deleteqiniufile, downloadFileToPath
 from usersys.models import UserRelation
 from utils.customClass import InvestError, JSONResponse, RelationFilter, MySearchFilter
 from utils.somedef import file_iterator
-from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, returnListChangeToLanguage, \
+from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, \
+    returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser, add_perm, \
-    cache_delete_key, mySortQuery, checkrequesttoken, logexcption, china_mobile, hongkong_mobile, hongkong_telephone
+    cache_delete_key, mySortQuery, checkrequesttoken, logexcption, china_mobile, hongkong_mobile, hongkong_telephone, \
+    checkRequestToken
 from django.db import transaction,models
 from django_filters import FilterSet
 
@@ -1752,7 +1755,9 @@ def makeExportOrgExcel():
 
 
 
-
+#生成上传记录（开始上传）
+@api_view(['GET'])
+@checkRequestToken()
 def fulltextsearch(request):
     try:
         searchText = request.GET.get('text')
@@ -1777,7 +1782,7 @@ def fulltextsearch(request):
         orgId_list = set()
         for source in ret["hits"]["hits"]:
             orgId_list.add(source['_source']['org'])
-        org_qs = organization.objects.filter(is_deleted=False, id__in=orgId_list)
+        org_qs = organization.objects.filter(is_deleted=False, id__in=orgId_list, issub=False)
         try:
             count = org_qs.count()
             org_qs = Paginator(org_qs, page_size)
