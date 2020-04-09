@@ -55,7 +55,7 @@ class orgAttachmentsIndex(indexes.SearchIndex, indexes.Indexable):
     key = indexes.CharField(model_attr='key')
     realkey = indexes.CharField(model_attr='realkey')
     filename = indexes.CharField(model_attr='filename')
-    fileContent = indexes.CharField()
+    fileContent = indexes.CharField(null=True)
     createuser = indexes.IntegerField(model_attr='createuser_id')
     createdtime = indexes.DateTimeField(model_attr='createdtime')
 
