@@ -23,10 +23,10 @@ class orgRemarksIndex(indexes.SearchIndex, indexes.Indexable):
 
     # # 保存在索引库中的字段
     id = indexes.IntegerField(model_attr='id')
-    org = indexes.IntegerField(model_attr='org_id')
-    remark = indexes.CharField(model_attr='remark')
-    createuser = indexes.IntegerField(model_attr='createuser_id')
-    createdtime = indexes.DateTimeField(model_attr='createdtime')
+    org = indexes.IntegerField(model_attr='org_id', null=True)
+    remark = indexes.CharField(model_attr='remark', null=True)
+    createuser = indexes.IntegerField(model_attr='createuser_id', null=True)
+    createdtime = indexes.DateTimeField(model_attr='createdtime', null=True)
 
     def get_model(self):
         """返回建立索引的模型类"""
@@ -50,14 +50,14 @@ class orgAttachmentsIndex(indexes.SearchIndex, indexes.Indexable):
 
     # # 保存在索引库中的字段
     id = indexes.IntegerField(model_attr='id')
-    org = indexes.IntegerField(model_attr='org_id')
-    bucket = indexes.CharField(model_attr='bucket')
-    key = indexes.CharField(model_attr='key')
-    realkey = indexes.CharField(model_attr='realkey')
-    filename = indexes.CharField(model_attr='filename')
+    org = indexes.IntegerField(model_attr='org_id', null=True)
+    bucket = indexes.CharField(model_attr='bucket', null=True)
+    key = indexes.CharField(model_attr='key', null=True)
+    realkey = indexes.CharField(model_attr='realkey', null=True)
+    filename = indexes.CharField(model_attr='filename', null=True)
     fileContent = indexes.CharField(null=True)
-    createuser = indexes.IntegerField(model_attr='createuser_id')
-    createdtime = indexes.DateTimeField(model_attr='createdtime')
+    createuser = indexes.IntegerField(model_attr='createuser_id', null=True)
+    createdtime = indexes.DateTimeField(model_attr='createdtime', null=True)
 
     def get_model(self):
         """返回建立索引的模型类"""
