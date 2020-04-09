@@ -3,18 +3,22 @@ import os
 
 import datetime
 import traceback
-
 import jpype
 from PIL import Image, ImageDraw, ImageFont
 import random
-
 from reportlab.lib.pagesizes import A1
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfgen import canvas
-
 from invest.settings import APILOG_PATH
 from reportlab.pdfbase.ttfonts import TTFont
 from pdfrw import PdfReader, PdfWriter, PageMerge
+from pdfminer.pdfparser import PDFParser
+from pdfminer.pdfdocument import PDFDocument
+from pdfminer.pdfpage import PDFPage
+from pdfminer.pdfinterp import PDFResourceManager
+from pdfminer.pdfinterp import PDFPageInterpreter
+from pdfminer.layout import LAParams
+from pdfminer.converter import PDFPageAggregator
 
 # 随机颜色1:
 def rndColor():
@@ -185,6 +189,40 @@ def encryptPdfFilesWithPassword(filepaths, password):
         f = open(filepath, 'a')
         f.writelines(now.strftime('%H:%M:%S') + '\n' + traceback.format_exc() + '\n\n')
         f.close()
+
+def getPdfWordContent(pdfPath):
+    try:
+        wordlist = []
+        fp = open(pdfPath, "rb")
+        parser = PDFParser(fp)
+        doc = PDFDocument(parser)
+        parser.set_document(doc)
+        #创建PDF资源管理器
+        resource = PDFResourceManager()
+        #参数分析器
+        laparam = LAParams()
+        #创建一个聚合器
+        device = PDFPageAggregator(resource, laparams=laparam)
+        #创建PDF页面解释器
+        interpreter = PDFPageInterpreter(resource, device)
+        #使用文档对象得到页面集合
+        for page in PDFPage.create_pages(doc):
+            #使用页面解释器来读取
+            interpreter.process_page(page)
+            #使用聚合器来获取内容
+            layout=device.get_result()
+            for out in layout:
+                if hasattr(out, "get_text"):
+                    wordlist.append(out.get_text())
+        return ''.join(wordlist)
+    except Exception:
+        print('抽取pdf文本失败')
+        now = datetime.datetime.now()
+        filepath = APILOG_PATH['excptionlogpath'] + '/' + now.strftime('%Y-%m-%d')
+        f = open(filepath, 'a')
+        f.writelines(now.strftime('%H:%M:%S') + '\n' + traceback.format_exc() + '\n\n')
+        f.close()
+
 
 #文件分片
 def file_iterator(fn, chunk_size=512):
