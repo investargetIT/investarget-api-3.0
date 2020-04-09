@@ -45,10 +45,10 @@ def task4_sendAllExpiredMsg():
 
 
 def task5_downloadOrgAttachments():
-    class task3_Thread(threading.Thread):
+    class task5_Thread(threading.Thread):
         def run(self):
             downloadOrgAttachments()
-    task3_Thread().start()
+    task5_Thread().start()
 
 
 
