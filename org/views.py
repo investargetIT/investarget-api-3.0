@@ -1765,6 +1765,10 @@ def fulltextsearch(request):
             raise InvestError(2007, msg='搜索参数不能为空')
         page_index = int(request.GET.get('page_index', 1))
         page_size = int(request.GET.get('page_size', 10))
+        like = request.GET.get('like', '1')
+        match = "match_phrase"
+        if like in ['true', '1', 'TRUE']:
+            match = "match"
         lang = request.GET.get('lang', 'cn')
         es = Elasticsearch({HAYSTACK_CONNECTIONS['default']['URL']})
         ret = es.search(index=HAYSTACK_CONNECTIONS['default']['INDEX_NAME'],
@@ -1772,8 +1776,8 @@ def fulltextsearch(request):
                             "query": {
                                 "bool": {
                                     "should": [
-                                        {"match": {"fileContent": searchText}},
-                                        {"match": {"text": searchText}},
+                                        {match: {"fileContent": searchText}},
+                                        {match: {"text": searchText}},
                                     ]
                                 }
                             },
@@ -1824,7 +1828,4 @@ def downloadOrgAttachments():
         if not os.path.exists(attachmentPath):
             downloadFileToPath(key=attInstance.key, bucket=attInstance.bucket, path=attachmentPath)
             attInstance.save()
-
-# from haystack.views import SearchView
-
 
