@@ -163,6 +163,8 @@ class ProjectView(viewsets.ModelViewSet):
                     pass
                 else:
                     actionlist['get'] = True
+                    if request.user.has_perm('usersys.as_investor') and not request.user.is_superuser and request.user.datasource_id == 1:
+                        actionlist['get'] = False
                     if instance.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                         actionlist['change'] = True
                         actionlist['canAddOrgBD'] = True
@@ -291,6 +293,8 @@ class ProjectView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def retrieve(self, request, *args, **kwargs):
         try:
+            if request.user.has_perm('usersys.as_investor') and not request.user.is_superuser and request.user.datasource_id == 1:
+                raise InvestError(2009)
             lang = request.GET.get('lang')
             clienttype = request.META.get('HTTP_CLIENTTYPE')
             instance = self.get_object()
