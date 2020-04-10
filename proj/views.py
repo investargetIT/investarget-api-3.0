@@ -330,6 +330,11 @@ class ProjectView(viewsets.ModelViewSet):
 
     def getshareprojdetail(self, request, *args, **kwargs):
         try:
+            setrequestuser(request)
+            if request.user.is_anonymous:
+                pass
+            elif request.user.has_perm('usersys.as_investor') and not request.user.is_superuser and request.user.datasource_id == 1:
+                raise InvestError(2009)
             lang = request.GET.get('lang')
             clienttype = request.META.get('HTTP_CLIENTTYPE')
             tokenkey = request.GET.get('token')
