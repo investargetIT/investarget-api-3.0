@@ -1822,7 +1822,7 @@ def fulltextsearch(request):
         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 def downloadOrgAttachments():
-    attachment_qs = orgAttachments.objects.filter(is_deleted=False, key_isnull=False, org__is_deleted=False)
+    attachment_qs = orgAttachments.objects.filter(is_deleted=False, key__isnull=False, org__is_deleted=False)
     for attInstance in attachment_qs:
         attachmentPath = APILOG_PATH['orgAttachmentsPath'] + attInstance.key
         if not os.path.exists(attachmentPath):

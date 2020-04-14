@@ -377,8 +377,6 @@ class OKR(MyModel):
                 raise InvestError(2007, msg='目标不能为空')
             if OKR.objects.exclude(pk=self.pk).filter(is_deleted=False, year=self.year, okrType=filtertype, createuser=self.createuser).exists():
                 raise InvestError(2007, msg='该年度已存在季度/年度OKR')
-            if OKR.objects.exclude(pk=self.pk).filter(is_deleted=False, year=self.year, quarter=self.quarter, target=self.target, createuser=self.createuser).exists():
-                raise InvestError(2007, msg='该季度/年度已存在相同目标的OKR')
         if not self.datasource:
             self.datasource = self.createuser.datasource
         return super(OKR, self).save(*args, **kwargs)
