@@ -4,11 +4,11 @@ from rest_framework import serializers
 from BD.models import ProjectBDComments, ProjectBD, OrgBDComments, OrgBD, MeetingBD, OrgBDBlack, ProjectBDManagers, \
     WorkReport, WorkReportProjInfo, OKR, OKRResult
 from org.serializer import OrgCommonSerializer
-from proj.serializer import ProjSimpleSerializer
+from proj.models import project
+from proj.serializer import ProjSimpleSerializer, ProjCommonSerializer
 from sourcetype.serializer import BDStatusSerializer, orgAreaSerializer, tagSerializer, currencyTypeSerializer
 from sourcetype.serializer import titleTypeSerializer
 from third.views.qiniufile import getUrlWithBucketAndKey
-from usersys.models import MyUser
 from usersys.serializer import UserCommenSerializer, UserRemarkSimpleSerializer, UserAttachmentSerializer, \
     UserSimpleSerializer
 
@@ -240,3 +240,19 @@ class OKRResultSerializer(serializers.ModelSerializer):
     class Meta:
         model = OKRResult
         exclude = ('deleteduser', 'deletedtime', 'datasource', 'is_deleted', 'createuser')
+
+
+class orgBDProjSerializer(serializers.ModelSerializer):
+    proj = serializers.SerializerMethodField()
+    count = serializers.IntegerField()
+    created = serializers.DateTimeField()
+    class Meta:
+        model = OrgBD
+        fields = ('proj', 'count', 'created')
+
+    def get_proj(self, obj):
+        if obj.get('proj'):
+            proj = project.objects.get(id=obj['proj'])
+            return ProjCommonSerializer(proj).data
+        else:
+            return None

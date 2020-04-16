@@ -16,8 +16,8 @@ from BD.serializers import ProjectBDSerializer, ProjectBDCreateSerializer, Proje
     ProjectBDCommentsSerializer, OrgBDCommentsSerializer, OrgBDCommentsCreateSerializer, OrgBDCreateSerializer, \
     OrgBDSerializer, MeetingBDSerializer, MeetingBDCreateSerializer, OrgBDBlackSerializer, OrgBDBlackCreateSerializer, \
     ProjectBDManagersCreateSerializer, WorkReportCreateSerializer, WorkReportSerializer, \
-    WorkReportProjInfoCreateSerializer, WorkReportProjInfoSerializer, OKRSerializer, OKRCreateSerializer,\
-    OKRResultCreateSerializer, OKRResultSerializer
+    WorkReportProjInfoCreateSerializer, WorkReportProjInfoSerializer, OKRSerializer, OKRCreateSerializer, \
+    OKRResultCreateSerializer, OKRResultSerializer, orgBDProjSerializer
 from invest.settings import cli_domain
 from msg.views import deleteMessage
 from proj.models import project
@@ -573,6 +573,7 @@ class OrgBDView(viewsets.ModelViewSet):
                 raise InvestError(2009)
             page_size = request.GET.get('page_size', 10)
             page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
             sortfield = request.GET.get('sort', 'created')
             if request.GET.get('desc', 1) in ('1', u'1', 1):
@@ -584,11 +585,12 @@ class OrgBDView(viewsets.ModelViewSet):
                 queryset = queryset.page(page_index)
             except EmptyPage:
                 return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
-            serializer = json.dumps(list(queryset), cls=DjangoJSONEncoder)
-            return JSONResponse(SuccessResponse({'count': count, 'data': json.loads(serializer)}))
+            serializer = orgBDProjSerializer(queryset, many=True)
+            return JSONResponse(SuccessResponse( {'count':count,'data':returnListChangeToLanguage(serializer.data, lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
+            catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
