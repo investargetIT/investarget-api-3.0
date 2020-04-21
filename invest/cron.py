@@ -9,6 +9,7 @@ from BD.models import OrgBD
 from BD.views import sendExpiredOrgBDEmail
 from emailmanage.views import getAllProjectsNeedToSendMail, sendEmailToUser
 from msg.models import schedule
+from org.views import downloadOrgAttachments
 from third.views.huanxin import downloadChatMessages
 from timeline.models import timelineTransationStatu
 from utils.sendMessage import sendmessage_schedulemsg, sendmessage_timelinealertcycleexpire, \
@@ -43,7 +44,11 @@ def task4_sendAllExpiredMsg():
     task4_Thread().start()
 
 
-
+def task5_downloadOrgAttachments():
+    class task5_Thread(threading.Thread):
+        def run(self):
+            downloadOrgAttachments()
+    task5_Thread().start()
 
 
 

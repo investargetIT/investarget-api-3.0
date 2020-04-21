@@ -291,6 +291,8 @@ class ProjectView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def retrieve(self, request, *args, **kwargs):
         try:
+            if request.user.has_perm('usersys.as_investor') and not request.user.is_superuser and request.user.datasource_id == 1:
+                raise InvestError(2009)
             lang = request.GET.get('lang')
             clienttype = request.META.get('HTTP_CLIENTTYPE')
             instance = self.get_object()
@@ -328,6 +330,11 @@ class ProjectView(viewsets.ModelViewSet):
 
     def getshareprojdetail(self, request, *args, **kwargs):
         try:
+            setrequestuser(request)
+            if request.user.is_anonymous:
+                raise InvestError(2009)
+            elif request.user.has_perm('usersys.as_investor') and not request.user.is_superuser and request.user.datasource_id == 1:
+                raise InvestError(2009)
             lang = request.GET.get('lang')
             clienttype = request.META.get('HTTP_CLIENTTYPE')
             tokenkey = request.GET.get('token')
@@ -538,8 +545,8 @@ class ProjectView(viewsets.ModelViewSet):
                 raise InvestError(code=2010, msg=u'{} 上有关联数据'.format('proj_datarooms'))
             with transaction.atomic():
                 for link in ['proj_timelines', 'proj_finances', 'proj_attachment', 'project_tags', 'project_industries', 'project_TransactionTypes', 'proj_traders',
-                             'proj_favorite', 'proj_sharetoken', 'proj_datarooms', 'proj_services', 'proj_schedule', 'proj_orgBDs','proj_meetBDs','proj_OrgBdBlacks']:
-                    if link in ['proj_datarooms']:
+                             'proj_favorite', 'proj_sharetoken', 'proj_datarooms', 'proj_services', 'proj_schedule', 'proj_orgBDs','proj_meetBDs','proj_OrgBdBlacks', 'relate_projects']:
+                    if link in ['proj_datarooms', 'relate_projects']:
                         manager = getattr(instance, link, None)
                         if not manager:
                             continue

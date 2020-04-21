@@ -508,8 +508,6 @@ def sendmessage_dataroomuseradd(model,receiver,types,sender=None):
             model = self.model
 
             if isinstance(model, dataroom_User_file):
-                msgdic = MESSAGE_DICT['dataroomuseradd']
-
                 if 'email' in types and sendEmail and checkEmailTrue(receiver.email):
                     try:
                         destination = receiver.email
@@ -527,8 +525,9 @@ def sendmessage_dataroomuseradd(model,receiver,types,sender=None):
                     try:
                         msg_content = '已向用户【%s】发送了项目【%s】的dataroom邮件通知' % (receiver.usernameC, model.dataroom.proj.projtitleC)
                         msg_title = '发送dataroom邮件通知记录'
-                        msg_receiver = model.dataroom.proj.makeUser
-                        saveMessage(msg_content, 12, msg_title, msg_receiver, sender, modeltype='dataroomEmailMsg', sourceid=model.id)
+                        for proj_trader in model.dataroom.proj.proj_traders.filter(type=1, is_deleted=False):
+                            msg_receiver = proj_trader.user
+                            saveMessage(msg_content, 12, msg_title, msg_receiver, sender, modeltype='dataroomEmailMsg', sourceid=model.id)
                     except Exception:
                         logexcption()
 
@@ -585,9 +584,10 @@ def sendmessage_dataroomuserfileupdate(model,receiver,types,sender=None):
                                 filestr = filestr + seefile.file.filename + '<br>'
                         msg_content = '已向用户【%s】发送了项目【%s】的dataroom文件更新邮件通知' % (receiver.usernameC, model.dataroom.proj.projtitleC) + '<br><br>' + filestr
                         msg_title = '发送dataroom文件更新邮件通知记录'
-                        msg_receiver = model.dataroom.proj.makeUser
-                        # 13 区分dataroom邮件通知的12类型，站内信用到了12类型的消息
-                        saveMessage(msg_content, 13, msg_title, msg_receiver, sender, modeltype='dataroomFileUpdateEmailMsg', sourceid=model.id)
+                        for proj_trader in model.dataroom.proj.proj_traders.filter(type=1, is_deleted=False):
+                            msg_receiver = proj_trader.user
+                            saveMessage(msg_content, 13, msg_title, msg_receiver, sender, modeltype='dataroomFileUpdateEmailMsg', sourceid=model.id)
+                            # 13 区分dataroom邮件通知的12类型，站内信用到了12类型的消息
                     except Exception:
                         logexcption()
 

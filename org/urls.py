@@ -1,4 +1,4 @@
-from django.conf.urls import url, include
+from django.conf.urls import url
 from org import views
 
 
@@ -119,6 +119,7 @@ org_attachmentdetail = views.OrgAttachmentView.as_view({
 
 
 urlpatterns = [
+        url(r'^search', views.fulltextsearch, name='deleteUploadRecord', ),
         url(r'^$', org_list,name='org-list'),
         url(r'^(?P<pk>\d+)/$', org_detail,name='org-detail'),
         url(r'^remark/$', org_remarklist,name='orgremark-list'),

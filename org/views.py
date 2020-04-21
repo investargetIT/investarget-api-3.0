@@ -8,9 +8,11 @@ import xlwt
 from django.core.paginator import Paginator, EmptyPage
 from django.db.models import Q, FieldDoesNotExist, Max, Count
 from django.http import StreamingHttpResponse
+from elasticsearch import Elasticsearch
 from rest_framework import filters , viewsets
+from rest_framework.decorators import api_view
 
-from invest.settings import APILOG_PATH
+from invest.settings import APILOG_PATH, HAYSTACK_CONNECTIONS
 from mongoDoc.models import ProjectData, MergeFinanceData
 from org.models import organization, orgTransactionPhase, orgRemarks, orgContact, orgBuyout, orgManageFund, \
     orgInvestEvent, orgCooperativeRelationship, \
@@ -23,13 +25,15 @@ from org.serializer import OrgCommonSerializer, OrgDetailSerializer, OrgRemarkDe
     OrgExportExcelTaskSerializer, \
     OrgExportExcelTaskDetailSerializer, OrgAttachmentSerializer
 from sourcetype.models import TransactionPhases, TagContrastTable
-from third.views.qiniufile import deleteqiniufile
+from third.views.qiniufile import deleteqiniufile, downloadFileToPath
 from usersys.models import UserRelation
 from utils.customClass import InvestError, JSONResponse, RelationFilter, MySearchFilter
 from utils.somedef import file_iterator
-from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, returnListChangeToLanguage, \
+from utils.util import loginTokenIsAvailable, catchexcption, read_from_cache, write_to_cache, \
+    returnListChangeToLanguage, \
     returnDictChangeToLanguage, SuccessResponse, InvestErrorResponse, ExceptionResponse, setrequestuser, add_perm, \
-    cache_delete_key, mySortQuery, checkrequesttoken, logexcption, china_mobile, hongkong_mobile, hongkong_telephone
+    cache_delete_key, mySortQuery, checkrequesttoken, logexcption, china_mobile, hongkong_mobile, hongkong_telephone, \
+    checkRequestToken
 from django.db import transaction,models
 from django_filters import FilterSet
 
@@ -129,7 +133,7 @@ class OrganizationView(viewsets.ModelViewSet):
                     pass
                 else:
                     if instance.orglevel_id == 1 or instance.orglevel_id == 2:
-                        user_count = self.checkOrgUserContactInfoTruth(instance, request.user.datasource)
+                        user_count = checkOrgUserContactInfoTruth(instance, request.user.datasource)
                     if request.user.has_perm('org.admin_getorg') or request.user.has_perm('org.user_getorg',instance):
                         actionlist['get'] = True
                     if request.user.has_perm('org.admin_changeorg') or request.user.has_perm('org.user_changeorg',instance):
@@ -146,12 +150,6 @@ class OrganizationView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
-
-    def checkOrgUserContactInfoTruth(self, org, datasource):
-        user_qs = org.org_users.all().filter(is_deleted=False, datasource=datasource)
-        count = user_qs.filter(Q(mobile__regex=china_mobile, mobileAreaCode=86) | Q(mobile__regex=hongkong_mobile, mobileAreaCode=852) | Q(mobile__regex=hongkong_telephone, mobileAreaCode=852)).count()
-        return count
 
 
     @loginTokenIsAvailable()
@@ -1528,7 +1526,10 @@ class OrgAttachmentView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
-
+def checkOrgUserContactInfoTruth(org, datasource):
+    user_qs = org.org_users.all().filter(is_deleted=False, datasource=datasource)
+    count = user_qs.filter(Q(mobile__regex=china_mobile, mobileAreaCode=86) | Q(mobile__regex=hongkong_mobile, mobileAreaCode=852) | Q(mobile__regex=hongkong_telephone, mobileAreaCode=852)).count()
+    return count
 
 
 def makeExportOrgExcel():
@@ -1751,4 +1752,80 @@ def makeExportOrgExcel():
         f.close()
         d = startdotaskthread()
         d.start()
+
+
+
+#生成上传记录（开始上传）
+@api_view(['GET'])
+@checkRequestToken()
+def fulltextsearch(request):
+    try:
+        searchText = request.GET.get('text')
+        if not searchText:
+            raise InvestError(2007, msg='搜索参数不能为空')
+        page_index = int(request.GET.get('page_index', 1))
+        page_size = int(request.GET.get('page_size', 10))
+        like = request.GET.get('like', '1')
+        match = "match_phrase"
+        if like in ['true', '1', 'TRUE']:
+            match = "match"
+        lang = request.GET.get('lang', 'cn')
+        es = Elasticsearch({HAYSTACK_CONNECTIONS['default']['URL']})
+        ret = es.search(index=HAYSTACK_CONNECTIONS['default']['INDEX_NAME'],
+                        body={
+                            "query": {
+                                "bool": {
+                                    "should": [
+                                        {match: {"fileContent": searchText}},
+                                        {match: {"text": searchText}},
+                                    ]
+                                }
+                            },
+                            "_source": ["org"]
+                        })
+        orgId_list = set()
+        for source in ret["hits"]["hits"]:
+            orgId_list.add(source['_source']['org'])
+        org_qs = organization.objects.filter(is_deleted=False, id__in=orgId_list, issub=False)
+        try:
+            count = org_qs.count()
+            org_qs = Paginator(org_qs, page_size)
+            org_qs = org_qs.page(page_index)
+        except EmptyPage:
+            return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+        if request.user.has_perm('org.admin_getorg'):
+            serializerclass = OrgListSerializer
+        else:
+            serializerclass = OrgCommonSerializer  # warning
+        responselist = []
+        for instance in org_qs:
+            actionlist = {'get': True, 'change': False, 'delete': False}
+            user_count = 0
+            if request.user.is_anonymous:
+                pass
+            else:
+                if instance.orglevel_id == 1 or instance.orglevel_id == 2:
+                    user_count = checkOrgUserContactInfoTruth(instance, request.user.datasource)
+                if request.user.has_perm('org.admin_changeorg') or request.user.has_perm('org.user_changeorg', instance):
+                    actionlist['change'] = True
+                if request.user.has_perm('org.admin_deleteorg') or request.user.has_perm('org.user_deleteorg', instance):
+                    actionlist['delete'] = True
+            instancedata = serializerclass(instance).data
+            instancedata['action'] = actionlist
+            instancedata['user_count'] = user_count
+            responselist.append(instancedata)
+        return JSONResponse(SuccessResponse({'count': count, 'data': returnListChangeToLanguage(responselist, lang)}))
+    except InvestError as err:
+        return JSONResponse(InvestErrorResponse(err))
+    except Exception:
+        catchexcption(request)
+        return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+def downloadOrgAttachments():
+    attachment_qs = orgAttachments.objects.filter(is_deleted=False, key__isnull=False, org__is_deleted=False)
+    for attInstance in attachment_qs:
+        attachmentPath = APILOG_PATH['orgAttachmentsPath'] + attInstance.key
+        if not os.path.exists(attachmentPath):
+            downloadFileToPath(key=attInstance.key, bucket=attInstance.bucket, path=attachmentPath)
+            attInstance.save()
 

@@ -1,8 +1,9 @@
-
+#coding=utf-8
 from rest_framework import serializers
 from org.models import organization, orgRemarks, orgTransactionPhase, orgBuyout, orgContact, orgInvestEvent, \
     orgCooperativeRelationship, orgManageFund, orgExportExcelTask, orgAttachments
-from sourcetype.serializer import transactionPhasesSerializer, tagSerializer
+from org.search_indexes import orgRemarksIndex
+from sourcetype.serializer import transactionPhasesSerializer
 
 
 class OrgCommonSerializer(serializers.ModelSerializer):
@@ -159,4 +160,3 @@ class OrgAttachmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = orgAttachments
         fields = '__all__'
-

@@ -11,12 +11,13 @@ import json
 from django.core.serializers.json import DjangoJSONEncoder
 from rest_framework import filters, viewsets
 from BD.models import ProjectBD, ProjectBDComments, OrgBDComments, OrgBD, MeetingBD, MeetBDShareToken, OrgBDBlack, \
-    ProjectBDManagers, WorkReport, WorkReportProjInfo
+    ProjectBDManagers, WorkReport, WorkReportProjInfo, OKR, OKRResult
 from BD.serializers import ProjectBDSerializer, ProjectBDCreateSerializer, ProjectBDCommentsCreateSerializer, \
     ProjectBDCommentsSerializer, OrgBDCommentsSerializer, OrgBDCommentsCreateSerializer, OrgBDCreateSerializer, \
     OrgBDSerializer, MeetingBDSerializer, MeetingBDCreateSerializer, OrgBDBlackSerializer, OrgBDBlackCreateSerializer, \
-    ProjectBDManagersCreateSerializer, WorkReportCreateSerializer, WorkReportSerializer, WorkReportProjInfoCreateSerializer, \
-    WorkReportProjInfoSerializer
+    ProjectBDManagersCreateSerializer, WorkReportCreateSerializer, WorkReportSerializer, \
+    WorkReportProjInfoCreateSerializer, WorkReportProjInfoSerializer, OKRSerializer, OKRCreateSerializer, \
+    OKRResultCreateSerializer, OKRResultSerializer, orgBDProjSerializer
 from invest.settings import cli_domain
 from msg.views import deleteMessage
 from proj.models import project
@@ -572,6 +573,7 @@ class OrgBDView(viewsets.ModelViewSet):
                 raise InvestError(2009)
             page_size = request.GET.get('page_size', 10)
             page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
             sortfield = request.GET.get('sort', 'created')
             if request.GET.get('desc', 1) in ('1', u'1', 1):
@@ -583,11 +585,12 @@ class OrgBDView(viewsets.ModelViewSet):
                 queryset = queryset.page(page_index)
             except EmptyPage:
                 return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
-            serializer = json.dumps(list(queryset), cls=DjangoJSONEncoder)
-            return JSONResponse(SuccessResponse({'count': count, 'data': json.loads(serializer)}))
+            serializer = orgBDProjSerializer(queryset, many=True)
+            return JSONResponse(SuccessResponse( {'count':count,'data':returnListChangeToLanguage(serializer.data, lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
+            catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
@@ -1695,6 +1698,314 @@ class WorkReportProjInfoView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user != instance.report.user and not request.user.is_superuser:
                 raise InvestError(2009, msg='没有权限删除项目计划')
+            with transaction.atomic():
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
+            return JSONResponse(SuccessResponse({'isDeleted': True, }))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+
+class OKRFilter(FilterSet):
+    createuser = RelationFilter(filterstr='createuser',lookup_method='in')
+    year = RelationFilter(filterstr='year',lookup_method='in')
+    quarter = RelationFilter(filterstr='indGroup', lookup_method='in')
+    okrType = RelationFilter(filterstr='okrType', lookup_method='in')
+    class Meta:
+        model = OKR
+        fields = ('createuser', 'year', 'quarter', 'okrType')
+
+
+class OKRView(viewsets.ModelViewSet):
+    """
+    list: 获取季度OKR列表
+    create: 增加季度OKR
+    retrieve: 查看某一季度OKR
+    update: 修改某一季度OKR
+    destroy: 删除某一季度OKR
+    """
+    filter_backends = (filters.DjangoFilterBackend, filters.SearchFilter)
+    queryset = OKR.objects.filter(is_deleted=False)
+    filter_class = OKRFilter
+    search_fields = ('target',)
+    serializer_class = OKRSerializer
+
+    def get_queryset(self):
+        assert self.queryset is not None, (
+            "'%s' should either include a `queryset` attribute, "
+            "or override the `get_queryset()` method."
+            % self.__class__.__name__
+        )
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource_id=self.request.user.datasource_id)
+            else:
+                queryset = queryset
+        else:
+            raise InvestError(code=8890)
+        return queryset
+
+
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            if request.user.has_perm('usersys.as_trader'):
+                pass
+            else:
+                raise InvestError(2009)
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
+            queryset = self.filter_queryset(self.get_queryset())
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializers = self.serializer_class(queryset, many=True)
+            return JSONResponse(
+                SuccessResponse({'count': count, 'data': returnListChangeToLanguage(serializers.data, lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        try:
+            if request.user.has_perm('usersys.as_trader'):
+                pass
+            else:
+                raise InvestError(2009)
+            data = request.data
+            lang = request.GET.get('lang')
+            data['createuser'] = request.user.id
+            data['datasource'] = request.user.datasource.id
+            with transaction.atomic():
+                instanceSerializer = OKRCreateSerializer(data=data)
+                if instanceSerializer.is_valid():
+                    instance = instanceSerializer.save()
+                else:
+                    raise InvestError(20071, msg='新增OKR失败--%s' % instanceSerializer.error_messages)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            if request.user.has_perm('usersys.as_trader'):
+                pass
+            else:
+                raise InvestError(2009)
+            instance = self.get_object()
+            serializer = self.serializer_class(instance)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            if request.user == instance.createuser or request.user.is_superuser:
+                pass
+            else:
+                raise InvestError(2009)
+            with transaction.atomic():
+                newinstanceSeria = OKRCreateSerializer(instance, data=data)
+                if newinstanceSeria.is_valid():
+                    newinstance = newinstanceSeria.save()
+                else:
+                    raise InvestError(2009, msg='OKR修改失败——%s' % newinstanceSeria.errors)
+                return JSONResponse(
+                    SuccessResponse(returnDictChangeToLanguage(self.serializer_class(newinstance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            if request.user == instance.createuser or request.user.is_superuser:
+                pass
+            else:
+                raise InvestError(2009, msg='没有权限删除该OKR')
+            with transaction.atomic():
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
+            return JSONResponse(SuccessResponse({'isDeleted': True, }))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+class OKRResultFilter(FilterSet):
+    okr = RelationFilter(filterstr='okr',lookup_method='in')
+    confidence = RelationFilter(filterstr='confidence', lookup_method='in')
+    class Meta:
+        model = OKRResult
+        fields = ('okr', 'confidence')
+
+
+class OKRResultView(viewsets.ModelViewSet):
+    """
+    list: 获取季度OKR相关结果列表
+    create: 增加季度OKR相关结果
+    retrieve: 查看某一季度OKR相关结果
+    update: 修改某一季度OKR相关结果
+    destroy: 删除某一季度OKR相关结果
+    """
+    filter_backends = (filters.DjangoFilterBackend, filters.SearchFilter)
+    queryset = OKRResult.objects.filter(is_deleted=False)
+    filter_class = OKRResultFilter
+    search_fields = ('krs',)
+    serializer_class = OKRResultSerializer
+
+    def get_queryset(self):
+        assert self.queryset is not None, (
+            "'%s' should either include a `queryset` attribute, "
+            "or override the `get_queryset()` method."
+            % self.__class__.__name__
+        )
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource_id=self.request.user.datasource_id)
+            else:
+                queryset = queryset
+        else:
+            raise InvestError(code=8890)
+        return queryset
+
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            if request.user.has_perm('usersys.as_trader'):
+                pass
+            else:
+                raise InvestError(2009)
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
+            queryset = self.filter_queryset(self.get_queryset())
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializers = self.serializer_class(queryset, many=True)
+            return JSONResponse(
+                SuccessResponse({'count': count, 'data': returnListChangeToLanguage(serializers.data, lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            lang = request.GET.get('lang')
+            data['createuser'] = request.user.id
+            data['datasource'] = request.user.datasource.id
+            okrInstance = OKR.objects.get(is_deleted=False, id=data['okr'])
+            if request.user == okrInstance.createuser or request.user.is_superuser:
+                pass
+            else:
+                raise InvestError(2009)
+            with transaction.atomic():
+                instanceSerializer = OKRResultCreateSerializer(data=data)
+                if instanceSerializer.is_valid():
+                    instance = instanceSerializer.save()
+                else:
+                    raise InvestError(20071, msg='新增用户工作报表项目计划失败--%s' % instanceSerializer.error_messages)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            if request.user.has_perm('usersys.as_trader'):
+                pass
+            else:
+                raise InvestError(2009)
+            instance = self.get_object()
+            serializer = self.serializer_class(instance)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            if request.user == instance.okr.createuser or request.user.is_superuser:
+                pass
+            else:
+                raise InvestError(2009)
+            with transaction.atomic():
+                newinstanceSeria = OKRResultCreateSerializer(instance, data=data)
+                if newinstanceSeria.is_valid():
+                    newinstance = newinstanceSeria.save()
+                else:
+                    raise InvestError(2009, msg='用户工作报表项目计划修改失败——%s' % newinstanceSeria.errors)
+                return JSONResponse(
+                    SuccessResponse(returnDictChangeToLanguage(self.serializer_class(newinstance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            if request.user == instance.okr.createuser or request.user.is_superuser:
+                pass
+            else:
+                raise InvestError(2009)
             with transaction.atomic():
                 instance.is_deleted = True
                 instance.deleteduser = request.user
