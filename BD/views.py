@@ -21,6 +21,7 @@ from BD.serializers import ProjectBDSerializer, ProjectBDCreateSerializer, Proje
 from invest.settings import cli_domain
 from msg.views import deleteMessage
 from proj.models import project
+from proj.views import checkProjectTrader
 from third.views.qiniufile import deleteqiniufile
 from timeline.models import timeline
 from timeline.models import timelineremark
@@ -540,13 +541,20 @@ class OrgBDView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def countBDProjectOrg(self, request, *args, **kwargs):
         try:
-            page_size = request.GET.get('page_size', 10)
-            page_index = request.GET.get('page_index', 1)
-            if request.user.has_perm('BD.manageOrgBD') or request.user.has_perm('BD.user_getOrgBD'):
+            if request.user.has_perm('BD.manageOrgBD'):
                 pass
+            elif request.user.has_perm('BD.user_getOrgBD'):
+                if request.GET.get('proj') and checkProjectTrader(request.GET.get('proj'), request.user.id):
+                    pass
+                else:
+                    if int(request.GET.get('manager')) != request.user.id:
+                        request.GET = request.GET.copy()
+                        request.GET['manager'] = request.user.id
             else:
                 raise InvestError(2009)
             queryset = self.filter_queryset(self.get_queryset())
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
             sortfield = request.GET.get('sort', 'orgimportant')
             if request.GET.get('desc', 1) in ('1', u'1', 1):
                 sortfield = '-' + sortfield
@@ -567,14 +575,21 @@ class OrgBDView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def countBDProject(self, request, *args, **kwargs):
         try:
-            if request.user.has_perm('BD.manageOrgBD') or request.user.has_perm('BD.user_getOrgBD'):
+            if request.user.has_perm('BD.manageOrgBD'):
                 pass
+            elif request.user.has_perm('BD.user_getOrgBD'):
+                if request.GET.get('proj') and checkProjectTrader(request.GET.get('proj'), request.user.id):
+                    pass
+                else:
+                    if int(request.GET.get('manager')) != request.user.id:
+                        request.GET = request.GET.copy()
+                        request.GET['manager'] = request.user.id
             else:
                 raise InvestError(2009)
+            queryset = self.filter_queryset(self.get_queryset())
             page_size = request.GET.get('page_size', 10)
             page_index = request.GET.get('page_index', 1)
             lang = request.GET.get('lang', 'cn')
-            queryset = self.filter_queryset(self.get_queryset())
             sortfield = request.GET.get('sort', 'created')
             if request.GET.get('desc', 1) in ('1', u'1', 1):
                 sortfield = '-' + sortfield
@@ -597,10 +612,18 @@ class OrgBDView(viewsets.ModelViewSet):
     @loginTokenIsAvailable()
     def list(self, request, *args, **kwargs):
         try:
-            if request.user.has_perm('BD.manageOrgBD') or request.user.has_perm('BD.user_getOrgBD'):
+            if request.user.has_perm('BD.manageOrgBD'):
                 pass
+            elif request.user.has_perm('BD.user_getOrgBD'):
+                if request.GET.get('proj') and checkProjectTrader(request.GET.get('proj'), request.user.id):
+                    pass
+                else:
+                    if int(request.GET.get('manager')) != request.user.id:
+                        request.GET = request.GET.copy()
+                        request.GET['manager'] = request.user.id
             else:
                 raise InvestError(2009)
+            queryset = self.filter_queryset(self.get_queryset())
             query_string = request.META['QUERY_STRING']
             uriPath = str(request.path)
             cachekey = '{}_{}_{}'.format(uriPath, query_string, request.user.id)
@@ -610,7 +633,6 @@ class OrgBDView(viewsets.ModelViewSet):
             page_size = request.GET.get('page_size', 10)
             page_index = request.GET.get('page_index', 1)
             lang = request.GET.get('lang', 'cn')
-            queryset = self.filter_queryset(self.get_queryset())
             sortfield = request.GET.get('sort', 'createdtime')
             desc = request.GET.get('desc', 1)
             if desc in ('1', u'1', 1):
@@ -637,7 +659,12 @@ class OrgBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
             elif request.user.has_perm('BD.user_getOrgBD'):
-                pass
+                if request.GET.get('proj') and checkProjectTrader(request.GET.get('proj'), request.user.id):
+                    pass
+                else:
+                    if int(request.GET.get('manager')) != request.user.id:
+                        request.GET = request.GET.copy()
+                        request.GET['manager'] = request.user.id
             else:
                 raise InvestError(2009)
             queryset = self.filter_queryset(self.get_queryset())
@@ -656,7 +683,12 @@ class OrgBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 pass
             elif request.user.has_perm('BD.user_getOrgBD'):
-                pass
+                if request.GET.get('proj') and checkProjectTrader(request.GET.get('proj'), request.user.id):
+                    pass
+                else:
+                    if int(request.GET.get('manager')) != request.user.id:
+                        request.GET = request.GET.copy()
+                        request.GET['manager'] = request.user.id
             else:
                 raise InvestError(2009)
             queryset = self.filter_queryset(self.get_queryset())

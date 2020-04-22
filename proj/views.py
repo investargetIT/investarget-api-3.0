@@ -1447,6 +1447,18 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
+def checkProjectTrader(proj_id, user_id):
+    try:
+        projectInstance = project.objects.get(id=proj_id, is_deleted=False)
+    except project.DoesNotExist:
+        raise InvestError(2007, msg='项目不存在')
+    else:
+        if projectInstance.proj_traders.all().filter(user=user_id, is_deleted=False).exists():
+            return True
+        else:
+            return False
+
+
 def testPdf(request):
     projid = request.GET.get('id')
     lang = request.GET.get('lang', 'cn')
