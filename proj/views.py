@@ -6,7 +6,7 @@ import traceback
 import pdfkit
 from django.core.paginator import Paginator, EmptyPage
 from django.db import models,transaction
-from django.db.models import Q,QuerySet
+from django.db.models import Q, QuerySet, Count
 from django.core.exceptions import FieldDoesNotExist
 from django.http import StreamingHttpResponse
 from django.shortcuts import render
@@ -1447,16 +1447,19 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
-def checkProjectTrader(proj_id, user_id):
+def checkProjectsTrader(proj_ids, user_id):
     try:
-        projectInstance = project.objects.get(id=proj_id, is_deleted=False)
-    except project.DoesNotExist:
-        raise InvestError(2007, msg='项目不存在')
-    else:
-        if projectInstance.proj_traders.all().filter(user=user_id, is_deleted=False).exists():
-            return True
-        else:
-            return False
+        projTrader_qs = projTraders.objects.filter(proj__in=proj_ids, user=user_id, is_deleted=False, proj__is_deleted=False).values_list('proj').annotate(Count('proj'))
+        trader_projs, notrader_projs = [], []
+        for manager_count in projTrader_qs:
+            trader_projs.append(manager_count[0])
+        for proj_id in proj_ids:
+            if proj_id not in trader_projs:
+                notrader_projs.append(proj_id)
+        return trader_projs, notrader_projs
+    except Exception:
+        logexcption(msg='验证项目列表承揽承做失败')
+        return [], proj_ids
 
 
 def testPdf(request):

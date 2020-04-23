@@ -21,7 +21,7 @@ from BD.serializers import ProjectBDSerializer, ProjectBDCreateSerializer, Proje
 from invest.settings import cli_domain
 from msg.views import deleteMessage
 from proj.models import project
-from proj.views import checkProjectTrader
+from proj.views import checkProjectsTrader
 from third.views.qiniufile import deleteqiniufile
 from timeline.models import timeline
 from timeline.models import timelineremark
@@ -561,16 +561,19 @@ class OrgBDView(viewsets.ModelViewSet):
     def countBDProjectOrg(self, request, *args, **kwargs):
         try:
             if request.user.has_perm('BD.manageOrgBD'):
-                pass
+                queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
-                if request.GET.get('proj') and checkProjectTrader(request.GET.get('proj'), request.user.id):
-                    pass
+                if request.GET.get('proj'):
+                    queryset = self.filter_queryset(self.get_queryset())
+                    proj_ids = request.GET.get('proj').split(',')
+                    trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
+                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id))
                 else:
                     request.GET = request.GET.copy()
                     request.GET['manager'] = str(request.user.id)
+                    queryset = self.filter_queryset(self.get_queryset())
             else:
                 raise InvestError(2009)
-            queryset = self.filter_queryset(self.get_queryset())
             page_size = request.GET.get('page_size', 10)
             page_index = request.GET.get('page_index', 1)
             sortfield = request.GET.get('sort', 'orgimportant')
@@ -594,16 +597,19 @@ class OrgBDView(viewsets.ModelViewSet):
     def countBDProject(self, request, *args, **kwargs):
         try:
             if request.user.has_perm('BD.manageOrgBD'):
-                pass
+                queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
-                if request.GET.get('proj') and checkProjectTrader(request.GET.get('proj'), request.user.id):
-                    pass
+                if request.GET.get('proj'):
+                    queryset = self.filter_queryset(self.get_queryset())
+                    proj_ids = request.GET.get('proj').split(',')
+                    trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
+                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id))
                 else:
                     request.GET = request.GET.copy()
                     request.GET['manager'] = str(request.user.id)
+                    queryset = self.filter_queryset(self.get_queryset())
             else:
                 raise InvestError(2009)
-            queryset = self.filter_queryset(self.get_queryset())
             page_size = request.GET.get('page_size', 10)
             page_index = request.GET.get('page_index', 1)
             lang = request.GET.get('lang', 'cn')
@@ -630,16 +636,19 @@ class OrgBDView(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         try:
             if request.user.has_perm('BD.manageOrgBD'):
-                pass
+                queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
-                if request.GET.get('proj') and checkProjectTrader(request.GET.get('proj'), request.user.id):
-                    pass
+                if request.GET.get('proj'):
+                    queryset = self.filter_queryset(self.get_queryset())
+                    proj_ids = request.GET.get('proj').split(',')
+                    trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
+                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id))
                 else:
                     request.GET = request.GET.copy()
                     request.GET['manager'] = str(request.user.id)
+                    queryset = self.filter_queryset(self.get_queryset())
             else:
                 raise InvestError(2009)
-            queryset = self.filter_queryset(self.get_queryset())
             query_string = request.META['QUERY_STRING']
             uriPath = str(request.path)
             cachekey = '{}_{}_{}'.format(uriPath, query_string, request.user.id)
@@ -673,16 +682,19 @@ class OrgBDView(viewsets.ModelViewSet):
     def countBDManager(self, request, *args, **kwargs):
         try:
             if request.user.has_perm('BD.manageOrgBD'):
-                pass
+                queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
-                if request.GET.get('proj') and checkProjectTrader(request.GET.get('proj'), request.user.id):
-                    pass
+                if request.GET.get('proj'):
+                    queryset = self.filter_queryset(self.get_queryset())
+                    proj_ids = request.GET.get('proj').split(',')
+                    trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
+                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id))
                 else:
                     request.GET = request.GET.copy()
                     request.GET['manager'] = str(request.user.id)
+                    queryset = self.filter_queryset(self.get_queryset())
             else:
                 raise InvestError(2009)
-            queryset = self.filter_queryset(self.get_queryset())
             count = queryset.count()
             queryset = queryset.values_list('manager').annotate(count=Count('manager'))
             serializer = json.dumps(list(queryset), cls=DjangoJSONEncoder)
@@ -696,16 +708,19 @@ class OrgBDView(viewsets.ModelViewSet):
     def countBDResponse(self, request, *args, **kwargs):
         try:
             if request.user.has_perm('BD.manageOrgBD'):
-                pass
+                queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
-                if request.GET.get('proj') and checkProjectTrader(request.GET.get('proj'), request.user.id):
-                    pass
+                if request.GET.get('proj'):
+                    queryset = self.filter_queryset(self.get_queryset())
+                    proj_ids = request.GET.get('proj').split(',')
+                    trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
+                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id))
                 else:
                     request.GET = request.GET.copy()
                     request.GET['manager'] = str(request.user.id)
+                    queryset = self.filter_queryset(self.get_queryset())
             else:
                 raise InvestError(2009)
-            queryset = self.filter_queryset(self.get_queryset())
             count = queryset.count()
             queryset = queryset.values('response').annotate(count=Count('*'))
             serializer = json.dumps(list(queryset), cls=DjangoJSONEncoder)
