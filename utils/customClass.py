@@ -42,6 +42,7 @@ class RelationFilter(Filter):
         super(RelationFilter,self).__init__(**kwargs)
     def filter(self, qs, value):
         isNull = False
+        value = self.parent.request.GET[self.name]
         if value in ([], (), {}, '', None):
             return qs
         if self.lookup_method == 'in':
