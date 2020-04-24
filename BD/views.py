@@ -563,7 +563,7 @@ class OrgBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
-                if request.GET.get('proj'):
+                if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
                     queryset = self.filter_queryset(self.get_queryset())
                     proj_ids = request.GET.get('proj').split(',')
                     trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
@@ -599,7 +599,7 @@ class OrgBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
-                if request.GET.get('proj'):
+                if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
                     queryset = self.filter_queryset(self.get_queryset())
                     proj_ids = request.GET.get('proj').split(',')
                     trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
@@ -638,7 +638,7 @@ class OrgBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
-                if request.GET.get('proj'):
+                if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
                     queryset = self.filter_queryset(self.get_queryset())
                     proj_ids = request.GET.get('proj').split(',')
                     trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
@@ -684,7 +684,7 @@ class OrgBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
-                if request.GET.get('proj'):
+                if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
                     queryset = self.filter_queryset(self.get_queryset())
                     proj_ids = request.GET.get('proj').split(',')
                     trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
@@ -710,7 +710,7 @@ class OrgBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
-                if request.GET.get('proj'):
+                if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
                     queryset = self.filter_queryset(self.get_queryset())
                     proj_ids = request.GET.get('proj').split(',')
                     trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
