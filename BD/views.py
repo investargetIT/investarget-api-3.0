@@ -36,6 +36,7 @@ class ProjectBDFilter(FilterSet):
     com_name = RelationFilter(filterstr='com_name',lookup_method='icontains')
     location = RelationFilter(filterstr='location', lookup_method='in')
     isimportant = RelationFilter(filterstr='isimportant')
+    createuser = RelationFilter(filterstr='createuser', lookup_method='in')
     contractors = RelationFilter(filterstr='contractors', lookup_method='in')
     indGroup = RelationFilter(filterstr='indGroup', lookup_method='in')
     country = RelationFilter(filterstr='country', lookup_method='in')
@@ -49,7 +50,7 @@ class ProjectBDFilter(FilterSet):
     etime = RelationFilter(filterstr='createdtime', lookup_method='lt')
     class Meta:
         model = ProjectBD
-        fields = ('com_name', 'location', 'contractors', 'isimportant', 'bduser', 'indGroup', 'country', 'username', 'usermobile', 'source', 'bd_status', 'source_type', 'stime', 'etime')
+        fields = ('com_name', 'createuser', 'location', 'contractors', 'isimportant', 'bduser', 'indGroup', 'country', 'username', 'usermobile', 'source', 'bd_status', 'source_type', 'stime', 'etime')
 
 
 class ProjectBDView(viewsets.ModelViewSet):
@@ -93,11 +94,11 @@ class ProjectBDView(viewsets.ModelViewSet):
             queryset = self.filter_queryset(self.get_queryset())
             if request.GET.get('manager'):
                 manager_list = request.GET['manager'].split(',')
-                queryset = queryset.filter(Q(manager__in=manager_list) | Q(ProjectBD_managers__manager__in=manager_list) | Q(contractors__in=manager_list))
+                queryset = queryset.filter(Q(manager__in=manager_list) | Q(createuser__in=manager_list) | Q(ProjectBD_managers__manager__in=manager_list) | Q(contractors__in=manager_list))
             if request.user.has_perm('BD.manageProjectBD') and request.user.has_perm('usersys.as_trader'):
                 pass
             elif request.user.has_perm('BD.user_getProjectBD'):
-                queryset = queryset.filter(Q(manager=request.user) | Q(contractors=request.user) | Q(ProjectBD_managers__manager=request.user)).distinct()
+                queryset = queryset.filter(Q(manager=request.user) | Q(createuser=request.user) | Q(contractors=request.user) | Q(ProjectBD_managers__manager=request.user)).distinct()
             else:
                 raise InvestError(2009)
             countres = queryset.values_list('manager').annotate(Count('manager'))
@@ -493,6 +494,7 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
 
 class OrgBDFilter(FilterSet):
     manager = RelationFilter(filterstr='manager',lookup_method='in')
+    createuser = RelationFilter(filterstr='createuser', lookup_method='in')
     org = RelationFilter(filterstr='org', lookup_method='in')
     response = RelationFilter(filterstr='response', lookup_method='in')
     proj = RelationFilter(filterstr='proj', lookup_method='in')
@@ -506,7 +508,7 @@ class OrgBDFilter(FilterSet):
     etimeM = RelationFilter(filterstr='lastmodifytime', lookup_method='lt')
     class Meta:
         model = OrgBD
-        fields = ('manager', 'org', 'proj', 'stime', 'etime', 'stimeM', 'etimeM', 'response', 'isimportant', 'isSolved', 'isRead', 'bduser')
+        fields = ('manager', 'createuser', 'org', 'proj', 'stime', 'etime', 'stimeM', 'etimeM', 'response', 'isimportant', 'isSolved', 'isRead', 'bduser')
 
 
 class OrgBDView(viewsets.ModelViewSet):
@@ -567,10 +569,16 @@ class OrgBDView(viewsets.ModelViewSet):
                     queryset = self.filter_queryset(self.get_queryset())
                     proj_ids = request.GET.get('proj').split(',')
                     trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
-                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id))
+                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
                 else:
                     request.GET = request.GET.copy()
-                    request.GET['manager'] = str(request.user.id)
+                    if request.GET.get('manager') or request.GET.get('createuser'):
+                        if request.GET.get('manager'):
+                            request.GET['manager'] = str(request.user.id)
+                        if request.GET.get('createuser'):
+                            request.GET['createuser'] = str(request.user.id)
+                    else:
+                        request.GET['manager'] = str(request.user.id)
                     queryset = self.filter_queryset(self.get_queryset())
             else:
                 raise InvestError(2009)
@@ -603,10 +611,16 @@ class OrgBDView(viewsets.ModelViewSet):
                     queryset = self.filter_queryset(self.get_queryset())
                     proj_ids = request.GET.get('proj').split(',')
                     trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
-                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id))
+                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
                 else:
                     request.GET = request.GET.copy()
-                    request.GET['manager'] = str(request.user.id)
+                    if request.GET.get('manager') or request.GET.get('createuser'):
+                        if request.GET.get('manager'):
+                            request.GET['manager'] = str(request.user.id)
+                        if request.GET.get('createuser'):
+                            request.GET['createuser'] = str(request.user.id)
+                    else:
+                        request.GET['manager'] = str(request.user.id)
                     queryset = self.filter_queryset(self.get_queryset())
             else:
                 raise InvestError(2009)
@@ -642,10 +656,16 @@ class OrgBDView(viewsets.ModelViewSet):
                     queryset = self.filter_queryset(self.get_queryset())
                     proj_ids = request.GET.get('proj').split(',')
                     trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
-                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id))
+                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
                 else:
                     request.GET = request.GET.copy()
-                    request.GET['manager'] = str(request.user.id)
+                    if request.GET.get('manager') or request.GET.get('createuser'):
+                        if request.GET.get('manager'):
+                            request.GET['manager'] = str(request.user.id)
+                        if request.GET.get('createuser'):
+                            request.GET['createuser'] = str(request.user.id)
+                    else:
+                        request.GET['manager'] = str(request.user.id)
                     queryset = self.filter_queryset(self.get_queryset())
             else:
                 raise InvestError(2009)
@@ -688,10 +708,16 @@ class OrgBDView(viewsets.ModelViewSet):
                     queryset = self.filter_queryset(self.get_queryset())
                     proj_ids = request.GET.get('proj').split(',')
                     trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
-                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id))
+                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
                 else:
                     request.GET = request.GET.copy()
-                    request.GET['manager'] = str(request.user.id)
+                    if request.GET.get('manager') or request.GET.get('createuser'):
+                        if request.GET.get('manager'):
+                            request.GET['manager'] = str(request.user.id)
+                        if request.GET.get('createuser'):
+                            request.GET['createuser'] = str(request.user.id)
+                    else:
+                        request.GET['manager'] = str(request.user.id)
                     queryset = self.filter_queryset(self.get_queryset())
             else:
                 raise InvestError(2009)
@@ -714,10 +740,16 @@ class OrgBDView(viewsets.ModelViewSet):
                     queryset = self.filter_queryset(self.get_queryset())
                     proj_ids = request.GET.get('proj').split(',')
                     trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
-                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id))
+                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
                 else:
                     request.GET = request.GET.copy()
-                    request.GET['manager'] = str(request.user.id)
+                    if request.GET.get('manager') or request.GET.get('createuser'):
+                        if request.GET.get('manager'):
+                            request.GET['manager'] = str(request.user.id)
+                        if request.GET.get('createuser'):
+                            request.GET['createuser'] = str(request.user.id)
+                    else:
+                        request.GET['manager'] = str(request.user.id)
                     queryset = self.filter_queryset(self.get_queryset())
             else:
                 raise InvestError(2009)
