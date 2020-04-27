@@ -566,20 +566,33 @@ class OrgBDView(viewsets.ModelViewSet):
                 queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
                 if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
-                    queryset = self.filter_queryset(self.get_queryset())
                     proj_ids = request.GET.get('proj').split(',')
                     trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
-                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
+                    request.GET = request.GET.copy()
+                    if request.GET.has_key('manager'):
+                        request.GET['manager'] = ''
+                    if request.GET.has_key('createuser'):
+                        request.GET['createuser'] = ''
+                    queryset = self.filter_queryset(self.get_queryset())
+                    if request.GET.has_key('manager') or request.GET.has_key('createuser'):
+                        if request.GET.has_key('manager') and request.GET.has_key('createuser'):
+                            queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id, createuser_id=request.user.id))
+                        elif request.GET.has_key('manager'):
+                            queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id))
+                        else:
+                            queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
+                    else:
+                        queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
                 else:
                     request.GET = request.GET.copy()
-                    if request.GET.get('manager') or request.GET.get('createuser'):
-                        if request.GET.get('manager'):
+                    if request.GET.has_key('manager') or request.GET.has_key('createuser'):
+                        if request.GET.has_key('manager'):
                             request.GET['manager'] = str(request.user.id)
-                        if request.GET.get('createuser'):
+                        if request.GET.has_key('createuser'):
                             request.GET['createuser'] = str(request.user.id)
+                        queryset = self.filter_queryset(self.get_queryset())
                     else:
-                        request.GET['manager'] = str(request.user.id)
-                    queryset = self.filter_queryset(self.get_queryset())
+                        queryset = self.filter_queryset(self.get_queryset()).filter(Q(manager_id=request.user.id) | Q(createuser_id=request.user.id))
             else:
                 raise InvestError(2009)
             page_size = request.GET.get('page_size', 10)
@@ -608,20 +621,33 @@ class OrgBDView(viewsets.ModelViewSet):
                 queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
                 if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
-                    queryset = self.filter_queryset(self.get_queryset())
                     proj_ids = request.GET.get('proj').split(',')
                     trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
-                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
+                    request.GET = request.GET.copy()
+                    if request.GET.has_key('manager'):
+                        request.GET['manager'] = ''
+                    if request.GET.has_key('createuser'):
+                        request.GET['createuser'] = ''
+                    queryset = self.filter_queryset(self.get_queryset())
+                    if request.GET.has_key('manager') or request.GET.has_key('createuser'):
+                        if request.GET.has_key('manager') and request.GET.has_key('createuser'):
+                            queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id, createuser_id=request.user.id))
+                        elif request.GET.has_key('manager'):
+                            queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id))
+                        else:
+                            queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
+                    else:
+                        queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
                 else:
                     request.GET = request.GET.copy()
-                    if request.GET.get('manager') or request.GET.get('createuser'):
-                        if request.GET.get('manager'):
+                    if request.GET.has_key('manager') or request.GET.has_key('createuser'):
+                        if request.GET.has_key('manager'):
                             request.GET['manager'] = str(request.user.id)
-                        if request.GET.get('createuser'):
+                        if request.GET.has_key('createuser'):
                             request.GET['createuser'] = str(request.user.id)
+                        queryset = self.filter_queryset(self.get_queryset())
                     else:
-                        request.GET['manager'] = str(request.user.id)
-                    queryset = self.filter_queryset(self.get_queryset())
+                        queryset = self.filter_queryset(self.get_queryset()).filter(Q(manager_id=request.user.id) | Q(createuser_id=request.user.id))
             else:
                 raise InvestError(2009)
             page_size = request.GET.get('page_size', 10)
@@ -653,20 +679,33 @@ class OrgBDView(viewsets.ModelViewSet):
                 queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
                 if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
-                    queryset = self.filter_queryset(self.get_queryset())
                     proj_ids = request.GET.get('proj').split(',')
                     trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
-                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
+                    request.GET = request.GET.copy()
+                    if request.GET.has_key('manager'):
+                        request.GET['manager'] = ''
+                    if request.GET.has_key('createuser'):
+                        request.GET['createuser'] = ''
+                    queryset = self.filter_queryset(self.get_queryset())
+                    if request.GET.has_key('manager') or request.GET.has_key('createuser'):
+                        if request.GET.has_key('manager') and request.GET.has_key('createuser'):
+                            queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id, createuser_id=request.user.id))
+                        elif request.GET.has_key('manager'):
+                            queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id))
+                        else:
+                            queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
+                    else:
+                        queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
                 else:
                     request.GET = request.GET.copy()
-                    if request.GET.get('manager') or request.GET.get('createuser'):
-                        if request.GET.get('manager'):
+                    if request.GET.has_key('manager') or request.GET.has_key('createuser'):
+                        if request.GET.has_key('manager'):
                             request.GET['manager'] = str(request.user.id)
-                        if request.GET.get('createuser'):
+                        if request.GET.has_key('createuser'):
                             request.GET['createuser'] = str(request.user.id)
+                        queryset = self.filter_queryset(self.get_queryset())
                     else:
-                        request.GET['manager'] = str(request.user.id)
-                    queryset = self.filter_queryset(self.get_queryset())
+                        queryset = self.filter_queryset(self.get_queryset()).filter(Q(manager_id=request.user.id) | Q(createuser_id=request.user.id))
             else:
                 raise InvestError(2009)
             query_string = request.META['QUERY_STRING']
@@ -705,20 +744,33 @@ class OrgBDView(viewsets.ModelViewSet):
                 queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
                 if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
-                    queryset = self.filter_queryset(self.get_queryset())
                     proj_ids = request.GET.get('proj').split(',')
                     trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
-                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
+                    request.GET = request.GET.copy()
+                    if request.GET.has_key('manager'):
+                        request.GET['manager'] = ''
+                    if request.GET.has_key('createuser'):
+                        request.GET['createuser'] = ''
+                    queryset = self.filter_queryset(self.get_queryset())
+                    if request.GET.has_key('manager') or request.GET.has_key('createuser'):
+                        if request.GET.has_key('manager') and request.GET.has_key('createuser'):
+                            queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id, createuser_id=request.user.id))
+                        elif request.GET.has_key('manager'):
+                            queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id))
+                        else:
+                            queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
+                    else:
+                        queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
                 else:
                     request.GET = request.GET.copy()
-                    if request.GET.get('manager') or request.GET.get('createuser'):
-                        if request.GET.get('manager'):
+                    if request.GET.has_key('manager') or request.GET.has_key('createuser'):
+                        if request.GET.has_key('manager'):
                             request.GET['manager'] = str(request.user.id)
-                        if request.GET.get('createuser'):
+                        if request.GET.has_key('createuser'):
                             request.GET['createuser'] = str(request.user.id)
+                        queryset = self.filter_queryset(self.get_queryset())
                     else:
-                        request.GET['manager'] = str(request.user.id)
-                    queryset = self.filter_queryset(self.get_queryset())
+                        queryset = self.filter_queryset(self.get_queryset()).filter(Q(manager_id=request.user.id) | Q(createuser_id=request.user.id))
             else:
                 raise InvestError(2009)
             count = queryset.count()
@@ -737,20 +789,33 @@ class OrgBDView(viewsets.ModelViewSet):
                 queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
                 if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
-                    queryset = self.filter_queryset(self.get_queryset())
                     proj_ids = request.GET.get('proj').split(',')
                     trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
-                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
+                    request.GET = request.GET.copy()
+                    if request.GET.has_key('manager'):
+                        request.GET['manager'] = ''
+                    if request.GET.has_key('createuser'):
+                        request.GET['createuser'] = ''
+                    queryset = self.filter_queryset(self.get_queryset())
+                    if request.GET.has_key('manager') or request.GET.has_key('createuser'):
+                        if request.GET.has_key('manager') and request.GET.has_key('createuser'):
+                            queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id, createuser_id=request.user.id))
+                        elif request.GET.has_key('manager'):
+                            queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id))
+                        else:
+                            queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
+                    else:
+                        queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
                 else:
                     request.GET = request.GET.copy()
-                    if request.GET.get('manager') or request.GET.get('createuser'):
-                        if request.GET.get('manager'):
+                    if request.GET.has_key('manager') or request.GET.has_key('createuser'):
+                        if request.GET.has_key('manager'):
                             request.GET['manager'] = str(request.user.id)
-                        if request.GET.get('createuser'):
+                        if request.GET.has_key('createuser'):
                             request.GET['createuser'] = str(request.user.id)
+                        queryset = self.filter_queryset(self.get_queryset())
                     else:
-                        request.GET['manager'] = str(request.user.id)
-                    queryset = self.filter_queryset(self.get_queryset())
+                        queryset = self.filter_queryset(self.get_queryset()).filter(Q(manager_id=request.user.id) | Q(createuser_id=request.user.id))
             else:
                 raise InvestError(2009)
             count = queryset.count()
