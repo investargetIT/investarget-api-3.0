@@ -5,6 +5,7 @@ import io
 import operator
 from django.db import models
 from django.db.models import Q
+from django.db.models.constants import LOOKUP_SEP
 from django.http import HttpResponse
 from django.utils import six
 from qiniu.services.storage.upload_progress_recorder import UploadProgressRecorder
@@ -108,6 +109,29 @@ class MySearchFilter(SearchFilter):
             qslist.append(qs)
         queryset = reduce(lambda x,y:x|y,qslist).distinct()
         return queryset
+
+
+def unionFilterQuerySet(queryset, request):
+    if request.data:
+        queries = []
+        base = queryset
+        for key, value in request.data.items():
+            if value in ([], (), {}, '', None):
+                continue
+            else:
+                if value in (u'true', 'true'):
+                    value = True
+                if value in (u'false', 'false'):
+                    value = False
+                if value in (u'none', 'none'):
+                    key = LOOKUP_SEP.join([key, 'isnull'])
+                    value = True
+            if isinstance(value, (list, tuple)):
+                key = LOOKUP_SEP.join([key, 'in'])
+            queries.append(models.Q(**{key: value}))
+        queryset = queryset.filter(reduce(operator.or_, queries))
+        queryset = distinct(queryset, base)
+    return queryset
 
 
 class AppEventRateThrottle(throttling.SimpleRateThrottle):

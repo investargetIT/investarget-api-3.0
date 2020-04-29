@@ -25,7 +25,7 @@ from proj.views import checkProjectsTrader
 from third.views.qiniufile import deleteqiniufile
 from timeline.models import timeline
 from timeline.models import timelineremark
-from utils.customClass import RelationFilter, InvestError, JSONResponse
+from utils.customClass import RelationFilter, InvestError, JSONResponse, unionFilterQuerySet
 from utils.sendMessage import sendmessage_orgBDMessage, sendmessage_orgBDExpireMessage
 from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
     returnListChangeToLanguage, catchexcption, returnDictChangeToLanguage, mySortQuery, add_perm, rem_perm, \
@@ -564,6 +564,7 @@ class OrgBDView(viewsets.ModelViewSet):
         try:
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
+                queryset = unionFilterQuerySet(queryset, request)
             elif request.user.has_perm('BD.user_getOrgBD'):
                 if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
                     proj_ids = request.GET.get('proj').split(',')
@@ -619,6 +620,7 @@ class OrgBDView(viewsets.ModelViewSet):
         try:
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
+                queryset = unionFilterQuerySet(queryset, request)
             elif request.user.has_perm('BD.user_getOrgBD'):
                 if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
                     proj_ids = request.GET.get('proj').split(',')
@@ -677,6 +679,7 @@ class OrgBDView(viewsets.ModelViewSet):
         try:
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
+                queryset = unionFilterQuerySet(queryset, request)
             elif request.user.has_perm('BD.user_getOrgBD'):
                 if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
                     proj_ids = request.GET.get('proj').split(',')
@@ -742,6 +745,7 @@ class OrgBDView(viewsets.ModelViewSet):
         try:
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
+                queryset = unionFilterQuerySet(queryset, request)
             elif request.user.has_perm('BD.user_getOrgBD'):
                 if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
                     proj_ids = request.GET.get('proj').split(',')
@@ -787,6 +791,7 @@ class OrgBDView(viewsets.ModelViewSet):
         try:
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
+                queryset = unionFilterQuerySet(queryset, request)
             elif request.user.has_perm('BD.user_getOrgBD'):
                 if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
                     proj_ids = request.GET.get('proj').split(',')
