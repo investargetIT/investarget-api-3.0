@@ -619,7 +619,6 @@ class OrgBDView(viewsets.ModelViewSet):
         try:
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
-                queryset = unionFilterQuerySet(queryset, request)
             elif request.user.has_perm('BD.user_getOrgBD'):
                 if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
                     proj_ids = request.GET.get('proj').split(',')
@@ -678,7 +677,6 @@ class OrgBDView(viewsets.ModelViewSet):
         try:
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
-                queryset = unionFilterQuerySet(queryset, request)
             elif request.user.has_perm('BD.user_getOrgBD'):
                 if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
                     proj_ids = request.GET.get('proj').split(',')
@@ -744,7 +742,6 @@ class OrgBDView(viewsets.ModelViewSet):
         try:
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
-                queryset = unionFilterQuerySet(queryset, request)
             elif request.user.has_perm('BD.user_getOrgBD'):
                 if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
                     proj_ids = request.GET.get('proj').split(',')
@@ -790,7 +787,6 @@ class OrgBDView(viewsets.ModelViewSet):
         try:
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
-                queryset = unionFilterQuerySet(queryset, request)
             elif request.user.has_perm('BD.user_getOrgBD'):
                 if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
                     proj_ids = request.GET.get('proj').split(',')
