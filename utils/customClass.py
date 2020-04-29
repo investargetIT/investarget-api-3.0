@@ -70,28 +70,28 @@ class MyFilterSet(FilterSet):
         return self._qs
 
     def unionFilterQuerySet(self, queryset):
-        if len(self.union_fields) > 0:
-            queries = []
-            base = queryset
-            for field in self.union_fields:
-                isNull = False
-                value = self.request.GET.get(field, '')
-                if value in ([], (), {}, '', None):
-                    continue
-                value = value.split(',')
-                newvalue = []
-                for i in range(0, len(value)):
-                    if value[i] in (u'true', 'true'):
-                        newvalue.append(True)
-                    elif value[i] in (u'false', 'false'):
-                        newvalue.append(False)
-                    elif value[i] in (u'none', 'none'):
-                        isNull = True
-                    else:
-                        newvalue.append(value[i])
-                queries.append(models.Q(**{LOOKUP_SEP.join([field, 'in']): newvalue}))
-                if isNull:
-                    queries.append(models.Q(**{LOOKUP_SEP.join([field, 'isnull']): isNull}))
+        queries = []
+        base = queryset
+        for field in self.union_fields:
+            isNull = False
+            value = self.request.GET.get(field, '')
+            if value in ([], (), {}, '', None):
+                continue
+            value = value.split(',')
+            newvalue = []
+            for i in range(0, len(value)):
+                if value[i] in (u'true', 'true'):
+                    newvalue.append(True)
+                elif value[i] in (u'false', 'false'):
+                    newvalue.append(False)
+                elif value[i] in (u'none', 'none'):
+                    isNull = True
+                else:
+                    newvalue.append(value[i])
+            queries.append(models.Q(**{LOOKUP_SEP.join([field, 'in']): newvalue}))
+            if isNull:
+                queries.append(models.Q(**{LOOKUP_SEP.join([field, 'isnull']): isNull}))
+        if len(queries) > 0:
             queryset = queryset.filter(reduce(operator.or_, queries))
             queryset = distinct(queryset, base)
         return queryset
