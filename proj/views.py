@@ -1447,19 +1447,16 @@ class ProjectFavoriteView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
-def checkProjectsTrader(proj_ids, user_id):
+def isProjectTrader(proj_id, user_id):
     try:
-        projTrader_qs = projTraders.objects.filter(proj__in=proj_ids, user=user_id, is_deleted=False, proj__is_deleted=False).values_list('proj').annotate(Count('proj'))
-        trader_projs, notrader_projs = [], []
-        for manager_count in projTrader_qs:
-            trader_projs.append(int(manager_count[0]))
-        for proj_id in proj_ids:
-            if int(proj_id) not in trader_projs:
-                notrader_projs.append(int(proj_id))
-        return trader_projs, notrader_projs
+        projectInstance = project.objects.get(id=proj_id, is_deleted=False)
     except Exception:
-        logexcption(msg='验证项目列表承揽承做失败')
-        return [], proj_ids
+        raise InvestError(2007, msg='项目不存在')
+    else:
+        if projectInstance.proj_traders.all().filter(user=user_id, is_deleted=False).exists():
+            return True
+        else:
+            return False
 
 
 def testPdf(request):
