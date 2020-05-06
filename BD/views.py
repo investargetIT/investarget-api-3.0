@@ -21,11 +21,11 @@ from BD.serializers import ProjectBDSerializer, ProjectBDCreateSerializer, Proje
 from invest.settings import cli_domain
 from msg.views import deleteMessage
 from proj.models import project
-from proj.views import checkProjectsTrader
+from proj.views import isProjectTrader
 from third.views.qiniufile import deleteqiniufile
 from timeline.models import timeline
 from timeline.models import timelineremark
-from utils.customClass import RelationFilter, InvestError, JSONResponse
+from utils.customClass import RelationFilter, InvestError, JSONResponse, MyFilterSet
 from utils.sendMessage import sendmessage_orgBDMessage, sendmessage_orgBDExpireMessage
 from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
     returnListChangeToLanguage, catchexcption, returnDictChangeToLanguage, mySortQuery, add_perm, rem_perm, \
@@ -492,7 +492,7 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
-class OrgBDFilter(FilterSet):
+class OrgBDFilter(MyFilterSet):
     manager = RelationFilter(filterstr='manager',lookup_method='in')
     createuser = RelationFilter(filterstr='createuser', lookup_method='in')
     org = RelationFilter(filterstr='org', lookup_method='in')
@@ -565,21 +565,22 @@ class OrgBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
-                if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
-                    queryset = self.filter_queryset(self.get_queryset())
-                    proj_ids = request.GET.get('proj').split(',')
-                    trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
-                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
-                else:
-                    request.GET = request.GET.copy()
-                    if request.GET.get('manager') or request.GET.get('createuser'):
-                        if request.GET.get('manager'):
-                            request.GET['manager'] = str(request.user.id)
-                        if request.GET.get('createuser'):
-                            request.GET['createuser'] = str(request.user.id)
+                if not request.GET.get('manager'):
+                    raise InvestError(2009, msg='负责人参数不能为空')
+                if request.GET.get('proj') and ',' not in request.GET.get('proj') and request.GET.get('proj') != 'none':
+                    if isProjectTrader(request.GET.get('proj'), request.user.id):
+                        pass
                     else:
-                        request.GET['manager'] = str(request.user.id)
-                    queryset = self.filter_queryset(self.get_queryset())
+                        if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
+                            raise InvestError(2009, msg='没有权限查看其它负责人')
+                        if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
+                            raise InvestError(2009, msg='没有权限查看其它创建人')
+                else:
+                    if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
+                        raise InvestError(2009, msg='没有权限查看其它负责人')
+                    if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
+                        raise InvestError(2009, msg='没有权限查看其它创建人')
+                queryset = self.filter_queryset(self.get_queryset())
             else:
                 raise InvestError(2009)
             page_size = request.GET.get('page_size', 10)
@@ -607,21 +608,22 @@ class OrgBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
-                if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
-                    queryset = self.filter_queryset(self.get_queryset())
-                    proj_ids = request.GET.get('proj').split(',')
-                    trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
-                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
-                else:
-                    request.GET = request.GET.copy()
-                    if request.GET.get('manager') or request.GET.get('createuser'):
-                        if request.GET.get('manager'):
-                            request.GET['manager'] = str(request.user.id)
-                        if request.GET.get('createuser'):
-                            request.GET['createuser'] = str(request.user.id)
+                if not request.GET.get('manager'):
+                    raise InvestError(2009, msg='负责人参数不能为空')
+                if request.GET.get('proj') and ',' not in request.GET.get('proj') and request.GET.get('proj') != 'none':
+                    if isProjectTrader(request.GET.get('proj'), request.user.id):
+                        pass
                     else:
-                        request.GET['manager'] = str(request.user.id)
-                    queryset = self.filter_queryset(self.get_queryset())
+                        if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
+                            raise InvestError(2009, msg='没有权限查看其它负责人')
+                        if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
+                            raise InvestError(2009, msg='没有权限查看其它创建人')
+                else:
+                    if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
+                        raise InvestError(2009, msg='没有权限查看其它负责人')
+                    if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
+                        raise InvestError(2009, msg='没有权限查看其它创建人')
+                queryset = self.filter_queryset(self.get_queryset())
             else:
                 raise InvestError(2009)
             page_size = request.GET.get('page_size', 10)
@@ -652,21 +654,22 @@ class OrgBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
-                if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
-                    queryset = self.filter_queryset(self.get_queryset())
-                    proj_ids = request.GET.get('proj').split(',')
-                    trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
-                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
-                else:
-                    request.GET = request.GET.copy()
-                    if request.GET.get('manager') or request.GET.get('createuser'):
-                        if request.GET.get('manager'):
-                            request.GET['manager'] = str(request.user.id)
-                        if request.GET.get('createuser'):
-                            request.GET['createuser'] = str(request.user.id)
+                if not request.GET.get('manager'):
+                    raise InvestError(2009, msg='负责人参数不能为空')
+                if request.GET.get('proj') and ',' not in request.GET.get('proj') and request.GET.get('proj') != 'none':
+                    if isProjectTrader(request.GET.get('proj'), request.user.id):
+                        pass
                     else:
-                        request.GET['manager'] = str(request.user.id)
-                    queryset = self.filter_queryset(self.get_queryset())
+                        if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
+                            raise InvestError(2009, msg='没有权限查看其它负责人')
+                        if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
+                            raise InvestError(2009, msg='没有权限查看其它创建人')
+                else:
+                    if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
+                        raise InvestError(2009, msg='没有权限查看其它负责人')
+                    if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
+                        raise InvestError(2009, msg='没有权限查看其它创建人')
+                queryset = self.filter_queryset(self.get_queryset())
             else:
                 raise InvestError(2009)
             query_string = request.META['QUERY_STRING']
@@ -704,21 +707,22 @@ class OrgBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
-                if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
-                    queryset = self.filter_queryset(self.get_queryset())
-                    proj_ids = request.GET.get('proj').split(',')
-                    trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
-                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
-                else:
-                    request.GET = request.GET.copy()
-                    if request.GET.get('manager') or request.GET.get('createuser'):
-                        if request.GET.get('manager'):
-                            request.GET['manager'] = str(request.user.id)
-                        if request.GET.get('createuser'):
-                            request.GET['createuser'] = str(request.user.id)
+                if not request.GET.get('manager'):
+                    raise InvestError(2009, msg='负责人参数不能为空')
+                if request.GET.get('proj') and ',' not in request.GET.get('proj') and request.GET.get('proj') != 'none':
+                    if isProjectTrader(request.GET.get('proj'), request.user.id):
+                        pass
                     else:
-                        request.GET['manager'] = str(request.user.id)
-                    queryset = self.filter_queryset(self.get_queryset())
+                        if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
+                            raise InvestError(2009, msg='没有权限查看其它负责人')
+                        if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
+                            raise InvestError(2009, msg='没有权限查看其它创建人')
+                else:
+                    if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
+                        raise InvestError(2009, msg='没有权限查看其它负责人')
+                    if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
+                        raise InvestError(2009, msg='没有权限查看其它创建人')
+                queryset = self.filter_queryset(self.get_queryset())
             else:
                 raise InvestError(2009)
             count = queryset.count()
@@ -736,21 +740,22 @@ class OrgBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
-                if request.GET.get('proj') and request.GET.get('proj') not in [u'none', 'none']:
-                    queryset = self.filter_queryset(self.get_queryset())
-                    proj_ids = request.GET.get('proj').split(',')
-                    trader_projs, notrader_projs = checkProjectsTrader(proj_ids, request.user.id)
-                    queryset = queryset.filter(Q(proj__in=trader_projs) | Q(proj__in=notrader_projs, manager_id=request.user.id) | Q(proj__in=notrader_projs, createuser_id=request.user.id))
-                else:
-                    request.GET = request.GET.copy()
-                    if request.GET.get('manager') or request.GET.get('createuser'):
-                        if request.GET.get('manager'):
-                            request.GET['manager'] = str(request.user.id)
-                        if request.GET.get('createuser'):
-                            request.GET['createuser'] = str(request.user.id)
+                if not request.GET.get('manager'):
+                    raise InvestError(2009, msg='负责人参数不能为空')
+                if request.GET.get('proj') and ',' not in request.GET.get('proj') and request.GET.get('proj') != 'none':
+                    if isProjectTrader(request.GET.get('proj'), request.user.id):
+                        pass
                     else:
-                        request.GET['manager'] = str(request.user.id)
-                    queryset = self.filter_queryset(self.get_queryset())
+                        if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
+                            raise InvestError(2009, msg='没有权限查看其它负责人')
+                        if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
+                            raise InvestError(2009, msg='没有权限查看其它创建人')
+                else:
+                    if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
+                        raise InvestError(2009, msg='没有权限查看其它负责人')
+                    if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
+                        raise InvestError(2009, msg='没有权限查看其它创建人')
+                queryset = self.filter_queryset(self.get_queryset())
             else:
                 raise InvestError(2009)
             count = queryset.count()

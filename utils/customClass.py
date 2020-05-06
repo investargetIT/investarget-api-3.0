@@ -5,6 +5,7 @@ import io
 import operator
 from django.db import models
 from django.db.models import Q
+from django.db.models.constants import LOOKUP_SEP
 from django.http import HttpResponse
 from django.utils import six
 from qiniu.services.storage.upload_progress_recorder import UploadProgressRecorder
@@ -12,10 +13,10 @@ from rest_framework import throttling
 from rest_framework.compat import is_authenticated, distinct
 from rest_framework.filters import SearchFilter
 from rest_framework.renderers import JSONRenderer
-
+from django import forms
 from invest.settings import APILOG_PATH
 from utils.responsecode import responsecode
-from django_filters import Filter
+from django_filters import Filter, FilterSet, STRICTNESS
 import json
 import os
 import base64
@@ -33,6 +34,68 @@ class InvestError(Exception):
             self.msg = msg
         else:
             self.msg = responsecode[str(code)]
+
+
+class MyFilterSet(FilterSet):
+
+    def __init__(self, data=None, queryset=None, prefix=None, strict=None, request=None):
+        self.union_param = 'unionFields'
+        self.union_fields = self.get_union_fields(request)
+        super(MyFilterSet, self).__init__(data=data, queryset=queryset, prefix=prefix, strict=strict, request=request)
+
+    def get_union_fields(self, request):
+        params = request.query_params.get(self.union_param, '')
+        return params.replace(',', ' ').split()
+
+    @property
+    def qs(self):
+        if not hasattr(self, '_qs'):
+            if not self.is_bound:
+                self._qs = self.queryset.all()
+                return self._qs
+
+            if not self.form.is_valid():
+                if self.strict == STRICTNESS.RAISE_VALIDATION_ERROR:
+                    raise forms.ValidationError(self.form.errors)
+                elif self.strict == STRICTNESS.RETURN_NO_RESULTS:
+                    self._qs = self.queryset.none()
+                    return self._qs
+            qs = self.queryset.all()
+            for name, filter_ in six.iteritems(self.filters):
+                value = self.form.cleaned_data.get(name)
+                if value is not None and name not in self.union_fields:  # valid & clean data
+                    qs = filter_.filter(qs, value)
+
+            self._qs = self.unionFilterQuerySet(qs)
+        return self._qs
+
+    def unionFilterQuerySet(self, queryset):
+        queries = []
+        base = queryset
+        for field in self.union_fields:
+            isNull = False
+            value = self.request.GET.get(field, '')
+            if value in ([], (), {}, '', None):
+                continue
+            value = value.split(',')
+            newvalue = []
+            for i in range(0, len(value)):
+                if value[i] in (u'true', 'true'):
+                    newvalue.append(True)
+                elif value[i] in (u'false', 'false'):
+                    newvalue.append(False)
+                elif value[i] in (u'none', 'none'):
+                    isNull = True
+                else:
+                    newvalue.append(value[i])
+            queries.append(models.Q(**{LOOKUP_SEP.join([field, 'in']): newvalue}))
+            if isNull:
+                queries.append(models.Q(**{LOOKUP_SEP.join([field, 'isnull']): isNull}))
+        if len(queries) > 0:
+            queryset = queryset.filter(reduce(operator.or_, queries))
+            queryset = distinct(queryset, base)
+        return queryset
+
 
 class RelationFilter(Filter):
     def __init__(self, filterstr,lookup_method='exact',relationName=None, **kwargs):
