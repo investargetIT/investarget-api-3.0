@@ -10,14 +10,15 @@ from django.db import transaction
 
 # Create your views here.
 from django.db.models import Q
+from django.db.models.query import QuerySet
 from rest_framework import filters
 from rest_framework import viewsets
 from rest_framework.decorators import api_view
 
 from invest.settings import APILOG_PATH
-from msg.models import message, schedule, webexUser, webexMeeting
+from msg.models import message, schedule, webexUser, webexMeeting, InternOnlineTest
 from msg.serializer import MsgSerializer, ScheduleSerializer, ScheduleCreateSerializer, WebEXUserSerializer, \
-    WebEXMeetingSerializer, ScheduleMeetingSerializer
+    WebEXMeetingSerializer, ScheduleMeetingSerializer, InternOnlineTestSerializer, InternOnlineTestCreateSerializer
 from third.thirdconfig import webEX_siteName, webEX_webExID, webEX_password
 from third.views.submail import sendEmailWithAttachmentFile
 from utils.customClass import InvestError, JSONResponse, MyCalendar, add_CalendarEvent
@@ -780,3 +781,161 @@ def getICSFile(data):
     add_CalendarEvent(calendar, summary, startDate, endDate, description, location)
     calendar.save_as_ics_file(path)
     return os.path.join(path, '{}.ics'.format(calendar_name)).decode('utf-8')
+
+
+class InternOnlineTestView(viewsets.ModelViewSet):
+    """
+        list: 获取在线测试结果列表
+        create: 开始在线测试
+        retrieve: 查看某在线测试结果
+        update: 提交在线测试结果
+        destroy: 删除某在线测试结果
+        """
+    filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
+    queryset = InternOnlineTest.objects.filter(is_deleted=False)
+    filter_fields = ('user',)
+    search_fields = ('user__usernameC', 'user__usernameE')
+    serializer_class = InternOnlineTestSerializer
+
+    def get_queryset(self):
+        assert self.queryset is not None, (
+            "'%s' should either include a `queryset` attribute, "
+            "or override the `get_queryset()` method."
+            % self.__class__.__name__
+        )
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource=self.request.user.datasource)
+            else:
+                raise InvestError(code=2009, msg='未知来源')
+        else:
+            raise InvestError(code=8890)
+        return queryset
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
+            queryset = self.filter_queryset(self.get_queryset())
+            if request.user.has_perm('msg.admin_onlineTest'):
+                pass
+            elif request.user.has_perm('msg.user_onlineTest'):
+                queryset = queryset.filter(user_id=request.user.id)
+            else:
+                raise InvestError(2009)
+            sortfield = request.GET.get('sort', 'lastmodifytime')
+            desc = request.GET.get('desc', 0)
+            queryset = mySortQuery(queryset, sortfield, desc)
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = self.serializer_class(queryset, many=True)
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data, lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            data = request.data
+            if request.user.has_perm('msg.admin_onlineTest'):
+                pass
+            elif request.user.has_perm('msg.user_onlineTest'):
+                if data.get('user') != request.user.id:
+                    raise InvestError(2009)
+            else:
+                raise InvestError(2009)
+            if data.get('key'):
+                raise InvestError(2007, msg='答题开始不能有附件')
+            data['startTime'] = datetime.datetime.now()
+            with transaction.atomic():
+                instanceSerializer = InternOnlineTestCreateSerializer(data=data)
+                if instanceSerializer.is_valid():
+                    instanceSerializer.save()
+                else:
+                    raise InvestError(code=20071, msg=instanceSerializer.errors)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(instanceSerializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            if request.user.has_perm('msg.admin_onlineTest'):
+                pass
+            elif request.user.has_perm('msg.user_onlineTest'):
+                if instance.user != request.user.id:
+                    raise InvestError(2009, msg='非本人不能查看')
+            else:
+                raise InvestError(2009)
+            serializer = self.serializer_class(instance)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            data = request.data
+            if request.user.has_perm('msg.admin_onlineTest'):
+                pass
+            elif request.user.has_perm('msg.user_onlineTest'):
+                if instance.user != request.user.id:
+                    raise InvestError(2009, msg='非本人不能提交')
+            else:
+                raise InvestError(2009)
+            if data.get('user') and data.get('user') != instance.user.id:
+                raise InvestError(2007, msg='答题人不能被修改')
+            if not data.get('key'):
+                raise InvestError(2007, msg='答题结束附件不能为空')
+            if instance.key:
+                raise InvestError(2007, msg='只能提交一次')
+            data['endTime'] = datetime.datetime.now()
+            with transaction.atomic():
+                instanceSerializer = InternOnlineTestCreateSerializer(instance, data=data)
+                if instanceSerializer.is_valid():
+                    instanceSerializer.save()
+                else:
+                    raise InvestError(5004, msg='提交测试结果失败--%s' % instanceSerializer.error_messages)
+            return JSONResponse(SuccessResponse(returnDictChangeToLanguage(instanceSerializer.data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable(['msg.admin_onlineTest'])
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            with transaction.atomic():
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
+            return JSONResponse(SuccessResponse({'is_deleted': True}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
