@@ -791,10 +791,7 @@ class InternOnlineTestView(viewsets.ModelViewSet):
         update: 提交在线测试结果
         destroy: 删除某在线测试结果
         """
-    filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
     queryset = InternOnlineTest.objects.filter(is_deleted=False)
-    filter_fields = ('user',)
-    search_fields = ('user__usernameC', 'user__usernameE')
     serializer_class = InternOnlineTestSerializer
 
     def get_queryset(self):
@@ -813,19 +810,13 @@ class InternOnlineTestView(viewsets.ModelViewSet):
             raise InvestError(code=8890)
         return queryset
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['msg.user_onlineTest'])
     def list(self, request, *args, **kwargs):
         try:
             page_size = request.GET.get('page_size', 10)
             page_index = request.GET.get('page_index', 1)
             lang = request.GET.get('lang', 'cn')
-            queryset = self.filter_queryset(self.get_queryset())
-            if request.user.has_perm('msg.admin_onlineTest'):
-                pass
-            elif request.user.has_perm('msg.user_onlineTest'):
-                queryset = queryset.filter(user_id=request.user.id)
-            else:
-                raise InvestError(2009)
+            queryset = self.get_queryset().filter(user_id=request.user.id)
             sortfield = request.GET.get('sort', 'lastmodifytime')
             desc = request.GET.get('desc', 0)
             queryset = mySortQuery(queryset, sortfield, desc)
@@ -840,21 +831,17 @@ class InternOnlineTestView(viewsets.ModelViewSet):
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
+            catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['msg.user_onlineTest'])
     def create(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
             data = request.data
-            if request.user.has_perm('msg.admin_onlineTest'):
-                pass
-            elif request.user.has_perm('msg.user_onlineTest'):
-                if data.get('user') != request.user.id:
-                    raise InvestError(2009)
-            else:
-                raise InvestError(2009)
+            if data.get('user') != request.user.id:
+                raise InvestError(2007, msg='只能给自己答题')
             if data.get('key'):
                 raise InvestError(2007, msg='答题开始不能有附件')
             data['startTime'] = datetime.datetime.now()
@@ -871,18 +858,13 @@ class InternOnlineTestView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['msg.user_onlineTest'])
     def retrieve(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
             instance = self.get_object()
-            if request.user.has_perm('msg.admin_onlineTest'):
-                pass
-            elif request.user.has_perm('msg.user_onlineTest'):
-                if instance.user != request.user.id:
-                    raise InvestError(2009, msg='非本人不能查看')
-            else:
-                raise InvestError(2009)
+            if instance.user != request.user.id:
+                raise InvestError(2007, msg='非本人不能查看')
             serializer = self.serializer_class(instance)
             return JSONResponse(SuccessResponse(returnDictChangeToLanguage(serializer.data, lang)))
         except InvestError as err:
@@ -891,19 +873,14 @@ class InternOnlineTestView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['msg.user_onlineTest'])
     def update(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
             instance = self.get_object()
             data = request.data
-            if request.user.has_perm('msg.admin_onlineTest'):
-                pass
-            elif request.user.has_perm('msg.user_onlineTest'):
-                if instance.user != request.user.id:
-                    raise InvestError(2009, msg='非本人不能提交')
-            else:
-                raise InvestError(2009)
+            if instance.user != request.user.id:
+                raise InvestError(2007, msg='非本人不能提交')
             if data.get('user') and data.get('user') != instance.user.id:
                 raise InvestError(2007, msg='答题人不能被修改')
             if not data.get('key'):
@@ -924,10 +901,14 @@ class InternOnlineTestView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable(['msg.admin_onlineTest'])
+    @loginTokenIsAvailable()
     def destroy(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
+            if request.user.is_superuser:
+                pass
+            else:
+                raise InvestError(2009)
             with transaction.atomic():
                 instance.is_deleted = True
                 instance.deleteduser = request.user

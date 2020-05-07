@@ -164,7 +164,6 @@ class InternOnlineTest(MyModel):
     class Meta:
         db_table = "intern_onlinetest"
         permissions =  (
-            ('admin_onlineTest', u'管理员管理在线测试'),
             ('user_onlineTest', u'用户在线测试'),
         )
 
