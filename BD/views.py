@@ -565,17 +565,19 @@ class OrgBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
-                if not request.GET.get('manager'):
-                    raise InvestError(2009, msg='负责人参数不能为空')
                 if request.GET.get('proj') and ',' not in request.GET.get('proj') and request.GET.get('proj') != 'none':
                     if isProjectTrader(request.GET.get('proj'), request.user.id):
                         pass
                     else:
+                        if not request.GET.get('manager'):
+                            raise InvestError(2007, msg='manager不能为空')
                         if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
                             raise InvestError(2009, msg='没有权限查看其它负责人')
                         if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
                             raise InvestError(2009, msg='没有权限查看其它创建人')
                 else:
+                    if not request.GET.get('manager'):
+                        raise InvestError(2007, msg='manager不能为空')
                     if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
                         raise InvestError(2009, msg='没有权限查看其它负责人')
                     if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
@@ -608,17 +610,19 @@ class OrgBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
-                if not request.GET.get('manager'):
-                    raise InvestError(2009, msg='负责人参数不能为空')
                 if request.GET.get('proj') and ',' not in request.GET.get('proj') and request.GET.get('proj') != 'none':
                     if isProjectTrader(request.GET.get('proj'), request.user.id):
                         pass
                     else:
+                        if not request.GET.get('manager'):
+                            raise InvestError(2007, msg='manager不能为空')
                         if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
                             raise InvestError(2009, msg='没有权限查看其它负责人')
                         if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
                             raise InvestError(2009, msg='没有权限查看其它创建人')
                 else:
+                    if not request.GET.get('manager'):
+                        raise InvestError(2007, msg='manager不能为空')
                     if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
                         raise InvestError(2009, msg='没有权限查看其它负责人')
                     if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
@@ -654,17 +658,19 @@ class OrgBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
-                if not request.GET.get('manager'):
-                    raise InvestError(2009, msg='负责人参数不能为空')
                 if request.GET.get('proj') and ',' not in request.GET.get('proj') and request.GET.get('proj') != 'none':
                     if isProjectTrader(request.GET.get('proj'), request.user.id):
                         pass
                     else:
+                        if not request.GET.get('manager'):
+                            raise InvestError(2007, msg='manager不能为空')
                         if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
                             raise InvestError(2009, msg='没有权限查看其它负责人')
                         if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
                             raise InvestError(2009, msg='没有权限查看其它创建人')
                 else:
+                    if not request.GET.get('manager'):
+                        raise InvestError(2007, msg='manager不能为空')
                     if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
                         raise InvestError(2009, msg='没有权限查看其它负责人')
                     if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
@@ -707,17 +713,19 @@ class OrgBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
-                if not request.GET.get('manager'):
-                    raise InvestError(2009, msg='负责人参数不能为空')
                 if request.GET.get('proj') and ',' not in request.GET.get('proj') and request.GET.get('proj') != 'none':
                     if isProjectTrader(request.GET.get('proj'), request.user.id):
                         pass
                     else:
+                        if not request.GET.get('manager'):
+                            raise InvestError(2007, msg='manager不能为空')
                         if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
                             raise InvestError(2009, msg='没有权限查看其它负责人')
                         if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
                             raise InvestError(2009, msg='没有权限查看其它创建人')
                 else:
+                    if not request.GET.get('manager'):
+                        raise InvestError(2007, msg='manager不能为空')
                     if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
                         raise InvestError(2009, msg='没有权限查看其它负责人')
                     if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
@@ -740,17 +748,19 @@ class OrgBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageOrgBD'):
                 queryset = self.filter_queryset(self.get_queryset())
             elif request.user.has_perm('BD.user_getOrgBD'):
-                if not request.GET.get('manager'):
-                    raise InvestError(2009, msg='负责人参数不能为空')
                 if request.GET.get('proj') and ',' not in request.GET.get('proj') and request.GET.get('proj') != 'none':
                     if isProjectTrader(request.GET.get('proj'), request.user.id):
                         pass
                     else:
+                        if not request.GET.get('manager'):
+                            raise InvestError(2007, msg='manager不能为空')
                         if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
                             raise InvestError(2009, msg='没有权限查看其它负责人')
                         if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
                             raise InvestError(2009, msg='没有权限查看其它创建人')
                 else:
+                    if not request.GET.get('manager'):
+                        raise InvestError(2007, msg='manager不能为空')
                     if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
                         raise InvestError(2009, msg='没有权限查看其它负责人')
                     if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
