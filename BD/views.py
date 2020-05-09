@@ -94,7 +94,7 @@ class ProjectBDView(viewsets.ModelViewSet):
             queryset = self.filter_queryset(self.get_queryset())
             if request.GET.get('manager'):
                 manager_list = request.GET['manager'].split(',')
-                queryset = queryset.filter(Q(manager__in=manager_list) | Q(createuser__in=manager_list) | Q(ProjectBD_managers__manager__in=manager_list) | Q(contractors__in=manager_list))
+                queryset = queryset.filter(Q(manager__in=manager_list) | Q(ProjectBD_managers__manager__in=manager_list) | Q(contractors__in=manager_list))
             if request.user.has_perm('BD.manageProjectBD') and request.user.has_perm('usersys.as_trader'):
                 pass
             elif request.user.has_perm('BD.user_getProjectBD'):
