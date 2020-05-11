@@ -396,7 +396,7 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageProjectBD'):
                 pass
             elif request.user.has_perm('BD.user_getProjectBD'):
-                queryset = queryset.filter(Q(projectBD__in=request.user.user_projBDs.all()) | Q(projectBD__in=request.user.contractors_projBDs.all()) )
+                queryset = queryset.filter(Q(projectBD__in=request.user.user_projBDs.all()) | Q(projectBD__in=request.user.contractors_projBDs.all())| Q(projectBD__in=request.user.managers_ProjectBD.values_list('projectBD', flat=True)))
             else:
                 raise InvestError(2009)
             queryset = queryset.order_by('-createdtime')
@@ -423,6 +423,8 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
                 pass
             elif request.user in [bdinstance.manager, bdinstance.contractors, bdinstance.createuser]:
                 pass
+            elif bdinstance.ProjectBD_managers.filter(manager=request.user, is_deleted=False).exists():
+                pass
             else:
                 raise InvestError(2009)
             lang = request.GET.get('lang')
@@ -448,6 +450,8 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageProjectBD'):
                 pass
             elif request.user in [instance.createuser, instance.projectBD.manager, instance.projectBD.contractors]:
+                pass
+            elif instance.projectBD.ProjectBD_managers.filter(manager=request.user, is_deleted=False).exists():
                 pass
             else:
                 raise InvestError(2009)
@@ -476,6 +480,8 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageProjectBD'):
                 pass
             elif request.user in [instance.createuser, instance.projectBD.manager, instance.projectBD.contractors]:
+                pass
+            elif instance.projectBD.ProjectBD_managers.filter(manager=request.user, is_deleted=False).exists():
                 pass
             else:
                 raise InvestError(2009)
