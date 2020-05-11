@@ -64,7 +64,7 @@ class ProjectBDSerializer(serializers.ModelSerializer):
     def get_BDComments(self, obj):
         user_id = self.context.get('user_id')
         manage = self.context.get('manage')
-        if manage or user_id in [obj.manager_id, obj.contractors_id]:
+        if manage or user_id in [obj.manager_id, obj.contractors_id] or user_id in obj.ProjectBD_managers.filter(is_deleted=False).values_list('manager', flat=True):
             qs = obj.ProjectBD_comments.filter(is_deleted=False).order_by('-createdtime')
             if qs.exists():
                 return ProjectBDCommentsSerializer(qs, many=True).data

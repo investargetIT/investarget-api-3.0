@@ -94,11 +94,11 @@ class ProjectBDView(viewsets.ModelViewSet):
             queryset = self.filter_queryset(self.get_queryset())
             if request.GET.get('manager'):
                 manager_list = request.GET['manager'].split(',')
-                queryset = queryset.filter(Q(manager__in=manager_list) | Q(ProjectBD_managers__manager__in=manager_list) | Q(contractors__in=manager_list))
+                queryset = queryset.filter(Q(manager__in=manager_list) | Q(ProjectBD_managers__manager__in=manager_list, ProjectBD_managers__is_deleted=False) | Q(contractors__in=manager_list))
             if request.user.has_perm('BD.manageProjectBD') and request.user.has_perm('usersys.as_trader'):
                 pass
             elif request.user.has_perm('BD.user_getProjectBD'):
-                queryset = queryset.filter(Q(manager=request.user) | Q(createuser=request.user) | Q(contractors=request.user) | Q(ProjectBD_managers__manager=request.user)).distinct()
+                queryset = queryset.filter(Q(manager=request.user) | Q(createuser=request.user) | Q(contractors=request.user) | Q(ProjectBD_managers__manager=request.user, ProjectBD_managers__is_deleted=False)).distinct()
             else:
                 raise InvestError(2009)
             countres = queryset.values_list('manager').annotate(Count('manager'))
@@ -130,7 +130,7 @@ class ProjectBDView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageProjectBD') and request.user.has_perm('usersys.as_trader'):
                 if request.GET.get('manager'):
                     manager_list = request.GET['manager'].split(',')
-                    allQueryset = queryset.filter(Q(manager__in=manager_list) | Q(ProjectBD_managers__manager__in=manager_list) | Q(contractors__in=manager_list)).distinct()
+                    allQueryset = queryset.filter(Q(manager__in=manager_list) | Q(ProjectBD_managers__manager__in=manager_list, ProjectBD_managers__is_deleted=False) | Q(contractors__in=manager_list)).distinct()
                     relateManager_qs = ProjectBDManagers.objects.filter(is_deleted=False, projectBD__in=queryset.values_list('id'), manager__in=manager_list)
                     manager_qs = queryset.filter(manager__in=manager_list).distinct()
                     contractor_qs = queryset.filter(contractors__in=manager_list).distinct()
@@ -140,7 +140,7 @@ class ProjectBDView(viewsets.ModelViewSet):
                     relateManager_qs = ProjectBDManagers.objects.filter(is_deleted=False, projectBD__in=queryset.values_list('id'))
                     contractor_qs = queryset
             elif request.user.has_perm('BD.user_getProjectBD'):
-                allQueryset = queryset.filter(Q(manager_id=request.user.id) | Q(contractors_id=request.user.id) | Q(ProjectBD_managers__manager_id=request.user.id)).distinct()
+                allQueryset = queryset.filter(Q(manager_id=request.user.id) | Q(contractors_id=request.user.id) | Q(ProjectBD_managers__manager_id=request.user.id, ProjectBD_managers__is_deleted=False)).distinct()
                 relateManager_qs = ProjectBDManagers.objects.filter(is_deleted=False, projectBD__in=queryset.values_list('id'), manager_id=request.user.id)
                 manager_qs = queryset.filter(manager_id=request.user.id).distinct()
                 contractor_qs = queryset.filter(contractors_id=request.user.id).distinct()
@@ -396,7 +396,7 @@ class ProjectBDCommentsView(viewsets.ModelViewSet):
             if request.user.has_perm('BD.manageProjectBD'):
                 pass
             elif request.user.has_perm('BD.user_getProjectBD'):
-                queryset = queryset.filter(Q(projectBD__in=request.user.user_projBDs.all()) | Q(projectBD__in=request.user.contractors_projBDs.all()) | Q(projectBD__in=request.user.managers_ProjectBD.values_list('projectBD', flat=True)))
+                queryset = queryset.filter(Q(projectBD__in=request.user.user_projBDs.all()) | Q(projectBD__in=request.user.contractors_projBDs.all()) | Q(projectBD__in=request.user.managers_ProjectBD.filter(is_deleted=False).values_list('projectBD', flat=True)))
             else:
                 raise InvestError(2009)
             queryset = queryset.order_by('-createdtime')
