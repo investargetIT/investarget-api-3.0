@@ -1798,8 +1798,9 @@ def getSessionToken(request):
     try:
         session_key = request.COOKIES.get('sid', None)
         if not session_key:
-            session = SessionStore(request.session.session_key)
-            session['stoken'] = True
+            session = SessionStore()
+            session.create()
+            session.update({'stoken': True})
             session.save()
         else:
             session = SessionStore(session_key)
@@ -1825,7 +1826,7 @@ def checkRequestSessionToken(request):
         session = SessionStore(session_key)
         session_data = session.load()
         if session_data.get('stoken', None):
-            pass
+            session.delete()
         else:
             raise InvestError(3008)
         return JSONResponse(SuccessResponse({}))
