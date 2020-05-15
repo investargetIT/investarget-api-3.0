@@ -839,14 +839,8 @@ class InternOnlineTestView(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             lang = request.GET.get('lang')
-            data = request.data
-            if data.get('user') != request.user.id:
-                raise InvestError(2007, msg='只能给自己答题')
-            if data.get('key'):
-                raise InvestError(2007, msg='答题开始不能有附件')
-            data['startTime'] = datetime.datetime.now()
             with transaction.atomic():
-                instanceSerializer = InternOnlineTestCreateSerializer(data=data)
+                instanceSerializer = InternOnlineTestCreateSerializer(data={'startTime': datetime.datetime.now(), 'user': request.user.id})
                 if instanceSerializer.is_valid():
                     instanceSerializer.save()
                 else:
@@ -879,7 +873,7 @@ class InternOnlineTestView(viewsets.ModelViewSet):
             lang = request.GET.get('lang')
             instance = self.get_object()
             data = request.data
-            if instance.user != request.user.id:
+            if instance.user.id != request.user.id:
                 raise InvestError(2007, msg='非本人不能提交')
             if data.get('user') and data.get('user') != instance.user.id:
                 raise InvestError(2007, msg='答题人不能被修改')
