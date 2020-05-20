@@ -602,7 +602,7 @@ def getmenulist(user):
         qslist.append(allmenuobj.filter(id__in=[29, 23]))
     if user.has_perm('APILog.manage_userinfolog'):#日志查询
         qslist.append(allmenuobj.filter(id__in=[9]))
-    if user.has_perm('msg.intern_onlinetest'):  #在线测试
+    if user.has_perm('msg.user_onlineTest'):  #在线测试
         qslist.append(allmenuobj.filter(id__in=[36]))
     if user.is_superuser:
         qslist.append(allmenuobj.filter(id__in=[17, 34]))
