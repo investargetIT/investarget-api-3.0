@@ -43,8 +43,10 @@ class MyFilterSet(FilterSet):
         self.union_fields = self.get_union_fields(request)
         super(MyFilterSet, self).__init__(data=data, queryset=queryset, prefix=prefix, strict=strict, request=request)
 
-    def get_union_fields(self, request):
-        params = request.query_params.get(self.union_param, '')
+    def get_union_fields(self, request=None):
+        params = ''
+        if request:
+            params = request.query_params.get(self.union_param, '')
         return params.replace(',', ' ').split()
 
     @property
