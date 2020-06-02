@@ -3,6 +3,7 @@ from django.conf.urls import url
 from third.views import submail
 from third.views import qiniufile
 from third.views import others
+from third.views import zoom
 urlpatterns = [
     url(r'^sms$', submail.sendSmscode, name='sendsmscode', ),
     url(r'^qiniubigupload$', qiniufile.bigfileupload, name='qiniubig', ),
@@ -18,4 +19,7 @@ urlpatterns = [
     url(r'^selectUpload', others.selectUpload, name='selectFromUploadRecord',),
     url(r'^cancelUpload', others.cancelUpload, name='cancelUploadRecord',),
     url(r'^deleteUpload', others.deleteUpload, name='deleteUploadRecord',),
+    url(r'^zoom/redirect/', zoom.requestOAuthCodeRedirectURI, name='zoom_requestOAuthCodeRedirectURI'),
+    url(r'^zoom/access/', zoom.accessTokenExists, name='zoom_accessTokenExists'),
+    url(r'^zoom/meetings/', zoom.getUserMesstings, name='zoom_getUserMesstings'),
 ]
