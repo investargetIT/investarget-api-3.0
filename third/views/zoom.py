@@ -33,7 +33,7 @@ def requestOAuthCodeRedirectURI(request):
             response = response.json()
             access_token = response['access_token']
             write_to_cache('zoom_access_token', access_token, 3600)
-        return JSONResponse(SuccessResponse(response))
+        return JSONResponse(SuccessResponse(response.json()))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
     except Exception:
@@ -79,7 +79,7 @@ def getUserMesstings(request):
     """
     try:
         access_token = read_from_cache('zoom_access_token')
-        if access_token:
+        if not access_token:
             requestOAuthCode()
             raise InvestError(9100, msg='zoom Access_token无效或不存在, 正在获取，请重新请求')
         else:
@@ -90,7 +90,9 @@ def getUserMesstings(request):
             meetings_url = 'https://api.zoom.us/v2/users/{}/meetings'.format(userId)
             params = {'type': meetings_type, 'page_size': page_size, 'page_number': page_index}
             response = requests.get(meetings_url, params=params, headers={'Authorization': 'Bearer  {}'.format(access_token)})
-            return JSONResponse(SuccessResponse(response))
+            if response.status_code != 200:
+                raise InvestError(2007, msg=response.json()['reason'])
+            return JSONResponse(SuccessResponse(response.json()))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
     except Exception:
