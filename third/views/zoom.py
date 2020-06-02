@@ -30,8 +30,7 @@ def requestOAuthCodeRedirectURI(request):
         headers = {'Authorization': 'Basic {}'.format(base64.b64encode(basic))}
         response = requests.post(token_url, data=data, headers=headers)
         if response.status_code == 200:
-            response = response.json()
-            access_token = response['access_token']
+            access_token = response.json()['access_token']
             write_to_cache('zoom_access_token', access_token, 3600)
         return JSONResponse(SuccessResponse(response.json()))
     except InvestError as err:
