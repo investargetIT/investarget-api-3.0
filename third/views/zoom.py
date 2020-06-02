@@ -24,26 +24,21 @@ def requestOAuthCodeRedirectURI(request):
     """
     try:
         code = request.GET.get('code', None)
-        requestOAuthToken(code)
-        return JSONResponse(SuccessResponse({'code': code}))
+        token_url = 'https://zoom.us/oauth/token'
+        data = {'grant_type': 'authorization_code', 'redirect_uri': zoom_redirect_uri, 'code': code}
+        basic = '{0}:{1}'.format(zoom_clientId, zoom_clientSecrect)
+        headers = {'Authorization': 'Basic {}'.format(base64.b64encode(basic))}
+        response = requests.post(token_url, data=data, headers=headers)
+        if response.status_code == 200:
+            response = response.json()
+            access_token = response['access_token']
+            write_to_cache('zoom_access_token', access_token, 3600)
+        return JSONResponse(SuccessResponse(response))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
     except Exception:
         catchexcption(request)
         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
-
-# 获取鉴权令牌
-def requestOAuthToken(code):
-    token_url = 'https://zoom.us/oauth/token'
-    data = {'grant_type': 'authorization_code', 'redirect_uri': zoom_redirect_uri, 'code': code}
-    basic = '{0}:{1}'.format(zoom_clientId, zoom_clientSecrect).encode("utf-8")
-    headers = {'Authorization': 'Basic {}'.format(base64.b64encode(basic))}
-    response = requests.post(token_url, data=data, headers=headers)
-    if response.status_code == 200:
-        response = json.loads(response)
-        access_token = response['access_token']
-        write_to_cache('zoom_access_token', access_token, 3600)
 
 
 ## zoom刷新token
