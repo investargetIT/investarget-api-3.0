@@ -1,10 +1,10 @@
 #coding=utf-8
 import base64
-import json
+import threading
 import traceback
 import requests
 from rest_framework.decorators import api_view
-from third.thirdconfig import zoom_clientSecrect, zoom_clientId, zoom_redirect_uri
+from third.thirdconfig import zoom_clientSecrect, zoom_clientId, zoom_redirect_uri, zoom_users
 from utils.customClass import JSONResponse, InvestError
 from utils.util import catchexcption, ExceptionResponse, SuccessResponse, InvestErrorResponse, read_from_cache, write_to_cache
 
@@ -69,10 +69,49 @@ def accessTokenExists(request):
         catchexcption(request)
         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+# 获取用户会议
+def getUserMeetings(access_token, meetings_type):
+    meetings = {}
+    def request_task(userId):
+        print('task____{}'.format(userId))
+        userMeetings = []
+        def getUserMeetings_pageone(userId, page_index):
+            print('{}___{}'.format(userId, page_index))
+            meetings_url = 'https://api.zoom.us/v2/users/{}/meetings'.format(userId)
+            params = {'type': meetings_type, 'page_size': 30, 'page_number': page_index}
+            response = requests.get(meetings_url, params=params,
+                                    headers={'Authorization': 'Bearer  {}'.format(access_token)})
+            if response.status_code != 200:
+                userMeetings.append(response.json())
+                return True
+            else:
+                res = response.json()
+                isEndPage = int(res['total_records']) < page_index * int(res['page_size'])
+                userMeetings.extend(res['meetings'])
+                return isEndPage
 
-# zoom获取user会议列表
+        page_index = 1
+        isEndPage = getUserMeetings_pageone(userId, page_index)
+        while not isEndPage:
+            page_index += 1
+            isEndPage = getUserMeetings_pageone(userId, page_index)
+        meetings[userId] = userMeetings
+
+    threads = []
+    for userId in zoom_users:
+        t = threading.Thread(target=request_task, args=(userId,))
+        threads.append(t)
+    for t in threads:
+        t.setDaemon(True)
+        t.start()
+    for t in threads:
+        t.join()
+    return meetings
+
+
+# zoom获取user会议列表接口
 @api_view(['GET'])
-def getUserMesstings(request):
+def getUsersMesstings(request):
     """
     zoom获取user会议列表
     """
@@ -82,16 +121,9 @@ def getUserMesstings(request):
             requestOAuthCode()
             raise InvestError(9100, msg='zoom Access_token无效或不存在, 正在获取，请重新请求')
         else:
-            userId = request.GET.get('user')
-            meetings_type = request.GET.get('type', 'scheduled')
-            page_size = request.GET.get('page_size', 30)
-            page_index = request.GET.get('page_index', 1)
-            meetings_url = 'https://api.zoom.us/v2/users/{}/meetings'.format(userId)
-            params = {'type': meetings_type, 'page_size': page_size, 'page_number': page_index}
-            response = requests.get(meetings_url, params=params, headers={'Authorization': 'Bearer  {}'.format(access_token)})
-            if response.status_code != 200:
-                raise InvestError(2007, msg=response.json()['reason'])
-            return JSONResponse(SuccessResponse(response.json()))
+            meetings_type = request.GET.get('type', 'upcoming')
+            meetings = getUserMeetings(access_token, meetings_type)
+            return JSONResponse(SuccessResponse(meetings))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
     except Exception:

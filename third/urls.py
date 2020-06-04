@@ -21,5 +21,5 @@ urlpatterns = [
     url(r'^deleteUpload', others.deleteUpload, name='deleteUploadRecord',),
     url(r'^zoom/redirect/', zoom.requestOAuthCodeRedirectURI, name='zoom_requestOAuthCodeRedirectURI'),
     url(r'^zoom/access/', zoom.accessTokenExists, name='zoom_accessTokenExists'),
-    url(r'^zoom/meetings/', zoom.getUserMesstings, name='zoom_getUserMesstings'),
+    url(r'^zoom/meetings/', zoom.getUsersMesstings, name='zoom_getUserMesstings'),
 ]
