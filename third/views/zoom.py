@@ -6,7 +6,8 @@ import requests
 from rest_framework.decorators import api_view
 from third.thirdconfig import zoom_clientSecrect, zoom_clientId, zoom_redirect_uri, zoom_users
 from utils.customClass import JSONResponse, InvestError
-from utils.util import catchexcption, ExceptionResponse, SuccessResponse, InvestErrorResponse, read_from_cache, write_to_cache
+from utils.util import catchexcption, ExceptionResponse, SuccessResponse, InvestErrorResponse, read_from_cache, \
+    write_to_cache, checkRequestToken
 
 
 # 获取请求码
@@ -111,11 +112,14 @@ def getUserMeetings(access_token, meetings_type):
 
 # zoom获取user会议列表接口
 @api_view(['GET'])
+@checkRequestToken()
 def getUsersMesstings(request):
     """
     zoom获取user会议列表
     """
     try:
+        if not request.user.has_perm('usersys.as_trader'):
+            raise InvestError(2009)
         access_token = read_from_cache('zoom_access_token')
         if not access_token:
             requestOAuthCode()
