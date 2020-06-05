@@ -113,7 +113,7 @@ def getUserMeetings(access_token, meetings_type):
 # zoom获取user会议列表接口
 @api_view(['GET'])
 @checkRequestToken()
-def getUsersMesstings(request):
+def getUsersMeetings(request):
     """
     zoom获取user会议列表
     """
