@@ -11,6 +11,7 @@ from emailmanage.views import getAllProjectsNeedToSendMail, sendEmailToUser
 from msg.models import schedule
 from org.views import downloadOrgAttachments
 from third.views.huanxin import downloadChatMessages
+from third.views.zoom import refreshAccessToken
 from timeline.models import timelineTransationStatu
 from utils.sendMessage import sendmessage_schedulemsg, sendmessage_timelinealertcycleexpire, \
     sendmessage_orgBDExpireMessage
@@ -50,7 +51,11 @@ def task5_downloadOrgAttachments():
             downloadOrgAttachments()
     task5_Thread().start()
 
-
+def task6_refreshZoomToken():
+    class task6_Thread(threading.Thread):
+        def run(self):
+            refreshAccessToken()
+    task6_Thread().start()
 
 
 

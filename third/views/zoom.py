@@ -7,7 +7,7 @@ from rest_framework.decorators import api_view
 from third.thirdconfig import zoom_clientSecrect, zoom_clientId, zoom_redirect_uri, zoom_users
 from utils.customClass import JSONResponse, InvestError
 from utils.util import catchexcption, ExceptionResponse, SuccessResponse, InvestErrorResponse, read_from_cache, \
-    write_to_cache, checkRequestToken
+    write_to_cache, checkRequestToken, logexcption
 
 
 # 获取请求码
@@ -32,7 +32,9 @@ def requestOAuthCodeRedirectURI(request):
         response = requests.post(token_url, data=data, headers=headers)
         if response.status_code == 200:
             access_token = response.json()['access_token']
-            write_to_cache('zoom_access_token', access_token, 3600)
+            refresh_token = response.json()['refresh_token']
+            write_to_cache('zoom_access_token', access_token, 3599)
+            write_to_cache('zoom_refresh_token', refresh_token, 3599)
         return JSONResponse(SuccessResponse(response.json()))
     except InvestError as err:
         return JSONResponse(InvestErrorResponse(err))
@@ -41,16 +43,26 @@ def requestOAuthCodeRedirectURI(request):
         return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
-## zoom刷新token
-# def refreshAccessToken(access_token):
-#     token_url = 'https://zoom.us/oauth/token'
-#     data = {'grant_type': 'refresh_token', 'refresh_token': access_token}
-#     basic = '{0}:{1}'.format(zoom_clientId, zoom_clientSecrect).encode("utf-8")
-#     headers = {'Authorization': 'Basic {}'.format(base64.b64encode(basic))}
-#     response = requests.post(token_url, data=data, headers=headers)
-#     response = json.loads(response)
-#     access_token = response['access_token']
-#     write_to_cache('zoom_access_token', access_token, 3600)
+# zoom刷新token
+def refreshAccessToken():
+    try:
+        token_url = 'https://zoom.us/oauth/token'
+        refresh_token = read_from_cache('zoom_refresh_token')
+        if not refresh_token:
+            raise InvestError(9100, msg='refresh_token不存在')
+        data = {'grant_type': 'refresh_token', 'refresh_token': refresh_token}
+        basic = '{0}:{1}'.format(zoom_clientId, zoom_clientSecrect)
+        headers = {'Authorization': 'Basic {}'.format(base64.b64encode(basic))}
+        response = requests.post(token_url, params=data, headers=headers)
+        if response.status_code == 200:
+            access_token = response.json()['access_token']
+            refresh_token = response.json()['refresh_token']
+            write_to_cache('zoom_access_token', access_token, 3599)
+            write_to_cache('zoom_refresh_token', refresh_token, 3599)
+        else:
+            raise InvestError(9100, msg=response.content)
+    except Exception:
+        logexcption()
 
 
 # 确认是否存在zoom鉴权令牌
@@ -122,8 +134,7 @@ def getUsersMeetings(request):
             raise InvestError(2009)
         access_token = read_from_cache('zoom_access_token')
         if not access_token:
-            requestOAuthCode()
-            raise InvestError(9100, msg='zoom Access_token无效或不存在, 正在获取，请重新请求')
+            raise InvestError(9100, msg='zoom Access_token无效或不存在, 请重新获取')
         else:
             meetings_type = request.GET.get('type', 'upcoming')
             meetings = getUserMeetings(access_token, meetings_type)
