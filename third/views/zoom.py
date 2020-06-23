@@ -1,7 +1,10 @@
 #coding=utf-8
 import base64
+import datetime
 import threading
 import traceback
+
+import pytz
 import requests
 from rest_framework.decorators import api_view
 from third.thirdconfig import zoom_clientSecrect, zoom_clientId, zoom_redirect_uri, zoom_users
@@ -100,7 +103,18 @@ def getUserMeetings(access_token, meetings_type):
             else:
                 res = response.json()
                 isEndPage = int(res['total_records']) < page_index * int(res['page_size'])
-                userMeetings.extend(res['meetings'])
+                for meeting in res['meetings']:
+                    local_tz = pytz.timezone(meeting['timezone'])
+                    created_at_UTC = datetime.datetime.strptime(meeting['created_at'], '%Y-%m-%dT%H:%M:%SZ').replace(
+                        tzinfo=pytz.timezone("UTC"))
+                    created_at_local = created_at_UTC.astimezone(local_tz)
+                    meeting['created_at'] = datetime.datetime.strftime(created_at_local, '%Y-%m-%dT%H:%M:%SZ')
+                    start_time_UTC = datetime.datetime.strptime(meeting['start_time'], '%Y-%m-%dT%H:%M:%SZ').replace(
+                        tzinfo=pytz.timezone("UTC"))
+                    start_time_local = start_time_UTC.astimezone(local_tz)
+                    meeting['start_time'] = datetime.datetime.strftime(start_time_local, '%Y-%m-%dT%H:%M:%SZ')
+                    meeting.pop('timezone', '')
+                    userMeetings.append(meeting)
                 return isEndPage
 
         page_index = 1
