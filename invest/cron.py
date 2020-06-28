@@ -7,6 +7,7 @@ from django.db.models import Count
 
 from BD.models import OrgBD
 from BD.views import sendExpiredOrgBDEmail
+from dataroom.views import downloadDataroomPDFs
 from emailmanage.views import getAllProjectsNeedToSendMail, sendEmailToUser
 from msg.models import schedule
 from org.views import downloadOrgAttachments
@@ -29,10 +30,10 @@ def task2_sendmailprojtouser():
             sendEmailToUser()
     task2_Thread().start()
 
-def task3_loadchatmessageandsave():
+def task3_downloadDataroomPDFs():
     class task3_Thread(threading.Thread):
         def run(self):
-            downloadChatMessages()
+            downloadDataroomPDFs()
     task3_Thread().start()
 
 

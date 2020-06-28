@@ -392,15 +392,18 @@ def getPathWithFile(file_obj,rootpath,currentpath=None):
         currentpath = file_obj.parent.filename + '/' + currentpath
         return getPathWithFile(file_obj.parent, rootpath, currentpath)
 
+
 def downloadDataroomPDFs():
     file_qs = dataroomdirectoryorfile.objects.filter(is_deleted=False, isFile=True, dataroom__is_deleted=False)
     for fileInstance in file_qs:
-        file_path = os.path.join(APILOG_PATH['es_dataroomPDFPath'], fileInstance.realfilekey)
+        dataroomPath = os.path.join(APILOG_PATH['es_dataroomPDFPath'], 'dataroom_{}'.format(fileInstance.dataroom_id))
+        if not os.path.exists(dataroomPath):
+            os.makedirs(dataroomPath)
+        file_path = os.path.join(dataroomPath,  fileInstance.realfilekey)
         filename, type = os.path.splitext(file_path)
-        if type == '.pdf':
-            if not os.path.exists(file_path):
-                downloadFileToPath(key=fileInstance.realfilekey, bucket=fileInstance.bucket, path=file_path)
-                fileInstance.save()
+        if type == '.pdf' and not os.path.exists(file_path):
+            downloadFileToPath(key=fileInstance.realfilekey, bucket=fileInstance.bucket, path=file_path)
+            fileInstance.save()
 
 
 class DataroomdirectoryorfileView(viewsets.ModelViewSet):
@@ -482,18 +485,15 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
                                     "query": {
                                         "bool": {
                                             "must":[
-                                                {"term": {"isFile": True}},
-                                                {"terms": {"id": fileid_list}}
-                                            ],
-                                            "should": [
-                                                # {"term": {"text": search}},
-                                                {"term": {"filename": search}},
-                                                {"term": {"fileContent": search}}
+                                                {"terms": {"id": fileid_list}},
+                                                {"bool": {"should": [
+                                                            {"match_phrase": {"filename": search}},
+                                                            {"match_phrase": {"fileContent": search}}
+                                                ]}}
                                             ]
                                         }
                                     }
-                                }
-                            )
+                            })
             searchIds = set()
             for source in ret["hits"]["hits"]:
                 searchIds.add(source['_source']['id'])

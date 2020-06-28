@@ -36,9 +36,11 @@ class dataroomdirectoryorfileIndex(indexes.SearchIndex, indexes.Indexable):
         return 'lastmodifytime'
 
     def prepare_fileContent(self, obj):
+        """obj 是django里的model实例"""
         filecontent = None
         if obj.isFile and obj.realfilekey:
-            file_path = APILOG_PATH['es_dataroomPDFPath'] + obj.realfilekey
+            dataroomPath = os.path.join(APILOG_PATH['es_dataroomPDFPath'], 'dataroom_{}'.format(obj.dataroom_id))
+            file_path = os.path.join(dataroomPath, obj.realfilekey)
             try:
                 if os.path.exists(file_path):
                     filename, type = os.path.splitext(file_path)
