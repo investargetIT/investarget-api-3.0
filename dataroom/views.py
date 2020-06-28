@@ -7,6 +7,7 @@ from django.db import transaction
 from django.db.models import F
 from django.db.models import Q
 from django.http import StreamingHttpResponse
+from elasticsearch import Elasticsearch
 from rest_framework import filters, viewsets
 
 from dataroom.models import dataroom, dataroomdirectoryorfile, publicdirectorytemplate, dataroom_User_file, \
@@ -16,7 +17,7 @@ from dataroom.serializer import DataroomSerializer, DataroomCreateSerializer, Da
     User_DataroomSerializer, User_DataroomfileCreateSerializer, User_DataroomTemplateSerializer, \
     User_DataroomTemplateCreateSerializer, DataroomdirectoryorfilePathSerializer, User_DataroomSeefilesSerializer, \
     User_DataroomSeefilesCreateSerializer
-from invest.settings import APILOG_PATH
+from invest.settings import APILOG_PATH, HAYSTACK_CONNECTIONS
 from proj.models import project
 from third.views.qiniufile import deleteqiniufile, downloadFileToPath
 from utils.customClass import InvestError, JSONResponse, RelationFilter
@@ -391,6 +392,15 @@ def getPathWithFile(file_obj,rootpath,currentpath=None):
         currentpath = file_obj.parent.filename + '/' + currentpath
         return getPathWithFile(file_obj.parent, rootpath, currentpath)
 
+def downloadDataroomPDFs():
+    file_qs = dataroomdirectoryorfile.objects.filter(is_deleted=False, isFile=True, dataroom__is_deleted=False)
+    for fileInstance in file_qs:
+        file_path = os.path.join(APILOG_PATH['es_dataroomPDFPath'], fileInstance.realfilekey)
+        filename, type = os.path.splitext(file_path)
+        if type == '.pdf':
+            if not os.path.exists(file_path):
+                downloadFileToPath(key=fileInstance.realfilekey, bucket=fileInstance.bucket, path=file_path)
+                fileInstance.save()
 
 
 class DataroomdirectoryorfileView(viewsets.ModelViewSet):
@@ -401,10 +411,9 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
            destroy:删除dataroom文件或目录
            getFilePath: 获取文件路径
         """
-    filter_backends = (filters.DjangoFilterBackend, filters.SearchFilter)
+    filter_backends = (filters.DjangoFilterBackend,)
     queryset = dataroomdirectoryorfile.objects.all().filter(is_deleted=False)
     filter_fields = ('dataroom', 'parent','isFile')
-    search_fields = ('filename',)
     serializer_class = DataroomdirectoryorfileCreateSerializer
     Model = dataroomdirectoryorfile
 
@@ -460,12 +469,37 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             if request.user.has_perm('dataroom.admin_getdataroom') or dataroominstance.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists() or (dataroominstance.isCompanyFile and request.user.has_perm('dataroom.get_companydataroom')):
                 queryset = self.get_queryset()
             elif dataroom_User_file.objects.filter(user=request.user, dataroom=dataroomid).exists():
-                queryset = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile__dataroom=dataroominstance, dataroomUserfile__user=request.user)
+                queryset = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile__dataroom=dataroominstance, dataroomUserfile__user=request.user).file_userSeeFile.all().filter(is_deleted=False)
             else:
                 raise InvestError(2009)
-            queryset = self.filter_queryset(queryset)
-            count = queryset.count()
-            serializer = DataroomdirectoryorfilePathSerializer(queryset, many=True)
+            queryset = self.filter_queryset(queryset).filter(isFile=True)
+            fileid_list = list(queryset.values_list('id', flat=True))
+            search = request.GET.get('search', '')
+            es = Elasticsearch({HAYSTACK_CONNECTIONS['default']['URL']})
+            ret = es.search(index=HAYSTACK_CONNECTIONS['default']['INDEX_NAME'],
+                            body={
+                                    "_source": ["id", "dataroom", "filename"],
+                                    "query": {
+                                        "bool": {
+                                            "must":[
+                                                {"term": {"isFile": True}},
+                                                {"terms": {"id": fileid_list}}
+                                            ],
+                                            "should": [
+                                                # {"term": {"text": search}},
+                                                {"term": {"filename": search}},
+                                                {"term": {"fileContent": search}}
+                                            ]
+                                        }
+                                    }
+                                }
+                            )
+            searchIds = set()
+            for source in ret["hits"]["hits"]:
+                searchIds.add(source['_source']['id'])
+            file_qs = queryset.filter(id__in=searchIds)
+            count = file_qs.count()
+            serializer = DataroomdirectoryorfilePathSerializer(file_qs, many=True)
             return JSONResponse(
                 SuccessResponse({'count': count, 'data': returnListChangeToLanguage(serializer.data, lang)}))
         except InvestError as err:
