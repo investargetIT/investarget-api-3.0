@@ -481,18 +481,17 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             es = Elasticsearch({HAYSTACK_CONNECTIONS['default']['URL']})
             ret = es.search(index=HAYSTACK_CONNECTIONS['default']['INDEX_NAME'],
                             body={
-                                    # "_source": ["id", "dataroom", "filename"],
+                                    "_source": ["id", "dataroom", "filename"],
                                     "query": {
-                                        # "bool": {
-                                        #     "must":[
-                                        #         {"terms": {"id": fileid_list}},
-                                        #         {"bool": {"should": [
-                                        #                     {"match_phrase": {"filename": search}},
-                                        #                     {"match_phrase": {"fileContent": search}}
-                                        #         ]}}
-                                        #     ]
-                                        # }
-                                        "match_phrase": {"filename": search}
+                                        "bool": {
+                                            "must":[
+                                                {"terms": {"id": fileid_list}},
+                                                {"bool": {"should": [
+                                                            {"match_phrase": {"filename": search}},
+                                                            {"match_phrase": {"fileContent": search}}
+                                                ]}}
+                                            ]
+                                        }
                                     }
                             })
             searchIds = set()
