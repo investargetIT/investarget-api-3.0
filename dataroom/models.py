@@ -4,7 +4,6 @@ from __future__ import unicode_literals
 import datetime
 import os
 import threading
-
 from django.db import models
 
 from invest.settings import APILOG_PATH
@@ -104,10 +103,17 @@ class dataroomdirectoryorfile(MyModel):
             file_path = os.path.join(dataroomPath, self.realfilekey)
             filename, type = os.path.splitext(file_path)
             if type == '.pdf' and not os.path.exists(file_path):
-                threading.Thread(target=downloadFileToPath, args=(self.realfilekey, self.bucket, file_path)).start()
+                threading.Thread(target=self.downloadPDFToPath, args=(self, self.realfilekey, self.bucket, file_path)).start()
         super(dataroomdirectoryorfile, self).save(force_insert, force_update, using, update_fields)
 
-
+    # 下载dataroom PDF到本地
+    def downloadPDFToPath(self, key, bucket, path):
+        try:
+            downloadFileToPath(key, bucket, path)
+        except Exception:
+            return None
+        else:
+            self.save()
 
 class dataroom_User_file(MyModel):
     dataroom = MyForeignKey(dataroom, blank=True, null=True, related_name='dataroom_users')
