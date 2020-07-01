@@ -487,7 +487,6 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
                                             "must":[
                                                 {"terms": {"id": fileid_list}},
                                                 {"bool": {"should": [
-                                                            {"match_phrase": {"filename": search}},
                                                             {"match_phrase": {"fileContent": search}}
                                                 ]}}
                                             ]
@@ -497,7 +496,7 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             searchIds = set()
             for source in ret["hits"]["hits"]:
                 searchIds.add(source['_source']['id'])
-            file_qs = queryset.filter(id__in=searchIds)
+            file_qs = queryset.filter(Q(id__in=searchIds) | Q(filename__icontains=search))
             count = file_qs.count()
             serializer = DataroomdirectoryorfilePathSerializer(file_qs, many=True)
             return JSONResponse(
