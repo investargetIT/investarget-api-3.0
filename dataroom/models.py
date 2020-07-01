@@ -2,12 +2,17 @@
 from __future__ import unicode_literals
 
 import datetime
+import os
+import threading
 from django.db import models
 
+from invest.settings import APILOG_PATH
 from proj.models import project
 from sourcetype.models import DataSource
+from third.views.qiniufile import downloadFileToPath
 from usersys.models import MyUser
 from utils.customClass import InvestError, MyForeignKey, MyModel
+from utils.util import logexcption
 
 
 class publicdirectorytemplate(MyModel):
@@ -92,7 +97,23 @@ class dataroomdirectoryorfile(MyModel):
                 raise InvestError(7007,msg='非目录结构不能存储文件')
         if self.filename is None:
             raise InvestError(2007,msg='名称不能为空')
+        if not self.is_deleted and self.isFile and not self.pk:
+            dataroomPath = os.path.join(APILOG_PATH['es_dataroomPDFPath'], 'dataroom_{}'.format(self.dataroom.id))
+            if not os.path.exists(dataroomPath):
+                os.makedirs(dataroomPath)
+            file_path = os.path.join(dataroomPath, self.realfilekey)
+            filename, type = os.path.splitext(file_path)
+            if type == '.pdf' and not os.path.exists(file_path):
+                threading.Thread(target=downloadPDFToPath, args=(self, self.realfilekey, self.bucket, file_path)).start()
         super(dataroomdirectoryorfile, self).save(force_insert, force_update, using, update_fields)
+
+# 下载dataroom PDF到本地
+def downloadPDFToPath(fileInstance, key, bucket, path):
+    try:
+        downloadFileToPath(key, bucket, path)
+        fileInstance.save()
+    except Exception:
+        logexcption()
 
 
 class dataroom_User_file(MyModel):
