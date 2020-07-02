@@ -396,14 +396,17 @@ def getPathWithFile(file_obj,rootpath,currentpath=None):
 def downloadDataroomPDFs():
     file_qs = dataroomdirectoryorfile.objects.filter(is_deleted=False, isFile=True, dataroom__is_deleted=False)
     for fileInstance in file_qs:
-        dataroomPath = os.path.join(APILOG_PATH['es_dataroomPDFPath'], 'dataroom_{}'.format(fileInstance.dataroom_id))
-        if not os.path.exists(dataroomPath):
-            os.makedirs(dataroomPath)
-        file_path = os.path.join(dataroomPath,  fileInstance.realfilekey)
-        filename, type = os.path.splitext(file_path)
-        if type == '.pdf' and not os.path.exists(file_path):
-            downloadFileToPath(key=fileInstance.realfilekey, bucket=fileInstance.bucket, path=file_path)
-            fileInstance.save()
+        try:
+            dataroomPath = os.path.join(APILOG_PATH['es_dataroomPDFPath'], 'dataroom_{}'.format(fileInstance.dataroom_id))
+            if not os.path.exists(dataroomPath):
+                os.makedirs(dataroomPath)
+            file_path = os.path.join(dataroomPath,  fileInstance.realfilekey)
+            filename, type = os.path.splitext(file_path)
+            if type == '.pdf' and not os.path.exists(file_path):
+                downloadFileToPath(key=fileInstance.realfilekey, bucket=fileInstance.bucket, path=file_path)
+                fileInstance.save()
+        except Exception:
+            logexcption()
 
 
 class DataroomdirectoryorfileView(viewsets.ModelViewSet):
@@ -487,7 +490,6 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
                                             "must":[
                                                 {"terms": {"id": fileid_list}},
                                                 {"bool": {"should": [
-                                                            {"match_phrase": {"filename": search}},
                                                             {"match_phrase": {"fileContent": search}}
                                                 ]}}
                                             ]
@@ -497,7 +499,7 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             searchIds = set()
             for source in ret["hits"]["hits"]:
                 searchIds.add(source['_source']['id'])
-            file_qs = queryset.filter(id__in=searchIds)
+            file_qs = queryset.filter(Q(id__in=searchIds) | Q(filename__icontains=search))
             count = file_qs.count()
             serializer = DataroomdirectoryorfilePathSerializer(file_qs, many=True)
             return JSONResponse(
