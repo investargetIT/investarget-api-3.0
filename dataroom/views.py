@@ -396,14 +396,17 @@ def getPathWithFile(file_obj,rootpath,currentpath=None):
 def downloadDataroomPDFs():
     file_qs = dataroomdirectoryorfile.objects.filter(is_deleted=False, isFile=True, dataroom__is_deleted=False)
     for fileInstance in file_qs:
-        dataroomPath = os.path.join(APILOG_PATH['es_dataroomPDFPath'], 'dataroom_{}'.format(fileInstance.dataroom_id))
-        if not os.path.exists(dataroomPath):
-            os.makedirs(dataroomPath)
-        file_path = os.path.join(dataroomPath,  fileInstance.realfilekey)
-        filename, type = os.path.splitext(file_path)
-        if type == '.pdf' and not os.path.exists(file_path):
-            downloadFileToPath(key=fileInstance.realfilekey, bucket=fileInstance.bucket, path=file_path)
-            fileInstance.save()
+        try:
+            dataroomPath = os.path.join(APILOG_PATH['es_dataroomPDFPath'], 'dataroom_{}'.format(fileInstance.dataroom_id))
+            if not os.path.exists(dataroomPath):
+                os.makedirs(dataroomPath)
+            file_path = os.path.join(dataroomPath,  fileInstance.realfilekey)
+            filename, type = os.path.splitext(file_path)
+            if type == '.pdf' and not os.path.exists(file_path):
+                downloadFileToPath(key=fileInstance.realfilekey, bucket=fileInstance.bucket, path=file_path)
+                fileInstance.save()
+        except Exception:
+            logexcption()
 
 
 class DataroomdirectoryorfileView(viewsets.ModelViewSet):
