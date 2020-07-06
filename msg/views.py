@@ -1,4 +1,5 @@
 #coding=utf-8
+import calendar
 import os
 import traceback
 
@@ -27,6 +28,7 @@ from utils.util import logexcption, loginTokenIsAvailable, SuccessResponse, Inve
     catchexcption, returnListChangeToLanguage, returnDictChangeToLanguage, mySortQuery, checkSessionToken, \
     checkRequestToken
 import xml.etree.cElementTree as ET
+requests.packages.urllib3.disable_warnings()
 
 def saveMessage(content,type,title,receiver,sender=None,modeltype=None,sourceid=None):
     try:
@@ -363,7 +365,7 @@ class WebEXMeetingView(viewsets.ModelViewSet):
         try:
             data = request.data
             XML_body = getListXMLBody(data)
-            s = requests.post(url=self.webex_url, data=XML_body.encode("utf-8"))
+            s = requests.post(url=self.webex_url, data=XML_body.encode("utf-8"), verify=False)
             if s.status_code != 200:
                 raise InvestError(8006, msg=s.text)
             else:
@@ -470,11 +472,17 @@ def getGetXMLBody(meetingKey):
 
 def getListXMLBody(data):
     headers = getXMLHeaders()
-    startFrom = data.get('startFrom', '1')
-    maximumNum = data.get('maximumNum', '10')
-    listMethod = data.get('listMethod', 'OR')
+    startFrom = data.get('startFrom', 1)
+    maximumNum = data.get('maximumNum', 10)
+    listMethod = data.get('listMethod', 'AND')
     orderBy = data.get('orderBy', 'STARTTIME')
     orderAD = data.get('orderAD', 'ASC')
+    now = datetime.date.today()
+    this_month_start = datetime.datetime(now.year, now.month, 1)
+    this_month_end = datetime.datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], 23, 59, 59)
+    startDateStart = data.get('startDateStart', this_month_start.strftime('%m/%d/%Y %H:%M:%S'))
+    timeZoneID = data.get('timeZoneID', 45)
+    endDateEnd = data.get('endDateEnd', this_month_end.strftime('%m/%d/%Y %H:%M:%S'))
     XML_body = """
                             <?xml version="1.0" encoding="UTF-8"?>
                             <serv:message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -490,11 +498,17 @@ def getListXMLBody(data):
                                          <orderBy>{orderBy}</orderBy>
                                          <orderAD>{orderAD}</orderAD>
                                         </order>
+                                        <dateScope>
+                                         <startDateStart>{startDateStart}</startDateStart>
+                                         <timeZoneID>{timeZoneID}</timeZoneID>
+                                         <endDateEnd>{endDateEnd}</endDateEnd>
+                                        </dateScope>
                                     </bodyContent>
                                 </body>
                             </serv:message>
                         """.format(headers=headers, startFrom=startFrom, maximumNum=maximumNum, listMethod=listMethod,
-                                   orderBy=orderBy, orderAD=orderAD)
+                                   orderBy=orderBy, orderAD=orderAD, startDateStart=startDateStart,
+                                   timeZoneID=timeZoneID, endDateEnd=endDateEnd)
     return XML_body
 
 def get_hostKey(meetingKey):
