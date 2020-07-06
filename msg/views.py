@@ -357,6 +357,54 @@ class WebEXMeetingView(viewsets.ModelViewSet):
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
+
+    @loginTokenIsAvailable()
+    def getWebExMeetingListAPI(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            XML_body = getListXMLBody(data)
+            s = requests.post(url=self.webex_url, data=XML_body.encode("utf-8"))
+            if s.status_code != 200:
+                raise InvestError(8006, msg=s.text)
+            else:
+                res = ET.fromstring(s.text)
+                xmlns_serv = "{http://www.webex.com/schemas/2002/06/service}"
+                xmlns_meeting = '{http://www.webex.com/schemas/2002/06/service/meeting}'
+                result = next(res.iter('{}{}'.format(xmlns_serv, 'result'))).text
+                if result == 'FAILURE':
+                    reason = next(res.iter('{}{}'.format(xmlns_serv, 'reason'))).text
+                    raise InvestError(8006, msg=reason)
+                else:
+                    meetings = []
+                    for elem in res.iter('{}{}'.format(xmlns_meeting, 'meeting')):
+                        meeting_info = {
+                            'meetingKey': (elem.find('{}{}'.format(xmlns_meeting, 'meetingKey'))).text,
+                            'meetingUUID': (elem.find('{}{}'.format(xmlns_meeting, 'meetingUUID'))).text,
+                            'confName': (elem.find('{}{}'.format(xmlns_meeting, 'confName'))).text,
+                            'meetingType': (elem.find('{}{}'.format(xmlns_meeting, 'meetingType'))).text,
+                            'hostWebExID': (elem.find('{}{}'.format(xmlns_meeting, 'hostWebExID'))).text,
+                            'otherHostWebExID': (elem.find('{}{}'.format(xmlns_meeting, 'otherHostWebExID'))).text,
+                            'timeZoneID': (elem.find('{}{}'.format(xmlns_meeting, 'timeZoneID'))).text,
+                            'timeZone': (elem.find('{}{}'.format(xmlns_meeting, 'timeZone'))).text,
+                            'status': (elem.find('{}{}'.format(xmlns_meeting, 'status'))).text,
+                            'startDate': (elem.find('{}{}'.format(xmlns_meeting, 'startDate'))).text,
+                            'duration': (elem.find('{}{}'.format(xmlns_meeting, 'duration'))).text,
+                            'listStatus': (elem.find('{}{}'.format(xmlns_meeting, 'listStatus'))).text,
+                            'hostJoined': (elem.find('{}{}'.format(xmlns_meeting, 'hostJoined'))).text,
+                            'participantsJoined': (elem.find('{}{}'.format(xmlns_meeting, 'participantsJoined'))).text,
+                            'telePresence': (elem.find('{}{}'.format(xmlns_meeting, 'telePresence'))).text,
+                        }
+                        meetings.append(meeting_info)
+                    total = next(res.iter('{}{}'.format(xmlns_serv, 'total'))).text
+                    returned = next(res.iter('{}{}'.format(xmlns_serv, 'returned'))).text
+                    startFrom = next(res.iter('{}{}'.format(xmlns_serv, 'startFrom'))).text
+            return JSONResponse(SuccessResponse({'meetings': meetings, 'returned': returned, 'total': total, 'startFrom': startFrom}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
 def getXMLHeaders():
     headers = """
                          <header>
@@ -417,6 +465,36 @@ def getGetXMLBody(meetingKey):
                                 </body>
                             </serv:message>
                         """.format(headers=headers, meetingKey=meetingKey)
+    return XML_body
+
+
+def getListXMLBody(data):
+    headers = getXMLHeaders()
+    startFrom = data.get('startFrom', '1')
+    maximumNum = data.get('maximumNum', '10')
+    listMethod = data.get('listMethod', 'OR')
+    orderBy = data.get('orderBy', 'STARTTIME')
+    orderAD = data.get('orderAD', 'ASC')
+    XML_body = """
+                            <?xml version="1.0" encoding="UTF-8"?>
+                            <serv:message xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                                {headers}
+                                <body>
+                                    <bodyContent xsi:type="java:com.webex.service.binding.meeting.LstsummaryMeeting">
+                                        <listControl>
+                                         <startFrom>{startFrom}</startFrom>
+                                         <maximumNum>{maximumNum}</maximumNum>
+                                         <listMethod>{listMethod}</listMethod>
+                                        </listControl>
+                                        <order>
+                                         <orderBy>{orderBy}</orderBy>
+                                         <orderAD>{orderAD}</orderAD>
+                                        </order>
+                                    </bodyContent>
+                                </body>
+                            </serv:message>
+                        """.format(headers=headers, startFrom=startFrom, maximumNum=maximumNum, listMethod=listMethod,
+                                   orderBy=orderBy, orderAD=orderAD)
     return XML_body
 
 def get_hostKey(meetingKey):
