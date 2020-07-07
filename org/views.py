@@ -1777,15 +1777,17 @@ def fulltextsearch(request):
                                 "bool": {
                                     "should": [
                                         {match: {"fileContent": searchText}},
-                                        {match: {"text": searchText}},
+                                        {match: {"remark": searchText}},
                                     ]
                                 }
                             },
-                            "_source": ["org"]
+                            "_source": ["id", "org"]
                         })
         orgId_list = set()
         for source in ret["hits"]["hits"]:
-            orgId_list.add(source['_source']['org'])
+            orgid = source['_source'].get('org')
+            if orgid:
+                orgId_list.add(orgid)
         org_qs = organization.objects.filter(is_deleted=False, id__in=orgId_list, issub=False)
         try:
             count = org_qs.count()
