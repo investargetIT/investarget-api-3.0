@@ -62,11 +62,19 @@ InternOnlineTest_detail = views.InternOnlineTestView.as_view({
         'delete': 'destroy',
 })
 
+
+webexAPI_list = views.WebEXMeetingView.as_view({
+        'post': 'getWebExMeetingListAPI',
+})
+
+
+
 urlpatterns = [
         url(r'^$', msg_list,name='msg-list'),
         url(r'^(?P<pk>\d+)/$', msg_detail,name='msg-detail'),
         url(r'^schedule/$', schedule_list, name='schedule-list'),
         url(r'^schedule/(?P<pk>\d+)/$', schedule_detail, name='schedule-detail'),
+        url(r'^webexAPI/meeting/$', webexAPI_list, name='webexAPI_-list'),
         url(r'^webex/meeting/$', webexMeeting_list, name='webexMeeting-list'),
         url(r'^webex/meeting/(?P<pk>\d+)/$', webexMeeting_detail, name='webexMeeting-detail'),
         url(r'^webex/meeting/check/$', webexMeeting_check, name='webexMeeting_check'),
