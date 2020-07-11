@@ -466,7 +466,7 @@ class UserView(viewsets.ModelViewSet):
                     for link in ['investor_relations', 'trader_relations', 'investor_timelines',
                                      'trader_timelines', 'usersupport_projs', 'usercreate_OKR', 'usercreate_OKRResult',
                                      'manager_beschedule', 'user_webexUser', 'user_dataroomTemp',
-                                     'user_usertags', 'user_remarks', 'userreceive_msgs',
+                                     'user_usertags', 'user_remarks', 'userreceive_msgs', 'user_workreport',
                                      'usersend_msgs', 'user_datarooms', 'user_userAttachments', 'user_userEvents',
                                      'contractors_projBDs', 'user_MeetBDs', 'user_favorite', 'user_sharetoken', 'user_projects',
                                      'trader_favorite', 'user_MeetBDsharetoken', 'user_beschedule', 'user_orgBDs']:

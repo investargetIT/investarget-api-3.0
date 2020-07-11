@@ -9,16 +9,18 @@ from django_filters import FilterSet
 import datetime
 import json
 from django.core.serializers.json import DjangoJSONEncoder
+from elasticsearch import Elasticsearch
 from rest_framework import filters, viewsets
 from BD.models import ProjectBD, ProjectBDComments, OrgBDComments, OrgBD, MeetingBD, MeetBDShareToken, OrgBDBlack, \
-    ProjectBDManagers, WorkReport, WorkReportProjInfo, OKR, OKRResult
+    ProjectBDManagers, WorkReport, WorkReportProjInfo, OKR, OKRResult, WorkReportMarketMsg
 from BD.serializers import ProjectBDSerializer, ProjectBDCreateSerializer, ProjectBDCommentsCreateSerializer, \
     ProjectBDCommentsSerializer, OrgBDCommentsSerializer, OrgBDCommentsCreateSerializer, OrgBDCreateSerializer, \
     OrgBDSerializer, MeetingBDSerializer, MeetingBDCreateSerializer, OrgBDBlackSerializer, OrgBDBlackCreateSerializer, \
     ProjectBDManagersCreateSerializer, WorkReportCreateSerializer, WorkReportSerializer, \
     WorkReportProjInfoCreateSerializer, WorkReportProjInfoSerializer, OKRSerializer, OKRCreateSerializer, \
-    OKRResultCreateSerializer, OKRResultSerializer, orgBDProjSerializer
-from invest.settings import cli_domain
+    OKRResultCreateSerializer, OKRResultSerializer, orgBDProjSerializer, WorkReportMarketMsgCreateSerializer, \
+    WorkReportMarketMsgSerializer
+from invest.settings import cli_domain, HAYSTACK_CONNECTIONS
 from msg.views import deleteMessage
 from proj.models import project
 from proj.views import isProjectTrader
@@ -1597,6 +1599,27 @@ class WorkReportView(viewsets.ModelViewSet):
                 queryset = queryset
             else:
                 queryset = queryset.filter(user=request.user)
+            search = request.GET.get('search')
+            if search:
+                es = Elasticsearch({HAYSTACK_CONNECTIONS['default']['URL']})
+                ret = es.search(index=HAYSTACK_CONNECTIONS['default']['INDEX_NAME'],
+                                body={
+                                    "_source": ["id", "report"],
+                                    "query": {
+                                        "bool": {
+                                            "must": {"match_phrase": {"marketMsg": search}},
+                                            "should": [
+                                                    {"match_phrase": {"django_ct": "BD.WorkReport"}},
+                                                    {"match_phrase": {"django_ct": "BD.WorkReportMarketMsg"}}
+                                            ]
+                                        }
+                                    }
+                                })
+                searchIds = set()
+                for source in ret["hits"]["hits"]:
+                    if source['_source'].get('report'):
+                        searchIds.add(source['_source']['report'])
+                queryset = queryset.filter(id__in=searchIds)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)
@@ -1617,7 +1640,9 @@ class WorkReportView(viewsets.ModelViewSet):
         try:
             data = request.data
             lang = request.GET.get('lang')
-            if data.get('user') != request.user.id and not request.user.is_superuser:
+            if not data.get('user'):
+                raise InvestError(2007, msg='user 不能为空')
+            if data['user'] != request.user.id and not request.user.is_superuser:
                 raise InvestError(2009, msg='没有权限给别人建立工作报表')
             data['createuser'] = request.user.id
             data['datasource'] = request.user.datasource.id
@@ -1626,7 +1651,7 @@ class WorkReportView(viewsets.ModelViewSet):
                 if instanceSerializer.is_valid():
                     instance = instanceSerializer.save()
                 else:
-                    raise InvestError(20071, msg='新增用户工作报表失败--%s' % instanceSerializer.error_messages)
+                    raise InvestError(20071, msg='新增用户工作报表失败--%s' % instanceSerializer.errors)
                 return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data, lang)))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
@@ -1681,6 +1706,133 @@ class WorkReportView(viewsets.ModelViewSet):
             instance = self.get_object()
             if request.user != instance.user and not request.user.is_superuser:
                 raise InvestError(2009, msg='没有权限修改该工作报表')
+            with transaction.atomic():
+                instance.is_deleted = True
+                instance.deleteduser = request.user
+                instance.deletedtime = datetime.datetime.now()
+                instance.save()
+            return JSONResponse(SuccessResponse({'isDeleted': True, }))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+class WorkReportMarketMsgFilter(FilterSet):
+    report = RelationFilter(filterstr='report',lookup_method='in')
+    createuser = RelationFilter(filterstr='createuser', lookup_method='in')
+    class Meta:
+        model = WorkReportMarketMsg
+        fields = ('report',  'createuser')
+
+
+class WorkReportMarketMsgView(viewsets.ModelViewSet):
+    """
+    list: 获取用户工作报表项目工作信息
+    create: 增加用户工作报表项目工作信息
+    update: 修改用户工作报表项目工作信息
+    destroy: 删除用户工作报表项目工作信息
+    """
+    filter_backends = (filters.DjangoFilterBackend,)
+    queryset = WorkReportMarketMsg.objects.filter(is_deleted=False)
+    filter_class = WorkReportMarketMsgFilter
+    serializer_class = WorkReportMarketMsgSerializer
+
+    def get_queryset(self):
+        assert self.queryset is not None, (
+            "'%s' should either include a `queryset` attribute, "
+            "or override the `get_queryset()` method."
+            % self.__class__.__name__
+        )
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(datasource_id=self.request.user.datasource_id)
+            else:
+                queryset = queryset
+        else:
+            raise InvestError(code=8890)
+        return queryset
+
+
+    @loginTokenIsAvailable()
+    def list(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang', 'cn')
+            queryset = self.filter_queryset(self.get_queryset())
+            if request.user.has_perm('BD.admin_getWorkReport'):
+                queryset = queryset
+            else:
+                queryset = queryset.filter(report__user=request.user)
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializers = self.serializer_class(queryset, many=True)
+            return JSONResponse(
+                SuccessResponse({'count': count, 'data': returnListChangeToLanguage(serializers.data, lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable()
+    def create(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            lang = request.GET.get('lang')
+            data['createuser'] = request.user.id
+            data['datasource'] = request.user.datasource.id
+            reportInstance = WorkReport.objects.get(id=data['report'])
+            if request.user != reportInstance.user and not request.user.is_superuser:
+                raise InvestError(2009, msg='没有权限增加项目计划')
+            with transaction.atomic():
+                instanceSerializer = WorkReportMarketMsgCreateSerializer(data=data)
+                if instanceSerializer.is_valid():
+                    instance = instanceSerializer.save()
+                else:
+                    raise InvestError(20071, msg='新增用户工作报表项目计划失败--%s' % instanceSerializer.error_messages)
+                return JSONResponse(SuccessResponse(returnDictChangeToLanguage(self.serializer_class(instance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def update(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            lang = request.GET.get('lang')
+            instance = self.get_object()
+            if request.user != instance.report.user and not request.user.is_superuser:
+                raise InvestError(2009, msg='没有权限增加市场信息')
+            with transaction.atomic():
+                newinstanceSeria = WorkReportMarketMsgCreateSerializer(instance, data=data)
+                if newinstanceSeria.is_valid():
+                    newinstance = newinstanceSeria.save()
+                else:
+                    raise InvestError(2009, msg='用户工作报表市场信息修改失败——%s' % newinstanceSeria.errors)
+                return JSONResponse(
+                    SuccessResponse(returnDictChangeToLanguage(self.serializer_class(newinstance).data, lang)))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            if request.user != instance.report.user and not request.user.is_superuser:
+                raise InvestError(2009, msg='没有权限删除市场信息')
             with transaction.atomic():
                 instance.is_deleted = True
                 instance.deleteduser = request.user
