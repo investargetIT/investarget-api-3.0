@@ -650,7 +650,7 @@ class UserView(viewsets.ModelViewSet):
             cursor = connection.cursor()
             cursor.execute('select getmaxmobilenumber()')
             row = cursor.fetchone()[0]
-            return JSONResponse(SuccessResponse(row))
+            return JSONResponse(SuccessResponse(str(row)))
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
