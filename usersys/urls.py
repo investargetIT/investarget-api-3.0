@@ -19,7 +19,7 @@ user_detail = views.UserView.as_view({
 })
 
 getFalseMobile = views.UserView.as_view({
-        'post': 'getAvaibleFalseMobileNumber',   #查看详情
+        'get': 'getAvaibleFalseMobileNumber',   #查看详情
 })
 
 getRegistSource = views.UserView.as_view({
