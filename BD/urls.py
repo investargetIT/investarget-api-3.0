@@ -114,6 +114,15 @@ workreport_detail = views.WorkReportView.as_view({
         'delete': 'destroy'
 })
 
+workreportmarketmsg_list = views.WorkReportMarketMsgView.as_view({
+        'get': 'list',
+        'post': 'create'
+})
+workreportmarketmsg_detail = views.WorkReportMarketMsgView.as_view({
+        'put': 'update',
+        'delete': 'destroy'
+})
+
 workreportproj_list = views.WorkReportProjInfoView.as_view({
         'get': 'list',
         'post': 'create'
@@ -174,6 +183,8 @@ urlpatterns = [
 
         url(r'^workreport/$', workreport_list, name='workreport_list'),
         url(r'^workreport/(?P<pk>\d+)/$', workreport_detail, name='workreport_detail'),
+        url(r'^workreport/market/$', workreportmarketmsg_list, name='workreportmarketmsg_list'),
+        url(r'^workreport/market/(?P<pk>\d+)/$', workreportmarketmsg_detail, name='workreportmarketmsg_detail'),
         url(r'^workreport/proj/$', workreportproj_list, name='workreportproj_list'),
         url(r'^workreport/proj/(?P<pk>\d+)/$', workreportproj_detail, name='workreportproj_detail'),
 

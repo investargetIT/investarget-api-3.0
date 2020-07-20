@@ -2,7 +2,7 @@ from django.db.models import Q
 from rest_framework import serializers
 
 from BD.models import ProjectBDComments, ProjectBD, OrgBDComments, OrgBD, MeetingBD, OrgBDBlack, ProjectBDManagers, \
-    WorkReport, WorkReportProjInfo, OKR, OKRResult
+    WorkReport, WorkReportProjInfo, OKR, OKRResult, WorkReportMarketMsg
 from org.serializer import OrgCommonSerializer
 from proj.models import project
 from proj.serializer import ProjSimpleSerializer, ProjCommonSerializer
@@ -198,9 +198,25 @@ class WorkReportCreateSerializer(serializers.ModelSerializer):
 
 class WorkReportSerializer(serializers.ModelSerializer):
     user = UserSimpleSerializer()
+    marketMsgs =  serializers.SerializerMethodField()
 
     class Meta:
         model = WorkReport
+        exclude = ('deleteduser', 'deletedtime', 'datasource', 'is_deleted', 'createuser')
+
+    def get_marketMsgs(self, obj):
+        return WorkReportMarketMsgSerializer(obj.report_marketmsg.filter(is_deleted=False), many=True).data
+
+
+class WorkReportMarketMsgCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkReportMarketMsg
+        fields = '__all__'
+
+
+class WorkReportMarketMsgSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkReportMarketMsg
         exclude = ('deleteduser', 'deletedtime', 'datasource', 'is_deleted', 'createuser')
 
 

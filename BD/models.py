@@ -311,7 +311,29 @@ class WorkReport(MyModel):
             QS = WorkReport.objects.exclude(pk=self.pk).filter(is_deleted=False, user=self.user, startTime__gte=self.startTime, endTime__lte=self.endTime)
             if QS.exists():
                 raise InvestError(20071, msg='该时间段已存在一份周报了')
+        if self.is_deleted:
+            self.report_marketmsg.filter(is_deleted=False).update(is_deleted=True, deleteduser=self.deleteduser, deletedtime=datetime.datetime.now())
+            self.report_projinfo.filter(is_deleted=False).update(is_deleted=True, deleteduser=self.deleteduser, deletedtime=datetime.datetime.now())
         return super(WorkReport, self).save(*args, **kwargs)
+
+
+class WorkReportMarketMsg(MyModel):
+    report = MyForeignKey(WorkReport, blank=True, null=True, related_name='report_marketmsg', help_text='工作报表归属人')
+    marketMsg = models.TextField(blank=True, null=True, help_text='市场信息和项目信息汇报')
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_workreportmarketmsg')
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_workreportmarketmsg')
+    lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_workreportmarketmsg')
+    datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
+
+    class Meta:
+        db_table = 'user_reportmarketmessage'
+
+
+    def save(self, *args, **kwargs):
+        if not self.is_deleted:
+            if not self.report or not self.marketMsg:
+                raise InvestError(20071, msg='参数不能为空')
+        return super(WorkReportMarketMsg, self).save(*args, **kwargs)
 
 
 class WorkReportProjInfo(MyModel):
