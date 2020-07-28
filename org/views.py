@@ -1770,6 +1770,8 @@ def fulltextsearch(request):
         if like in ['true', '1', 'TRUE']:
             match = "match"
         lang = request.GET.get('lang', 'cn')
+        queryset = organization.objects.filter(is_deleted=False)
+        queryset = OrganizationFilter(request.query_params, queryset=queryset, request=request).qs
         es = Elasticsearch({HAYSTACK_CONNECTIONS['default']['URL']})
         ret = es.search(index=HAYSTACK_CONNECTIONS['default']['INDEX_NAME'],
                         body={
@@ -1788,7 +1790,7 @@ def fulltextsearch(request):
             orgid = source['_source'].get('org')
             if orgid:
                 orgId_list.add(orgid)
-        org_qs = organization.objects.filter(is_deleted=False, id__in=orgId_list, issub=False)
+        org_qs = queryset.filter(id__in=orgId_list)
         try:
             count = org_qs.count()
             org_qs = Paginator(org_qs, page_size)
