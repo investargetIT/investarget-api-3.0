@@ -62,6 +62,9 @@ class ProjectBD(MyModel):
             raise InvestError(2007,msg='manager can`t be null')
         if not self.datasource:
             raise InvestError(2007, msg='datasource can`t be null')
+        if not self.is_deleted:
+            if ProjectBD.objects.exclude(pk=self.pk).filter(is_deleted=False, com_name=self.com_name).exists():
+                raise InvestError(50061, msg='同名项目bd已存在')
         if self.bduser:
             self.username = self.bduser.usernameC
             self.usermobile = self.bduser.mobile
