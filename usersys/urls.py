@@ -35,6 +35,10 @@ change_password = views.UserView.as_view({
         'put': 'changepassword'
 })
 
+getuserinfo_simple = views.UserView.as_view({
+        'get': 'getUserSimpleInfo',
+})
+
 
 user_relationshiplist = views.UserRelationView.as_view({
         'get': 'list',
@@ -134,6 +138,7 @@ checkUserAccountExist = views.UserView.as_view({
 
 urlpatterns = [
     url(r'^$', user_list,name='user-list',),
+    url(r'^simple$', getuserinfo_simple,name='getuserinfo_simple',),
     url(r'^regsource$', getRegistSource, name='getRegistSource', ),
     url(r'^mobile$', getFalseMobile, name='getAvaibleFalseMobileNumber', ),
     url(r'^count$', getUserCount, name='getUserCount', ),

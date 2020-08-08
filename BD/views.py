@@ -963,6 +963,14 @@ class OrgBDView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
+class OrgBDBlackFilter(FilterSet):
+    proj = RelationFilter(filterstr='proj',lookup_method='in')
+    org = RelationFilter(filterstr='org', lookup_method='in')
+    createuser = RelationFilter(filterstr='createuser', lookup_method='in')
+    class Meta:
+        model = OrgBDBlack
+        fields = ('proj', 'org', 'createuser')
+
 
 class OrgBDBlackView(viewsets.ModelViewSet):
     """
@@ -973,7 +981,7 @@ class OrgBDBlackView(viewsets.ModelViewSet):
     """
     filter_backends = (filters.DjangoFilterBackend,)
     queryset = OrgBDBlack.objects.filter(is_deleted=False)
-    filter_fields = ('proj', 'org', 'createuser')
+    filter_class = OrgBDBlackFilter
     serializer_class = OrgBDBlackCreateSerializer
 
     def get_queryset(self):

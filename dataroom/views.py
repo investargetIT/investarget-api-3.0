@@ -625,6 +625,13 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
+class User_DataroomfileFilter(FilterSet):
+    dataroom = RelationFilter(filterstr='dataroom',lookup_method='in')
+    user = RelationFilter(filterstr='user', lookup_method='in')
+    class Meta:
+        model = dataroom_User_file
+        fields = ('dataroom', 'user')
+
 class User_DataroomfileView(viewsets.ModelViewSet):
     """
            list:用户dataroom列表
@@ -638,7 +645,7 @@ class User_DataroomfileView(viewsets.ModelViewSet):
         """
     filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
     queryset = dataroom_User_file.objects.all().filter(is_deleted=False,dataroom__isClose=False,dataroom__is_deleted=False)
-    filter_fields = ('dataroom', 'user')
+    filter_class = User_DataroomfileFilter
     search_fields = ('dataroom__proj__projtitleC','dataroom__proj__projtitleE')
     serializer_class = User_DataroomfileCreateSerializer
     Model = dataroom_User_file

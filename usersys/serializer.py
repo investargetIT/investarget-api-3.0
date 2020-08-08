@@ -278,11 +278,18 @@ class UserListSerializer(serializers.ModelSerializer):
 
 
 class UserSimpleSerializer(serializers.ModelSerializer):
+    org = OrgCommonSerializer()
+    photourl = serializers.SerializerMethodField()
 
     class Meta:
         model = MyUser
-        fields = ('id', 'usernameC', 'usernameE',)
+        fields = ('id', 'usernameC', 'usernameE', 'org', 'photourl')
 
+    def get_photourl(self, obj):
+        if obj.photoKey:
+            return getUrlWithBucketAndKey('image',obj.photoKey)
+        else:
+            return None
 
 class UserTraderSimpleSerializer(serializers.ModelSerializer):
     traderuser = UserSimpleSerializer()
