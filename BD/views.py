@@ -103,10 +103,6 @@ class ProjectBDView(viewsets.ModelViewSet):
                 queryset = queryset.filter(Q(manager=request.user) | Q(createuser=request.user) | Q(contractors=request.user) | Q(ProjectBD_managers__manager=request.user, ProjectBD_managers__is_deleted=False)).distinct()
             else:
                 raise InvestError(2009)
-            countres = queryset.values_list('manager').annotate(Count('manager'))
-            countlist = []
-            for manager_count in countres:
-                countlist.append({'manager': manager_count[0], 'count': manager_count[1]})
             sortfield = request.GET.get('sort', 'lastmodifytime')
             desc = request.GET.get('desc', 1)
             if desc in ('1', u'1', 1):
@@ -117,9 +113,9 @@ class ProjectBDView(viewsets.ModelViewSet):
                 queryset = Paginator(queryset, page_size)
                 queryset = queryset.page(page_index)
             except EmptyPage:
-                return JSONResponse(SuccessResponse({'count': 0, 'data': [], 'manager_count':countlist}))
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
             serializer = ProjectBDSerializer(queryset, many=True, context={'user_id': request.user.id, 'manage': request.user.has_perm('BD.manageProjectBD')})
-            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang),'manager_count':countlist}))
+            return JSONResponse(SuccessResponse({'count':count,'data':returnListChangeToLanguage(serializer.data,lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
