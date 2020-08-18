@@ -3,7 +3,6 @@ import os
 
 import datetime
 import traceback
-import jpype
 from PIL import Image, ImageDraw, ImageFont
 import random
 from reportlab.lib.pagesizes import A1
@@ -155,15 +154,13 @@ def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
         os.remove(watermarkpath)
     return
 
+'''
+pypdf2加密
+'''
+from PyPDF2 import PdfFileWriter, PdfFileReader
 def encryptPdfFilesWithPassword(filepaths, password):
     try:
         if password and len(filepaths) > 0:
-            jarPath = os.path.join(os.getcwd(), "my-app-1.0-SNAPSHOT-jar-with-dependencies.jar")
-            if not jpype.isJVMStarted():
-                jpype.startJVM(jpype.getDefaultJVMPath(), "-ea", "-Djava.class.path=" + jarPath)
-            JDClass = jpype.JClass("com.mycompany.app.App")
-            jd = JDClass()
-
             for input_filepath in filepaths:
                 now = datetime.datetime.now()
                 print('加密pdf--%s--源文件%s' % (now, input_filepath))
@@ -171,7 +168,13 @@ def encryptPdfFilesWithPassword(filepaths, password):
                 (filename, filetype) = os.path.splitext(tempfilename)
                 out_path = os.path.join(filepath, filename + '-encryout.pdf')
                 try:
-                    jd.addPassword(input_filepath, password, out_path)
+                    pdf_reader = PdfFileReader(input_filepath)
+                    pdf_writer = PdfFileWriter()
+                    for page in range(pdf_reader.getNumPages()):
+                        pdf_writer.addPage(pdf_reader.getPage(page))
+                    pdf_writer.encrypt(user_pwd="", owner_pwd=password)  # 设置pdf密码
+                    with open(out_path, 'wb') as out:
+                        pdf_writer.write(out)
                     os.remove(input_filepath)
                     os.rename(out_path, input_filepath)
                 except Exception as err:
@@ -189,6 +192,7 @@ def encryptPdfFilesWithPassword(filepaths, password):
         f = open(filepath, 'a')
         f.writelines(now.strftime('%H:%M:%S') + '\n' + traceback.format_exc() + '\n\n')
         f.close()
+
 
 def getPdfWordContent(pdfPath):
     try:
