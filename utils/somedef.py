@@ -18,7 +18,7 @@ from pdfminer.pdfinterp import PDFResourceManager
 from pdfminer.pdfinterp import PDFPageInterpreter
 from pdfminer.layout import LAParams
 from pdfminer.converter import PDFPageAggregator
-
+from PyPDF2 import PdfFileWriter, PdfFileReader
 # 随机颜色1:
 def rndColor():
     return (random.randint(64, 255), random.randint(64, 255), random.randint(64, 255))
@@ -157,7 +157,7 @@ def addWaterMarkToPdfFiles(pdfpaths, watermarkcontent=None):
 '''
 pypdf2加密
 '''
-from PyPDF2 import PdfFileWriter, PdfFileReader
+
 def encryptPdfFilesWithPassword(filepaths, password):
     try:
         if password and len(filepaths) > 0:
