@@ -172,7 +172,7 @@ def encryptPdfFilesWithPassword(filepaths, password):
                     pdf_writer = PdfFileWriter()
                     for page in range(pdf_reader.getNumPages()):
                         pdf_writer.addPage(pdf_reader.getPage(page))
-                    pdf_writer.encrypt(user_pwd="", owner_pwd=password)  # 设置pdf密码
+                    pdf_writer.encrypt(user_pwd="", owner_pwd=str(password))  # 设置pdf密码
                     with open(out_path, 'wb') as out:
                         pdf_writer.write(out)
                     os.remove(input_filepath)
