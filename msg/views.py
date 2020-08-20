@@ -375,6 +375,9 @@ class WebEXMeetingView(viewsets.ModelViewSet):
                 result = next(res.iter('{}{}'.format(xmlns_serv, 'result'))).text
                 if result == 'FAILURE':
                     reason = next(res.iter('{}{}'.format(xmlns_serv, 'reason'))).text
+                    exceptionID = next(res.iter('{}{}'.format(xmlns_serv, 'exceptionID'))).text
+                    if exceptionID == "000015":
+                        return JSONResponse(SuccessResponse({'meetings': [], 'returned': 0, 'total': 0, 'startFrom': data.get('startFrom', 1)}))
                     raise InvestError(8006, msg=reason)
                 else:
                     meetings = []
