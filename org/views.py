@@ -661,6 +661,16 @@ class OrgContactView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
+class OrgManageFundFilter(FilterSet):
+    id = RelationFilter(filterstr='id', lookup_method='in')
+    org = RelationFilter(filterstr='org', lookup_method='in')
+    fund = RelationFilter(filterstr='fund',lookup_method='in')
+    createuser = RelationFilter(filterstr='createuser',lookup_method='in')
+    class Meta:
+        model = orgManageFund
+        fields = ('id', 'org', 'fund', 'createuser')
+
+
 class OrgManageFundView(viewsets.ModelViewSet):
     """
     list:获取机构管理基金
@@ -670,8 +680,8 @@ class OrgManageFundView(viewsets.ModelViewSet):
     destroy:删除机构管理基金id）
     """
     filter_backends = (filters.DjangoFilterBackend,)
-    queryset = orgManageFund.objects.filter(is_deleted=False).filter(org__is_deleted=False, fund__is_deleted=False)
-    filter_fields = ('id','org','createuser')
+    queryset = orgManageFund.objects.filter(is_deleted=False, org__is_deleted=False, fund__is_deleted=False)
+    filter_class = OrgManageFundFilter
     serializer_class = OrgManageFundSerializer
     models = orgManageFund
 
@@ -1770,6 +1780,8 @@ def fulltextsearch(request):
         if like in ['true', '1', 'TRUE']:
             match = "match"
         lang = request.GET.get('lang', 'cn')
+        queryset = organization.objects.filter(is_deleted=False)
+        queryset = OrganizationFilter(request.query_params, queryset=queryset, request=request).qs
         es = Elasticsearch({HAYSTACK_CONNECTIONS['default']['URL']})
         ret = es.search(index=HAYSTACK_CONNECTIONS['default']['INDEX_NAME'],
                         body={
@@ -1788,7 +1800,7 @@ def fulltextsearch(request):
             orgid = source['_source'].get('org')
             if orgid:
                 orgId_list.add(orgid)
-        org_qs = organization.objects.filter(is_deleted=False, id__in=orgId_list, issub=False)
+        org_qs = queryset.filter(id__in=orgId_list)
         try:
             count = org_qs.count()
             org_qs = Paginator(org_qs, page_size)

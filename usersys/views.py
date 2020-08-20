@@ -27,7 +27,7 @@ from usersys.serializer import UserSerializer, UserListSerializer, UserRelationS
     UserFriendshipDetailSerializer, UserFriendshipUpdateSerializer, GroupSerializer, GroupDetailSerializer, \
     GroupCreateSerializer, PermissionSerializer, \
     UpdateUserSerializer, UnreachUserSerializer, UserRemarkSerializer, UserRemarkCreateSerializer, \
-    UserListCommenSerializer, UserAttachmentSerializer, UserEventSerializer
+    UserListCommenSerializer, UserAttachmentSerializer, UserEventSerializer, UserSimpleSerializer
 from sourcetype.models import Tag, DataSource, TagContrastTable
 from utils import perimissionfields
 from utils.customClass import JSONResponse, InvestError, RelationFilter
@@ -40,6 +40,7 @@ from django_filters import FilterSet
 
 
 class UserFilter(FilterSet):
+    id = RelationFilter(filterstr='id', lookup_method='in')
     groups = RelationFilter(filterstr='groups', lookup_method='in')
     org = RelationFilter(filterstr='org',lookup_method='in')
     indGroup = RelationFilter(filterstr='indGroup', lookup_method='in')
@@ -54,7 +55,7 @@ class UserFilter(FilterSet):
     investor = RelationFilter(filterstr='trader_relations__investoruser', lookup_method='in',relationName='trader_relations__is_deleted')
     class Meta:
         model = MyUser
-        fields = ('onjob', 'groups', 'indGroup', 'org','tags','userstatus','currency','orgtransactionphases','orgarea','usercode','title','trader','investor','usernameC')
+        fields = ('id', 'onjob', 'groups', 'indGroup', 'org','tags','userstatus','currency','orgtransactionphases','orgarea','usercode','title','trader','investor','usernameC')
 
 
 class UserView(viewsets.ModelViewSet):
@@ -326,6 +327,30 @@ class UserView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+    @loginTokenIsAvailable()
+    def getUserSimpleInfo(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size', 100)
+            page_index = request.GET.get('page_index', 1)
+            lang = request.GET.get('lang')
+            if int(page_size) > 1000:
+                page_size = 1000
+            queryset = self.filter_queryset(self.get_queryset())
+            count = queryset.count()
+            try:
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            return JSONResponse(SuccessResponse({'count': count, 'data': returnListChangeToLanguage(UserSimpleSerializer(queryset, many=True).data, lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            catchexcption(request)
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
 
     #get
     @loginTokenIsAvailable()
