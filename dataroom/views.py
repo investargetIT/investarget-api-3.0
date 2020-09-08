@@ -251,11 +251,11 @@ class DataroomView(viewsets.ModelViewSet):
             if os.path.exists(zipfilepath):
                 response = JSONResponse(SuccessResponse({'code': 8005, 'msg': '压缩文件已备好', 'seconds': 0}))
             else:
+                checkDirectoryLatestdate(direcpath, file_qs)
+                seconds = getRemainingTime(direcpath, file_qs)
                 if os.path.exists(direcpath):
-                    seconds = getRemainingTime(direcpath, file_qs)
                     response = JSONResponse(SuccessResponse({'code': 8004, 'msg': '压缩中', 'seconds': seconds}))
                 else:
-                    seconds = getRemainingTime(direcpath, file_qs)
                     watermarkcontent = str(request.GET.get('water', '')).split(',')
                     directory_qs = dataroominstance.dataroom_directories.all().filter(is_deleted=False, isFile=False)
                     startMakeDataroomZip(directory_qs, file_qs, direcpath, watermarkcontent, password)
@@ -325,6 +325,20 @@ def getRemainingTime(rootpath, file_qs):
             filesizes = filesizes + filesize
     times = filesizes / downloadSpeed + 2
     return times
+
+
+def checkDirectoryLatestdate(direcory_path, file_qs):
+    if os.path.exists(direcory_path):
+        date = os.path.getctime(direcory_path)
+        for file_obj in file_qs:
+            path = getPathWithFile(file_obj, direcory_path)
+            if os.path.exists(path):
+                date_new = os.path.getctime(path)
+                date = date_new if date_new > date else date
+        date = datetime.datetime.fromtimestamp(date)
+        if date < (datetime.datetime.now() - datetime.timedelta(hours=1)):
+            shutil.rmtree(direcory_path)
+
 
 def startMakeDataroomZip(directory_qs, file_qs, path, watermarkcontent=None, password=None):
     class downloadAllDataroomFile(threading.Thread):
