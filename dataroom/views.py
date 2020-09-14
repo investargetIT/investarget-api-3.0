@@ -35,11 +35,12 @@ sys.setdefaultencoding("utf-8")
 
 class DataroomFilter(FilterSet):
     supportuser = RelationFilter(filterstr='proj__supportUser',lookup_method='in')
+    user = RelationFilter(filterstr='dataroom_users__user', lookup_method='in', relationName='dataroom_users__is_deleted')
     proj = RelationFilter(filterstr='proj', lookup_method='in')
     isClose = RelationFilter(filterstr='isClose', lookup_method='in')
     class Meta:
         model = dataroom
-        fields = ('proj', 'isClose', 'supportuser')
+        fields = ('proj', 'isClose', 'supportuser', 'user')
 
 class DataroomView(viewsets.ModelViewSet):
     """
