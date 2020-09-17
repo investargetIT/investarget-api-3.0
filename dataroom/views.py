@@ -35,11 +35,12 @@ sys.setdefaultencoding("utf-8")
 
 class DataroomFilter(FilterSet):
     supportuser = RelationFilter(filterstr='proj__supportUser',lookup_method='in')
+    user = RelationFilter(filterstr='dataroom_users__user', lookup_method='in', relationName='dataroom_users__is_deleted')
     proj = RelationFilter(filterstr='proj', lookup_method='in')
     isClose = RelationFilter(filterstr='isClose', lookup_method='in')
     class Meta:
         model = dataroom
-        fields = ('proj', 'isClose', 'supportuser')
+        fields = ('proj', 'isClose', 'supportuser', 'user')
 
 class DataroomView(viewsets.ModelViewSet):
     """
@@ -489,7 +490,8 @@ class DataroomdirectoryorfileView(viewsets.ModelViewSet):
             if request.user.has_perm('dataroom.admin_getdataroom') or dataroominstance.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists() or (dataroominstance.isCompanyFile and request.user.has_perm('dataroom.get_companydataroom')):
                 queryset = self.get_queryset()
             elif dataroom_User_file.objects.filter(user=request.user, dataroom=dataroomid).exists():
-                queryset = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile__dataroom=dataroominstance, dataroomUserfile__user=request.user).file_userSeeFile.all().filter(is_deleted=False)
+                user_dataroomInstance = dataroom_User_file.objects.filter(user=request.user, dataroom__id=dataroomid).first()
+                queryset = user_dataroomInstance.file_userSeeFile.all().filter(is_deleted=False)
             else:
                 raise InvestError(2009)
             queryset = self.filter_queryset(queryset).filter(isFile=True)
@@ -850,6 +852,12 @@ class User_DataroomfileView(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         try:
             user_dataroom = self.get_object()
+            if request.user.has_perm('dataroom.admin_deletedataroom'):
+                pass
+            elif user_dataroom.dataroom.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
+                pass
+            else:
+                raise InvestError(2009)
             with transaction.atomic():
                 user_dataroom.deletedtime = datetime.datetime.now()
                 user_dataroom.deleteduser = request.user
