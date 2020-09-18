@@ -197,3 +197,37 @@ class dataroom_User_template(MyModel):
             raise InvestError(code=2004, msg='用户与模板不匹配')
         super(dataroom_User_template, self).save(force_insert, force_update, using, update_fields)
 
+
+
+
+class dataroom_user_discuss(MyModel):
+    dataroom = MyForeignKey(dataroom, blank=True, null=True, related_name='dataroom_userdiscuss')
+    file = MyForeignKey(dataroomdirectoryorfile, blank=True, null=True, related_name='dataroomfile_userdiscuss', on_delete=models.CASCADE)
+    question = models.TextField(help_text='提问', blank=True, null=True)
+    answer = models.TextField(help_text='回复',blank=True, null=True)
+    user = MyForeignKey(MyUser, blank=True, null=True, related_name='userask_dataroomdiscuss', on_delete=models.CASCADE)
+    trader = MyForeignKey(MyUser, blank=True, null=True, related_name='traderanswer_dataroomdiscuss', on_delete=models.CASCADE)
+    asktime = models.DateTimeField(blank=True, null=True)
+    answertime = models.DateTimeField(blank=True, null=True)
+    location = models.TextField(help_text='标注位置', blank=True, null=True)
+    createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_dataroomdiscuss')
+    lastmodifyuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usermodify_dataroomdiscuss')
+    deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_dataroomdiscuss')
+    datasource = MyForeignKey(DataSource, help_text='数据源', blank=True, default=1)
+
+    class Meta:
+        db_table = 'dataroom_user_discuss'
+
+    def save(self, *args, **kwargs):
+        if not self.is_deleted:
+            if not self.question:
+                raise InvestError(code=2004, msg='question 不能为空')
+            if not self.datasource:
+                raise InvestError(code=8888, msg='datasource有误')
+            if not self.user:
+                raise InvestError(code=2004, msg='user 不能为空')
+            if not self.file.isFile:
+                raise InvestError(code=2004, msg='必须是文件类型')
+        return super(dataroom_user_discuss, self).save(*args, **kwargs)
+
+
