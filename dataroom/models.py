@@ -201,11 +201,11 @@ class dataroom_User_template(MyModel):
 
 
 class dataroom_user_discuss(MyModel):
-    dataroom = MyForeignKey(dataroom, blank=True, null=True, related_name='dataroom_userdiscuss')
-    file = MyForeignKey(dataroomdirectoryorfile, blank=True, null=True, related_name='dataroomfile_userdiscuss', on_delete=models.CASCADE)
-    question = models.TextField(help_text='提问', blank=True, null=True)
+    dataroom = MyForeignKey(dataroom, blank=True, related_name='dataroom_userdiscuss', on_delete=models.CASCADE)
+    file = MyForeignKey(dataroomdirectoryorfile, blank=True, related_name='dataroomfile_userdiscuss', on_delete=models.CASCADE)
+    question = models.TextField(help_text='提问', blank=True)
     answer = models.TextField(help_text='回复',blank=True, null=True)
-    user = MyForeignKey(MyUser, blank=True, null=True, related_name='userask_dataroomdiscuss', on_delete=models.CASCADE)
+    user = MyForeignKey(MyUser, blank=True, related_name='userask_dataroomdiscuss', on_delete=models.CASCADE)
     trader = MyForeignKey(MyUser, blank=True, null=True, related_name='traderanswer_dataroomdiscuss', on_delete=models.CASCADE)
     asktime = models.DateTimeField(blank=True, null=True)
     answertime = models.DateTimeField(blank=True, null=True)

@@ -205,6 +205,7 @@ class DataroomView(viewsets.ModelViewSet):
                     deleteInstance(fileOrDirectory, request.user)
                 instance.dataroom_users.all().update(is_deleted=True)
                 instance.dataroom_userTemp.all().update(is_deleted=True)
+                instance.dataroom_userdiscuss.all().update(is_deleted=True)
                 instance.is_deleted = True
                 instance.deleteduser = request.user
                 instance.deletedtime = datetime.datetime.now()
