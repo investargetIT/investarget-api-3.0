@@ -6,7 +6,7 @@ import os
 import chardet
 
 from invest.settings import APILOG_PATH
-from utils.somedef import getPdfWordContent
+from utils.somedef import getPdfWordContent, BaiDuAipGetImageWord
 from haystack import indexes
 import subprocess
 
@@ -81,6 +81,8 @@ class orgAttachmentsIndex(indexes.SearchIndex, indexes.Indexable):
                         filecontent = subprocess.check_output(["antiword", file_path])
                     elif type == '.pdf':
                         filecontent = getPdfWordContent(file_path)
+                    elif type in ['.png', '.jpg', '.jpeg']:
+                        filecontent = BaiDuAipGetImageWord(file_path)
                     elif type == '.txt':
                         with open(file_path, "r") as f:
                             text = f.read()

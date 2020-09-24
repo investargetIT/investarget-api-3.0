@@ -5,6 +5,8 @@ import datetime
 import traceback
 from PIL import Image, ImageDraw, ImageFont
 import random
+
+from aip import AipOcr
 from reportlab.lib.pagesizes import A1
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfgen import canvas
@@ -20,6 +22,9 @@ from pdfminer.layout import LAParams
 from pdfminer.converter import PDFPageAggregator
 from PyPDF2 import PdfFileWriter, PdfFileReader
 # 随机颜色1:
+from third.thirdconfig import baiduaip_appid, baiduaip_appkey, baiduaip_secretkey
+
+
 def rndColor():
     return (random.randint(64, 255), random.randint(64, 255), random.randint(64, 255))
 
@@ -31,6 +36,10 @@ def rndColor2():
 def rndColor3():
     colorset = [(247, 58, 97), (87, 96, 105), (173, 195, 192), (185, 227, 217)]
     return colorset[random.randint(0,3)]
+
+def get_file_content(filePath):
+    with open(filePath, 'rb') as fp:
+        return fp.read()
 
 #默认头像生成kk
 def makeAvatar(name):
@@ -221,6 +230,27 @@ def getPdfWordContent(pdfPath):
         return ''.join(wordlist)
     except Exception:
         print('抽取pdf文本失败')
+        now = datetime.datetime.now()
+        filepath = APILOG_PATH['excptionlogpath'] + '/' + now.strftime('%Y-%m-%d')
+        f = open(filepath, 'a')
+        f.writelines(now.strftime('%H:%M:%S') + '\n' + traceback.format_exc() + '\n\n')
+        f.close()
+
+
+def BaiDuAipGetImageWord(image_path):
+    try:
+        client = AipOcr(baiduaip_appid, baiduaip_appkey, baiduaip_secretkey)
+        image = get_file_content(image_path)
+        imageRes = client.basicGeneral(image)
+        words_result = imageRes.get('words_result', [])
+        error_msg = imageRes.get('error_msg')
+        if error_msg:
+            return '图片内容识别失败--' + str(error_msg)
+        words = ''
+        for wordsDic in words_result:
+            words = words + wordsDic.get('words')
+        return words
+    except Exception:
         now = datetime.datetime.now()
         filepath = APILOG_PATH['excptionlogpath'] + '/' + now.strftime('%Y-%m-%d')
         f = open(filepath, 'a')
