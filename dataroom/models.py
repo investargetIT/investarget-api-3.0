@@ -203,8 +203,8 @@ class dataroom_User_template(MyModel):
 class dataroom_user_discuss(MyModel):
     dataroom = MyForeignKey(dataroom, blank=True, related_name='dataroom_userdiscuss', on_delete=models.CASCADE)
     file = MyForeignKey(dataroomdirectoryorfile, blank=True, related_name='dataroomfile_userdiscuss', on_delete=models.CASCADE)
-    question = models.TextField(help_text='提问', blank=True)
-    answer = models.TextField(help_text='回复',blank=True, null=True)
+    question = models.TextField(help_text='提问', null=True, blank=True)
+    answer = models.TextField(help_text='回复', null=True, blank=True)
     user = MyForeignKey(MyUser, blank=True, related_name='userask_dataroomdiscuss', on_delete=models.CASCADE)
     trader = MyForeignKey(MyUser, blank=True, null=True, related_name='traderanswer_dataroomdiscuss', on_delete=models.CASCADE)
     asktime = models.DateTimeField(blank=True, null=True)
@@ -220,8 +220,6 @@ class dataroom_user_discuss(MyModel):
 
     def save(self, *args, **kwargs):
         if not self.is_deleted:
-            if not self.question:
-                raise InvestError(code=2004, msg='question 不能为空')
             if not self.datasource:
                 raise InvestError(code=8888, msg='datasource有误')
             if not self.user:
