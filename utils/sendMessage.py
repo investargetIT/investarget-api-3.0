@@ -345,6 +345,8 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                                 projectsign = 'sDp8d3'
                             elif model.datasource_id == 4:
                                 projectsign = 'votun1'
+                            elif model.datasource_id == 5:
+                                projectsign = 'votun1'
                             else:
                                 projectsign = 'EXIDv1'
                             vars = {'user': model.usernameC}
@@ -514,6 +516,8 @@ def sendmessage_dataroomuseradd(model,receiver,types,sender=None):
                         if receiver.datasource_id == 3:
                             projectsign = 'yMgMP'
                         elif receiver.datasource_id == 4:
+                            projectsign = 'aJbDc1'
+                        elif receiver.datasource_id == 5:
                             projectsign = 'aJbDc1'
                         else:
                             projectsign = 'umZlP3'
