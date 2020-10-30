@@ -18,7 +18,7 @@ from dataroom.serializer import DataroomSerializer, DataroomCreateSerializer, Da
     User_DataroomSerializer, User_DataroomfileCreateSerializer, User_DataroomTemplateSerializer, \
     User_DataroomTemplateCreateSerializer, DataroomdirectoryorfilePathSerializer, User_DataroomSeefilesSerializer, \
     User_DataroomSeefilesCreateSerializer, DataroomUserDiscussSerializer, DataroomUserDiscussCreateSerializer, \
-    DataroomUserDiscussUpdateSerializer, User_DataroomSeefilesUpdateSerializer
+    DataroomUserDiscussUpdateSerializer
 from invest.settings import APILOG_PATH, HAYSTACK_CONNECTIONS
 from proj.models import project
 from third.views.qiniufile import deleteqiniufile, downloadFileToPath
@@ -879,16 +879,14 @@ class DataroomUserSeeFilesFilter(FilterSet):
     dataroom = RelationFilter(filterstr='dataroomUserfile__dataroom')
     user = RelationFilter(filterstr='dataroomUserfile__user')
     file = RelationFilter(filterstr='file', lookup_method='in')
-    needSign = RelationFilter(filterstr='needSign', lookup_method='in')
     class Meta:
         model = dataroomUserSeeFiles
-        fields = ('dataroom', 'user', 'file', 'needSign')
+        fields = ('dataroom', 'user', 'file')
 
 class User_DataroomSeefilesView(viewsets.ModelViewSet):
     """
            list:用户dataroom可见文件列表
            create:新建用户可见文件
-           update: 修改文件是否需要签名
            destroy:删除用户某可见文件
         """
     filter_backends = (filters.SearchFilter, filters.DjangoFilterBackend,)
@@ -948,30 +946,6 @@ class User_DataroomSeefilesView(viewsets.ModelViewSet):
             with transaction.atomic():
                 data['createuser'] = request.user.id
                 user_dataroomserializer = User_DataroomSeefilesCreateSerializer(data=data)
-                if user_dataroomserializer.is_valid():
-                    user_dataroomserializer.save()
-                else:
-                    raise InvestError(code=20071, msg='data有误_%s' % user_dataroomserializer.errors)
-                return JSONResponse(SuccessResponse(user_dataroomserializer.data))
-        except InvestError as err:
-            return JSONResponse(InvestErrorResponse(err))
-        except Exception:
-            catchexcption(request)
-            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
-
-    @loginTokenIsAvailable()
-    def update(self, request, *args, **kwargs):
-        try:
-            data = request.data
-            user_seefile = self.get_object()
-            if user_seefile.dataroomUserfile.dataroom.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
-                pass
-            elif request.user.has_perm('dataroom.admin_adddataroom'):
-                pass
-            else:
-                raise InvestError(2009)
-            with transaction.atomic():
-                user_dataroomserializer = User_DataroomSeefilesUpdateSerializer(user_seefile, data=data)
                 if user_dataroomserializer.is_valid():
                     user_dataroomserializer.save()
                 else:

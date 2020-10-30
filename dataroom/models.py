@@ -147,7 +147,6 @@ class dataroom_User_file(MyModel):
 
 class dataroomUserSeeFiles(MyModel):
     file = MyForeignKey(dataroomdirectoryorfile, blank=True, null=True, related_name='file_userSeeFile', on_delete=models.CASCADE)
-    needSign = models.BooleanField(blank=True, default=False, help_text='是否需要签名')
     dataroomUserfile = MyForeignKey(dataroom_User_file, blank=True, null=True, related_name='dataroomuser_seeFiles', help_text='用户dataroom记录')
     deleteduser = MyForeignKey(MyUser, blank=True, null=True, related_name='userdelete_userdataroomseefiles')
     createuser = MyForeignKey(MyUser, blank=True, null=True, related_name='usercreate_userdataroomseefiles')

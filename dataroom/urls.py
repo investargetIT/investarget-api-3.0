@@ -49,7 +49,6 @@ user_dataroomFile = views.User_DataroomSeefilesView.as_view({
 })
 
 user_dataroomFileOne =  views.User_DataroomSeefilesView.as_view({
-        'put': 'update',
         'delete':'destroy',
 })
 

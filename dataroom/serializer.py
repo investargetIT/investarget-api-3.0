@@ -110,17 +110,11 @@ class User_DataroomSeefilesCreateSerializer(serializers.ModelSerializer):
         model = dataroomUserSeeFiles
         fields = '__all__'
 
-class User_DataroomSeefilesUpdateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = dataroomUserSeeFiles
-        fields = ('needSign',)
-
-
 class User_DataroomSeefilesSerializer(serializers.ModelSerializer):
     file = DataroomdirectoryorfileSerializer()
     class Meta:
         model = dataroomUserSeeFiles
-        fields = ('id', 'file', 'createdtime', 'needSign')
+        fields = ('id', 'file', 'createdtime')
 
 class User_DataroomTemplateSerializer(serializers.ModelSerializer):
     dataroomUserfile = User_DataroomfileFileIdsSerializer()
