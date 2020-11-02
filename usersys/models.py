@@ -384,7 +384,7 @@ class UserRelation(MyModel):
         if self.traderuser.userstatus_id != 2:
             raise InvestError(code=2022,msg='交易师尚未审核通过，无法建立联系')
         if not self.is_deleted:
-            if self.investoruser.has_perm('usersys.as_investor') and self.traderuser.has_perm('usersys.as_trader'):
+            if 'usersys.as_investor' in self.investoruser.get_all_permissions() and 'usersys.as_trader' in self.traderuser.get_all_permissions():
                 pass
             else:
                 raise InvestError(2009, msg='身份类型不符合条件')
