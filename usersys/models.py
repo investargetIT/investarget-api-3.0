@@ -383,11 +383,6 @@ class UserRelation(MyModel):
             raise InvestError(code=8888,msg='requestuser.datasource不匹配')
         if self.traderuser.userstatus_id != 2:
             raise InvestError(code=2022,msg='交易师尚未审核通过，无法建立联系')
-        if not self.is_deleted:
-            if self.investoruser.has_perm('usersys.as_investor'):
-                pass
-            else:
-                raise InvestError(2009, msg='身份类型不符合条件')
         if self.pk:
             userrelation = UserRelation.objects.exclude(pk=self.pk).filter(is_deleted=False,datasource=self.datasource,investoruser=self.investoruser)
         else:
