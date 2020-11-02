@@ -1579,6 +1579,9 @@ def makeExportOrgExcel():
                 exporttask.status = 4
                 exporttask.save()
                 try:
+                    starUserMobile = True
+                    if exporttask.createuser.has_perm('usersys.admin_getuser'):
+                        starUserMobile = False
                     taskdatasource = exporttask.createuser.datasource
                     orgidliststr = exporttask.orglist
                     tagidliststr = exporttask.taglist
@@ -1635,8 +1638,12 @@ def makeExportOrgExcel():
                                         investorList = investorList.filter(tags__in=tagidlist)
                                     relation_qs = UserRelation.objects.filter(investoruser__in=investorList, is_deleted=False)
                                     for investor in investorList:
-                                        mobile = self.getStarMobile(investor.mobile)
-                                        email = self.getStarEmail(investor.email)
+                                        if starUserMobile:
+                                            mobile = self.getStarMobile(investor.mobile)
+                                            email = self.getStarEmail(investor.email)
+                                        else:
+                                            mobile = investor.mobile
+                                            email = investor.email
                                         title = investor.title.nameC if investor.title else '暂无'
                                         usertags = investor.tags.filter(tag_usertags__is_deleted=False)
                                         usertagnamelist = []

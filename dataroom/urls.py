@@ -82,6 +82,22 @@ downZip = views.DataroomView.as_view({
     'get':'downloadDataroomZip'
 })
 
+
+user_dataroom_discuss = views.DataroomUserDiscussView.as_view({
+        'get': 'list',
+        'post': 'create',
+})
+
+user_dataroom_discuss_group = views.DataroomUserDiscussView.as_view({
+        'get': 'listGroupBy',
+})
+
+user_dataroom_discuss_one =  views.DataroomUserDiscussView.as_view({
+        'put':'update',
+        'delete':'destroy',
+})
+
+
 urlpatterns = [
     url(r'^$', dataroom,name='dataroom-list',),
     url(r'^com/$', dataroom_com, name='dataroom_com-list', ),
@@ -98,4 +114,8 @@ urlpatterns = [
     url(r'^temp/(?P<pk>\d+)/$', user_dataroomone_temp, name='user_dataroom_temp-detail'),
     url(r'^checkzip/(?P<pk>\d+)/$', checkZip,name='dataroom-checkZip'),
     url(r'^downzip/(?P<pk>\d+)/$', downZip,name='dataroom-downZip'),
+
+    url(r'^discuss/$', user_dataroom_discuss, name='user_dataroom_discuss-list', ),
+    url(r'^discuss/group/$', user_dataroom_discuss_group, name='user_dataroom_discuss-group', ),
+    url(r'^discuss/(?P<pk>\d+)/$', user_dataroom_discuss_one, name='user_dataroom_discuss_one', ),
 ]
