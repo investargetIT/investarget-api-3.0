@@ -1,16 +1,23 @@
 #coding=utf-8
 from __future__ import unicode_literals
 
+from itertools import chain
+from django.utils.encoding import force_text
 from django.db.models import CASCADE
+from guardian.backends import ObjectPermissionBackend, check_support
 from guardian.shortcuts import remove_perm, assign_perm
+from guardian.utils import get_group_obj_perms_model, get_user_obj_perms_model
 from pypinyin import slug as hanzizhuanpinpin
 import binascii
 import os
-
+from guardian.compat import get_user_model
+from guardian.core import ObjectPermissionChecker, _get_pks_model_and_ctype
+from guardian.ctypes import get_content_type
+from guardian.exceptions import WrongAppError
 import datetime
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
-from django.contrib.auth.models import PermissionsMixin, Group
+from django.contrib.auth.models import PermissionsMixin, Permission
 from django.db import models
 from django.db.models import Q
 
@@ -54,6 +61,186 @@ class MyUserBackend(ModelBackend):
         except MyUser.DoesNotExist:
             return None
         return user if not user.is_deleted else None
+
+    def _get_permissions(self, user_obj, obj, from_name):
+        """
+        Returns the permissions of `user_obj` from `from_name`. `from_name` can
+        be either "group" or "user" to return permissions from
+        `_get_group_permissions` or `_get_user_permissions` respectively.
+        """
+        if user_obj.is_anonymous or obj is not None:
+            return set()
+
+        perm_cache_name = '_%s_perm_cache' % from_name
+        if not hasattr(user_obj, perm_cache_name):
+            if user_obj.is_superuser:
+                perms = Permission.objects.all()
+            else:
+                perms = getattr(self, '_get_%s_permissions' % from_name)(user_obj)
+            perms = perms.values_list('content_type__app_label', 'codename').order_by()
+            setattr(user_obj, perm_cache_name, set("%s.%s" % (ct, name) for ct, name in perms))
+        return getattr(user_obj, perm_cache_name)
+
+    def get_all_permissions(self, user_obj, obj=None):
+        if user_obj.is_anonymous or obj is not None:
+            return set()
+        if not hasattr(user_obj, '_perm_cache'):
+            user_obj._perm_cache = self.get_user_permissions(user_obj)
+            user_obj._perm_cache.update(self.get_group_permissions(user_obj))
+        return user_obj._perm_cache
+
+    def has_perm(self, user_obj, perm, obj=None):
+        # if not user_obj.is_active:
+        #     return False
+        return perm in self.get_all_permissions(user_obj, obj)
+
+    def has_module_perms(self, user_obj, app_label):
+        """
+        Returns True if user_obj has any permissions in the given app_label.
+        """
+        for perm in self.get_all_permissions(user_obj):
+            if perm[:perm.index('.')] == app_label:
+                return True
+        return False
+
+class MyObjectPermissionChecker(ObjectPermissionChecker):
+    def has_perm(self, perm, obj):
+        if self.user and self.user.is_superuser:
+            return True
+        perm = perm.split('.')[-1]
+        return perm in self.get_perms(obj)
+    def get_perms(self, obj):
+        ctype = get_content_type(obj)
+        key = self.get_local_cache_key(obj)
+        if key not in self._obj_perms_cache:
+            if self.user and self.user.is_superuser:
+                perms = list(chain(*Permission.objects
+                                   .filter(content_type=ctype)
+                                   .values_list("codename")))
+            elif self.user:
+                # Query user and group permissions separately and then combine
+                # the results to avoid a slow query
+                user_perms = self.get_user_perms(obj)
+                group_perms = self.get_group_perms(obj)
+                perms = list(set(chain(user_perms, group_perms)))
+            else:
+                group_filters = self.get_group_filters(obj)
+                perms = list(set(chain(*Permission.objects
+                                       .filter(content_type=ctype)
+                                       .filter(**group_filters)
+                                       .values_list("codename"))))
+            self._obj_perms_cache[key] = perms
+        return self._obj_perms_cache[key]
+    def prefetch_perms(self, objects):
+        User = get_user_model()
+        pks, model, ctype = _get_pks_model_and_ctype(objects)
+
+        if self.user and self.user.is_superuser:
+            perms = list(chain(
+                *Permission.objects
+                .filter(content_type=ctype)
+                .values_list("codename")))
+
+            for pk in pks:
+                key = (ctype.id, force_text(pk))
+                self._obj_perms_cache[key] = perms
+
+            return True
+
+        group_model = get_group_obj_perms_model(model)
+
+        if self.user:
+            fieldname = 'group__%s' % (
+                User.groups.field.related_query_name(),
+            )
+            group_filters = {fieldname: self.user}
+        else:
+            group_filters = {'group': self.group}
+
+        if group_model.objects.is_generic():
+            group_filters.update({
+                'content_type': ctype,
+                'object_pk__in': pks,
+            })
+        else:
+            group_filters.update({
+                'content_object_id__in': pks
+            })
+
+        if self.user:
+            model = get_user_obj_perms_model(model)
+            user_filters = {
+                'user': self.user,
+            }
+
+            if model.objects.is_generic():
+                user_filters.update({
+                    'content_type': ctype,
+                    'object_pk__in': pks
+                })
+            else:
+                user_filters.update({
+                    'content_object_id__in': pks
+                })
+
+            # Query user and group permissions separately and then combine
+            # the results to avoid a slow query
+            user_perms_qs = model.objects.filter(**user_filters).select_related('permission')
+            group_perms_qs = group_model.objects.filter(**group_filters).select_related('permission')
+            perms = chain(user_perms_qs, group_perms_qs)
+        else:
+            perms = chain(
+                *(group_model.objects.filter(**group_filters).select_related('permission'),)
+            )
+
+        # initialize entry in '_obj_perms_cache' for all prefetched objects
+        for obj in objects:
+            key = self.get_local_cache_key(obj)
+            if key not in self._obj_perms_cache:
+                self._obj_perms_cache[key] = []
+
+        for perm in perms:
+            if type(perm).objects.is_generic():
+                key = (ctype.id, perm.object_pk)
+            else:
+                key = (ctype.id, force_text(perm.content_object_id))
+
+            self._obj_perms_cache[key].append(perm.permission.codename)
+
+        return True
+class MyObjectPermissionBackend(ObjectPermissionBackend):
+    def has_perm(self, user_obj, perm, obj=None):
+        support, user_obj = check_support(user_obj, obj)
+        if not support:
+            return False
+
+        if '.' in perm:
+            app_label, perm = perm.split('.')
+            if app_label != obj._meta.app_label:
+                # Check the content_type app_label when permission
+                # and obj app labels don't match.
+                ctype = get_content_type(obj)
+                if app_label != ctype.app_label:
+                    raise WrongAppError("Passed perm has app label of '%s' while "
+                                        "given obj has app label '%s' and given obj"
+                                        "content_type has app label '%s'" %
+                                        (app_label, obj._meta.app_label, ctype.app_label))
+
+        check = MyObjectPermissionChecker(user_obj)
+        return check.has_perm(perm, obj)
+
+    def get_all_permissions(self, user_obj, obj=None):
+        """
+        Returns a set of permission strings that the given ``user_obj`` has for ``obj``
+        """
+        # check if user_obj and object are supported
+        support, user_obj = check_support(user_obj, obj)
+        if not support:
+            return set()
+
+        check = MyObjectPermissionChecker(user_obj)
+        return check.get_perms(obj)
+
 
 class MyUserManager(BaseUserManager):
     def create_user(self,email,mobile=None,password=None,**extra_fields):
@@ -383,6 +570,11 @@ class UserRelation(MyModel):
             raise InvestError(code=8888,msg='requestuser.datasource不匹配')
         if self.traderuser.userstatus_id != 2:
             raise InvestError(code=2022,msg='交易师尚未审核通过，无法建立联系')
+        if not self.is_deleted:
+            if self.investoruser.has_perm('usersys.as_investor') and self.traderuser.has_perm('usersys.as_trader'):
+                pass
+            else:
+                raise InvestError(2009, msg='身份类型不符合条件')
         if self.pk:
             userrelation = UserRelation.objects.exclude(pk=self.pk).filter(is_deleted=False,datasource=self.datasource,investoruser=self.investoruser)
         else:
