@@ -1782,10 +1782,6 @@ def fulltextsearch(request):
             raise InvestError(2007, msg='搜索参数不能为空')
         page_index = int(request.GET.get('page_index', 1))
         page_size = int(request.GET.get('page_size', 10))
-        like = request.GET.get('like', '1')
-        match = "match_phrase"
-        if like in ['true', '1', 'TRUE']:
-            match = "match"
         lang = request.GET.get('lang', 'cn')
         queryset = organization.objects.filter(is_deleted=False)
         queryset = OrganizationFilter(request.query_params, queryset=queryset, request=request).qs
@@ -1795,12 +1791,12 @@ def fulltextsearch(request):
                             "query": {
                                 "bool": {
                                     "should": [
-                                        {match: {"fileContent": searchText}},
-                                        {match: {"remark": searchText}},
+                                        {"match_phrase": {"fileContent": searchText}},
+                                        {"match_phrase": {"remark": searchText}},
                                     ]
                                 }
                             },
-                            "_source": ["id", "org"]
+                            "_source": ["id", "org", "remark", "fileContent"]
                         })
         orgId_list = set()
         for source in ret["hits"]["hits"]:
