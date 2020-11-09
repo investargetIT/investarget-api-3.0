@@ -341,11 +341,8 @@ def sendmessage_userauditstatuchange(model,receiver,types,sender=None):
                     try:
                         if model.userstatus.id == 2:
                             destination = receiver.mobile
-                            if model.datasource_id == 3:
-                                projectsign = 'sDp8d3'
-                            elif model.datasource_id == 4:
-                                projectsign = 'votun1'
-                            else:
+                            projectsign = model.datasource.userAuditTem
+                            if not projectsign:
                                 projectsign = 'EXIDv1'
                             vars = {'user': model.usernameC}
                             xsendSms(destination, projectsign, vars)
@@ -415,7 +412,7 @@ def sendmessage_userregister(model,receiver,types,sender=None):
                     except Exception:
                         logexcption()
 
-    if checkReceiverToSendMsg(receiver)  and receiver.datasource_id not in [3, 4]:
+    if checkReceiverToSendMsg(receiver) and receiver.datasource_id not in [3, 4]:
         sendmessage_userregisterThread(model,receiver,types,sender).start()
 
 
@@ -511,11 +508,8 @@ def sendmessage_dataroomuseradd(model,receiver,types,sender=None):
                 if 'email' in types and sendEmail and checkEmailTrue(receiver.email):
                     try:
                         destination = receiver.email
-                        if receiver.datasource_id == 3:
-                            projectsign = 'yMgMP'
-                        elif receiver.datasource_id == 4:
-                            projectsign = 'aJbDc1'
-                        else:
+                        projectsign = model.datasource.dataroomTem
+                        if not projectsign:
                             projectsign = 'umZlP3'
                         vars = {'name': receiver.usernameC, 'projectC': getDataroomTitleWithSuperLink(model.dataroom, 'cn'), 'projectE': getDataroomTitleWithSuperLink(model.dataroom, 'en')}
                         xsendEmail(destination, projectsign, vars)
