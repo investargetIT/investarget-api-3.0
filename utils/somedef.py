@@ -108,7 +108,7 @@ def create_watermark(waterpath, watermarkcontent):
     c.translate(0, -A1[1] * 0.5)
     width0 = c.stringWidth(text=watermarkcontent[0], fontName='song', fontSize=fontsize)
     width1 = c.stringWidth(text=watermarkcontent[1], fontName='song', fontSize=fontsize)
-    width2 = c.stringWidth(text=watermarkcontent[2], fontName='song', fontSize=fontsize)
+    width2 = c.stringWidth(text=watermarkcontent[2].replace('@', '[at]'), fontName='song', fontSize=fontsize)
     y = 0
     while y < A1[1]:
         x = 100
