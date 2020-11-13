@@ -260,7 +260,7 @@ class DataroomView(viewsets.ModelViewSet):
                 if os.path.exists(direcpath):
                     response = JSONResponse(SuccessResponse({'code': 8004, 'msg': '压缩中', 'seconds': seconds}))
                 else:
-                    watermarkcontent = str(request.GET.get('water', '')).split(',')
+                    watermarkcontent = str(request.GET.get('water', '').replace('@', '[at]')).split(',')
                     directory_qs = dataroominstance.dataroom_directories.all().filter(is_deleted=False, isFile=False)
                     startMakeDataroomZip(directory_qs, file_qs, direcpath, watermarkcontent, password)
                     response = JSONResponse(SuccessResponse({'code': 8002, 'msg': '文件不存在', 'seconds': seconds}))
