@@ -118,6 +118,42 @@ class UserInfoSerializer(serializers.ModelSerializer):
         else:
             return None
 
+class InvestorUserSerializer(serializers.ModelSerializer):
+    tags = serializers.SerializerMethodField()
+    photourl = serializers.SerializerMethodField()
+    mobiletrue = serializers.SerializerMethodField()
+    country = countrySerializer()
+    familiar = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MyUser
+        fields = ('usernameC', 'usernameE', 'org', 'department', 'mobile', 'mobileAreaCode', 'mobiletrue', 'email', 'wechat', 'title',
+                  'id', 'tags', 'userstatus', 'photourl', 'is_active', 'orgarea', 'country', 'onjob', 'last_login', 'familiar')
+        depth = 1
+
+    def get_tags(self, obj):
+        qs = obj.tags.filter(tag_usertags__is_deleted=False)
+        if qs.exists():
+            return tagSerializer(qs,many=True).data
+        return None
+
+    def get_mobiletrue(self, obj):
+        return checkMobileTrue(obj.mobile, obj.mobileAreaCode)
+
+    def get_photourl(self, obj):
+        if obj.photoKey:
+            return getUrlWithBucketAndKey('image', obj.photoKey)
+        else:
+            return None
+
+    def get_familiar(self, obj):
+        traderuser_id = self.context.get('traderuser_id')
+        relations = obj.investor_relations.filter(traderuser_id=traderuser_id, is_deleted=False)
+        if relations.exists():
+            return relations.first().familiar_id
+        return None
+
+
 class UserAttachmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = userAttachments

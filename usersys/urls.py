@@ -40,6 +40,11 @@ getuserinfo_simple = views.UserView.as_view({
 })
 
 
+getUserInvestor = views.UserView.as_view({
+        'get': 'getIndGroupInvestor',
+})
+
+
 user_relationshiplist = views.UserRelationView.as_view({
         'get': 'list',
         'post': 'create',
@@ -139,6 +144,7 @@ checkUserAccountExist = views.UserView.as_view({
 urlpatterns = [
     url(r'^$', user_list,name='user-list',),
     url(r'^simple$', getuserinfo_simple,name='getuserinfo_simple',),
+    url(r'^investor$', getUserInvestor,name='getUserInvestor_indGroup',),
     url(r'^regsource$', getRegistSource, name='getRegistSource', ),
     url(r'^mobile$', getFalseMobile, name='getAvaibleFalseMobileNumber', ),
     url(r'^count$', getUserCount, name='getUserCount', ),

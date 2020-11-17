@@ -27,7 +27,8 @@ from usersys.serializer import UserSerializer, UserListSerializer, UserRelationS
     UserFriendshipDetailSerializer, UserFriendshipUpdateSerializer, GroupSerializer, GroupDetailSerializer, \
     GroupCreateSerializer, PermissionSerializer, \
     UpdateUserSerializer, UnreachUserSerializer, UserRemarkSerializer, UserRemarkCreateSerializer, \
-    UserListCommenSerializer, UserAttachmentSerializer, UserEventSerializer, UserSimpleSerializer
+    UserListCommenSerializer, UserAttachmentSerializer, UserEventSerializer, UserSimpleSerializer, UserInfoSerializer, \
+    InvestorUserSerializer
 from sourcetype.models import Tag, DataSource, TagContrastTable
 from utils import perimissionfields
 from utils.customClass import JSONResponse, InvestError, RelationFilter
@@ -61,6 +62,7 @@ class UserFilter(FilterSet):
 class UserView(viewsets.ModelViewSet):
     """
     list:用户列表
+    getIndGroupInvestor: 获取行业组共享投资人（非共享状态下仅返回自己对接的投资人）
     create:注册用户
     adduser:新增用户
     retrieve:查看某一用户信息
@@ -168,6 +170,37 @@ class UserView(viewsets.ModelViewSet):
                 responselist.append(instancedata)
             return JSONResponse(
                 SuccessResponse({'count': count, 'data': returnListChangeToLanguage(responselist, lang)}))
+        except InvestError as err:
+            return JSONResponse(InvestErrorResponse(err))
+        except Exception:
+            return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+    @loginTokenIsAvailable()
+    def getIndGroupInvestor(self, request, *args, **kwargs):
+        try:
+            page_size = request.GET.get('page_size', 10)
+            page_index = request.GET.get('page_index', 1)
+            if not page_size:
+                page_size = 10
+            else:
+                page_size = 100 if int(page_size) > 100 else page_size
+            lang = request.GET.get('lang', 'cn')
+            queryset = self.filter_queryset(self.get_queryset())
+            if request.user.indGroup and request.user.indGroup.shareInvestor:
+                queryset = queryset.filter(investor_relations__traderuser__indGroup=request.user.indGroup)
+            else:
+                queryset = queryset.filter(investor_relations__traderuser=request.user)
+            sortfield = request.GET.get('sort', 'createdtime')
+            desc = request.GET.get('desc', 0)
+            queryset = mySortQuery(queryset, sortfield, desc)
+            try:
+                count = queryset.count()
+                queryset = Paginator(queryset, page_size)
+                queryset = queryset.page(page_index)
+            except EmptyPage:
+                return JSONResponse(SuccessResponse({'count': 0, 'data': []}))
+            serializer = InvestorUserSerializer(queryset, many=True, context={'traderuser_id': request.user.id})
+            return JSONResponse(SuccessResponse({'count': count, 'data': returnListChangeToLanguage(serializer.data, lang)}))
         except InvestError as err:
             return JSONResponse(InvestErrorResponse(err))
         except Exception:
