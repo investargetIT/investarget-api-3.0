@@ -52,8 +52,8 @@ class UserFilter(FilterSet):
     userstatus = RelationFilter(filterstr='userstatus',lookup_method='in')
     currency = RelationFilter(filterstr='org__currency', lookup_method='in')
     orgtransactionphases = RelationFilter(filterstr='org__orgtransactionphase', lookup_method='in',relationName='org__org_orgTransactionPhases__is_deleted')
-    trader = RelationFilter(filterstr='investor_relations__traderuser', lookup_method='in',relationName='investor_relations__is_deleted')
-    investor = RelationFilter(filterstr='trader_relations__investoruser', lookup_method='in',relationName='trader_relations__is_deleted')
+    trader = RelationFilter(filterstr='investor_relations__traderuser', lookup_method='in', relationName='investor_relations__is_deleted')
+    investor = RelationFilter(filterstr='trader_relations__investoruser', lookup_method='in', relationName='trader_relations__is_deleted')
     class Meta:
         model = MyUser
         fields = ('id', 'onjob', 'groups', 'indGroup', 'org','tags','userstatus','currency','orgtransactionphases','orgarea','usercode','title','trader','investor','usernameC')
@@ -186,6 +186,9 @@ class UserView(viewsets.ModelViewSet):
                 page_size = 100 if int(page_size) > 100 else page_size
             lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
+            familiar = request.GET.get('familiar')
+            if familiar:
+                queryset = queryset.filter(investor_relations__familiar__in=familiar.split(','))
             if request.user.indGroup and request.user.indGroup.shareInvestor:
                 queryset = queryset.filter(investor_relations__traderuser__indGroup=request.user.indGroup, investor_relations__is_deleted=False).distinct()
             else:
