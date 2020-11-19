@@ -187,9 +187,9 @@ class UserView(viewsets.ModelViewSet):
             lang = request.GET.get('lang', 'cn')
             queryset = self.filter_queryset(self.get_queryset())
             if request.user.indGroup and request.user.indGroup.shareInvestor:
-                queryset = queryset.filter(investor_relations__traderuser__indGroup=request.user.indGroup)
+                queryset = queryset.filter(investor_relations__traderuser__indGroup=request.user.indGroup, investor_relations__is_deleted=False).distinct()
             else:
-                queryset = queryset.filter(investor_relations__traderuser=request.user)
+                queryset = queryset.filter(investor_relations__traderuser=request.user, investor_relations__is_deleted=False).distinct()
             sortfield = request.GET.get('sort', 'createdtime')
             desc = request.GET.get('desc', 0)
             queryset = mySortQuery(queryset, sortfield, desc)
