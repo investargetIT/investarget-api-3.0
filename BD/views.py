@@ -1624,6 +1624,11 @@ class WorkReportView(viewsets.ModelViewSet):
                     if source['_source'].get('report'):
                         searchIds.add(source['_source']['report'])
                 queryset = queryset.filter(id__in=searchIds)
+            sortfield = request.GET.get('sort', 'createdtime')
+            desc = request.GET.get('desc', 1)
+            if desc in ('1', u'1', 1):
+                sortfield = '-' + sortfield
+            queryset = queryset.order_by(sortfield)
             try:
                 count = queryset.count()
                 queryset = Paginator(queryset, page_size)

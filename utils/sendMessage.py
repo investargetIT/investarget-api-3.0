@@ -417,7 +417,7 @@ def sendmessage_userregister(model,receiver,types,sender=None):
                     except Exception:
                         logexcption()
 
-    if checkReceiverToSendMsg(receiver)  and receiver.datasource_id not in [3, 4]:
+    if checkReceiverToSendMsg(receiver) and receiver.datasource_id not in [3, 4]:
         sendmessage_userregisterThread(model,receiver,types,sender).start()
 
 
