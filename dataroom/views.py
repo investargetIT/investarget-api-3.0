@@ -225,6 +225,10 @@ class DataroomView(viewsets.ModelViewSet):
             files = request.GET.get('files')
             userid = int(request.GET.get('user', request.user.id))
             password = request.GET.get('password')
+            nowater = True if request.GET.get('nowater') in ['1', 1, u'1'] else False
+            if nowater:
+                if not request.user.has_perm('dataroom.downloadNoWatermarkFile'):
+                    raise InvestError(2009, msg='没有下载无水印文件权限')
             if userid != request.user.id:
                 if request.user.has_perm('dataroom.admin_getdataroom') or dataroominstance.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                     seefiles = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile__dataroom=dataroominstance, dataroomUserfile__user_id=userid)
@@ -260,7 +264,7 @@ class DataroomView(viewsets.ModelViewSet):
                 if os.path.exists(direcpath):
                     response = JSONResponse(SuccessResponse({'code': 8004, 'msg': '压缩中', 'seconds': seconds}))
                 else:
-                    watermarkcontent = str(request.GET.get('water', '').replace('@', '[at]')).split(',')
+                    watermarkcontent = None if nowater else str(request.GET.get('water', '').replace('@', '[at]')).split(',')
                     directory_qs = dataroominstance.dataroom_directories.all().filter(is_deleted=False, isFile=False)
                     startMakeDataroomZip(directory_qs, file_qs, direcpath, watermarkcontent, password)
                     response = JSONResponse(SuccessResponse({'code': 8002, 'msg': '文件不存在', 'seconds': seconds}))
@@ -277,6 +281,7 @@ class DataroomView(viewsets.ModelViewSet):
             user = checkrequesttoken(request.GET.get('token',None))
             request.user = user
             ispart = request.GET.get('part')
+            nowater = request.GET.get('nowater')
             dataroominstance = self.get_object()
             if not user.has_perm('dataroom.downloadDataroom'):
                 raise InvestError(2009)
@@ -371,8 +376,10 @@ def startMakeDataroomZip(directory_qs, file_qs, path, watermarkcontent=None, pas
                 else:
                     logexcption(msg='下载文件失败，保存路径：%s' % path)
             if len(filepaths) > 0:
-                addWaterMarkToPdfFiles(filepaths, watermarkcontent)
-                encryptPdfFilesWithPassword(filepaths, password)
+                if watermarkcontent is not None:
+                    addWaterMarkToPdfFiles(filepaths, watermarkcontent)
+                if password is not None:
+                    encryptPdfFilesWithPassword(filepaths, password)
 
         def zipDirectory(self):
             import zipfile
