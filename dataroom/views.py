@@ -227,8 +227,11 @@ class DataroomView(viewsets.ModelViewSet):
             password = request.GET.get('password')
             nowater = True if request.GET.get('nowater') in ['1', 1, u'1'] else False
             if nowater:
+                zipfile_prefix = 'nowater_dataroom'
                 if not request.user.has_perm('dataroom.downloadNoWatermarkFile'):
                     raise InvestError(2009, msg='没有下载无水印文件权限')
+            else:
+                zipfile_prefix = 'water_dataroom'
             if userid != request.user.id:
                 if request.user.has_perm('dataroom.admin_getdataroom') or dataroominstance.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                     seefiles = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile__dataroom=dataroominstance, dataroomUserfile__user_id=userid)
@@ -249,9 +252,9 @@ class DataroomView(viewsets.ModelViewSet):
             if files:
                 files = files.split(',')
                 file_qs = file_qs.filter(id__in=files)
-                path = 'dataroom_%s%s_part' % (dataroominstance.id, ('_%s' % userid) if userid else '') + '.zip'  # 压缩文件名称
+                path = '%s_%s%s_part' % (zipfile_prefix, dataroominstance.id, ('_%s' % userid) if userid else '') + '.zip'  # 压缩文件名称
             else:
-                path = 'dataroom_%s%s' % (dataroominstance.id, ('_%s' % userid) if userid else '') + '.zip'  # 压缩文件名称
+                path = '%s_%s%s' % (zipfile_prefix, dataroominstance.id, ('_%s' % userid) if userid else '') + '.zip'  # 压缩文件名称
             if not file_qs.exists():
                 raise InvestError(20071, msg='没有可见文件')
             zipfilepath = APILOG_PATH['dataroomFilePath'] + '/' + path  # 压缩文件路径
@@ -281,7 +284,13 @@ class DataroomView(viewsets.ModelViewSet):
             user = checkrequesttoken(request.GET.get('token',None))
             request.user = user
             ispart = request.GET.get('part')
-            nowater = request.GET.get('nowater')
+            nowater = True if request.GET.get('nowater') in ['1', 1, u'1'] else False
+            if nowater:
+                zipfile_prefix = 'nowater_dataroom'
+                if not request.user.has_perm('dataroom.downloadNoWatermarkFile'):
+                    raise InvestError(2009, msg='没有下载无水印文件权限')
+            else:
+                zipfile_prefix = 'water_dataroom'
             dataroominstance = self.get_object()
             if not user.has_perm('dataroom.downloadDataroom'):
                 raise InvestError(2009)
@@ -293,9 +302,9 @@ class DataroomView(viewsets.ModelViewSet):
                 else:
                     raise InvestError(2009, msg='非管理员权限')
             if ispart in ['1', 1, u'1']:
-                path = 'dataroom_%s%s_part' % (dataroominstance.id, ('_%s' % userid) if userid else '') + '.zip'
+                path = '%s_%s%s_part' % (zipfile_prefix, dataroominstance.id, ('_%s' % userid) if userid else '') + '.zip'
             else:
-                path = 'dataroom_%s%s' % (dataroominstance.id, ('_%s' % userid) if userid else '') + '.zip'
+                path = '%s_%s%s' % (zipfile_prefix, dataroominstance.id, ('_%s' % userid) if userid else '') + '.zip'
             zipFilepath = APILOG_PATH['dataroomFilePath'] + '/' + path
             direcpath = zipFilepath.replace('.zip','')
             if os.path.exists(zipFilepath):
