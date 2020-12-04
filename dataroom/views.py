@@ -761,11 +761,11 @@ class User_DataroomfileView(viewsets.ModelViewSet):
                 files_queryset = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile=instance, createdtime__gte=instance.lastgettime)
             else:
                 files_queryset = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile=instance)
-            if request.user.has_perm('dataroom.admin_getdataroom') or instance.dataroom.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
-                pass
-            elif request.user == instance.user:
+            if request.user == instance.user:
                 instance.lastgettime = datetime.datetime.now()
                 instance.save()
+            elif request.user.has_perm('dataroom.admin_getdataroom') or instance.dataroom.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
+                pass
             else:
                 raise InvestError(code=2009)
             files = dataroomdirectoryorfile.objects.filter(id__in=files_queryset.values_list('file_id'))
