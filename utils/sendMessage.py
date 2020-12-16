@@ -247,14 +247,6 @@ def sendmessage_traderadd(model,receiver,types,sender=None):
                         pushnotification(content, receiver_alias,  bdage, n_extras)
                     except Exception:
                         logexcption()
-                if 'email' in types and sendEmail and checkEmailTrue(receiver.email):
-                    try:
-                        destination = receiver.email
-                        projectsign = 'X6JEv3'
-                        vars = {'nameC':model.traderuser.usernameC,'nameE':model.traderuser.usernameE}
-                        xsendEmail(destination, projectsign, vars)
-                    except Exception:
-                        logexcption()
                 if 'sms' in types and sendSms:
                     try:
                         destination = receiver.mobile
@@ -265,7 +257,7 @@ def sendmessage_traderadd(model,receiver,types,sender=None):
                         logexcption()
                 if 'webmsg' in types and sendWebmsg:
                     try:
-                        saveMessage(content, messagetype, title, receiver, sender,modeltype='UserRelation',sourceid=model.id)
+                        saveMessage(content, messagetype, title, receiver, sender, modeltype='UserRelation',sourceid=model.id)
                     except Exception:
                         logexcption()
 

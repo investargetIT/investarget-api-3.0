@@ -1353,7 +1353,7 @@ class UserRelationView(viewsets.ModelViewSet):
                     add_perm('usersys.user_getuserrelation', relation.traderuser, relation)
                     add_perm('usersys.user_changeuserrelation', relation.traderuser, relation)
                     add_perm('usersys.user_deleteuserrelation', relation.traderuser, relation)
-                    sendmessage_traderadd(relation, relation.investoruser, ['email', 'app', 'sms', 'webmsg'],
+                    sendmessage_traderadd(relation, relation.investoruser, ['app', 'sms', 'webmsg'],
                                              sender=request.user)
                 else:
                     raise InvestError(code=20071,msg='%s'%newrelation.errors)

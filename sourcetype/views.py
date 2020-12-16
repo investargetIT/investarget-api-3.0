@@ -614,6 +614,8 @@ def getmenulist(user):
         qslist.append(allmenuobj.filter(id__in=[28, 32]))
     if user.has_perm('timeline.admin_getline'):
         qslist.append(allmenuobj.filter(id__in=[4]))
+    if user.has_perm('usersys.getProjReport'):
+        qslist.append(allmenuobj.filter(id__in=[37]))
     qslist.append(allmenuobj.filter(id__in=[1, 6, 7, 8, 10, 11, 14, 15, 16, 18, 20, 21, 24, 25, 26, 30]))
     qsres = reduce(lambda x,y:x|y,qslist).distinct().filter(is_deleted=False).order_by('index')
     return WebMenuSerializer(qsres,many=True).data

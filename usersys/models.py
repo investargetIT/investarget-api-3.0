@@ -334,6 +334,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin,MyModel):
             ('user_getuser', u'用户查看用户(obj级别)'),
             ('user_getuserbase', u'用户查看用户基本信息'),
 
+            ('getProjReport', u'获取项目报表'),
 
             ('admin_adduser', u'管理员新增用户'),
             ('admin_deleteuser', u'管理员删除用户'),
