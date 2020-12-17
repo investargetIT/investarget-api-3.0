@@ -9,7 +9,7 @@ from usersys.serializer import UserCommenSerializer
 class ProjSimpleSerializer(serializers.ModelSerializer):
     class Meta:
         model = project
-        fields = ('id', 'projtitleC', 'projtitleE', 'financeAmount', 'financeAmount_USD', 'country', 'projstatus', 'isHidden', 'lastProject')
+        fields = ('id', 'projtitleC', 'projtitleE', 'financeAmount', 'financeAmount_USD', 'country', 'projstatus', 'isHidden', 'lastProject', 'publishDate')
 
 
 class ProjTradersCreateSerializer(serializers.ModelSerializer):
@@ -127,7 +127,7 @@ class ProjCommonSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = project
-        fields = ('id','industries','projtitleC','projtitleE','tags', 'currency', 'financeAmount','financeAmount_USD','country','projstatus','isHidden','supportUser','lastProject')
+        fields = ('id','industries','projtitleC','projtitleE','tags', 'currency', 'financeAmount','financeAmount_USD','country','projstatus','isHidden','supportUser','lastProject','publishDate')
         depth = 1
 
     def get_tags(self, obj):
@@ -176,7 +176,7 @@ class ProjListSerializer_admin(serializers.ModelSerializer):
 
     class Meta:
         model = project
-        fields = ('id','industries','projtitleC','projtitleE', 'currency','transactionType','tags','financeAmount','financeAmount_USD','country','projstatus','isHidden')
+        fields = ('id','industries','projtitleC','projtitleE', 'currency','transactionType','tags','financeAmount','financeAmount_USD','country','projstatus','isHidden','publishDate')
         depth = 1
 
     def get_tags(self, obj):
@@ -208,7 +208,7 @@ class ProjListSerializer_user(serializers.ModelSerializer):
     class Meta:
         model = project
         depth = 1
-        fields = ('id','industries','projtitleC','projtitleE','tags', 'currency', 'transactionType','financeAmount','financeAmount_USD','country','projstatus')
+        fields = ('id','industries','projtitleC','projtitleE','tags', 'currency', 'transactionType','financeAmount','financeAmount_USD','country','projstatus','publishDate')
 
     def get_tags(self, obj):
         qs = obj.tags.filter(tag_projects__is_deleted=False)
