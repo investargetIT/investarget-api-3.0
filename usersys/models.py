@@ -422,6 +422,13 @@ class MyUser(AbstractBaseUser, PermissionsMixin,MyModel):
                                       requestuser_id=self.lastmodifyuser_id,
                                       requestuser_name=self.lastmodifyuser.usernameC.encode(encoding='utf-8'),
                                       datasource=self.datasource_id).save()
+                if olduser.org != self.org and self.lastmodifyuser:
+                    oldOrgName = olduser.org.orgfullname.encode(encoding='utf-8') if olduser.org else ''
+                    newOrgName = self.org.orgfullname.encode(encoding='utf-8') if self.org else ''
+                    userinfoupdatelog(user_id=self.pk, user_name=self.usernameC.encode(encoding='utf-8'), type='organization',
+                                      before=oldOrgName, after=newOrgName, requestuser_id=self.lastmodifyuser_id,
+                                      requestuser_name=self.lastmodifyuser.usernameC.encode(encoding='utf-8'),
+                                      datasource=self.datasource_id).save()
             else:
                 if olduser.org:
                     remove_perm('org.user_getorg', self, olduser.org)
