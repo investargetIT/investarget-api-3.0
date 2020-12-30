@@ -450,14 +450,10 @@ class UserView(viewsets.ModelViewSet):
                                         if Permission.objects.get(codename='as_trader', content_type__app_label='usersys') not in groupinstance.permissions.all():
                                             if user.trader_relations.all().filter(is_deleted=False).exists():
                                                 raise InvestError(2010, msg='该用户名下有对接投资人，请先处理')
-                                            if user.trader_timelines.all().filter(is_deleted=False).exists():
-                                                raise InvestError(2010, msg='该用户名下有对接时间轴，请先处理')
                                     if user.has_perm('usersys.as_investor'):
                                         if Permission.objects.get(codename='as_investor', content_type__app_label='usersys') not in groupinstance.permissions.all():
                                             if user.investor_relations.all().filter(is_deleted=False).exists():
                                                 raise InvestError(2010, msg='该用户名下有对接交易师，请先处理')
-                                            if user.investor_timelines.all().filter(is_deleted=False).exists():
-                                                raise InvestError(2010, msg='该用户名下有对接时间轴，请先处理')
                                     data['groups'] = [groupinstance.id]
                         else:
                             if request.user == user:
@@ -1453,9 +1449,6 @@ class UserRelationView(viewsets.ModelViewSet):
                         pass
                     else:
                         raise InvestError(code=2009,msg='没有权限')
-                    timeline_qs = timeline.objects.filter(investor=userrelation.investoruser,trader=userrelation.traderuser,is_deleted=False,isClose=False)
-                    if timeline_qs.exists():
-                        raise InvestError(2010, msg='%s,%s有未关闭的timeline' % (userrelation.traderuser.usernameC, userrelation.investoruser.usernameC))
                     userrelation.is_deleted = True
                     userrelation.deleteduser = request.user
                     userrelation.deletedtime = datetime.datetime.now()
