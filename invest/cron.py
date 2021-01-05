@@ -6,7 +6,7 @@ import datetime
 from django.db.models import Count
 
 from BD.models import OrgBD
-from BD.views import sendExpiredOrgBDEmail
+from BD.views import sendExpiredOrgBDEmail, sendWorkReportMessage
 from dataroom.views import downloadDataroomPDFs
 from emailmanage.views import getAllProjectsNeedToSendMail, sendEmailToUser
 from msg.models import schedule
@@ -59,7 +59,11 @@ def task6_refreshZoomToken():
     task6_Thread().start()
 
 
-
+def task7_sendWorkReportMsg():
+    class task7_Thread(threading.Thread):
+        def run(self):
+            sendWorkReportMessage()
+    task7_Thread().start()
 
 
 
