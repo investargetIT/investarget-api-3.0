@@ -2296,7 +2296,7 @@ class OKRResultView(viewsets.ModelViewSet):
 
 
 def sendWorkReportMessage():
-    user_qs = MyUser.objects.filter(is_deleted=False, groups__in=[2])
+    user_qs = MyUser.objects.filter(is_deleted=False, groups__in=[2], userstatus_id=2, onjob=True)
     now = datetime.datetime.now()
     this_week_start = now - datetime.timedelta(days=now.weekday(), hours=now.hour, minutes=now.minute, seconds=now.second, microseconds=now.microsecond)
     this_week_end = now + datetime.timedelta(days=6 - now.weekday(), hours=23 - now.hour, minutes=59 - now.minute, seconds=59 - now.second, microseconds=999999 - now.microsecond)
