@@ -27,8 +27,9 @@ from proj.views import isProjectTrader
 from third.views.qiniufile import deleteqiniufile
 from timeline.models import timeline
 from timeline.models import timelineremark
+from usersys.models import MyUser
 from utils.customClass import RelationFilter, InvestError, JSONResponse, MyFilterSet
-from utils.sendMessage import sendmessage_orgBDMessage, sendmessage_orgBDExpireMessage
+from utils.sendMessage import sendmessage_orgBDMessage, sendmessage_orgBDExpireMessage, sendmessage_workReportDonotWrite
 from utils.util import loginTokenIsAvailable, SuccessResponse, InvestErrorResponse, ExceptionResponse, \
     returnListChangeToLanguage, catchexcption, returnDictChangeToLanguage, mySortQuery, add_perm, rem_perm, \
     read_from_cache, write_to_cache, cache_delete_key, logexcption, cache_delete_patternKey, checkSessionToken
@@ -2292,3 +2293,13 @@ class OKRResultView(viewsets.ModelViewSet):
         except Exception:
             catchexcption(request)
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
+
+
+def sendWorkReportMessage():
+    user_qs = MyUser.objects.filter(is_deleted=False, groups__in=[2], userstatus_id=2, onjob=True)
+    now = datetime.datetime.now()
+    this_week_start = now - datetime.timedelta(days=now.weekday(), hours=now.hour, minutes=now.minute, seconds=now.second, microseconds=now.microsecond)
+    this_week_end = now + datetime.timedelta(days=6 - now.weekday(), hours=23 - now.hour, minutes=59 - now.minute, seconds=59 - now.second, microseconds=999999 - now.microsecond)
+    for user in user_qs:
+        if not WorkReport.objects.filter(user=user, startTime__gte=this_week_start, startTime__lte=this_week_end, is_deleted=False).exists():
+            sendmessage_workReportDonotWrite(user)

@@ -895,6 +895,27 @@ def sendmessage_WebEXMeetingCancelMessage(webEXUsers):
 
     sendmessage_WebEXMeetingCancelMessageThread().start()
 
+
+def sendmessage_workReportDonotWrite(receiver):
+    """
+    :param webEXUsers: Iterable object. like list、 queryset
+    """
+    class sendmessage_workReportDonotWriteThread(threading.Thread):
+        def run(self):
+            if sendSms:
+                try:
+                    destination = receiver.mobile
+                    projectsign = 'v9pNC4'
+                    vars = {'user': receiver.usernameC}
+                    res = xsendSms(destination, projectsign, vars)
+                    print(res)
+                except Exception:
+                    logexcption()
+    sendmessage_workReportDonotWriteThread().start()
+
+
+
+
 # 判断是否发送消息
 def checkReceiverToSendMsg(receiver):
     if receiver is not None:
