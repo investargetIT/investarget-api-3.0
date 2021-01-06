@@ -33,7 +33,7 @@ SMSCODE_projectsign = {
         'out':None
         },
     '4':{
-        'in':'cWzJx',
+        'in':'hIudP',
         'out':None
         },
     '5':{
