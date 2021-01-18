@@ -227,11 +227,11 @@ class DataroomView(viewsets.ModelViewSet):
             password = request.GET.get('password')
             nowater = True if request.GET.get('nowater') in ['1', 1, u'1'] else False
             if nowater:
-                zipfile_prefix = 'nowater_dataroom'
+                zipfile_prefix = 'novirtual_dataroom'
                 if not request.user.has_perm('dataroom.downloadNoWatermarkFile'):
                     raise InvestError(2009, msg='没有下载无水印文件权限')
             else:
-                zipfile_prefix = 'water_dataroom'
+                zipfile_prefix = 'virtual_dataroom'
             if userid != request.user.id:
                 if request.user.has_perm('dataroom.admin_getdataroom') or dataroominstance.proj.proj_traders.all().filter(user=request.user, is_deleted=False).exists():
                     seefiles = dataroomUserSeeFiles.objects.filter(is_deleted=False, dataroomUserfile__dataroom=dataroominstance, dataroomUserfile__user_id=userid)
@@ -286,11 +286,11 @@ class DataroomView(viewsets.ModelViewSet):
             ispart = request.GET.get('part')
             nowater = True if request.GET.get('nowater') in ['1', 1, u'1'] else False
             if nowater:
-                zipfile_prefix = 'nowater_dataroom'
+                zipfile_prefix = 'novirtual_dataroom'
                 if not request.user.has_perm('dataroom.downloadNoWatermarkFile'):
                     raise InvestError(2009, msg='没有下载无水印文件权限')
             else:
-                zipfile_prefix = 'water_dataroom'
+                zipfile_prefix = 'virtual_dataroom'
             dataroominstance = self.get_object()
             if not user.has_perm('dataroom.downloadDataroom'):
                 raise InvestError(2009)
