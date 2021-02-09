@@ -564,32 +564,10 @@ class OrgBDView(viewsets.ModelViewSet):
             raise InvestError(code=8888)
         return obj
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['BD.manageOrgBD', 'BD.user_getOrgBD'])
     def countBDProjectOrg(self, request, *args, **kwargs):
         try:
-            if request.user.has_perm('BD.manageOrgBD'):
-                queryset = self.filter_queryset(self.get_queryset())
-            elif request.user.has_perm('BD.user_getOrgBD'):
-                if request.GET.get('proj') and ',' not in request.GET.get('proj') and request.GET.get('proj') != 'none':
-                    if isProjectTrader(request.GET.get('proj'), request.user.id):
-                        pass
-                    else:
-                        if not request.GET.get('manager'):
-                            raise InvestError(2007, msg='manager不能为空')
-                        if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
-                            raise InvestError(2009, msg='没有权限查看其它负责人')
-                        if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
-                            raise InvestError(2009, msg='没有权限查看其它创建人')
-                else:
-                    if not request.GET.get('manager'):
-                        raise InvestError(2007, msg='manager不能为空')
-                    if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
-                        raise InvestError(2009, msg='没有权限查看其它负责人')
-                    if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
-                        raise InvestError(2009, msg='没有权限查看其它创建人')
-                queryset = self.filter_queryset(self.get_queryset())
-            else:
-                raise InvestError(2009)
+            queryset = self.filter_queryset(self.get_queryset())
             page_size = request.GET.get('page_size', 10)
             page_index = request.GET.get('page_index', 1)
             sortfield = request.GET.get('sort', 'orgimportant')
@@ -609,32 +587,10 @@ class OrgBDView(viewsets.ModelViewSet):
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['BD.manageOrgBD', 'BD.user_getOrgBD'])
     def countBDProject(self, request, *args, **kwargs):
         try:
-            if request.user.has_perm('BD.manageOrgBD'):
-                queryset = self.filter_queryset(self.get_queryset())
-            elif request.user.has_perm('BD.user_getOrgBD'):
-                if request.GET.get('proj') and ',' not in request.GET.get('proj') and request.GET.get('proj') != 'none':
-                    if isProjectTrader(request.GET.get('proj'), request.user.id):
-                        pass
-                    else:
-                        if not request.GET.get('manager'):
-                            raise InvestError(2007, msg='manager不能为空')
-                        if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
-                            raise InvestError(2009, msg='没有权限查看其它负责人')
-                        if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
-                            raise InvestError(2009, msg='没有权限查看其它创建人')
-                else:
-                    if not request.GET.get('manager'):
-                        raise InvestError(2007, msg='manager不能为空')
-                    if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
-                        raise InvestError(2009, msg='没有权限查看其它负责人')
-                    if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
-                        raise InvestError(2009, msg='没有权限查看其它创建人')
-                queryset = self.filter_queryset(self.get_queryset())
-            else:
-                raise InvestError(2009)
+            queryset = self.filter_queryset(self.get_queryset())
             page_size = request.GET.get('page_size', 10)
             page_index = request.GET.get('page_index', 1)
             lang = request.GET.get('lang', 'cn')
@@ -657,32 +613,10 @@ class OrgBDView(viewsets.ModelViewSet):
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['BD.manageOrgBD', 'BD.user_getOrgBD'])
     def list(self, request, *args, **kwargs):
         try:
-            if request.user.has_perm('BD.manageOrgBD'):
-                queryset = self.filter_queryset(self.get_queryset())
-            elif request.user.has_perm('BD.user_getOrgBD'):
-                if request.GET.get('proj') and ',' not in request.GET.get('proj') and request.GET.get('proj') != 'none':
-                    if isProjectTrader(request.GET.get('proj'), request.user.id):
-                        pass
-                    else:
-                        if not request.GET.get('manager'):
-                            raise InvestError(2007, msg='manager不能为空')
-                        if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
-                            raise InvestError(2009, msg='没有权限查看其它负责人')
-                        if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
-                            raise InvestError(2009, msg='没有权限查看其它创建人')
-                else:
-                    if not request.GET.get('manager'):
-                        raise InvestError(2007, msg='manager不能为空')
-                    if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
-                        raise InvestError(2009, msg='没有权限查看其它负责人')
-                    if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
-                        raise InvestError(2009, msg='没有权限查看其它创建人')
-                queryset = self.filter_queryset(self.get_queryset())
-            else:
-                raise InvestError(2009)
+            queryset = self.filter_queryset(self.get_queryset())
             query_string = request.META['QUERY_STRING']
             uriPath = str(request.path)
             cachekey = '{}_{}_{}'.format(uriPath, query_string, request.user.id)
@@ -712,32 +646,10 @@ class OrgBDView(viewsets.ModelViewSet):
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['BD.manageOrgBD', 'BD.user_getOrgBD'])
     def countBDManager(self, request, *args, **kwargs):
         try:
-            if request.user.has_perm('BD.manageOrgBD'):
-                queryset = self.filter_queryset(self.get_queryset())
-            elif request.user.has_perm('BD.user_getOrgBD'):
-                if request.GET.get('proj') and ',' not in request.GET.get('proj') and request.GET.get('proj') != 'none':
-                    if isProjectTrader(request.GET.get('proj'), request.user.id):
-                        pass
-                    else:
-                        if not request.GET.get('manager'):
-                            raise InvestError(2007, msg='manager不能为空')
-                        if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
-                            raise InvestError(2009, msg='没有权限查看其它负责人')
-                        if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
-                            raise InvestError(2009, msg='没有权限查看其它创建人')
-                else:
-                    if not request.GET.get('manager'):
-                        raise InvestError(2007, msg='manager不能为空')
-                    if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
-                        raise InvestError(2009, msg='没有权限查看其它负责人')
-                    if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
-                        raise InvestError(2009, msg='没有权限查看其它创建人')
-                queryset = self.filter_queryset(self.get_queryset())
-            else:
-                raise InvestError(2009)
+            queryset = self.filter_queryset(self.get_queryset())
             count = queryset.count()
             queryset = queryset.values_list('manager').annotate(count=Count('manager'))
             serializer = json.dumps(list(queryset), cls=DjangoJSONEncoder)
@@ -747,32 +659,10 @@ class OrgBDView(viewsets.ModelViewSet):
         except Exception:
             return JSONResponse(ExceptionResponse(traceback.format_exc().split('\n')[-2]))
 
-    @loginTokenIsAvailable()
+    @loginTokenIsAvailable(['BD.manageOrgBD', 'BD.user_getOrgBD'])
     def countBDResponse(self, request, *args, **kwargs):
         try:
-            if request.user.has_perm('BD.manageOrgBD'):
-                queryset = self.filter_queryset(self.get_queryset())
-            elif request.user.has_perm('BD.user_getOrgBD'):
-                if request.GET.get('proj') and ',' not in request.GET.get('proj') and request.GET.get('proj') != 'none':
-                    if isProjectTrader(request.GET.get('proj'), request.user.id):
-                        pass
-                    else:
-                        if not request.GET.get('manager'):
-                            raise InvestError(2007, msg='manager不能为空')
-                        if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
-                            raise InvestError(2009, msg='没有权限查看其它负责人')
-                        if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
-                            raise InvestError(2009, msg='没有权限查看其它创建人')
-                else:
-                    if not request.GET.get('manager'):
-                        raise InvestError(2007, msg='manager不能为空')
-                    if request.GET.get('manager') and request.GET.get('manager') != str(request.user.id):
-                        raise InvestError(2009, msg='没有权限查看其它负责人')
-                    if request.GET.get('createuser') and request.GET.get('createuser') != str(request.user.id):
-                        raise InvestError(2009, msg='没有权限查看其它创建人')
-                queryset = self.filter_queryset(self.get_queryset())
-            else:
-                raise InvestError(2009)
+            queryset = self.filter_queryset(self.get_queryset())
             count = queryset.count()
             queryset = queryset.values('response').annotate(count=Count('*'))
             serializer = json.dumps(list(queryset), cls=DjangoJSONEncoder)
